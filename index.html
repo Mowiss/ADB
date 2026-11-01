@@ -131,8 +131,12 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 .stat .base{position:absolute;left:0;top:58%;width:30%;aspect-ratio:1/1;border-radius:50%;border:1.3px solid var(--ink-soft);background:var(--paper);place-items:center}
 .stat .base{display:none}
 .stat.mod .base{display:grid;place-items:center}
-.stat .base input{width:100%;border:0;background:transparent;text-align:center;font-weight:700;font-size:14px;outline:none;padding:0;-moz-appearance:textfield}
-.stat .base input::-webkit-inner-spin-button{appearance:none}
+.stat .base{gap:0}
+.stat .base svg{width:62%;height:62%;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.stat .base.n2 svg{width:46%;height:46%}
+.stat .base.n2{display:flex!important;align-items:center;justify-content:center}
+.stat.mod .eff{cursor:text}
+.stat.editing .eff{display:none}.stat.editing .statin{display:block}
 .stat.malus .eff{color:var(--danger)}
 .stat.bonus .eff{color:var(--ok)}
 .note-line{font-size:12px;color:var(--ink-soft);border-bottom:1px dashed var(--rule);padding:3px 2px}
@@ -183,17 +187,30 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 .hands-txt span.empty{color:#b9bdc8;font-weight:500}
 
 /* Homme de Vitruve */
-.figure-wrap{display:flex;justify-content:center}
+.figure-wrap{position:relative;display:flex;justify-content:center;padding:0 190px}
+#leads{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+#leads path{fill:none;stroke-width:1.4}
+#leads circle{stroke:none}
+#tags{position:absolute;inset:0;pointer-events:none}
+.tagp{position:absolute;pointer-events:auto;display:flex;align-items:center;gap:6px;background:var(--paper);border:1.4px solid var(--c);border-radius:999px;padding:3px 4px 3px 11px;font-size:12px;font-weight:700;color:var(--ink-strong);white-space:nowrap;max-width:180px;height:28px;transform:translateY(-50%)}
+.tagp span{overflow:hidden;text-overflow:ellipsis}
+.tagp button{flex:none;height:20px;min-width:20px;border-radius:999px;border:0;display:grid;place-items:center;padding:0 6px;font-size:11px;font-weight:700}
+.tagp .tr{background:var(--ink-strong);color:#fff;display:flex;gap:3px;align-items:center}
+.tagp .tr svg{width:12px;height:12px}
+.tagp .tx{background:var(--faint);color:var(--ink);font-size:14px;line-height:1;padding:0 5px}
+.tagp .tx:hover{background:var(--danger);color:#fff}
+.tagp.hi{box-shadow:0 0 0 3px rgba(43,121,189,.2)}
+@media (max-width:1100px){.figure-wrap{padding:0;flex-direction:column;align-items:center;gap:10px}#leads{display:none}#tags{position:static;display:flex;flex-wrap:wrap;gap:6px;justify-content:center}.tagp{position:static;transform:none}}
 .figure{position:relative;width:min(100%,600px);aspect-ratio:910/938}
 .figure svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
 .vit{fill:none;stroke:var(--ink-strong);stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
-.vit .bone{fill:#e9ebf0;stroke:#b9bdc9;stroke-width:1.1;transition:fill .25s,stroke .25s}
-.vit .bone.open{fill:none}
-.vit .bone.hl{fill:#d7e7f5;stroke:var(--link)}
-.vit .bone.frac{fill:#ef5a62;stroke:#c2333b;stroke-width:1.2;animation:throb 1.8s ease-in-out infinite}
-.vit .bone.open.frac{fill:none;stroke:#e0444d;stroke-width:1.8}
+.bone{fill:#e9ebf0;stroke:#b9bdc9;stroke-width:1.1;transition:fill .25s,stroke .25s}
+.bone.open{fill:none}
+.bone.hl{fill:#d7e7f5;stroke:var(--link)}
+.bone.frac{fill:#ef5a62;stroke:#c2333b;stroke-width:1.2;animation:throb 1.8s ease-in-out infinite}
+.bone.open.frac{fill:none;stroke:#e0444d;stroke-width:1.8}
 @keyframes throb{0%,100%{filter:drop-shadow(0 0 0 rgba(226,60,70,0))}50%{filter:drop-shadow(0 0 4px rgba(226,60,70,.55))}}
-@media (prefers-reduced-motion:reduce){.vit .bone.frac{animation:none}}
+@media (prefers-reduced-motion:reduce){.bone.frac{animation:none}}
 .zone{fill:transparent;stroke:transparent;stroke-width:3;cursor:pointer;pointer-events:all;transition:fill .15s,stroke .15s}
 .zone:hover,.zone.hl{fill:rgba(142,195,236,.28);stroke:var(--link);stroke-dasharray:8 6}
 .zone.frac{fill:rgba(255,31,45,.06)}
@@ -210,63 +227,66 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 .zone-tip.show{display:block;opacity:1}
 .fig-hint{text-align:center;font-size:12px;color:var(--ink-soft);margin-top:-6px}
 
-/* Cadres et vignettes */
-.frames{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:26px;align-items:start}
-.frame{display:flex;flex-direction:column;gap:10px;min-width:0}
-.frame-head{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--ink-soft);padding-bottom:6px}
-.frame-head .ttl{width:auto;flex:1;min-width:180px}
-#fr-inv .frame-head{flex-wrap:nowrap;align-items:center}
-.frame-head .sq-add{align-self:center}
-#fr-inv .frame-head .sq-add{order:10}
-#fr-inv .frame-head .ttl{flex:0 0 auto;width:200px;min-width:0;align-self:flex-end}
-#fr-inv .frame-meta{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
-.frame-meta{font-size:12px;color:var(--ink-soft);font-variant-numeric:tabular-nums;white-space:nowrap}
+/* Inventaire : une ligne par élément */
+.frames{display:block}
+.frame{display:flex;flex-direction:column;gap:8px;min-width:0}
+.frame-head{display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--ink-soft);padding-bottom:6px}
+.frame-head .ttl{flex:0 0 auto;width:200px;min-width:0;align-self:flex-end}
+.frame-meta{flex:1;min-width:0;font-size:12px;color:var(--ink-soft);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .frame-meta b{color:var(--ink-strong)}.frame-meta.over b{color:var(--danger)}
-.addbtn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--ink-strong);background:var(--ink-strong);color:#fff;border-radius:9px;padding:7px 12px;font-size:12.5px;font-weight:700;white-space:nowrap}
-.addbtn svg{width:15px;height:15px}
-.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;align-items:start}
+.frame-head .sq-add{order:10}
+.invscroll{overflow-x:auto}
+.rows{display:flex;flex-direction:column;min-width:960px}
+.zc{appearance:none;min-width:0;width:100%;border:0;border-bottom:1px solid var(--rule);background:transparent;padding:3px 1px;font-size:12px;font-weight:700;color:var(--link);cursor:pointer;outline:none}
+.zc:focus{border-bottom-color:var(--ink)}
+.row.cyb .zc{color:var(--link-cyb)}
 .empty-frame{border:1px dashed var(--rule);border-radius:10px;padding:22px;text-align:center;color:var(--ink-soft);font-size:13px;background:rgba(255,255,255,.75)}
-.card{background:rgba(255,255,255,.92);border:1px solid var(--rule);border-radius:10px;padding:9px 10px 10px;display:flex;flex-direction:column;gap:8px;transition:border-color .15s}
-.card.hi{border-color:var(--link);box-shadow:0 0 0 2px rgba(43,121,189,.18)}
-.card.cyb.hi{border-color:var(--link-cyb);box-shadow:0 0 0 2px rgba(117,86,194,.18)}
-.card-top{display:flex;align-items:center;gap:7px;min-width:0}
-.tico{width:28px;height:28px;flex:none;border-radius:8px;display:grid;place-items:center;border:1px solid var(--faint)}
+.row{display:grid;grid-template-columns:20px 30px minmax(130px,1.3fr) 100px 56px 42px 42px 42px 42px 42px 52px minmax(150px,2fr) 34px;column-gap:8px;align-items:center;min-height:42px;padding:3px 6px 3px 2px;background:rgba(255,255,255,.9);border-bottom:1px solid var(--faint);transition:background .15s,box-shadow .15s}
+.row:not(.head):hover{background:rgba(142,195,236,.08)}
+.row.head{min-height:30px;background:transparent;border-bottom:1px solid var(--rule)}
+.row .h{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;gap:2px;white-space:nowrap}
+.row .h.l{justify-content:flex-start}
+.row .h svg{width:14px;height:14px}
+.row.hi{box-shadow:inset 3px 0 0 var(--link)}
+.row.cyb.hi{box-shadow:inset 3px 0 0 var(--link-cyb)}
+.row.dragging{opacity:.45}
+.grip{width:20px;height:30px;display:grid;place-items:center;cursor:grab;color:#b7bbc6;touch-action:none;border:0;background:none;padding:0}
+.grip:hover{color:var(--ink)}
+.grip svg{width:12px;height:18px}
+.tico{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;border:1px solid var(--faint);cursor:grab;touch-action:none;background:var(--paper)}
 .tico svg{width:17px;height:17px}
-.card-top .nm{flex:1;min-width:0;border:0;border-bottom:1px solid transparent;background:transparent;font-weight:700;color:var(--ink-strong);padding:3px 2px;outline:none;font-size:13.5px}
-.card-top .nm:focus{border-bottom-color:var(--rule)}
-.ib{width:26px;height:26px;border-radius:7px;border:1px solid var(--rule);background:var(--paper);display:grid;place-items:center;padding:0;color:var(--ink);flex:none}
+.row .nm{min-width:0;border:0;border-bottom:1px solid transparent;background:transparent;font-weight:700;color:var(--ink-strong);padding:3px 2px;outline:none;font-size:13.5px}
+.row .nm:focus{border-bottom-color:var(--rule)}
+.row.equipped .nm{color:var(--ink-strong)}
+.tsel{appearance:none;border:0;background:none;padding:2px 0;font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);cursor:pointer;min-width:0;width:100%}
+.tsel:hover{color:var(--ink)}
+.c{min-width:0;width:100%;border:0;border-bottom:1px solid var(--rule);background:transparent;padding:3px 1px;font-weight:700;font-size:13px;outline:none;text-align:center;font-variant-numeric:tabular-nums}
+select.c{appearance:none;cursor:pointer}
+.c:focus{border-bottom-color:var(--ink)}
+.c.na{border-bottom:1px dotted var(--faint);height:22px}
+.row .ds{min-width:0;border:0;border-bottom:1px dashed var(--rule);background:transparent;font-size:12.5px;padding:3px 2px;outline:none;color:var(--ink)}
+.row .ds:focus{border-bottom-color:var(--ink)}
+.pill{border:1px solid var(--rule);background:var(--paper);border-radius:999px;padding:3px 10px;font-size:11.5px;font-weight:700;color:var(--ink)}
+.pill.on{background:var(--c-res);border-color:var(--c-res);color:#fff}
+.acts{display:flex;gap:4px;align-items:center;justify-content:flex-end}
+.ib{width:28px;height:28px;border-radius:7px;border:1px solid var(--rule);background:var(--paper);display:grid;place-items:center;padding:0;color:var(--ink);flex:none}
 .ib svg{width:14px;height:14px}
 .ib:hover{border-color:var(--ink)}
-.card-sub{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.tsel{appearance:none;border:0;background:none;padding:2px 0;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);cursor:pointer}
-.tsel:hover{color:var(--ink)}
-.tag{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft)}
-.zsel{appearance:none;border:1px solid var(--rule);border-radius:999px;padding:3px 22px 3px 9px;font-size:11.5px;font-weight:700;background:var(--paper) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%238d92a2' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat right 8px center/9px;cursor:pointer;color:var(--ink)}
-.zsel.on{border-color:var(--link);color:var(--link)}
-.cyb .zsel.on{border-color:var(--link-cyb);color:var(--link-cyb)}
-.hbtn{border:1px solid var(--rule);background:var(--paper);border-radius:999px;padding:3px 10px;font-size:11.5px;font-weight:700;color:var(--ink)}
-.hbtn.on{background:var(--ink-strong);border-color:var(--ink-strong);color:#fff}
-.fields{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px 8px}
-.fl{display:flex;flex-direction:column;gap:1px;min-width:0}
-.fl label{font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);display:flex;align-items:center;gap:3px}
-.fl label svg{width:12px;height:12px}
-.fl input,.fl select{border:0;border-bottom:1px solid var(--rule);background:transparent;padding:3px 1px;font-weight:700;font-size:13px;outline:none;min-width:0;width:100%;text-align:center;-moz-appearance:textfield}
-.fl select{appearance:none;cursor:pointer}
-.fl input::-webkit-inner-spin-button{appearance:none}
-.fl input:focus,.fl select:focus{border-bottom-color:var(--ink)}
-.card textarea{border:1px solid var(--faint);border-radius:7px;padding:6px 8px;font-size:12.5px;line-height:1.45;min-height:46px;resize:vertical;background:transparent;outline:none}
-.card textarea:focus{border-color:var(--rule)}
-.useb{display:flex;align-items:center;justify-content:center;gap:7px;border:1px solid var(--ink-strong);background:var(--ink-strong);color:#fff;border-radius:8px;padding:7px;font-weight:700;font-size:12.5px;letter-spacing:.04em}
-.useb svg{width:15px;height:15px}
-.useb.off{background:transparent;color:var(--ink-soft);border-style:dashed;border-color:var(--rule);cursor:default}
-.summary{font-size:12px;color:var(--ink-soft);display:flex;gap:10px;flex-wrap:wrap}
-.summary b{color:var(--ink-strong)}
-.card.collapsed .fields,.card.collapsed textarea,.card.collapsed .useb{display:none}
-.card:not(.collapsed) .summary{display:none}
-.racial-card{border:1px solid var(--rule);border-radius:10px;padding:9px 12px;background:rgba(255,255,255,.92);font-size:12.5px;line-height:1.45}
-.racial-card .tsel{appearance:none;border:0;background:none;padding:2px 0;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);cursor:pointer}
-.tsel:hover{color:var(--ink)}
-.tag{display:block;margin-bottom:2px}
+.useb{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--ink-strong);background:var(--ink-strong);color:#fff;border-radius:8px;padding:5px 10px;font-weight:700;font-size:12px;white-space:nowrap}
+.useb svg{width:14px;height:14px}
+.useb.off{background:transparent;color:var(--ink-soft);border-color:var(--rule);cursor:default}
+.ghost-drag{position:fixed;z-index:200;pointer-events:none;display:flex;align-items:center;gap:8px;background:var(--ink-strong);color:#fff;border-radius:999px;padding:6px 12px 6px 8px;font-size:12.5px;font-weight:700;transform:translate(-50%,-140%);box-shadow:0 8px 24px rgba(47,51,64,.25);white-space:nowrap}
+.ghost-drag svg{width:16px;height:16px}
+.ghost-drag small{opacity:.7;font-weight:600}
+.zone.drop{fill:rgba(43,121,189,.22)!important;stroke:var(--link)!important;stroke-dasharray:none!important}
+.hand-t{fill:transparent;pointer-events:none}
+.hand-t.drop{fill:rgba(43,121,189,.22);stroke:var(--link);stroke-width:3}
+body.dragmode .hand-t{pointer-events:all}
+.fistg{transition:opacity .2s}
+.fistg .fo{fill:none;stroke:var(--ink-strong);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.fistg .bone{stroke-linejoin:round}
+.armor-line{fill:none;stroke:var(--c-res);stroke-width:6;stroke-linejoin:round;stroke-linecap:round;opacity:.8;pointer-events:none}
+@media (max-width:820px){.frame-head{flex-wrap:wrap}.frame-head .ttl{width:100%}}
 
 .layout.dead .center,.layout.dead .panel{filter:grayscale(1)}
 .stamp{position:fixed;z-index:25;top:45%;left:calc(50% + 180px);transform:translate(-50%,-50%) rotate(-12deg);border:3px solid var(--danger);color:var(--danger);font-family:var(--f-title);font-size:44px;letter-spacing:.3em;padding:8px 22px;background:rgba(255,255,255,.8);pointer-events:none}
@@ -332,9 +352,9 @@ dialog::backdrop{background:rgba(47,51,64,.42)}
 .toast.show{opacity:1;transform:translateX(-50%)}
 
 /* Ouverture */
-#splash{position:fixed;inset:0;z-index:100;background:radial-gradient(120% 90% at 50% 45%,#141826,#0a0c13 70%);display:grid;place-items:center;cursor:pointer;transition:opacity .6s}
+#splash{position:fixed;inset:0;z-index:100;background:#fff;display:grid;place-items:center;cursor:pointer;transition:opacity .6s}
 #splash canvas{width:min(70vw,640px);height:auto;max-height:70vh;object-fit:contain}
-#splash .skip{position:absolute;bottom:calc(22px + env(safe-area-inset-bottom,0px));left:0;right:0;text-align:center;color:#7d849a;font-size:12px;letter-spacing:.2em;text-transform:uppercase}
+#splash .skip{position:absolute;bottom:calc(22px + env(safe-area-inset-bottom,0px));left:0;right:0;text-align:center;color:#a3a8b6;font-size:12px;letter-spacing:.2em;text-transform:uppercase}
 #splash.out{opacity:0;pointer-events:none}
 #tracecatch{position:fixed;inset:0;z-index:90;cursor:pointer}
 
@@ -393,7 +413,7 @@ dialog::backdrop{background:rgba(47,51,64,.42)}
       <div class="who fade" style="padding-bottom:4px">
         <button class="portrait" id="portrait" type="button" title="Changer le portrait"></button>
         <div style="display:flex;flex-direction:column;gap:8px;min-width:0">
-          <div class="field"><label class="cap" for="f-name">Nom</label><input id="f-name" class="line-in name-in" placeholder="Nom du personnage" autocomplete="off"></div>
+          <div class="field"><label class="cap" for="f-name">Nom</label><input id="f-name" class="line-in name-in" placeholder="Sans nom" autocomplete="off"></div>
           <div class="field"><label class="cap" for="f-race">Race</label><select id="f-race" class="line-in"></select></div>
         </div>
       </div>
@@ -416,15 +436,25 @@ dialog::backdrop{background:rgba(47,51,64,.42)}
   </aside>
 
   <main class="center" id="center">
-    <div class="figure-wrap">
+    <div class="figure-wrap" id="figwrap">
+      <svg id="leads" aria-hidden="true"></svg>
       <div class="figure" id="figure">
         <svg id="body" viewBox="0 0 910 938" role="img" aria-label="Homme de Vitruve mi-humain mi-cybernétique : localisation sur le corps">
           <g class="vit"><circle cx="452" cy="463" r="442" stroke-width="1.8"/><rect x="71.3" y="150.7" width="760.3" height="760.3" stroke-width="1.8"/><path d="M402.3 897.5L441.4 900.9L442.1 896.4L435.5 869.8L437.2 863.2L435.9 856.3L436.9 817.3L442.1 764.1L440.7 737.5L438.3 708.4L438.6 681.8L446.6 628.9L450.0 595.1L448.3 564.0L448.3 560.5L455.2 561.6L454.5 601.6L459.0 651.4L465.9 690.8L465.9 700.5L464.5 719.1L461.0 752.2L461.7 784.5L466.3 819.5L466.7 854.1L465.5 884.1L463.3 896.7L465.9 900.9L496.7 899.7L543.5 892.9L544.6 887.6L513.4 886.8L493.7 872.4L490.6 845.8L500.1 799.8L515.7 705.9L520.6 699.4L519.5 674.7L528.2 572.5L522.5 514.7L507.3 439.4L508.4 406.8L519.5 358.5L521.4 339.1L531.2 331.9L556.7 333.0L589.8 332.2L636.2 326.2L695.9 325.0L730.1 320.8L751.6 317.0L787.1 320.4L807.6 324.3L810.3 322.5L808.1 320.4L795.7 315.5L796.3 312.2L815.2 316.3L818.0 314.4L816.5 311.9L797.1 307.6L797.7 304.6L821.5 305.2L823.2 303.4L821.6 300.6L796.9 299.5L798.1 298.2L817.7 295.1L815.7 291.4L797.0 291.1L780.3 290.1L780.0 285.7L788.4 276.3L787.9 273.8L784.4 273.5L771.4 282.6L764.8 292.9L749.5 296.8L679.9 293.6L651.6 294.0L565.3 287.5L543.7 283.4L498.7 283.7L473.6 271.9L467.0 263.2L467.6 256.8L478.0 243.0L483.4 225.8L488.1 225.7L488.9 220.7L491.5 205.5L488.6 202.4L486.8 205.5L485.3 184.1L478.4 169.0L466.3 160.2L452.5 158.4L434.9 160.3L422.6 171.2L418.0 182.4L416.7 204.0L412.5 205.2L415.4 216.8L415.9 226.6L419.5 226.3L427.4 246.9L435.4 255.4L436.1 263.5L431.4 270.7L408.5 281.2L399.3 283.9L380.4 283.0L353.9 283.6L320.3 289.4L259.3 293.4L230.5 291.6L205.4 293.9L172.1 298.8L145.6 298.2L134.9 290.2L132.6 283.9L117.2 273.0L114.2 274.8L115.6 279.3L122.8 285.6L122.2 289.4L83.8 293.0L83.5 295.0L105.3 297.4L104.0 300.0L79.5 302.8L80.4 305.0L105.3 305.0L106.0 307.3L83.9 312.0L85.8 314.9L106.8 312.8L106.9 314.9L91.1 322.3L93.7 323.7L111.6 319.9L131.1 319.2L143.7 317.0L197.2 323.6L230.2 325.5L263.6 325.4L316.2 333.0L355.8 330.8L375.7 334.0L381.6 340.6L383.3 371.6L389.8 411.9L393.9 448.2L391.9 468.5L380.7 520.2L377.1 556.3L376.6 594.2L381.8 641.7L390.1 677.0L389.8 716.7L391.9 746.0L396.8 776.4L404.3 803.4L413.9 848.1L413.9 862.1L410.8 872.8L412.9 879.2L407.2 889.6L403.3 893.0L402.3 897.5Z" stroke-width="3"/><path class="bone" data-zone="Tête" d="M444.8 201.9L445.6 207.2L444.1 211.2L439.0 213.6L431.9 215.6L427.6 212.6L426.9 207.8L428.2 202.6L431.4 200.4L436.6 199.4L442.6 200.2L444.6 201.7L444.8 201.9Z"/><path class="bone" data-zone="Tête" d="M460.5 199.5L466.3 199.1L471.1 200.0L473.8 202.8L475.1 207.1L474.6 211.5L472.1 215.0L467.5 215.3L461.9 213.7L457.3 210.7L456.4 208.4L456.3 205.1L458.2 201.2Z"/><path class="bone" data-zone="Tête" d="M436.7 237.0L442.3 238.9L452.7 239.5L460.2 238.4L465.7 236.7L465.8 229.2L469.0 226.3L473.9 225.6L477.8 225.2L483.7 218.3L480.8 213.4L483.7 199.1L483.2 185.6L478.1 173.5L469.2 166.2L458.0 162.3L447.1 162.0L436.1 164.0L429.7 169.8L423.1 176.9L420.7 186.0L419.2 202.1L420.4 211.2L421.3 214.2L418.6 219.3L423.9 225.8L433.1 226.7L436.3 229.0Z"/><path class="bone" data-zone="Tête" d="M445.4 225.0L448.5 226.6L450.6 222.6L452.6 226.5L456.8 225.5L456.1 218.4L452.4 212.6L449.3 212.6L446.1 218.5Z"/><path class="bone" data-zone="Tête" d="M426.7 227.7L430.8 228.4L434.8 239.2L445.4 241.6L456.4 241.5L467.2 239.2L470.8 229.1L475.3 227.7L473.3 245.9L467.8 252.8L458.5 258.9L444.6 259.3L435.6 252.8L429.0 245.8Z"/><path class="bone" data-zone="Corps" d="M442.0 262.1L439.8 265.9L441.9 267.9L444.9 267.6L448.0 270.2L454.1 270.2L455.8 267.2L461.3 269.3L462.1 263.9L459.3 262.4L453.1 263.1L446.6 263.4Z"/><path class="bone" data-zone="Corps" d="M443.3 270.2L439.6 273.8L440.2 276.8L446.2 276.2L448.3 278.9L452.6 279.0L455.9 277.0L459.4 276.9L463.2 274.7L461.9 272.1L457.0 270.8L451.6 272.5L446.3 271.7Z"/><path class="bone" data-zone="Bras G" d="M117.9 275.2L128.5 282.8L126.1 285.0L117.6 277.1Z"/><path class="bone" data-zone="Bras D" d="M785.0 275.2L774.4 282.8L776.8 285.0L785.2 277.1Z"/><path class="bone" data-zone="Corps" d="M445.0 278.8L448.3 281.3L454.2 281.6L457.6 278.9L464.1 281.7L462.6 285.2L458.5 285.4L456.3 287.3L448.4 287.9L444.2 287.4L443.6 285.2L440.8 284.4L438.6 283.9L438.7 280.5L443.0 278.9Z"/><path class="bone" data-zone="Bras G" d="M128.9 283.5L126.2 285.9L128.3 287.6L130.0 287.8L137.3 296.4L139.7 296.0L131.9 287.9L129.1 283.7L129.1 283.7Z"/><path class="bone" data-zone="Bras D" d="M774.0 283.5L776.7 285.9L774.5 287.6L772.9 287.8L765.6 296.4L763.2 296.0L771.0 287.9L773.8 283.7L773.8 283.7Z"/><path class="bone" data-zone="Corps" d="M422.2 292.5L427.3 293.9L431.9 289.4L443.1 292.1L442.3 287.7L437.7 285.6L428.8 286.0Z"/><path class="bone" data-zone="Corps" d="M480.7 292.5L475.6 293.9L471.0 289.4L459.8 292.1L460.5 287.7L465.2 285.6L474.1 286.0Z"/><path class="bone" data-zone="Corps" d="M383.9 287.6L383.7 289.7L385.4 293.1L400.9 292.7L414.8 297.8L437.2 302.2L441.3 300.9L442.2 297.0L439.7 295.1L428.5 296.1L421.2 294.1L414.2 291.8L408.1 289.9L402.1 288.9L393.6 288.3L384.7 288.0Z"/><path class="bone" data-zone="Corps" d="M518.9 287.6L519.1 289.7L517.5 293.1L502.0 292.7L488.1 297.8L465.7 302.2L461.6 300.9L460.6 297.0L463.1 295.1L474.4 296.1L481.6 294.1L488.7 291.8L494.8 289.9L500.8 288.9L509.2 288.3L518.1 288.0Z"/><path class="bone" data-zone="Bras G" d="M103.2 292.1L102.8 294.6L96.8 294.6L96.6 292.8Z"/><path class="bone" data-zone="Bras D" d="M799.7 292.1L800.0 294.6L806.1 294.6L806.2 292.8Z"/><path class="bone" data-zone="Bras G" d="M94.9 292.9L94.5 294.5L86.5 293.9Z"/><path class="bone" data-zone="Bras D" d="M808.0 292.9L808.3 294.5L816.4 293.9Z"/><path class="bone" data-zone="Bras G" d="M105.1 292.1L114.9 291.9L114.0 296.5L105.0 294.9Z"/><path class="bone" data-zone="Bras D" d="M797.8 292.1L788.0 291.9L788.9 296.5L797.9 294.9Z"/><path class="bone" data-zone="Corps" d="M444.5 289.2L456.1 289.3L457.9 291.4L458.0 297.3L456.4 299.2L447.8 298.7L444.2 296.5L444.0 290.9Z"/><path class="bone" data-zone="Bras G" d="M117.5 292.1L131.0 296.5L137.8 297.5L137.1 301.3L127.9 297.6L115.9 296.3Z"/><path class="bone" data-zone="Bras D" d="M785.3 292.1L771.9 296.5L765.1 297.5L765.8 301.3L775.0 297.6L787.0 296.3Z"/><path class="bone" data-zone="Bras G" d="M139.4 298.1L142.8 297.5L145.7 299.8L143.8 303.3L139.9 300.6Z"/><path class="bone" data-zone="Bras D" d="M763.5 298.1L760.0 297.5L757.2 299.8L759.0 303.3L763.0 300.6Z"/><path class="bone" data-zone="Bras G" d="M134.7 301.9L130.7 300.9L114.6 299.3L114.9 304.9L124.5 304.0L134.7 304.7L136.1 303.2L135.9 303.0Z"/><path class="bone" data-zone="Bras D" d="M768.2 301.9L772.1 300.9L788.3 299.3L788.0 304.9L778.4 304.0L768.2 304.7L766.7 303.2L767.0 303.0Z"/><path class="bone" data-zone="Bras G" d="M112.7 300.8L113.0 304.4L94.5 303.7L95.0 302.2Z"/><path class="bone" data-zone="Bras D" d="M790.1 300.8L789.9 304.4L808.3 303.7L807.9 302.2Z"/><path class="bone" data-zone="Bras G" d="M92.5 302.3L92.4 303.9L82.9 303.7Z"/><path class="bone" data-zone="Bras D" d="M810.4 302.3L810.5 303.9L820.0 303.7Z"/><path class="bone" data-zone="Corps" d="M421.5 301.7L430.3 302.9L437.3 305.8L437.2 312.1L427.6 308.1L422.0 303.5L421.8 303.4L421.5 301.7Z"/><path class="bone" data-zone="Corps" d="M481.4 301.7L472.6 302.9L465.6 305.8L465.7 312.1L475.3 308.1L480.9 303.5L481.1 303.4Z"/><path class="bone" data-zone="Bras G" d="M144.3 304.6L146.4 301.9L148.9 302.7L149.0 307.2L146.8 309.5L144.8 307.4Z"/><path class="bone" data-zone="Bras D" d="M758.6 304.6L756.5 301.9L754.0 302.7L753.8 307.2L756.0 309.5L758.1 307.4Z"/><path class="bone" data-zone="Bras G" d="M253.0 299.4L257.3 297.3L262.7 300.5L273.4 302.9L357.8 300.2L371.4 296.9L378.0 297.7L383.1 302.9L382.8 309.3L379.2 315.5L374.1 316.7L366.4 311.9L356.8 311.0L303.8 311.8L273.1 313.8L258.4 319.8L253.2 316.3L253.4 308.5L251.6 305.8L253.7 304.4L252.9 302.2L253.0 299.4Z"/><path class="bone" data-zone="Bras D" d="M649.8 299.4L645.6 297.3L640.1 300.5L629.5 302.9L545.1 300.2L531.4 296.9L524.9 297.7L519.7 302.9L520.1 309.3L523.7 315.5L528.8 316.7L536.5 311.9L546.0 311.0L599.1 311.8L629.8 313.8L644.5 319.8L649.7 316.3L649.4 308.5L651.3 305.8L649.2 304.4L650.0 302.2L649.8 299.4Z"/><path class="bone" data-zone="Bras G" d="M140.4 302.8L142.9 304.9L143.2 308.8L140.8 309.8L138.4 309.3L138.6 304.3Z"/><path class="bone" data-zone="Bras D" d="M762.5 302.8L760.0 304.9L759.7 308.8L762.1 309.8L764.4 309.3L764.3 304.3Z"/><path class="bone" data-zone="Bras G" d="M150.4 303.4L150.5 300.0L152.9 299.4L157.1 300.8L177.8 300.8L200.2 299.0L222.0 301.2L238.1 301.7L245.4 300.5L249.0 299.3L250.7 303.6L246.3 307.7L229.9 305.9L202.1 304.1L179.9 304.0L161.3 307.2L159.1 308.3L173.5 310.0L197.7 309.6L227.0 308.1L240.8 308.1L246.2 308.3L249.6 307.1L250.7 309.3L249.9 318.5L246.1 318.2L242.2 315.7L224.4 313.8L200.2 315.0L174.1 315.2L160.1 313.5L151.1 312.7L148.9 312.8L149.1 310.4L150.7 307.5L150.7 305.5L150.4 303.4Z"/><path class="bone" data-zone="Bras D" d="M752.5 303.4L752.4 300.0L750.0 299.4L745.8 300.8L725.1 300.8L702.6 299.0L680.9 301.2L664.8 301.7L657.4 300.5L653.8 299.3L652.1 303.6L656.5 307.7L673.0 305.9L700.8 304.1L722.9 304.0L741.6 307.2L743.8 308.3L729.4 310.0L705.1 309.6L675.9 308.1L662.1 308.1L656.6 308.3L653.2 307.1L652.1 309.3L652.9 318.5L656.8 318.2L660.6 315.7L678.5 313.8L702.6 315.0L728.8 315.2L742.8 313.5L751.8 312.7L754.0 312.8L753.8 310.4L752.2 307.5L752.2 305.5L752.5 303.4Z"/><path class="bone" data-zone="Bras G" d="M116.4 307.8L117.0 311.6L136.5 308.9L137.6 307.0L135.0 306.2Z"/><path class="bone" data-zone="Bras D" d="M786.5 307.8L785.9 311.6L766.3 308.9L765.2 307.0L767.9 306.2Z"/><path class="bone" data-zone="Corps" d="M371.3 294.2L378.2 294.6L384.9 301.4L386.9 307.9L384.5 313.0L382.4 315.8L386.3 321.4L390.4 328.1L393.4 336.4L395.7 337.9L397.4 336.6L398.3 326.8L401.5 322.6L402.9 319.9L403.8 314.0L407.5 309.3L411.1 301.4L412.9 300.5L406.5 297.4L400.5 300.8L395.4 297.6L392.1 295.6L385.0 294.9L381.0 291.6L379.8 289.1L374.3 290.9Z"/><path class="bone" data-zone="Bras D" d="M531.5 294.2L524.6 294.6L518.0 301.4L516.0 307.9L518.4 313.0L520.5 315.8L516.5 321.4L512.5 328.1L509.5 336.4L507.2 337.9L505.5 336.6L504.6 326.8L501.4 322.6L500.0 319.9L499.1 314.0L495.4 309.3L491.8 301.4L490.0 300.5L496.4 297.4L502.4 300.8L507.5 297.6L510.8 295.6L517.9 294.9L521.8 291.6L523.0 289.1L528.5 290.9Z"/><path class="bone" data-zone="Bras G" d="M114.3 307.9L115.1 312.4L109.1 312.1L107.1 311.5L97.3 312.4L96.8 310.6Z"/><path class="bone" data-zone="Bras D" d="M788.6 307.9L787.7 312.4L793.8 312.1L795.8 311.5L805.6 312.4L806.0 310.6Z"/><path class="bone" data-zone="Bras G" d="M143.4 310.0L146.9 310.3L146.6 312.6L143.7 312.7L140.3 314.6L139.8 311.1L142.9 310.7L142.9 310.7Z"/><path class="bone" data-zone="Bras D" d="M759.5 310.0L756.0 310.3L756.3 312.6L759.1 312.7L762.6 314.6L763.0 311.1L760.0 310.7L760.0 310.7Z"/><path class="bone" data-zone="Bras G" d="M87.9 312.4L94.5 310.9L94.7 313.2L87.6 313.3Z"/><path class="bone" data-zone="Bras D" d="M815.0 312.4L808.3 310.9L808.1 313.2L815.3 313.3Z"/><path class="bone" data-zone="Corps" d="M414.8 300.2L418.6 300.9L416.4 304.8L417.2 309.7L423.6 315.4L434.7 317.6L440.3 318.4L443.0 319.9L442.4 322.9L435.5 324.0L425.2 322.4L421.3 320.7L416.6 318.8L414.7 316.1L412.5 313.4L411.0 309.6L411.1 306.9L412.1 304.3L413.4 302.4Z"/><path class="bone" data-zone="Corps" d="M488.1 300.2L484.2 300.9L486.4 304.8L485.6 309.7L479.3 315.4L468.2 317.6L462.6 318.4L459.9 319.9L460.5 322.9L467.4 324.0L477.6 322.4L481.5 320.7L486.3 318.8L488.2 316.1L490.4 313.4L491.9 309.6L491.8 306.9L490.7 304.3L489.4 302.4Z"/><path class="bone" data-zone="Bras G" d="M119.8 314.9L121.3 317.1L136.1 313.7L137.9 312.2L133.9 310.8Z"/><path class="bone" data-zone="Bras D" d="M783.0 314.9L781.6 317.1L766.7 313.7L765.0 312.2L769.0 310.8Z"/><path class="bone" data-zone="Bras G" d="M99.1 320.8L118.6 314.5L119.5 317.4Z"/><path class="bone" data-zone="Bras D" d="M803.8 320.8L784.3 314.5L783.4 317.4Z"/><path class="bone" data-zone="Corps" d="M407.9 310.8L410.9 312.7L410.0 316.1L409.3 320.9L413.6 325.0L418.6 327.7L423.7 329.4L428.4 330.0L433.2 330.3L437.1 330.3L440.1 330.2L443.1 331.5L443.1 332.5L440.7 334.5L437.0 335.4L430.4 335.5L423.4 334.5L418.3 333.3L414.0 331.5L409.8 329.2L408.5 326.5L406.2 324.0L404.9 321.2L404.5 317.7L404.9 315.3Z"/><path class="bone" data-zone="Corps" d="M494.9 310.8L492.0 312.7L492.9 316.1L493.6 320.9L489.3 325.0L484.2 327.7L479.2 329.4L474.5 330.0L469.6 330.3L465.7 330.3L462.8 330.2L459.8 331.5L459.8 332.5L462.2 334.5L465.9 335.4L472.5 335.5L479.4 334.5L484.6 333.3L488.9 331.5L493.1 329.2L494.4 326.5L496.6 324.0L498.0 321.2L498.4 317.7L497.9 315.3Z"/><path class="bone" data-zone="Corps" d="M402.9 324.2L404.7 327.5L405.1 334.1L406.9 336.8L412.0 339.1L418.0 341.8L422.7 342.8L428.3 343.1L433.4 342.1L438.0 341.7L440.5 342.3L441.2 344.2L440.3 346.4L435.1 349.0L426.7 350.0L419.4 349.3L413.5 347.1L409.5 344.1L405.7 340.7L402.2 337.3L401.1 333.8L400.3 326.0Z"/><path class="bone" data-zone="Corps" d="M500.0 324.2L498.2 327.5L497.8 334.1L496.0 336.8L490.9 339.1L484.9 341.8L480.1 342.8L474.6 343.1L469.4 342.1L464.9 341.7L462.4 342.3L461.7 344.2L462.6 346.4L467.7 349.0L476.2 350.0L483.5 349.3L489.4 347.1L493.4 344.1L497.1 340.7L500.6 337.3L501.8 333.8L502.6 326.0Z"/><path class="bone" data-zone="Corps" d="M439.1 305.7L441.4 303.9L443.8 302.4L444.7 300.8L446.2 300.4L453.1 300.6L456.8 301.0L458.8 302.9L464.4 306.9L464.1 307.9L463.7 310.7L461.8 313.4L458.8 316.2L456.8 319.0L456.5 321.1L456.9 323.2L458.0 325.0L458.7 325.6L457.1 330.8L458.5 334.4L459.5 337.5L459.8 338.2L458.4 341.4L457.7 344.0L458.0 346.1L459.0 347.3L459.3 348.8L458.9 349.8L457.7 352.5L457.5 355.5L458.0 357.8L458.1 359.3L455.9 362.0L454.1 365.5L453.1 369.2L453.3 370.5L454.1 373.5L454.3 375.1L453.8 376.7L452.8 379.0L451.4 382.0L451.0 382.3L449.1 378.6L448.3 376.1L448.4 373.7L448.5 371.6L448.5 369.4L446.8 366.3L445.7 363.4L444.6 360.5L443.9 359.7L443.8 358.8L444.2 357.8L444.1 355.4L443.6 352.3L442.8 349.8L443.3 347.9L444.0 346.2L443.8 344.2L443.6 340.1L442.9 338.5L442.6 337.1L444.2 334.6L444.5 332.7L443.5 327.8L443.2 326.3L443.9 325.6L444.8 321.7L444.0 317.7L442.7 315.4L440.5 311.4Z"/><path class="bone" data-zone="Corps" d="M439.7 352.6L441.7 353.5L441.7 356.6L440.0 358.3L438.4 358.9L431.0 363.1L429.6 363.6L425.5 364.5L421.2 364.2L414.5 364.2L411.6 362.5L407.0 360.1L403.7 357.2L398.2 353.2L398.1 349.9L397.2 345.1L397.9 341.9L398.3 340.2L399.4 339.2L401.0 340.5L400.1 346.0L400.2 350.0L403.1 352.3L407.4 355.3L414.2 357.7L419.0 358.8L423.9 359.9L431.2 358.5Z"/><path class="bone" data-zone="Corps" d="M463.1 352.6L461.2 353.5L461.2 356.6L462.9 358.3L464.5 358.9L471.8 363.1L473.3 363.6L477.4 364.5L481.6 364.2L488.4 364.2L491.3 362.5L495.9 360.1L499.1 357.2L504.7 353.2L504.8 349.9L505.7 345.1L504.9 341.9L504.6 340.2L503.5 339.2L501.9 340.5L502.8 346.0L502.6 350.0L499.7 352.3L495.5 355.3L488.6 357.7L483.9 358.8L479.0 359.9L471.7 358.5Z"/><path class="bone" data-zone="Corps" d="M397.1 367.6L400.8 371.0L405.9 375.2L412.3 378.4L417.8 378.4L425.4 377.7L428.5 379.5L428.7 382.3L425.0 385.8L417.1 387.6L412.0 387.5L406.9 385.9L403.9 383.3L400.1 379.4L396.2 373.7L396.1 370.8Z"/><path class="bone" data-zone="Corps" d="M505.8 367.6L502.0 371.0L496.9 375.2L490.6 378.4L485.1 378.4L477.5 377.7L474.4 379.5L474.1 382.3L477.9 385.8L485.8 387.6L490.9 387.5L496.0 385.9L499.0 383.3L502.8 379.4L506.7 373.7L506.8 370.8Z"/><path class="bone" data-zone="Corps" d="M445.3 377.1L442.7 384.3L449.4 384.6Z"/><path class="bone" data-zone="Corps" d="M453.4 384.4L455.4 377.4L459.8 385.0Z"/><path class="bone" data-zone="Corps" d="M395.4 353.9L397.2 354.5L398.6 355.8L399.4 358.1L399.4 360.9L400.4 364.8L403.5 368.5L407.5 370.4L411.5 371.3L415.6 372.4L420.4 373.0L425.4 372.8L428.0 370.9L431.5 368.8L433.8 366.9L437.5 363.8L440.9 361.8L446.4 372.8L438.2 381.7L431.9 393.5L426.1 403.4L422.6 410.4L414.2 416.1L409.7 418.7L406.7 418.3L404.7 418.4L404.6 422.6L405.9 425.7L405.7 426.3L403.1 425.4L401.8 421.2L401.2 417.9L400.6 415.9L398.8 413.7L396.6 408.8L396.4 403.2L396.2 400.2L395.8 399.2L392.3 391.6L392.7 387.1L393.8 382.4L395.1 380.8L393.0 375.3L392.2 371.8L392.8 367.8L394.1 364.4L394.3 363.7L393.8 356.0Z"/><path class="bone" data-zone="Corps" d="M507.4 353.9L505.6 354.5L504.2 355.8L503.4 358.1L503.5 360.9L502.5 364.8L499.3 368.5L495.3 370.4L491.4 371.3L487.3 372.4L482.4 373.0L477.5 372.8L474.9 370.9L471.3 368.8L469.1 366.9L465.4 363.8L462.0 361.8L456.5 372.8L464.6 381.7L471.0 393.5L476.8 403.4L480.2 410.4L488.7 416.1L493.2 418.7L496.2 418.3L498.2 418.4L498.3 422.6L496.9 425.7L497.2 426.3L499.8 425.4L501.1 421.2L501.6 417.9L502.3 415.9L504.1 413.7L506.2 408.8L506.5 403.2L506.7 400.2L507.1 399.2L510.5 391.6L510.2 387.1L509.1 382.4L507.7 380.8L509.9 375.3L510.6 371.8L510.0 367.8L508.8 364.4L508.6 363.7L509.1 356.0Z"/><path class="bone" data-zone="Corps" d="M397.9 385.0L405.1 389.2L411.4 393.3L417.6 392.9L420.6 393.8L420.2 398.1L415.6 401.2L403.0 400.0L399.1 393.3L396.6 386.6Z"/><path class="bone" data-zone="Corps" d="M505.0 385.0L497.8 389.2L491.5 393.3L485.3 392.9L482.3 393.8L482.6 398.1L487.3 401.2L499.9 400.0L503.8 393.3L506.2 386.6Z"/><path class="bone" data-zone="Corps" d="M442.9 387.8L458.8 387.2L459.2 391.1L460.0 397.1L459.0 397.1L455.5 396.3L447.1 396.0L444.6 396.2L442.9 396.1L442.7 391.5Z"/><path class="bone" data-zone="Corps" d="M442.3 401.2L445.5 398.4L447.6 398.4L451.6 397.9L455.9 398.3L457.9 398.9L458.5 400.1L460.6 403.1L459.8 406.5L459.4 409.0L456.6 409.1L450.3 407.8L443.5 407.6L442.4 408.2L442.7 407.3Z"/><path class="bone" data-zone="Corps" d="M400.3 401.9L405.5 405.3L410.9 406.9L414.8 406.3L415.4 407.3L413.4 410.8L408.0 412.2L403.6 410.9L399.9 407.1L399.4 402.8Z"/><path class="bone" data-zone="Corps" d="M502.6 401.9L497.3 405.3L492.0 406.9L488.1 406.3L487.4 407.3L489.5 410.8L494.9 412.2L499.2 410.9L503.0 407.1L503.4 402.8Z"/><path class="bone" data-zone="Corps" d="M437.7 416.6L439.8 415.9L440.9 415.3L442.7 412.5L448.4 411.4L453.8 411.0L457.3 411.6L460.4 413.4L460.4 415.3L462.3 416.8L465.8 417.0L465.2 418.3L461.9 419.3L460.8 420.0L460.2 421.5L456.6 421.9L447.6 422.1L442.0 421.7L442.1 420.5L440.9 418.9L438.2 418.6Z"/><path class="bone" data-zone="Corps" d="M442.6 436.3L460.0 437.1L460.0 432.4L465.9 431.9L467.9 430.5L467.1 429.6L463.6 427.8L460.0 429.3L460.0 426.3L459.6 424.7L456.1 425.0L447.4 424.9L442.0 425.1L442.6 425.8L440.8 429.2L438.1 429.4L436.5 429.4L435.8 432.4L438.1 433.3L440.5 433.4L441.2 434.3Z"/><path class="bone" data-zone="Corps" d="M460.0 451.8L456.0 451.7L446.2 451.9L441.8 451.6L442.4 450.4L442.1 446.7L441.2 445.6L435.9 445.5L432.3 444.4L434.5 440.8L436.2 440.8L438.3 441.4L441.6 441.2L442.7 439.5L443.1 439.2L449.4 438.4L454.2 438.3L459.5 439.1L462.1 439.7L461.9 440.6L462.4 442.0L465.5 441.0L467.0 441.2L468.8 443.7L466.4 445.9L462.6 445.5L460.4 446.0L460.4 447.4Z"/><path class="bone" data-zone="Corps" d="M460.4 467.9L441.9 468.1L440.9 464.7L439.5 460.5L434.2 460.3L432.7 457.4L434.8 455.9L439.1 456.1L440.4 456.7L441.3 455.1L441.8 454.2L444.4 453.8L448.8 454.0L453.2 454.0L456.1 453.9L458.8 453.8L460.1 454.3L461.2 455.0L461.6 456.6L464.1 456.6L465.8 455.6L468.4 455.3L468.9 458.8L467.7 460.6L464.9 461.0L460.6 460.8Z"/><path class="bone" data-zone="Corps" d="M461.4 474.0L461.2 480.6L455.2 484.2L443.8 482.3L441.0 479.3L440.8 474.0L433.2 473.3L432.5 468.2L437.3 468.8L443.4 469.9L462.6 470.0L466.2 467.8L469.2 470.2L466.6 474.0Z"/><path class="bone" data-zone="Corps" d="M453.1 486.6L448.8 486.3L441.7 484.9L438.6 479.9L436.4 479.9L429.8 472.3L420.6 466.3L408.2 466.2L398.8 471.6L391.8 480.9L393.9 495.8L402.8 503.9L405.0 511.1L405.4 515.6L416.2 520.2L418.6 530.0L418.9 538.1L421.6 548.8L431.1 552.6L438.9 549.6L449.6 543.2L450.3 531.1L437.7 526.2L424.3 512.2L426.0 502.7L431.3 500.2L438.5 510.2L439.8 516.2L446.4 518.5L446.5 522.5L448.7 526.1L450.6 530.0L454.4 523.9L456.1 521.7L456.6 518.2L462.1 514.1L464.2 509.3L465.8 504.2L472.1 500.4L478.1 505.1L475.4 513.5L472.2 522.0L464.6 526.0L454.8 530.6L452.6 531.5L453.4 540.4L457.8 547.1L467.4 552.3L475.1 550.2L482.8 543.1L484.1 534.0L483.2 523.3L487.3 518.5L495.0 515.4L497.1 508.9L500.4 502.0L506.6 499.5L510.2 489.7L509.1 478.6L501.0 470.3L491.5 466.3L481.6 467.2L473.1 473.0L468.3 480.5L464.0 479.8L461.1 483.1Z"/><path class="bone" data-zone="Corps" d="M428.2 531.7L432.5 531.4L438.6 534.8L439.6 539.9L436.6 544.0L430.7 543.4L427.6 534.4Z"/><path class="bone" data-zone="Corps" d="M473.0 531.7L468.7 531.4L462.6 534.8L461.6 539.9L464.6 544.0L470.4 543.4L473.5 534.4Z"/><path class="bone" data-zone="Corps" d="M464.1 533.6L473.1 531.5L474.3 533.8L474.3 541.0L471.2 544.8L465.1 543.5L461.7 540.7L462.5 535.8L464.1 533.6Z"/><path class="bone" data-zone="Jambe D" d="M501.0 525.1L499.9 520.3L496.4 518.4L488.7 521.9L488.0 528.0L487.5 534.5L490.9 536.6L492.2 537.2L495.5 542.3L495.9 547.7L495.2 553.8L495.0 556.5L496.8 561.0L497.3 567.8L497.0 574.9L492.4 606.7L488.5 639.1L482.4 668.3L471.7 687.2L469.4 700.8L476.2 703.4L477.8 696.2L478.2 692.1L492.0 691.5L495.3 696.2L494.9 703.2L501.9 700.8L503.3 691.1L501.3 685.7L498.2 676.9L496.9 651.2L501.9 609.2L509.7 560.0L515.7 546.3L519.0 536.0L514.5 526.7L508.5 527.9Z"/><path class="bone" data-zone="Jambe G" d="M402.0 525.2L403.1 520.4L406.6 518.5L414.4 522.0L415.1 528.1L415.6 534.7L412.2 536.7L410.8 537.3L407.6 542.4L407.1 547.8L407.8 553.9L408.1 556.7L406.2 561.1L405.8 567.9L406.0 575.0L410.7 606.8L414.6 639.3L420.6 668.5L431.3 687.4L433.6 701.0L426.8 703.5L425.3 696.3L424.9 692.2L411.1 691.6L407.8 696.3L408.1 703.3L401.1 701.0L399.8 691.2L401.7 685.8L404.8 677.0L406.2 651.4L401.1 609.3L393.4 560.1L387.3 546.5L384.0 536.2L388.5 526.8L394.5 528.0Z"/><path class="bone" data-zone="Jambe D" d="M491.9 693.3L485.1 693.3L480.4 695.2L479.4 700.6L483.0 707.5L488.0 707.6L493.1 701.7L493.7 696.2L492.9 694.7Z"/><path class="bone" data-zone="Jambe G" d="M411.1 693.5L418.0 693.4L422.6 695.3L423.6 700.7L420.1 707.6L415.0 707.7L409.9 701.8L409.3 696.4L410.2 694.8Z"/><path class="bone" data-zone="Jambe D" d="M499.5 707.5L493.4 705.4L486.9 709.9L483.8 709.0L478.5 705.8L474.2 705.0L469.1 707.2L471.7 715.7L477.7 726.5L471.6 844.7L467.8 860.9L468.7 867.0L473.9 862.9L480.2 863.0L482.7 860.2L481.0 843.9L486.0 769.3L490.7 730.6L497.3 718.6L499.1 711.7L499.5 707.5Z"/><path class="bone" data-zone="Jambe G" d="M403.6 707.6L409.6 705.5L416.1 710.0L419.3 709.1L424.6 706.0L428.8 705.2L434.0 707.4L431.4 715.8L425.3 726.6L431.5 844.8L435.2 861.1L434.3 867.1L429.1 863.0L422.9 863.1L420.4 860.3L422.0 844.0L417.0 769.4L412.4 730.7L405.7 718.8L404.0 711.9L403.6 707.6Z"/><path class="bone" data-zone="Jambe D" d="M502.1 713.4L498.1 720.1L494.2 727.2L494.4 742.8L486.1 830.8L484.8 848.1L484.7 858.9L482.6 863.9L486.5 868.3L488.8 862.5L488.1 855.8L488.4 841.1L490.0 827.1L496.3 769.5L501.5 723.2L503.3 716.8L502.1 713.4Z"/><path class="bone" data-zone="Jambe G" d="M401.9 715.6L405.9 722.2L409.7 729.4L409.6 744.9L417.8 832.9L419.1 850.2L419.3 861.0L421.4 866.1L417.5 870.5L415.1 864.6L415.9 858.0L415.6 843.2L414.0 829.3L407.7 771.7L402.5 725.3L400.7 719.0L401.9 715.6Z"/><path class="bone" data-zone="Jambe G" d="M419.8 870.1L427.3 871.0L434.2 874.0L432.0 867.1L426.7 865.0Z"/><path class="bone" data-zone="Jambe D" d="M477.0 865.2L482.3 867.9L484.1 870.4L482.6 870.7L478.9 871.0L476.2 871.5L472.7 873.2L471.3 875.0L469.5 877.0L469.2 875.2L469.3 870.1L471.6 867.7L473.9 866.4Z"/><path class="bone" data-zone="Jambe G" d="M416.1 872.3L426.4 872.2L434.4 875.6L435.4 879.6L424.9 875.8L414.5 875.6Z"/><path class="bone" data-zone="Jambe D" d="M469.0 879.9L472.2 875.7L477.7 873.4L484.1 872.3L487.4 872.2L488.3 873.8L486.4 875.0L477.6 875.9L474.2 878.6L472.4 880.9L473.2 882.6L472.8 884.9L470.9 885.4L469.2 883.0Z"/><path class="bone" data-zone="Jambe G" d="M415.8 877.0L416.4 877.7L414.2 882.0Z"/><path class="bone" data-zone="Jambe D" d="M487.1 877.9L493.9 883.7L497.0 882.5L491.3 877.9L487.1 877.9Z"/><path class="bone" data-zone="Jambe G" d="M423.3 877.5L426.9 878.4L425.4 884.1L421.3 882.6Z"/><path class="bone" data-zone="Jambe G" d="M418.1 877.4L420.7 878.5L418.9 884.9L416.0 881.8Z"/><path class="bone" data-zone="Jambe D" d="M481.1 877.9L486.5 879.2L492.2 883.6L485.5 885.8L481.1 877.9Z"/><path class="bone" data-zone="Jambe D" d="M494.8 879.2L502.4 882.8L498.5 882.4Z"/><path class="bone" data-zone="Jambe G" d="M431.3 879.5L435.1 880.7L436.3 887.5L427.8 886.1Z"/><path class="bone" data-zone="Jambe D" d="M478.2 878.5L482.8 886.0L478.9 889.7L475.3 885.6Z"/><path class="bone" data-zone="Jambe G" d="M413.1 883.1L415.1 884.2L411.7 891.4L409.2 891.4Z"/><path class="bone" data-zone="Jambe G" d="M416.5 885.4L418.2 886.7L416.2 894.1L415.3 887.9Z"/><path class="bone" data-zone="Jambe G" d="M421.6 885.7L425.1 886.5L421.3 896.6Z"/><path class="bone" data-zone="Jambe D" d="M493.2 886.1L520.4 890.3L513.8 893.0Z"/><path class="bone" data-zone="Jambe G" d="M428.5 887.7L435.7 888.6L432.6 897.3Z"/><path class="bone" data-zone="Jambe D" d="M484.8 888.4L509.6 892.9L503.6 896.1L483.2 892.5Z"/></g>
+          <defs>
+            <mask id="handmask" maskUnits="userSpaceOnUse" x="0" y="0" width="910" height="938"><rect x="0" y="0" width="910" height="938" fill="#fff"/><rect id="mk-G" x="76" y="262" width="78" height="74" fill="#000" visibility="hidden"/><rect id="mk-D" x="756" y="262" width="72" height="74" fill="#000" visibility="hidden"/></mask>
+            <g id="clips"></g>
+          </defs>
+          <g id="armor"></g>
+          <g id="fists"><g class="fistg" id="fist-G" opacity="0"><path class="fo" d="M154.0 298.4L145.6 298.2L133.0 283.8L127.2 282.2L115.1 282.7L109.7 287.5L112.9 288.5L118.7 288.4L117.2 289.6L103.7 290.3L102.0 293.3L104.5 297.0L104.0 300.0L101.7 301.3L102.6 304.1L105.3 305.0L103.6 306.5L101.2 309.1L101.6 312.1L106.1 313.0L106.9 314.9L105.0 317.3L108.3 318.9L111.6 319.9L131.1 319.2L143.7 317.0L154.0 318.3"/><path class="bone" data-zone="Bras G" d="M139.4 298.1L142.8 297.5L145.7 299.8L143.8 303.3Z"/><path class="bone" data-zone="Bras G" d="M144.3 304.6L146.4 301.9L149.0 307.2Z"/><path class="bone" data-zone="Bras G" d="M143.4 310.0L146.9 310.3L146.6 312.6L143.7 312.7L140.3 314.6L139.8 311.1L142.9 310.7Z"/><path class="bone open" data-zone="Bras G" d="M143.4 310.0L142.9 310.7"/><path class="bone" data-zone="Bras G" d="M140.4 302.8L143.2 308.8L138.4 309.3Z"/><path class="bone" data-zone="Bras G" d="M128.9 283.5L126.2 285.9L128.3 287.6L130.0 287.8L137.3 296.4L139.7 296.0L131.9 287.9L129.1 283.7Z"/><path class="bone open" data-zone="Bras G" d="M128.9 283.5L129.1 283.7"/><path class="bone" data-zone="Bras G" d="M117.5 292.1L131.0 296.5L137.8 297.5L137.1 301.3L127.9 297.6L115.9 296.3Z"/><path class="bone" data-zone="Bras G" d="M134.7 301.9L130.7 300.9L114.6 299.3L114.9 304.9L124.5 304.0Z"/><path class="bone" data-zone="Bras G" d="M116.4 307.8L117.0 311.6L136.5 308.9Z"/><path class="bone" data-zone="Bras G" d="M119.8 314.9L136.1 313.7L133.9 310.8Z"/></g><g class="fistg" id="fist-D" transform="matrix(-1 0 0 1 910 -2)" opacity="0"><path class="fo" d="M154.0 298.4L145.6 298.2L133.0 283.8L127.2 282.2L115.1 282.7L109.7 287.5L112.9 288.5L118.7 288.4L117.2 289.6L103.7 290.3L102.0 293.3L104.5 297.0L104.0 300.0L101.7 301.3L102.6 304.1L105.3 305.0L103.6 306.5L101.2 309.1L101.6 312.1L106.1 313.0L106.9 314.9L105.0 317.3L108.3 318.9L111.6 319.9L131.1 319.2L143.7 317.0L154.0 318.3"/><path class="bone" data-zone="Bras D" d="M139.4 298.1L142.8 297.5L145.7 299.8L143.8 303.3Z"/><path class="bone" data-zone="Bras D" d="M144.3 304.6L146.4 301.9L149.0 307.2Z"/><path class="bone" data-zone="Bras D" d="M143.4 310.0L146.9 310.3L146.6 312.6L143.7 312.7L140.3 314.6L139.8 311.1L142.9 310.7Z"/><path class="bone open" data-zone="Bras D" d="M143.4 310.0L142.9 310.7"/><path class="bone" data-zone="Bras D" d="M140.4 302.8L143.2 308.8L138.4 309.3Z"/><path class="bone" data-zone="Bras D" d="M128.9 283.5L126.2 285.9L128.3 287.6L130.0 287.8L137.3 296.4L139.7 296.0L131.9 287.9L129.1 283.7Z"/><path class="bone open" data-zone="Bras D" d="M128.9 283.5L129.1 283.7"/><path class="bone" data-zone="Bras D" d="M117.5 292.1L131.0 296.5L137.8 297.5L137.1 301.3L127.9 297.6L115.9 296.3Z"/><path class="bone" data-zone="Bras D" d="M134.7 301.9L130.7 300.9L114.6 299.3L114.9 304.9L124.5 304.0Z"/><path class="bone" data-zone="Bras D" d="M116.4 307.8L117.0 311.6L136.5 308.9Z"/><path class="bone" data-zone="Bras D" d="M119.8 314.9L136.1 313.7L133.9 310.8Z"/></g></g>
           <g id="zones"></g>
+          <circle class="hand-t" data-hand="Main G" cx="112" cy="300" r="44"/>
+          <circle class="hand-t" data-hand="Main D" cx="796" cy="300" r="44"/>
           <g id="marks"></g>
         </svg>
         <div class="zone-tip" id="zone-tip"></div>
       </div>
+      <div id="tags"></div>
     </div>
 
     <div class="frames">
@@ -433,16 +463,9 @@ dialog::backdrop{background:rgba(47,51,64,.42)}
           <svg class="ttl sm" data-title><text x="0" y="24">INVENTAIRE</text></svg>
           <span class="frame-meta fade" id="capline"></span>
           <div class="bastos fade"><span class="cap">Bastos</span><button type="button" id="b-bastos" title="Gagner ou dépenser des Bastos"><b id="bastos-val">0</b><span>₿</span></button></div>
-          <button class="sq-add fade" type="button" id="b-additem" title="Nouvel objet" aria-label="Nouvel objet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+          <button class="sq-add fade" type="button" id="b-additem" title="Ajouter à l'inventaire" aria-label="Ajouter à l'inventaire"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
         </div>
-        <div class="cards" id="inv"></div>
-      </section>
-      <section class="frame" id="fr-cyb">
-        <div class="frame-head">
-          <svg class="ttl sm" data-title><text x="0" y="24">CYBERNÉTIQUE &amp; MUTATIONS</text></svg>
-          <button class="sq-add fade" type="button" id="b-addcyb" title="Ajouter une cybernétique, mutation ou particularité" aria-label="Ajouter une cybernétique, mutation ou particularité"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
-        </div>
-        <div class="cards" id="cyb"></div>
+        <div class="invscroll"><div class="rows" id="inv"></div></div>
       </section>
     </div>
   </main>
@@ -509,7 +532,7 @@ const RACES={
   trifide:{name:'Photosynthèse',desc:'Soin total 1 fois par partie.'}
 };
 const RACE_LABEL={humain:'Humain',troll:'Troll',elfe:'Elfe',demon:'Démon',droide:'Droïde',trifide:'Trifide'};
-const ZONE_GEO={"Tête":{"el":"polygon","pts":"467.6,256.8 478.0,243.0 483.4,225.8 488.1,225.7 491.5,205.5 488.6,202.4 486.8,205.5 485.3,184.1 478.4,169.0 466.3,160.2 452.5,158.4 434.9,160.3 422.6,171.2 418.0,182.4 416.7,204.0 412.5,205.2 415.4,216.8 415.9,226.6 419.5,226.3 427.4,246.9 435.4,255.4 435.9,262.0 467.1,262.0","a":[522,180],"c":[452,211]},"Corps":{"el":"polygon","pts":"522.5,514.7 507.3,439.4 508.4,406.8 519.5,358.5 521.4,339.1 522.5,338.2 496.6,282.8 498.7,283.7 473.6,271.9 467.0,263.2 467.6,256.8 467.1,262.0 435.9,262.0 436.1,263.5 431.4,270.7 404.7,282.3 378.3,336.9 381.6,340.6 383.3,371.6 389.8,411.9 393.9,448.2 391.9,468.5 380.7,520.2 377.1,556.0 526.6,556.0","a":[400,430],"c":[449,389]},"Bras G":{"el":"polygon","pts":"380.4,283.0 353.9,283.6 320.3,289.4 259.3,293.4 230.5,291.6 205.4,293.9 172.1,298.8 145.6,298.2 134.9,290.2 132.6,283.9 117.2,273.0 114.2,274.8 115.6,279.3 122.8,285.6 122.2,289.4 83.8,293.0 83.5,295.0 105.3,297.4 104.0,300.0 79.5,302.8 80.4,305.0 105.3,305.0 106.0,307.3 83.9,312.0 85.8,314.9 106.8,312.8 106.9,314.9 91.1,322.3 93.7,323.7 111.6,319.9 131.1,319.2 143.7,317.0 197.2,323.6 230.2,325.5 263.6,325.4 316.2,333.0 355.8,330.8 375.7,334.0 378.3,336.9 404.7,282.3 399.3,283.9","a":[262,262],"c":[237,304]},"Bras D":{"el":"polygon","pts":"556.7,333.0 589.8,332.2 636.2,326.2 695.9,325.0 730.1,320.8 751.6,317.0 787.1,320.4 807.6,324.3 810.3,322.5 808.1,320.4 795.7,315.5 796.3,312.2 815.2,316.3 818.0,314.4 816.5,311.9 797.1,307.6 797.7,304.6 821.5,305.2 823.2,303.4 821.6,300.6 796.9,299.5 798.1,298.2 817.7,295.1 815.7,291.4 780.3,290.1 780.0,285.7 788.4,276.3 787.9,273.8 784.4,273.5 771.4,282.6 764.8,292.9 749.5,296.8 679.9,293.6 651.6,294.0 565.3,287.5 543.7,283.4 498.7,283.7 496.6,282.8 522.5,338.2 531.2,331.9","a":[648,262],"c":[652,306]},"Jambe G":{"el":"polygon","pts":"442.1,896.4 435.5,869.8 437.2,863.2 435.9,856.3 436.9,817.3 442.1,764.1 438.3,708.4 438.6,681.8 446.6,628.9 450.0,595.1 448.3,560.5 451.0,560.9 451.0,556.0 377.1,556.0 376.6,594.2 381.8,641.7 390.1,677.0 389.8,716.7 391.9,746.0 396.8,776.4 404.3,803.4 413.9,848.1 413.9,862.1 410.8,872.8 412.9,879.2 407.2,889.6 403.3,893.0 402.3,897.5 441.4,900.9","a":[392,760],"c":[415,731]},"Jambe D":{"el":"polygon","pts":"454.5,601.6 459.0,651.4 465.9,690.8 464.5,719.1 461.0,752.2 461.7,784.5 466.3,819.5 466.7,854.1 465.5,884.1 463.3,896.7 465.9,900.9 496.7,899.7 543.5,892.9 544.6,887.6 513.4,886.8 493.7,872.4 490.6,845.8 500.1,799.8 515.7,705.9 520.6,699.4 519.5,674.7 528.2,572.5 526.6,556.0 451.0,556.0 451.0,560.9 455.2,561.6","a":[512,760],"c":[487,736]}};
+const ZONE_GEO={"Tête":{"el":"polygon","pts":"467.6,256.8 478.0,243.0 483.4,225.8 488.1,225.7 491.5,205.5 488.6,202.4 486.8,205.5 485.3,184.1 478.4,169.0 466.3,160.2 452.5,158.4 434.9,160.3 422.6,171.2 418.0,182.4 416.7,204.0 412.5,205.2 415.4,216.8 415.9,226.6 419.5,226.3 427.4,246.9 435.4,255.4 435.9,262.0 467.1,262.0","clip":"395.4,192.0 393.4,194.2 390.7,202.1 391.2,210.5 393.5,220.1 393.9,227.7 396.1,236.2 402.7,243.9 406.9,254.8 411.4,262.0 414.4,265.1 416.1,271.6 420.9,278.1 427.9,282.5 435.9,284.0 467.1,284.0 475.0,282.5 481.9,278.3 486.8,271.9 488.6,265.5 495.6,256.2 499.0,249.6 501.0,243.2 507.3,236.5 509.8,229.4 513.2,209.2 512.6,199.2 507.8,190.9 507.2,182.6 505.3,175.0 498.4,159.9 491.3,151.2 479.2,142.4 469.1,138.4 450.1,136.5 432.5,138.4 426.0,140.2 420.3,143.8 408.0,154.7 402.2,162.8 397.6,174.0 396.0,181.1","a":[522,180],"c":[452,211]},"Corps":{"el":"polygon","pts":"522.5,514.7 507.3,439.4 508.4,406.8 519.5,358.5 521.4,339.1 522.5,338.2 496.6,282.8 498.7,283.7 473.6,271.9 467.0,263.2 467.6,256.8 467.1,262.0 435.9,262.0 436.1,263.5 431.4,270.7 404.7,282.3 378.3,336.9 381.6,340.6 383.3,371.6 389.8,411.9 393.9,448.2 391.9,468.5 380.7,520.2 377.1,556.0 526.6,556.0","clip":"360.0,348.3 361.6,375.1 368.0,414.9 371.8,448.4 370.1,465.1 358.8,518.0 355.2,553.8 356.2,562.9 360.8,570.8 368.2,576.1 377.1,578.0 526.6,578.0 535.5,576.1 542.9,570.8 547.5,562.9 548.5,553.8 544.4,512.5 529.4,437.6 530.3,409.7 540.9,363.4 542.9,345.3 544.5,338.3 542.4,328.9 520.2,281.3 519.3,276.1 514.9,268.8 508.1,263.8 489.1,254.9 488.6,250.3 484.5,242.8 477.9,237.4 469.7,234.9 461.1,235.8 453.5,240.0 435.9,240.0 426.8,242.0 419.3,247.5 416.1,253.4 395.9,262.1 389.5,266.4 384.9,272.7 358.5,327.3 356.3,335.6 357.5,344.1","a":[400,430],"c":[449,389]},"Bras G":{"el":"polygon","pts":"380.4,283.0 353.9,283.6 320.3,289.4 259.3,293.4 230.5,291.6 205.4,293.9 172.1,298.8 145.6,298.2 134.9,290.2 132.6,283.9 117.2,273.0 114.2,274.8 115.6,279.3 122.8,285.6 122.2,289.4 83.8,293.0 83.5,295.0 105.3,297.4 104.0,300.0 79.5,302.8 80.4,305.0 105.3,305.0 106.0,307.3 83.9,312.0 85.8,314.9 106.8,312.8 106.9,314.9 91.1,322.3 93.7,323.7 111.6,319.9 131.1,319.2 143.7,317.0 197.2,323.6 230.2,325.5 263.6,325.4 316.2,333.0 355.8,330.8 375.7,334.0 378.3,336.9 404.7,282.3 399.3,283.9","clip":"62.0,289.9 58.8,295.3 57.5,303.2 59.1,311.1 65.5,324.1 71.0,330.7 74.4,336.6 80.7,341.7 90.6,345.5 98.3,345.2 114.3,341.8 131.9,341.2 144.3,339.2 195.9,345.6 228.9,347.5 262.1,347.4 313.1,354.8 354.7,352.9 366.1,354.7 368.8,356.7 377.1,358.9 385.6,357.7 392.9,353.3 398.1,346.5 424.5,291.9 426.7,283.7 425.6,275.4 421.5,268.1 414.9,262.8 406.8,260.4 396.6,261.7 379.9,261.0 353.4,261.6 317.7,267.5 259.3,271.4 228.5,269.7 202.2,272.1 170.7,276.8 153.3,276.4 150.1,270.5 145.3,265.9 129.9,255.0 122.2,251.6 113.8,251.3 102.9,255.9 95.9,262.6 93.0,270.0 81.7,271.1 72.6,274.1 65.5,280.7","a":[262,262],"c":[237,304]},"Bras D":{"el":"polygon","pts":"556.7,333.0 589.8,332.2 636.2,326.2 695.9,325.0 730.1,320.8 751.6,317.0 787.1,320.4 807.6,324.3 810.3,322.5 808.1,320.4 795.7,315.5 796.3,312.2 815.2,316.3 818.0,314.4 816.5,311.9 797.1,307.6 797.7,304.6 821.5,305.2 823.2,303.4 821.6,300.6 796.9,299.5 798.1,298.2 817.7,295.1 815.7,291.4 780.3,290.1 780.0,285.7 788.4,276.3 787.9,273.8 784.4,273.5 771.4,282.6 764.8,292.9 749.5,296.8 679.9,293.6 651.6,294.0 565.3,287.5 543.7,283.4 498.7,283.7 496.6,282.8 522.5,338.2 531.2,331.9","clip":"500.9,261.7 496.7,260.8 488.0,262.5 480.8,267.5 476.1,274.9 474.6,283.6 476.7,292.1 502.6,347.5 508.4,355.1 517.0,359.5 526.6,359.8 535.4,356.0 537.9,354.2 557.2,355.0 590.3,354.2 637.8,348.2 696.3,347.0 732.8,342.6 752.5,339.2 784.0,342.2 803.5,345.9 812.0,345.9 822.5,340.8 836.2,326.7 839.5,318.0 844.0,310.6 845.1,301.3 842.3,292.5 837.4,285.6 835.1,280.9 830.4,275.0 823.9,271.0 816.5,269.4 809.3,269.2 805.7,260.9 798.7,254.7 789.8,251.9 778.7,252.3 771.8,255.5 758.8,264.6 751.0,273.7 747.2,274.7 680.9,271.6 652.3,272.0 568.2,265.7 543.6,261.4","a":[648,262],"c":[652,306]},"Jambe G":{"el":"polygon","pts":"442.1,896.4 435.5,869.8 437.2,863.2 435.9,856.3 436.9,817.3 442.1,764.1 438.3,708.4 438.6,681.8 446.6,628.9 450.0,595.1 448.3,560.5 451.0,560.9 451.0,556.0 377.1,556.0 376.6,594.2 381.8,641.7 390.1,677.0 389.8,716.7 391.9,746.0 396.8,776.4 404.3,803.4 413.9,848.1 413.9,862.1 410.8,872.8 412.9,879.2 407.2,889.6 403.3,893.0 402.3,897.5 441.4,900.9","clip":"389.3,876.0 384.4,881.8 381.8,888.2 380.8,892.7 380.8,902.0 384.6,910.5 391.5,916.7 400.4,919.4 439.5,922.8 447.7,922.0 455.0,918.2 460.4,912.0 463.1,904.3 463.8,899.8 463.5,891.1 458.2,869.9 458.8,859.1 458.0,854.5 458.9,818.7 464.0,762.6 460.3,707.8 460.6,683.6 468.4,632.2 471.9,597.3 470.8,570.3 473.0,560.9 473.0,556.0 471.3,547.6 466.6,540.4 459.4,535.7 451.0,534.0 377.1,534.0 368.7,535.6 361.6,540.3 356.9,547.4 355.1,555.7 354.7,596.6 359.9,644.1 368.1,679.5 367.8,716.5 370.0,747.6 375.1,779.9 382.9,808.7 391.9,850.4 391.9,859.0 389.7,866.7 388.8,873.2","a":[392,760],"c":[415,731]},"Jambe D":{"el":"polygon","pts":"454.5,601.6 459.0,651.4 465.9,690.8 464.5,719.1 461.0,752.2 461.7,784.5 466.3,819.5 466.7,854.1 465.5,884.1 463.3,896.7 465.9,900.9 496.7,899.7 543.5,892.9 544.6,887.6 513.4,886.8 493.7,872.4 490.6,845.8 500.1,799.8 515.7,705.9 520.6,699.4 519.5,674.7 528.2,572.5 526.6,556.0 451.0,556.0 451.0,560.9 455.2,561.6","clip":"432.5,601.2 437.1,653.4 443.8,692.2 442.6,717.4 439.0,752.7 439.9,787.4 444.3,821.1 444.7,853.8 443.6,881.8 441.6,892.9 441.7,900.9 444.6,908.3 447.2,912.5 452.3,918.2 459.1,921.8 466.8,922.9 499.9,921.5 546.7,914.7 555.0,911.6 561.5,905.5 565.0,897.4 566.1,892.1 566.0,882.5 561.8,873.9 554.4,867.9 545.2,865.6 520.8,865.0 514.4,860.3 512.9,846.8 521.8,803.4 536.5,714.8 541.6,705.9 542.6,698.4 541.5,675.1 550.1,574.4 548.5,553.9 546.3,546.1 541.4,539.7 534.5,535.5 526.6,534.0 451.0,534.0 442.6,535.7 435.4,540.4 430.7,547.6 429.0,556.0 429.0,560.9 430.3,568.5 433.0,573.0","a":[512,760],"c":[487,736]}};
 const ZONES=Object.keys(ZONE_GEO); // Tête, Corps, Bras G, Bras D, Jambe G, Jambe D (la main fait partie du bras)
 const FRACTURE_STAT={'Tête':'PER','Corps':'RES','Bras G':'DEX','Bras D':'DEX','Jambe G':'FOR','Jambe D':'FOR'};
 const HANDS=['Main G','Main D'];
@@ -573,7 +596,7 @@ function normalize(ch){
     if(isWeapon(it)&&it.equipped&&!it.zone){ if((it.hands||1)===2&&!used.size){ it.zone='Mains'; used.add('Main G');used.add('Main D'); } else { const h=HANDS.find(x=>!used.has(x)); if(h){ it.zone=h; used.add(h);} } }
     it.equipped=handsOf(it).length>0; });
   c.cybernetics.forEach(x=>{ x.bodyPart=ZFIX(x.bodyPart||''); });
-  c.inventory.forEach(it=>{ if(!isWeapon(it)) it.zone=ZFIX(it.zone||''); });
+  c.inventory.forEach(it=>{ if(!isWeapon(it)&&it.zone!=='Combi') it.zone=ZFIX(it.zone||''); });
   return c;
 }
 function serialize(){ return JSON.stringify({format:'aldebaran-adb',kind:'joueur',version:2,savedAt:new Date().toISOString(),character:C},null,2); }
@@ -670,8 +693,8 @@ const IC={
 };
 const svgI=(k,col,sw=1.7)=>`<svg viewBox="0 0 24 24" fill="none" stroke="${col||'currentColor'}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">${IC[k]}</svg>`;
 const ITEM_TYPES={
-  weapon1:{label:'Arme à une main',hint:'Prend une main. Stat, dés bonus, seuil, conso.',ico:'sword',col:'var(--danger)'},
-  weapon2:{label:'Arme à deux mains',hint:'Occupe les deux mains.',ico:'gun',col:'var(--danger)'},
+  weapon1:{label:'Arme 1 main',hint:'Une main, ou les deux si on la dépose sur chaque main.',ico:'sword',col:'var(--danger)'},
+  weapon2:{label:'Arme 2 mains',hint:'Occupe toujours les deux mains.',ico:'gun',col:'var(--danger)'},
   armor:{label:'Armure',hint:'Ajoute des PP, se porte sur une zone.',ico:'armor',col:'var(--c-res)'},
   misc:{label:'Divers',hint:'Objet transporté, pèse sur la charge.',ico:'misc',col:'#a0642b'},
   backpack:{label:'Sac',hint:'Ajoute de la capacité de charge (PC+).',ico:'bag',col:'var(--c-cha)'}
@@ -691,10 +714,12 @@ function buildStatic(){
   $('stats').innerHTML=STATS.map(s=>{const I=STAT_INFO[s];return `<div class="dial stat" id="s-${s}">${dialSVG(I.name.toUpperCase(),I.ico.replace(/<(path|circle)/g,'<$1 class="tr"'),I.col,true)}
      <div class="center-v fade"><input class="big statin" type="text" inputmode="numeric" maxlength="2" id="sc-${s}" aria-label="${I.name}"><div class="big eff" id="sv-${s}"></div>
        <button class="rollb" type="button" data-roll="${s}" title="Lancer ${I.name}" aria-label="Lancer ${I.name}">${svgI('dice')}</button></div>
-     <div class="base fade" title="Valeur de base (avant modificateur)"><input type="text" inputmode="numeric" maxlength="2" id="sb-${s}" aria-label="${I.name} de base"></div></div>`;}).join('');
+     <div class="base fade" id="sb-${s}"></div></div>`;}).join('');
   // zones du corps
   $('zones').innerHTML=ZONES.map(z=>{const g=ZONE_GEO[z];
     return g.el==='ellipse'?`<ellipse class="zone" data-zone="${z}" cx="${g.cx}" cy="${g.cy}" rx="${g.rx}" ry="${g.ry}"/>`:`<polygon class="zone" data-zone="${z}" points="${g.pts}"/>`;}).join('');
+  $('clips').innerHTML=ZONES.map((z,i)=>`<clipPath id="clip-${i}"><polygon points="${ZONE_GEO[z].clip}"/></clipPath>`).join('');
+  ['.vit','#zones','#armor'].forEach(q=>document.querySelector(q).setAttribute('mask','url(#handmask)'));
   document.querySelectorAll('svg.ttl text').forEach(t=>{ const s=t.textContent; t.innerHTML=[...s].map(ch=>`<tspan>${ch===' '?'&#160;':esc(ch)}</tspan>`).join(''); });
 }
 function renderIdentity(){
@@ -713,7 +738,13 @@ function renderDerived(){
   $('bastos-val').textContent=(+C.bastos||0).toLocaleString('fr-FR');
   STATS.forEach(s=>{ const base=C.stats[s]||0, eff=D.r[s], el=$('s-'+s);
     $('sv-'+s).textContent=eff;
-    ['sb-','sc-'].forEach(p=>{ const b=$(p+s); if(document.activeElement!==b) b.value=base; });
+    const b=$('sc-'+s); if(document.activeElement!==b) b.value=base;
+    // bulle : symbole de ce qui modifie la stat
+    const why=[]; if(D.ptRed>0) why.push(['pt',`Tourment −${D.ptRed}`]);
+    if(D.halved.has(s)) why.push(['fr',(C.fractures.filter(z=>FRACTURE_STAT[z]===s).map(z=>'Fracture '+z).join(', ')||'Hypoesthésie')+' ÷ 2']);
+    const fxm=C.effects.filter(e=>e.stat===s&&+e.mod); if(fxm.length) why.push(['fx',fxm.map(e=>`${e.name} ${+e.mod>0?'+':''}${+e.mod}`).join(', ')]);
+    const bub=$('sb-'+s); bub.classList.toggle('n2',why.length>1);
+    bub.innerHTML=why.slice(0,2).map(([k])=>WHY_ICO[k]).join(''); bub.title=`Base ${base} · `+why.map(w=>w[1]).join(' · ');
     el.classList.toggle('mod',eff!==base); el.classList.toggle('malus',eff<base); el.classList.toggle('bonus',eff>base); });
   const R=RACES[C.race];
   renderFx();
@@ -735,80 +766,107 @@ function renderFx(){
   $('fx').innerHTML=rows.join('')+(rows.length===1?`<div class="fx-empty">Aucun autre effet : tout va bien.</div>`:'');
 }
 function renderMarks(){
+  // poings fermés sur les mains occupées
+  HANDS.forEach(h=>{ const s=h==='Main G'?'G':'D', busy=!!handName(h);
+    $('mk-'+s).setAttribute('visibility',busy?'visible':'hidden'); $('fist-'+s).setAttribute('opacity',busy?1:0); });
+  // armures : trait bleu le long de la silhouette sur la zone protégée
+  const d=ARMOR_PATH;
+  const prot=new Set(); C.inventory.forEach(it=>{ if(it.itemType==='armor'&&it.zone) (it.zone==='Combi'?ZONES:[it.zone]).forEach(z=>prot.add(z)); });
+  $('armor').innerHTML=prot.size===ZONES.length?`<path class="armor-line" d="${d}"/>`:[...prot].map(z=>`<path class="armor-line" d="${d}" clip-path="url(#clip-${ZONES.indexOf(z)})"/>`).join('');
   document.querySelectorAll('#zones .zone').forEach(z=>z.classList.toggle('frac',C.fractures.includes(z.dataset.zone)));
-  document.querySelectorAll('.vit .bone').forEach(b=>b.classList.toggle('frac',C.fractures.includes(b.dataset.zone)));
+  document.querySelectorAll('.bone').forEach(b=>b.classList.toggle('frac',C.fractures.includes(b.dataset.zone)));
   const out=[];
-  // pastilles : nombre de vignettes reliées à chaque zone (inventaire en bleu, cyber en violet)
-  [...ZONES,...HANDS].forEach(z=>{ const [x,y]=ZONE_GEO[z]?ZONE_GEO[z].a:HAND_ANCH[z];
-    const ni=C.inventory.filter(i=>linkedZones(i,'inv').includes(z)).length, nc=C.cybernetics.filter(i=>linkedZones(i,'cyb').includes(z)).length;
-    let dx=0; if(ni&&nc) dx=-17;
-    if(ni) out.push(`<g class="badge" transform="translate(${x+dx} ${y})"><circle r="16" style="stroke:var(--link)"/><text style="fill:var(--link)">${ni}</text></g>`);
-    if(nc) out.push(`<g class="badge" transform="translate(${x-dx} ${y})"><circle r="16" style="stroke:var(--link-cyb)"/><text style="fill:var(--link-cyb)">${nc}</text></g>`);
-  });
-  // noms des armes sous les mains
-  [['Main G',118,356],['Main D',792,356]].forEach(([h,x,y])=>{ const n=handName(h); const t=n.length>16?n.slice(0,15)+'…':n; out.push(`<text class="hand-lbl ${n?'':'empty'}" x="${x}" y="${y}">${h==='Main G'?'G':'D'}${n?' · '+esc(t):''}</text>`); });
+  renderTags();
   $('marks').innerHTML=out.join('');
 }
-function linkedZones(card,col){ if(col==='inv') return isWeapon(card)?handsOf(card):(card.zone?[card.zone]:[]); return card.bodyPart?[card.bodyPart]:[]; }
+const ARMOR_PATH='M73.1 294.5L69.9 298.6L69.1 301.3L69.1 304.0L70.6 308.9L73.5 312.9L75.1 317.8L78.9 322.9L80.8 324.1L82.0 327.5L83.7 329.7L91.0 333.9L95.9 334.0L112.9 330.4L131.5 329.7L144.0 327.6L196.6 334.1L229.6 336.0L262.9 335.9L314.7 343.4L355.2 341.3L370.3 343.8L371.3 344.8L372.9 373.3L379.4 413.3L383.4 448.3L381.5 466.9L370.3 519.1L366.6 556.1L366.1 594.0L371.3 642.8L379.6 678.2L379.3 716.6L381.5 747.7L386.4 778.1L394.1 805.9L403.4 849.2L403.4 860.6L400.3 872.9L401.5 878.1L398.9 882.9L394.3 887.6L392.1 895.2L391.9 898.2L392.5 901.1L393.9 903.7L395.9 905.8L398.5 907.2L401.4 907.9L440.5 911.4L443.1 911.3L447.9 909.2L451.0 905.0L452.6 895.9L446.3 869.9L447.7 863.5L446.4 855.4L447.4 817.9L451.1 779.6L451.3 785.9L455.8 820.3L456.2 854.0L455.1 883.0L452.8 897.4L453.3 900.0L457.1 906.5L461.0 910.2L466.3 911.4L497.1 910.2L545.0 903.3L549.6 901.4L552.9 897.5L554.9 889.8L554.7 884.6L552.0 880.1L547.5 877.5L544.9 877.1L517.0 876.4L503.6 866.6L501.2 846.2L510.5 801.5L525.6 710.2L529.0 705.8L530.9 701.4L530.0 674.9L538.7 573.4L532.8 512.6L517.8 438.6L518.9 408.1L529.7 360.8L531.4 344.8L534.5 342.5L557.0 343.5L591.2 342.7L637.0 336.6L697.1 335.4L731.3 331.3L752.0 327.6L785.6 330.8L805.7 334.6L811.0 334.2L818.1 329.5L820.4 325.3L825.9 321.3L828.3 316.6L828.4 313.0L832.4 308.4L833.4 305.9L833.7 303.3L832.3 298.2L829.2 293.2L827.7 292.1L823.3 284.1L818.6 281.3L815.9 280.9L797.9 280.6L798.9 276.7L798.7 274.3L797.3 269.2L795.8 267.0L791.4 263.9L785.3 263.1L780.5 263.8L778.4 264.9L765.4 274.0L762.6 276.9L758.2 283.7L748.4 286.3L680.3 283.1L651.9 283.5L566.7 277.1L543.6 272.9L501.0 273.2L480.4 263.5L478.0 260.4L486.4 249.3L488.0 246.2L491.3 235.7L493.9 234.4L496.1 232.5L497.7 230.0L498.5 227.2L502.0 204.8L500.5 200.2L496.6 195.7L495.8 183.4L494.9 179.7L488.0 164.6L484.6 160.5L470.1 150.4L451.4 148.0L433.8 149.9L430.7 150.7L428.0 152.5L414.1 165.1L408.3 178.4L407.5 181.8L406.6 196.5L403.4 199.9L402.0 205.1L405.0 218.3L405.9 229.8L408.9 234.4L412.1 236.3L417.6 250.7L419.8 254.1L425.2 260.0L425.3 260.8L424.3 262.4L404.9 271.4L398.1 273.3L380.2 272.5L353.6 273.1L319.1 279.0L259.3 282.9L229.6 281.2L203.9 283.5L171.5 288.3L149.2 287.8L143.7 283.6L140.9 277.5L138.6 275.3L123.2 264.4L120.5 263.1L117.6 262.5L114.5 262.9L111.8 264.0L106.7 267.5L105.1 269.7L103.8 275.0L105.0 280.5L80.1 283.1L75.6 286.4L74.1 288.8Z';
+const WHY_ICO={
+  pt:`<svg viewBox="0 0 24 24" style="stroke:var(--c-per)"><path d="M12.80 12.00 L12.94 12.17 L13.04 12.39 L13.09 12.65 L13.08 12.94 L12.99 13.24 L12.82 13.54 L12.58 13.81 L12.27 14.04 L11.89 14.22 L11.46 14.31 L10.99 14.32 L10.50 14.24 L10.02 14.05 L9.56 13.75 L9.14 13.35 L8.79 12.86 L8.53 12.28 L8.38 11.64 L8.35 10.96 L8.46 10.25 L8.70 9.55 L9.08 8.89 L9.60 8.28 L10.25 7.77 L11.00 7.37 L11.84 7.11 L12.74 7.00 L13.68 7.07 L14.61 7.31 L15.51 7.73 L16.34 8.32 L17.06 9.08 L17.65 9.98 L18.08 11.00 L18.31 12.11 L18.35 13.27 L18.16 14.44 L17.76 15.59 L17.14 16.67 L16.32 17.64 L15.31 18.46 L14.15 19.10 L12.86 19.53 L11.49 19.72 L10.08 19.65 L8.67 19.33 L7.33 18.74 L6.08 17.91 L4.99 16.84 L4.09 15.58 L3.43 14.14 L3.03 12.58 L2.91 10.95 L3.09 9.29 L3.58 7.67 L4.37 6.14 L5.44 4.75 L6.76 3.56"/></svg>`,
+  fr:`<svg viewBox="0 0 24 24" style="stroke:var(--danger)"><path d="M5 7a2 2 0 1 1 3-2l3 3-1.5 1.5L6.5 6.5A2 2 0 0 1 5 7zM19 17a2 2 0 1 1-3 2l-3-3 1.5-1.5 3 3a2 2 0 0 1 1.5-.5z"/><path d="M10.5 9.5l1.5 1-1 2 2 1"/></svg>`,
+  fx:`<svg viewBox="0 0 24 24" style="stroke:var(--gold)"><path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z"/></svg>`};
+const ANCH={'Tête':[452,205],'Corps':[452,410],'Combi':[452,470],'Bras G':[255,306],'Bras D':[655,306],'Main G':[126,302],'Main D':[784,302],'Jambe G':[420,720],'Jambe D':[484,720]};
+const TAGCOL={weapon:'var(--ink-strong)',armor:'var(--c-res)',cyb:'var(--c-per)',misc:'#a0642b'};
+function tagList(){
+  const L=[];
+  C.inventory.forEach(it=>{ let z=[]; if(isWeapon(it)) z=handsOf(it); else if(it.zone) z=[it.zone];
+    if(z.length) L.push({col:'inv',it,z,kind:isWeapon(it)?'weapon':it.itemType==='armor'?'armor':'misc'}); });
+  C.cybernetics.forEach(c=>{ if(c.bodyPart) L.push({col:'cyb',it:c,z:[c.bodyPart],kind:'cyb'}); });
+  return L;
+}
+function diceOf(it){ const D=derive(C); return {stat:it.stat,base:D.r[it.stat]||0,bonus:+it.diceBonus||0,total:(D.r[it.stat]||0)+(+it.diceBonus||0)}; }
+function renderTags(){
+  const wrap=$('figwrap'), fig=$('figure'), tags=$('tags'), leads=$('leads');
+  const list=tagList();
+  tags.innerHTML=list.map((t,i)=>{ const d=diceOf(t.it), canRoll=t.it.stat&&(t.kind==='weapon'||t.kind==='cyb');
+    return `<div class="tagp" data-i="${i}" data-id="${t.it.id}" data-col="${t.col}" style="--c:${TAGCOL[t.kind]}" title="${esc(t.it.name)} · ${t.z.map(z=>z==='Combi'?'tout le corps':z).join(' + ')}"><span>${esc(t.it.name||'Sans nom')}</span>${canRoll?`<button type="button" class="tr" data-tagroll title="${d.stat} ${d.base}${d.bonus?` + ${d.bonus}`:''} = ${d.total} dés">${svgI('dice','#fff')}${d.total}</button>`:''}<button type="button" class="tx" data-tagx title="Déséquiper">×</button></div>`; }).join('');
+  leads.innerHTML='';
+  if(getComputedStyle(leads).display==='none') return;
+  const W=wrap.getBoundingClientRect(), Fr=fig.getBoundingClientRect(), sc=Fr.width/910, ox=Fr.left-W.left, oy=Fr.top-W.top;
+  const P=z=>[ox+ANCH[z][0]*sc, oy+ANCH[z][1]*sc];
+  const sideOf=t=>{ const z=t.z[0]; return /G$/.test(z)?'L':/D$/.test(z)?'R':null; };
+  const cnt={L:0,R:0}; list.forEach(t=>{ const s=sideOf(t); if(s) cnt[s]++; });
+  list.forEach(t=>{ t.side=sideOf(t)||(cnt.L<=cnt.R?'L':'R'); if(!sideOf(t)) cnt[t.side]++; t.ay=Math.min(...t.z.map(z=>P(z)[1])); });
+  const lines=[];
+  ['L','R'].forEach(side=>{
+    const S=list.filter(t=>t.side===side).sort((a,b)=>a.ay-b.ay); let last=-1e9;
+    S.forEach(t=>{ const y=Math.max(t.ay,last+34); last=y; const el=tags.querySelector(`.tagp[data-i="${list.indexOf(t)}"]`);
+      el.style.top=y+'px';
+      if(side==='L'){ el.style.right=(W.width-ox+14)+'px'; } else { el.style.left=(ox+Fr.width+14)+'px'; }
+      const ex=side==='L'?ox-14:ox+Fr.width+14, mx=side==='L'?ox+6:ox+Fr.width-6;
+      t.z.forEach(z=>{ const [ax,ay]=P(z); lines.push(`<path d="M${ex} ${y}L${mx} ${y}L${ax} ${ay}" style="stroke:${TAGCOL[t.kind]}"/><circle cx="${ax}" cy="${ay}" r="3.5" style="fill:${TAGCOL[t.kind]}"/>`); });
+    });
+  });
+  leads.setAttribute('viewBox',`0 0 ${W.width} ${W.height}`); leads.innerHTML=lines.join('');
+}
+window.addEventListener('resize',()=>renderTags());
+function linkedZones(card,col){ if(col==='inv'){ if(isWeapon(card)) return handsOf(card); if(card.zone==='Combi') return []; return card.zone?[card.zone]:[]; } return card.bodyPart?[card.bodyPart]:[]; }
 
-function zoneSelect(val,col,allowHands){
-  const zs=ZONES;
-  return `<select class="zsel ${val?'on':''}" data-f="${col==='inv'?'zone':'bodyPart'}" title="Partie du corps reliée"><option value="">Aucune zone</option>${zs.map(z=>`<option ${val===z?'selected':''}>${z}</option>`).join('')}</select>`;
-}
 function statOpts(v){ return `<option value="">–</option>`+STATS.map(s=>`<option value="${s}" ${v===s?'selected':''}>${s}</option>`).join(''); }
-function cardInv(it){
-  const tk=typeKey(it), T=ITEM_TYPES[tk]||ITEM_TYPES.misc, w=isWeapon(it), D=derive(C);
-  let sub='', fields='', summary='', use='';
-  if(w){
-    const hs=handsOf(it);
-    sub=(it.hands||1)===2
-      ?`<button type="button" class="hbtn ${hs.length?'on':''}" data-hand="Mains">${hs.length?'En main (G + D)':'Prendre à deux mains'}</button>`
-      :`<button type="button" class="hbtn ${hs.includes('Main G')?'on':''}" data-hand="Main G">Main G</button><button type="button" class="hbtn ${hs.includes('Main D')?'on':''}" data-hand="Main D">Main D</button>`;
-    fields=`<div class="fl"><label>${svgI('dice','var(--danger)')}Stat</label><select data-f="stat">${statOpts(it.stat)}</select></div>
-      <div class="fl"><label>+ Dés</label><input type="number" data-f="diceBonus" value="${it.diceBonus||0}"></div>
-      <div class="fl"><label>${svgI('trophy','var(--c-for)')}Seuil</label><input type="number" data-f="successThreshold" value="${it.successThreshold||8}"></div>
-      <div class="fl"><label>${svgI('box','#a0642b')}PC −</label><input type="number" data-f="weight" value="${it.weight||0}"></div>
-      <div class="fl"><label>${svgI('burst','var(--danger)')}Conso ₿</label><input data-f="bastosCost" value="${esc(it.bastosCost??'-')}"></div>`;
-    const n=(D.r[it.stat]||0)+(+it.diceBonus||0);
-    summary=`<span>${it.stat?`<b>${n}</b> dés ${it.stat}`:'Pas de stat'}</span><span>seuil <b>${it.successThreshold||8}+</b></span><span>PC <b>−${it.weight||0}</b></span>`;
-    use=it.stat?(hs.length?`<button type="button" class="useb" data-a="use">${svgI('dice','#fff')}Attaquer · ${n} dés</button>`:`<div class="useb off">Prenez l'arme en main pour attaquer</div>`):'';
-  } else {
-    sub=zoneSelect(it.zone,'inv',false);
-    if(it.itemType==='armor'){ fields=`<div class="fl"><label>${svgI('shield','var(--c-res)')}PP</label><input type="number" data-f="armorPoints" value="${it.armorPoints||0}"></div><div class="fl"><label>${svgI('box','#a0642b')}PC −</label><input type="number" data-f="weight" value="${it.weight||0}"></div>`; summary=`<span>PP <b>+${it.armorPoints||0}</b></span><span>PC <b>−${it.weight||0}</b></span>`; }
-    else if(it.itemType==='backpack'){ fields=`<div class="fl"><label>${svgI('box','#a0642b')}PC +</label><input type="number" data-f="weight" value="${it.weight||0}"></div>`; summary=`<span>PC <b>+${it.weight||0}</b></span>`; }
-    else { fields=`<div class="fl"><label>${svgI('box','#a0642b')}PC −</label><input type="number" data-f="weight" value="${it.weight||0}"></div>`; summary=`<span>PC <b>−${it.weight||0}</b></span>`; }
-  }
-  return `<article class="card ${it.collapsed?'collapsed':''}" data-id="${it.id}" data-col="inv">
-    <div class="card-top"><span class="tico" title="${T.label}">${svgI(T.ico,T.col)}</span>
-      <input class="nm" data-f="name" value="${esc(it.name)}" aria-label="Nom de l'objet">
-      <button type="button" class="ib" data-a="fold" title="${it.collapsed?'Déplier':'Replier'}" style="${it.collapsed?'transform:rotate(-90deg)':''}">${svgI('chev')}</button>
-      <button type="button" class="ib" data-a="del" title="Supprimer">${svgI('x')}</button></div>
-    <div class="card-sub"><span class="tag">${T.label}</span>${sub}</div>
-    <div class="summary">${summary}</div>
-    <div class="fields">${fields}</div>
-    <textarea data-f="specialAbility" placeholder="Effets & description" aria-label="Effets et description">${esc(it.specialAbility)}</textarea>
-    ${use}
-  </article>`;
+const GRIP=`<svg viewBox="0 0 12 18" fill="currentColor"><circle cx="3" cy="3" r="1.5"/><circle cx="9" cy="3" r="1.5"/><circle cx="3" cy="9" r="1.5"/><circle cx="9" cy="9" r="1.5"/><circle cx="3" cy="15" r="1.5"/><circle cx="9" cy="15" r="1.5"/></svg>`;
+const cell=(f,v)=>`<input class="c n" data-f="${f}" inputmode="numeric" value="${esc(v)}">`;
+const NA='<span class="c na"></span>';
+function rowInv(it){
+  const tk=typeKey(it), T=ITEM_TYPES[tk]||ITEM_TYPES.misc, w=isWeapon(it), d=diceOf(it), t=it.itemType;
+  let zoneCell=NA;
+  if(w){ const hs=handsOf(it), v=hs.length===2?'Mains':hs[0]||''; zoneCell=`<select class="zc" data-f="hand" aria-label="Main">${[['','—'],...((it.hands||1)===2?[['Mains','Deux mains']]:[['Main G','Main G'],['Main D','Main D'],['Mains','Deux mains']])].map(([k,l])=>`<option value="${k}" ${v===k?'selected':''}>${l}</option>`).join('')}</select>`; }
+  else if(t!=='backpack') zoneCell=`<select class="zc" data-f="zone" aria-label="Zone">${[['','—'],...ZONES.map(z=>[z,z]),...(t==='armor'?[['Combi','Combinaison']]:[])].map(([k,l])=>`<option value="${k}" ${it.zone===k?'selected':''}>${l}</option>`).join('')}</select>`;
+  const inHand=handsOf(it).length>0;
+  return `<div class="row ${inHand?'equipped':''}" data-id="${it.id}" data-col="inv">
+    <button type="button" class="grip" data-drag title="Glisser sur le corps" aria-label="Glisser sur le corps">${GRIP}</button>
+    <span class="tico" data-drag title="${T.label}">${svgI(T.ico,T.col)}</span>
+    <input class="nm" data-f="name" value="${esc(it.name)}" aria-label="Nom" title="${T.label}">
+    ${zoneCell}
+    ${w?`<select class="c" data-f="stat" aria-label="Statistique">${statOpts(it.stat)}</select>`:NA}
+    ${w?cell('diceBonus',it.diceBonus||0):NA}
+    ${w?cell('successThreshold',it.successThreshold||8):NA}
+    ${t!=='backpack'?cell('weight',it.weight||0):NA}
+    ${t==='backpack'?cell('weight',it.weight||0):NA}
+    ${t==='armor'?cell('armorPoints',it.armorPoints||0):NA}
+    ${w?`<input class="c n" data-f="bastosCost" value="${esc(it.bastosCost??'-')}">`:NA}
+    <input class="ds" data-f="specialAbility" value="${esc(it.specialAbility)}" placeholder="Effets & description" aria-label="Effets et description">
+    <div class="acts"><button type="button" class="ib" data-a="del" title="Supprimer">${svgI('x')}</button></div>
+  </div>`;
 }
-function cardCyb(c){
-  const T=CYB_TYPES[c.type]||CYB_TYPES.particularity, D=derive(C), n=(D.r[c.stat]||0)+(+c.diceBonus||0);
-  return `<article class="card cyb ${c.collapsed?'collapsed':''}" data-id="${c.id}" data-col="cyb">
-    <div class="card-top"><span class="tico" title="${T.label}">${svgI(T.ico,T.col)}</span>
-      <input class="nm" data-f="name" value="${esc(c.name)}" aria-label="Nom">
-      <button type="button" class="ib" data-a="fold" title="${c.collapsed?'Déplier':'Replier'}" style="${c.collapsed?'transform:rotate(-90deg)':''}">${svgI('chev')}</button>
-      <button type="button" class="ib" data-a="del" title="Supprimer">${svgI('x')}</button></div>
-    <div class="card-sub"><select class="tsel" data-f="type" aria-label="Type">${Object.entries(CYB_TYPES).map(([k,t])=>`<option value="${k}" ${c.type===k?'selected':''}>${t.label}</option>`).join('')}</select>${zoneSelect(c.bodyPart,'cyb',true)}</div>
-    <div class="summary"><span>${c.stat?`<b>${n}</b> dés ${c.stat} · seuil <b>${c.successThreshold||8}+</b>`:'Effet passif'}</span></div>
-    <div class="fields" style="grid-template-columns:repeat(3,minmax(0,1fr))"><div class="fl"><label>${svgI('dice','var(--danger)')}Stat</label><select data-f="stat">${statOpts(c.stat)}</select></div>
-      <div class="fl"><label>+ Dés</label><input type="number" data-f="diceBonus" value="${c.diceBonus||0}"></div>
-      <div class="fl"><label>${svgI('trophy','var(--c-for)')}Seuil</label><input type="number" data-f="successThreshold" value="${c.successThreshold||8}"></div></div>
-    <textarea data-f="ability" placeholder="Effet & utilisation" aria-label="Effet">${esc(c.ability)}</textarea>
-    ${c.stat?`<button type="button" class="useb" data-a="use">${svgI('dice','#fff')}Utiliser · ${n} dés</button>`:''}
-  </article>`;
+function rowCyb(c){
+  const T=CYB_TYPES[c.type]||CYB_TYPES.particularity, d=diceOf(c);
+  return `<div class="row cyb" data-id="${c.id}" data-col="cyb">
+    <button type="button" class="grip" data-drag title="Glisser sur le corps" aria-label="Glisser sur le corps">${GRIP}</button>
+    <span class="tico" data-drag title="${T.label}">${svgI(T.ico,T.col)}</span>
+    <input class="nm" data-f="name" value="${esc(c.name)}" aria-label="Nom">
+    <select class="zc" data-f="bodyPart" aria-label="Zone">${[['','—'],...ZONES.map(z=>[z,z])].map(([k,l])=>`<option value="${k}" ${c.bodyPart===k?'selected':''}>${l}</option>`).join('')}</select>
+    <select class="c" data-f="stat" aria-label="Statistique">${statOpts(c.stat)}</select>
+    ${cell('diceBonus',c.diceBonus||0)}${cell('successThreshold',c.successThreshold||8)}${NA}${NA}${NA}${NA}
+    <input class="ds" data-f="ability" value="${esc(c.ability)}" placeholder="Effet & utilisation" aria-label="Effet">
+    <div class="acts"><button type="button" class="ib" data-a="del" title="Supprimer">${svgI('x')}</button></div>
+  </div>`;
 }
+const HEAD=`<div class="row head"><span></span><span></span><span class="h l">Nom</span><span class="h l">Zone</span>
+  <span class="h" title="Statistique utilisée">${svgI('dice','var(--danger)')}Stat</span><span class="h" title="Dés ajoutés à la statistique">+ D</span><span class="h" title="Seuil de réussite">${svgI('trophy','var(--c-for)')}</span>
+  <span class="h" title="Charge occupée">${svgI('box','#a0642b')}−</span><span class="h" title="Charge ajoutée (sac)">${svgI('box','#a0642b')}+</span><span class="h" title="Points d'armure">${svgI('shield','var(--c-res)')}</span><span class="h" title="Consommation en Bastos">${svgI('burst','var(--danger)')}₿</span>
+  <span class="h l">Effets &amp; description</span><span></span></div>`;
 function renderCards(){
-  $('inv').innerHTML=C.inventory.length?C.inventory.map(cardInv).join(''):`<div class="empty-frame">Aucun objet. Ajoutez-en un avec « Nouvel objet ».</div>`;
-  $('cyb').innerHTML=C.cybernetics.length?C.cybernetics.map(cardCyb).join(''):`<div class="empty-frame">Aucune cybernétique, mutation ou particularité.</div>`;
+  const rows=[...C.inventory.map(rowInv),...C.cybernetics.map(rowCyb)];
+  $('inv').innerHTML=rows.length?HEAD+rows.join(''):`<div class="empty-frame">L'inventaire est vide. Le « + » ajoute un équipement, une cybernétique ou une mutation.</div>`;
 }
 function renderNotes(){
   $('notes').innerHTML=C.notes.length?C.notes.map(n=>`<div class="note" data-id="${n.id}"><div class="top"><input class="line-in" data-nf="title" value="${esc(n.title)}" aria-label="Titre"><button class="ib" type="button" data-a="delnote" title="Supprimer l'entrée">${svgI('x')}</button></div><textarea data-nf="content" aria-label="Contenu">${esc(n.content)}</textarea></div>`).join('')
@@ -840,7 +898,7 @@ function takeHand(it,target){
   it.zone=target; it.equipped=true;
 }
 const listOf=col=>col==='inv'?C.inventory:C.cybernetics;
-const findCard=el=>{ const card=el.closest('.card'); if(!card) return {}; const list=listOf(card.dataset.col); return {card,list,it:list.find(x=>x.id===+card.dataset.id)}; };
+const findCard=el=>{ const card=el.closest('.row:not(.head)'); if(!card) return {}; const list=listOf(card.dataset.col); return {card,list,it:list.find(x=>x.id===+card.dataset.id)}; };
 
 document.addEventListener('click',e=>{
   const pm=e.target.closest('[data-pm]');
@@ -850,20 +908,24 @@ document.addEventListener('click',e=>{
   const fd=e.target.closest('[data-fxdel]'); if(fd){ C.effects=C.effects.filter(x=>x.id!==+fd.dataset.fxdel); clampPv(); renderDerived(); renderCards(); markDirty(); return; }
   const fe=e.target.closest('[data-fxedit]'); if(fe){ fxDialog(C.effects.find(x=>x.id===+fe.dataset.fxedit)); return; }
   const hl=e.target.closest('[data-heal]'); if(hl){ toggleFracture(hl.dataset.heal); return; }
-  const hb=e.target.closest('[data-hand]');
-  if(hb){ const {it}=findCard(hb); if(!it) return; takeHand(it,hb.dataset.hand); renderCards(); renderDerived(); markDirty(); return; }
-  const a=e.target.closest('.card [data-a]');
-  if(a){ const {list,it}=findCard(a); if(!it) return;
+  const tg=e.target.closest('.tagp');
+  if(tg&&(e.target.closest('[data-tagx]')||e.target.closest('[data-tagroll]'))){ const list=listOf(tg.dataset.col), it=list.find(x=>x.id===+tg.dataset.id); if(!it) return;
+    if(e.target.closest('[data-tagroll]')){ tg.dataset.col==='inv'?useItem(it):rollItem(it.name||'Capacité',it.stat,it.diceBonus,it.successThreshold); return; }
+    if(tg.dataset.col==='cyb') it.bodyPart=''; else { it.zone=''; it.equipped=false; }
+    renderCards(); renderDerived(); markDirty(); return; }
+  const a=e.target.closest('.row [data-a]');
+  if(a){ const {list,it,card}=findCard(a); if(!it) return;
     if(a.dataset.a==='del'){ list.splice(list.indexOf(it),1); }
-    else if(a.dataset.a==='fold'){ it.collapsed=!it.collapsed; }
-    else if(a.dataset.a==='use'){ a.closest('.card').dataset.col==='inv'?useItem(it):rollItem(it.name||'Capacité',it.stat,it.diceBonus,it.successThreshold); return; }
+    else if(a.dataset.a==='unassign'){ if(card.dataset.col==='cyb') it.bodyPart=''; else { it.zone=''; it.equipped=false; } }
+    else if(a.dataset.a==='combi'){ it.zone=it.zone==='Combi'?'':'Combi'; }
+    else if(a.dataset.a==='use'){ card.dataset.col==='inv'?useItem(it):rollItem(it.name||'Capacité',it.stat,it.diceBonus,it.successThreshold); return; }
     renderCards(); renderDerived(); markDirty(); return; }
   const dn=e.target.closest('[data-a="delnote"]'); if(dn){ const id=+dn.closest('.note').dataset.id; C.notes=C.notes.filter(n=>n.id!==id); renderNotes(); markDirty(); return; }
 });
 document.addEventListener('input',e=>{
   const t=e.target;
   if(t.id==='f-name'){ C.name=t.value; markDirty(); return; }
-  if(t.id&&(t.id.startsWith('sb-')||t.id.startsWith('sc-'))){ const v=t.value.replace(/\D/g,''); if(v!==t.value) t.value=v; C.stats[t.id.slice(3)]=Math.min(99,parseInt(v)||0); clampPv(); renderDerived(); markDirty(); return; }
+  if(t.id&&t.id.startsWith('sc-')){ const v=t.value.replace(/\D/g,''); if(v!==t.value) t.value=v; C.stats[t.id.slice(3)]=Math.min(99,parseInt(v)||0); clampPv(); renderDerived(); markDirty(); return; }
   if(t.tagName!=='SELECT'&&t.dataset.f){ const {it}=findCard(t); if(!it) return; const f=t.dataset.f;
     it[f]=['diceBonus','successThreshold','weight','armorPoints'].includes(f)?(parseInt(t.value)||0):t.value;
     if(['weight','armorPoints','name'].includes(f)) renderDerived();
@@ -874,26 +936,78 @@ document.addEventListener('input',e=>{
 document.addEventListener('change',e=>{
   const t=e.target;
   if(t.id==='f-race'){ C.race=t.value; clampPv(); renderDerived(); renderCards(); markDirty(); return; }
-  if(t.closest('.card')&&t.dataset.f){ const {it}=findCard(t); if(!it) return;
-    if(t.tagName==='SELECT') it[t.dataset.f]=t.value;
+  if(t.closest('.row')&&t.dataset.f){ const {it,card}=findCard(t); if(!it) return;
+    if(t.tagName==='SELECT'&&t.dataset.f==='type'&&card.dataset.col==='inv'){ const v=t.value; if(v.startsWith('weapon')){ const was=isWeapon(it); it.itemType='weapon'; it.hands=v==='weapon2'?2:1; if(!was) it.zone=''; if(it.hands===2&&handsOf(it).length) it.zone='Mains'; } else { if(isWeapon(it)) it.zone=''; it.itemType=v; it.hands=null; if(v!=='armor'&&it.zone==='Combi') it.zone=''; } it.equipped=handsOf(it).length>0; }
+    else if(t.dataset.f==='hand'){ const v=t.value; if(!v){ it.zone=''; it.equipped=false; } else assign('inv',it,v==='Mains'?{hand:'Main G',both:true}:{hand:v}); }
+    else if(t.tagName==='SELECT') it[t.dataset.f]=t.value;
     if(t.tagName==='SELECT'||['diceBonus','successThreshold','stat'].includes(t.dataset.f)){ renderCards(); renderDerived(); markDirty(); } }
 });
 // survol : vignette ↔ zone du corps
 let tipZone=null;
 document.addEventListener('mouseover',e=>{
-  const card=e.target.closest('.card');
-  document.querySelectorAll('#zones .zone.hl,.vit .bone.hl').forEach(z=>z.classList.remove('hl'));
-  if(card){ const {it}=findCard(card); if(it) linkedZones(it,card.dataset.col).map(armOf).forEach(z=>{ const el=document.querySelector(`#zones .zone[data-zone="${z}"]`); if(el) el.classList.add('hl'); document.querySelectorAll(`.vit .bone[data-zone="${z}"]`).forEach(b=>b.classList.add('hl')); }); }
+  if(document.body.classList.contains('dragmode')) return;
+  const tp=e.target.closest('.tagp');
+  const card=tp?document.querySelector(`.row[data-id="${tp.dataset.id}"][data-col="${tp.dataset.col}"]`):e.target.closest('.row:not(.head)');
+  document.querySelectorAll('#zones .zone.hl,.bone.hl').forEach(z=>z.classList.remove('hl'));
+  if(card){ const {it}=findCard(card); if(it) (card.dataset.col==='inv'&&it.zone==='Combi'?ZONES:linkedZones(it,card.dataset.col).map(armOf)).forEach(z=>{ const el=document.querySelector(`#zones .zone[data-zone="${z}"]`); if(el) el.classList.add('hl'); document.querySelectorAll(`.bone[data-zone="${z}"]`).forEach(b=>b.classList.add('hl')); }); }
   const zone=e.target.closest('#zones .zone');
-  document.querySelectorAll('.card.hi').forEach(c=>c.classList.remove('hi'));
+  document.querySelectorAll('.row.hi').forEach(c=>c.classList.remove('hi'));
   const tip=$('zone-tip');
-  if(zone){ const z=zone.dataset.zone; document.querySelectorAll(`.vit .bone[data-zone="${z}"]`).forEach(b=>b.classList.add('hl'));
-    document.querySelectorAll('.card').forEach(c=>{ const it=listOf(c.dataset.col).find(x=>x.id===+c.dataset.id); if(it&&linkedZones(it,c.dataset.col).map(armOf).includes(z)) c.classList.add('hi'); });
+  if(zone){ const z=zone.dataset.zone; document.querySelectorAll(`.bone[data-zone="${z}"]`).forEach(b=>b.classList.add('hl'));
+    document.querySelectorAll('.row').forEach(c=>{ const it=listOf(c.dataset.col).find(x=>x.id===+c.dataset.id); if(it&&(linkedZones(it,c.dataset.col).map(armOf).includes(z)||(c.dataset.col==='inv'&&it.zone==='Combi'))) c.classList.add('hi'); });
     const g=ZONE_GEO[z], fig=$('figure'), sc=fig.clientWidth/910;
     tip.textContent=`${z} · ${C.fractures.includes(z)?'clic : soigner':'clic : fracturer'} (${FRACTURE_STAT[z]})`;
     tip.style.left=(g.a[0]*sc)+'px'; tip.style.top=(g.a[1]*sc)+'px'; tip.classList.add('show');
   } else tip.classList.remove('show');
 });
+
+document.addEventListener('click',e=>{ const ef=e.target.closest('.stat .eff'); if(!ef) return; const st=ef.closest('.stat'); st.classList.add('editing'); const i=st.querySelector('.statin'); i.focus(); i.select(); });
+document.addEventListener('focusout',e=>{ if(e.target.classList&&e.target.classList.contains('statin')) e.target.closest('.stat').classList.remove('editing'); });
+/* Glisser-déposer : une ligne de l'inventaire sur une zone du corps ou une main */
+let drag=null;
+function dropTarget(x,y){ const el=document.elementFromPoint(x,y); if(!el) return null;
+  const h=el.closest('.hand-t'); if(h) return {hand:h.dataset.hand,el:h};
+  const z=el.closest('#zones .zone'); if(z) return {zone:z.dataset.zone,el:z}; return null; }
+function assign(col,it,t){
+  if(col==='cyb'){ it.bodyPart=t.zone||armOf(t.hand); toast(`${it.name||'Élément'} → ${it.bodyPart}`); return; }
+  if(isWeapon(it)){
+    let h=t.hand||(t.zone==='Bras G'?'Main G':t.zone==='Bras D'?'Main D':null);
+    if(!h){ toast('Une arme se tient en main : déposez-la sur une main ou un bras.'); return; }
+    let want=(it.hands||1)===2||t.both?'Mains':h;
+    const cur=handsOf(it); if(!t.both&&(it.hands||1)!==2&&cur.length===1&&cur[0]!==h&&!t.fromSel) want='Mains';   // déjà dans l'autre main : à deux mains
+    const need=want==='Mains'?HANDS:[want];
+    C.inventory.forEach(o=>{ if(o!==it&&isWeapon(o)&&handsOf(o).some(x=>need.includes(x))){ o.zone=''; o.equipped=false; toast(`${o.name||'Arme'} rangée`); } });
+    it.zone=want; it.equipped=true; return;
+  }
+  it.zone=t.zone||armOf(t.hand);
+}
+document.addEventListener('pointerdown',e=>{
+  const g=e.target.closest('[data-drag]'); if(!g||e.button>0) return;
+  const {card,it}=findCard(g); if(!it) return; e.preventDefault();
+  const ic=card.querySelector('.tico').innerHTML;
+  const gh=document.createElement('div'); gh.className='ghost-drag'; gh.innerHTML=`${ic}<span>${esc(it.name||'Élément')}</span><small>sur le corps</small>`; document.body.appendChild(gh);
+  drag={card,it,col:card.dataset.col,gh,target:null,x:e.clientX,y:e.clientY,moved:false};
+  card.classList.add('dragging'); document.body.classList.add('dragmode');
+  gh.style.left=e.clientX+'px'; gh.style.top=e.clientY+'px';
+  const loop=()=>{ if(!drag) return; if(drag.y<70) window.scrollBy(0,-14); else if(drag.y>innerHeight-50) window.scrollBy(0,14); requestAnimationFrame(loop); }; requestAnimationFrame(loop);
+});
+document.addEventListener('pointermove',e=>{
+  if(!drag) return; drag.x=e.clientX; drag.y=e.clientY; drag.moved=true;
+  drag.gh.style.left=e.clientX+'px'; drag.gh.style.top=e.clientY+'px';
+  const t=dropTarget(e.clientX,e.clientY);
+  document.querySelectorAll('.drop').forEach(x=>x.classList.remove('drop'));
+  if(t){ let el=t.el; if(isWeapon(drag.it)&&drag.col==='inv'&&t.zone&&/Bras/.test(t.zone)) el=document.querySelector(`.hand-t[data-hand="${t.zone.replace('Bras','Main')}"]`); el.classList.add('drop'); }
+  drag.target=t;
+});
+function endDrag(ok){
+  if(!drag) return; const d=drag; drag=null;
+  d.gh.remove(); d.card.classList.remove('dragging'); document.body.classList.remove('dragmode');
+  document.querySelectorAll('.drop').forEach(x=>x.classList.remove('drop'));
+  if(ok&&d.target){ assign(d.col,d.it,d.target); renderCards(); renderDerived(); markDirty(); }
+}
+document.addEventListener('pointerup',()=>endDrag(true));
+document.addEventListener('pointercancel',()=>endDrag(false));
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') endDrag(false); });
 
 /* Dés : pool de D10, seuil 8 par défaut, « Pas top top » = seuil +1 */
 function rollItem(label,stat,bonus,threshold){
@@ -949,16 +1063,12 @@ function fxDialog(edit){
 }
 $('b-addfx').onclick=()=>fxDialog();
 $('b-additem').onclick=()=>{
-  openDialog(`<h3>Nouvel objet</h3><div class="typegrid">${Object.entries(ITEM_TYPES).map(([k,t])=>`<button type="button" data-newtype="${k}">${svgI(t.ico,t.col)}<b>${t.label}</b><span>${t.hint}</span></button>`).join('')}</div><div class="actions"><button class="btn ghost" type="button" data-close>Annuler</button></div>`);
-  $('dlg-body').querySelectorAll('[data-newtype]').forEach(b=>b.onclick=()=>{ const k=b.dataset.newtype, w=k.startsWith('weapon');
-    C.inventory.unshift({id:Date.now(),name:w?'Nouvelle arme':ITEM_TYPES[k].label==='Sac'?'Sac à dos':'Nouvel objet',itemType:w?'weapon':k,hands:w?(k==='weapon2'?2:1):null,equipped:false,zone:'',stat:w?'DEX':'',diceBonus:0,successThreshold:8,weight:0,armorPoints:0,bastosCost:'-',specialAbility:''});
-    dlg.close(); renderCards(); renderDerived(); markDirty(); const n=$('inv').querySelector('.nm'); if(n){ n.focus(); n.select(); } });
-};
-$('b-addcyb').onclick=()=>{
-  openDialog(`<h3>Ajouter</h3><div class="typegrid">${Object.entries(CYB_TYPES).map(([k,t])=>`<button type="button" data-newtype="${k}">${svgI(t.ico,t.col)}<b>${t.label}</b><span>${t.hint}</span></button>`).join('')}</div><div class="actions"><button class="btn ghost" type="button" data-close>Annuler</button></div>`);
-  $('dlg-body').querySelectorAll('[data-newtype]').forEach(b=>b.onclick=()=>{ const k=b.dataset.newtype;
-    C.cybernetics.unshift({id:Date.now(),name:CYB_TYPES[k].label,bodyPart:'',type:k,ability:'',stat:'',diceBonus:0,successThreshold:8});
-    dlg.close(); renderCards(); renderDerived(); markDirty(); const n=$('cyb').querySelector('.nm'); if(n){ n.focus(); n.select(); } });
+  const grid=(T)=>Object.entries(T).map(([k,t])=>`<button type="button" data-newtype="${k}">${svgI(t.ico,t.col)}<b>${t.label}</b><span>${t.hint}</span></button>`).join('');
+  openDialog(`<h3>Ajouter</h3><div class="subttl">Équipement</div><div class="typegrid">${grid(ITEM_TYPES)}</div><div class="subttl">Cybernétique &amp; mutations</div><div class="typegrid">${grid(CYB_TYPES)}</div><div class="actions"><button class="btn ghost" type="button" data-close>Annuler</button></div>`);
+  $('dlg-body').querySelectorAll('[data-newtype]').forEach(b=>b.onclick=()=>{ const k=b.dataset.newtype; let id=Date.now();
+    if(CYB_TYPES[k]) C.cybernetics.unshift({id,name:CYB_TYPES[k].label,bodyPart:'',type:k,ability:'',stat:'',diceBonus:0,successThreshold:8});
+    else { const w=k.startsWith('weapon'); C.inventory.unshift({id,name:w?'Nouvelle arme':k==='backpack'?'Sac à dos':k==='armor'?'Nouvelle armure':'Nouvel objet',itemType:w?'weapon':k,hands:w?(k==='weapon2'?2:1):null,equipped:false,zone:'',stat:w?'DEX':'',diceBonus:0,successThreshold:8,weight:0,armorPoints:0,bastosCost:'-',specialAbility:''}); }
+    dlg.close(); renderCards(); renderDerived(); markDirty(); const n=document.querySelector(`.row[data-id="${id}"] .nm`); if(n){ n.focus(); n.select(); } });
 };
 $('b-bastos').onclick=()=>{
   openDialog(`<h3>Bastos</h3><p>Solde actuel : <b>${(+C.bastos||0).toLocaleString('fr-FR')} ₿</b></p>
@@ -1015,7 +1125,7 @@ $('b-guide').onclick=()=>{
   openDialog(`<h3>Guide</h3><div class="guide">
     <h4>Le volet de gauche</h4><p>Personnage, Décompte et Statistiques. Dans chaque statistique, le petit cercle contient la valeur de base, le grand cercle le nombre de dés lancés après malus. Cliquez le grand cercle pour lancer : pool de D10, seuil 8+, un 10 est un critique, un 1 un échec critique.</p>
     <h4>Le corps</h4><ul><li>Un clic sur une partie du corps la fracture, un second clic la soigne. Plusieurs fractures peuvent coexister.</li><li>Six zones : Tête → PER / 2, Corps → RES / 2, Bras (main comprise) → DEX / 2, Jambe → FOR / 2. Les os de la zone fracturée passent au rouge. Deux fractures sur la même statistique ne la divisent qu'une fois.</li><li>Les pastilles indiquent combien de vignettes sont reliées à chaque partie (bleu : inventaire, violet : cyber).</li></ul>
-    <h4>Inventaire et Cyber</h4><ul><li>Chaque vignette peut être reliée à une partie du corps. Survolez une vignette pour voir sa zone, survolez une zone pour voir ses vignettes.</li><li>Les armes se prennent en main G ou D. Une arme à deux mains occupe les deux. Seule une arme en main peut attaquer.</li><li>PC = FOR + 3 (+2 Elfe), moins le poids des objets, plus les sacs. PP = armures (+1 Droïde).</li></ul>
+    <h4>Inventaire</h4><ul><li>Le « + » ajoute un équipement (arme, armure, divers, sac) ou une cybernétique, mutation, particularité.</li><li>Pour attribuer une ligne au corps, attrapez-la par sa poignée (ou son icône) et déposez-la sur une zone. Le × sur l'étiquette la retire.</li><li>Une arme se dépose sur une main ; déposée sur l'autre main, elle se tient à deux mains. Une main occupée se ferme en poing.</li><li>Une armure protège sa zone, ou tout le corps avec « Combi » : un trait bleu épais longe alors la silhouette protégée.</li><li>PC = FOR + 3 (+2 Elfe), moins le poids des objets, plus les sacs. PP = armures (+1 Droïde).</li></ul>
     <h4>Effets actifs</h4><p>Liste de tout ce qui agit sur le personnage : son trait racial en tête, fractures, états du jeu, bonus et malus temporaires. Un effet peut modifier une statistique et durer un nombre de tours .</p>
     <h4>Décompte</h4><p>PV max = RES + 5. Sous 5 PV : « Pas top top » (seuil +1). À 0 : étourdissement. À −1 : hors jeu. À 10 PE, le cadran d'éveil s'allume. Tous les 10 PT, chaque statistique perd 1.</p>
     <h4>Sauvegarde</h4><p>Les fiches s'enregistrent en <b>.adb</b>. Ctrl+S réécrit le fichier ouvert, Ctrl+Maj+S en crée un nouveau. La sauvegarde automatique se règle dans les Paramètres.</p>
@@ -1054,7 +1164,7 @@ function playTrace(){
       A(p,[{strokeDasharray:`${L} ${L}`,strokeDashoffset:L,fillOpacity:0},{strokeDasharray:`${L} ${L}`,strokeDashoffset:0,fillOpacity:0,offset:.65},{strokeDasharray:`${L} ${L}`,strokeDashoffset:0,fillOpacity:1}],{delay:t*1000,duration:420}); } });
   qa('.frame-head').forEach((h,i)=>A(h,[{borderBottomColor:'transparent'},{borderBottomColor:'transparent'}],{delay:0,duration:(1.9+i*.2)*1000}));
   qa('.fade').forEach((el,i)=>fade(el,2.1+Math.min(i,50)*.014));
-  qa('.card,.empty-frame,#marks').forEach((el,i)=>fade(el,2.7+i*.06));
+  qa('.row,.empty-frame,.tagp,#leads').forEach((el,i)=>fade(el,2.7+i*.06));
   qa('.band').forEach((b,i)=>wipe(b,3.0+i*.07,.7));
   const end=Math.max(...traceAnims.map(a=>{const t=a.effect.getTiming(); return t.delay+t.duration;}));
   return new Promise(res=>{
@@ -1093,6 +1203,7 @@ D.layers.forEach(l=>{const im=new Image(); im.onload=done; im.src=l.src; l.img=i
   if(l.ord){const o=new Image(); o.onload=done; o.src=l.ord; l.ordImg=o;}});
 function pixels(img,w,h){const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.drawImage(img,0,0);return x.getImageData(0,0,w,h);}
 function prep(){
+  D.layers.forEach(l=>{ if(l.n==='red') return; const c=document.createElement('canvas'); c.width=l.w; c.height=l.h; const x=c.getContext('2d'); x.drawImage(l.img,0,0); x.globalCompositeOperation='source-in'; x.fillStyle='#14161d'; x.fillRect(0,0,l.w,l.h); l.img=c; });
   D.layers.forEach(l=>{ if(!l.ordImg) return;
     l.base=pixels(l.img,l.w,l.h);
     const od=pixels(l.ordImg,l.w,l.h).data, n=l.w*l.h; l.ordv=new Float32Array(n);
@@ -1124,7 +1235,7 @@ function drawLetter(l,p){
   let pt=l.pen[0]; for(const q of l.pen){ if(q[2]<=p) pt=q; else break; }
   const a=Math.min(1,Math.sin(Math.PI*p)*1.5), r=11;
   const g=ctx.createRadialGradient(pt[0],pt[1],0,pt[0],pt[1],r);
-  g.addColorStop(0,`rgba(255,255,255,${a})`); g.addColorStop(.4,`rgba(255,255,255,${a*.4})`); g.addColorStop(1,'rgba(255,255,255,0)');
+  g.addColorStop(0,`rgba(20,22,29,${a})`); g.addColorStop(.4,`rgba(20,22,29,${a*.4})`); g.addColorStop(1,'rgba(20,22,29,0)');
   ctx.fillStyle=g; ctx.beginPath(); ctx.arc(pt[0],pt[1],r,0,Math.PI*2); ctx.fill();
 }
 
@@ -1147,7 +1258,7 @@ function drawFiller(t){
   ctx.beginPath();
   for(let a=A0;a<=A1;a+=0.5) ctx.lineTo(D.cx+rout(a)*Math.cos(rad(a)),D.cy+rout(a)*Math.sin(rad(a)));
   for(let a=A1;a>=A0;a-=0.5) ctx.lineTo(D.cx+rin(a)*Math.cos(rad(a)),D.cy+rin(a)*Math.sin(rad(a)));
-  ctx.closePath(); ctx.fillStyle='#fff'; ctx.fill(); ctx.restore();
+  ctx.closePath(); ctx.fillStyle='#14161d'; ctx.fill(); ctx.restore();
 }
 function drawArc(l,a0,a1,p,filler){
   if(p<=0) return;
@@ -1160,7 +1271,7 @@ function drawArc(l,a0,a1,p,filler){
   const hx=D.cx+D.R*Math.cos(rad(e)), hy=D.cy+D.R*Math.sin(rad(e));
   const a=Math.min(1,Math.sin(Math.PI*p)*1.6);
   const g=ctx.createRadialGradient(hx,hy,0,hx,hy,26);
-  g.addColorStop(0,`rgba(255,255,255,${a})`); g.addColorStop(.35,`rgba(255,255,255,${a*.35})`); g.addColorStop(1,'rgba(255,255,255,0)');
+  g.addColorStop(0,`rgba(20,22,29,${a})`); g.addColorStop(.35,`rgba(20,22,29,${a*.35})`); g.addColorStop(1,'rgba(20,22,29,0)');
   ctx.fillStyle=g; ctx.beginPath(); ctx.arc(hx,hy,26,0,Math.PI*2); ctx.fill();
 }
 
@@ -1178,7 +1289,7 @@ let DEBRIS=[]; const makeDebris=(()=>{let seed=7;const rnd=()=>(seed=(seed*16807
   }
   return out;});
 function drawDebris(t){
-  ctx.fillStyle='#fff';
+  ctx.fillStyle='#14161d';
   for(const d of DEBRIS){
     const k=t-d.born; if(k<0||k>d.life) continue;
     const q=k/d.life, x=d.x+d.vx*k*(1-q*.35), y=d.y+d.vy*k*(1-q*.35);
@@ -1195,7 +1306,7 @@ function drawAsteroid(t){
     ctx.drawImage(l.img,l.x+DIR[0]*w,l.y+DIR[1]*w);
     if(k<0.45){ // onde d'impact
       const q=k/0.45, r=40+q*90;
-      ctx.strokeStyle=`rgba(255,255,255,${(1-q)*0.55})`; ctx.lineWidth=3*(1-q)+0.5;
+      ctx.strokeStyle=`rgba(20,22,29,${(1-q)*0.55})`; ctx.lineWidth=3*(1-q)+0.5;
       ctx.beginPath(); ctx.arc(D.ax,D.ay,r,0,Math.PI*2); ctx.stroke();
     }
     return;
@@ -1220,7 +1331,7 @@ function drawPop(l,p,glint,color){
   if(glint){ // scintillement en croix
     const len=r0*(2.2+3.2*a);
     ctx.save(); ctx.translate(cx,cy); ctx.rotate(rad(45*p));
-    ctx.fillStyle=`rgba(255,255,255,${a*0.9})`;
+    ctx.fillStyle=`rgba(20,22,29,${a*0.9})`;
     for(let k=0;k<2;k++){ctx.beginPath();ctx.moveTo(-len,0);ctx.quadraticCurveTo(0,-1.6,len,0);ctx.quadraticCurveTo(0,1.6,-len,0);ctx.fill();ctx.rotate(Math.PI/2);}
     ctx.restore();
   }
@@ -1237,7 +1348,7 @@ function render(t){
   LETTERS.forEach((n,i)=>drawLetter(L[n],prog(t,LET.start+i*LET.stagger,LET.dur)));
   drawAsteroid(t);
   drawDebris(t);
-  STAR_ORDER.forEach((n,i)=>drawPop(L[n],prog(t,STAR.start+i*STAR.stagger,STAR.dur),true,'rgba(255,255,255,A)'));
+  STAR_ORDER.forEach((n,i)=>drawPop(L[n],prog(t,STAR.start+i*STAR.stagger,STAR.dur),true,'rgba(20,22,29,A)'));
   drawPop(L.red,prog(t,RED.start,RED.dur),false,'rgba(255,40,40,A)');
 }
 
