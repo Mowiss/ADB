@@ -844,7 +844,8 @@ function buildStatic(){
   $('clips').innerHTML=ZONES.map((z,i)=>`<clipPath id="clip-${i}"><polygon points="${ZONE_GEO[z].clip}"/></clipPath>`).join('')
     +ARM_Z.slice(0,4).map((a,i)=>`<clipPath id="clipa-${i}">${ARM_PARTS[a].map(z=>`<polygon points="${ZONE_GEO[z].clip}"/>`).join('')}</clipPath>`).join('')
     +`<clipPath id="clipy-all"><rect x="-50" y="-50" width="1010" height="1090"/></clipPath><clipPath id="clipy-b"><rect x="-50" y="-50" width="1010" height="${ANKLE+50}"/></clipPath><clipPath id="clipy-p"><rect x="-50" y="${ANKLE}" width="1010" height="300"/></clipPath>`;
-  ['.vit','#zones','#armor'].forEach(q=>document.querySelector(q).setAttribute('mask','url(#handmask)'));
+  // le masque des mains ne touche que la silhouette : le cercle et le carré restent entiers
+  document.querySelectorAll('.vit > :not(circle):not(rect), #zones, #armor').forEach(el=>el.setAttribute('mask','url(#handmask)'));
   document.querySelectorAll('svg.ttl text').forEach(t=>{ const s=t.textContent; t.innerHTML=[...s].map(ch=>`<tspan>${ch===' '?'&#160;':esc(ch)}</tspan>`).join(''); });
 }
 function renderIdentity(){
