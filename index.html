@@ -1218,10 +1218,10 @@ function shellBurst(cost){
                 {transform:`translate(calc(-50% + ${dx*.15}px), calc(-50% + ${up*.25}px)) rotate(${rot*.15}deg)`,opacity:1,offset:.08},
                 {transform:`translate(calc(-50% + ${dx*.7}px), calc(-50% + ${up}px)) rotate(${rot*.6}deg)`,opacity:1,offset:.45},
                 {transform:`translate(calc(-50% + ${dx}px), calc(-50% + ${up+140}px)) rotate(${rot}deg)`,opacity:0}],
-               {duration:700+Math.random()*150,delay:i*45,easing:'cubic-bezier(.2,.7,.4,1)',fill:'forwards'}).onfinish=()=>el.remove();
+               {duration:1400+Math.random()*300,delay:i*110,easing:'cubic-bezier(.2,.7,.4,1)',fill:'forwards'}).onfinish=()=>el.remove();
   }
-  src.animate([{transform:'scale(1)'},{transform:'scale(.86)',color:'var(--danger)'},{transform:'scale(1)'}],{duration:320});
-  return 820+n*45;
+  src.animate([{transform:'scale(1)'},{transform:'scale(.86)',color:'var(--danger)'},{transform:'scale(1)'}],{duration:520});
+  return 1450+n*110;
 }
 function useItem(it,fire){
   if(it.bastosCost!==''&&it.bastosCost!=='-'&&!isNaN(it.bastosCost)){ const cost=parseInt(it.bastosCost); if((+C.bastos||0)<cost){ toast('Pas assez de Bastos pour utiliser cet objet.'); return; } C.bastos-=cost; renderDerived(); markDirty(); if(cost>0&&fire&&isWeapon(it)&&handsOf(it).length){ const w=shellBurst(cost); if(w){ setTimeout(()=>rollItem(it.name||'Objet',it.stat,it.diceBonus,it.successThreshold),w); return; } } }
@@ -1456,8 +1456,19 @@ function playTrace(){
       A(p,[{strokeDasharray:`${L} ${L}`,strokeDashoffset:L,fillOpacity:0},{strokeDasharray:`${L} ${L}`,strokeDashoffset:0,fillOpacity:0,offset:.65},{strokeDasharray:`${L} ${L}`,strokeDashoffset:0,fillOpacity:1}],{delay:t*1000,duration:420}); } });
   qa('.frame-head').forEach((h,i)=>A(h,[{borderBottomColor:'transparent'},{borderBottomColor:'transparent'}],{delay:0,duration:(1.9+i*.2)*1000}));
   qa('.fade').forEach((el,i)=>fade(el,2.1+Math.min(i,50)*.014));
-  qa('.row,.empty-frame,.tagp,#leads,.bub').forEach((el,i)=>fade(el,2.7+i*.06));
+  qa('.empty-frame').forEach((el,i)=>fade(el,2.7+i*.06));
   qa('.band').forEach((b,i)=>wipe(b,3.0+i*.07,.7));
+  // le contenu arrive une fois la page dessinée : lignes d'inventaire, poings, armures, étiquettes, bulles
+  const T=4.0;
+  ['G','D'].forEach(k=>{ const mk=$('mk-'+k), fist=$('fist-'+k); if(mk.getAttribute('visibility')!=='visible') return;
+    A(mk,[{visibility:'hidden'},{visibility:'hidden'}],{duration:T*1000+250,fill:'none'});       // main ouverte dessinée pendant le tracé
+    fist.querySelectorAll('path').forEach(p=>{ const L=len(p); A(p,[{strokeDasharray:`${L} ${L}`,strokeDashoffset:L,fillOpacity:0},{strokeDasharray:`${L} ${L}`,strokeDashoffset:0,fillOpacity:1}],{delay:T*1000,duration:450}); });
+    A(fist,[{opacity:0},{opacity:1}],{delay:T*1000,duration:200}); });
+  [...document.querySelectorAll('#armor .armor-line')].forEach(p=>dash(p,T+.1,.8));
+  qa('.row').forEach((el,i)=>fade(el,T+Math.min(i,20)*.04));
+  qa('#leads').forEach(el=>fade(el,T+.35));
+  qa('.tagp').forEach((el,i)=>A(el,[{opacity:0,transform:'translateY(6px)'},{opacity:1,transform:'none'}],{delay:(T+.4+i*.08)*1000,duration:380,easing:'ease-out'}));
+  qa('.bub').forEach((el,i)=>A(el,[{opacity:0,scale:.4},{opacity:1,scale:1}],{delay:(T+.5+i*.08)*1000,duration:420,easing:'cubic-bezier(.3,1.5,.5,1)'}));
   const end=Math.max(...traceAnims.map(a=>{const t=a.effect.getTiming(); return t.delay+t.duration;}));
   return new Promise(res=>{
     const finish=()=>{ traceAnims.forEach(a=>a.finish()); catcher.remove(); res(); };
