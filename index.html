@@ -338,6 +338,28 @@ dialog::backdrop{background:rgba(47,51,64,.42)}
 .typegrid button:hover{border-color:var(--ink)}
 .typegrid button svg{width:22px;height:22px}
 .typegrid b{font-size:13.5px;color:var(--ink-strong)}
+.typegrid .cat-tile{background:var(--ink-strong);border-color:var(--ink-strong)}
+.typegrid .cat-tile b{color:#fff}.typegrid .cat-tile span{color:rgba(255,255,255,.7)}
+.typegrid .cat-tile:hover{border-color:var(--ink-strong);box-shadow:0 0 0 3px rgba(32,34,44,.15)}
+.cat-f{display:flex;flex-wrap:wrap;gap:6px}
+.cat-f button{border:1px solid var(--rule);background:var(--paper);border-radius:999px;padding:5px 11px;font-size:12px;color:var(--ink-soft)}
+.cat-f button.on{background:var(--ink-strong);border-color:var(--ink-strong);color:#fff}
+.cat-list{display:flex;flex-direction:column;gap:6px;max-height:min(52vh,460px);overflow:auto;scrollbar-width:thin;margin:0 -4px;padding:0 4px}
+.cat-it{display:flex;align-items:stretch;border:1px solid var(--rule);border-radius:10px;background:var(--paper)}
+.cat-it:hover{border-color:var(--ink)}
+.cat-add{flex:1;min-width:0;display:flex;gap:10px;align-items:flex-start;text-align:left;background:none;border:0;padding:10px 12px}
+.cat-add svg{width:20px;height:20px;flex:none;margin-top:1px}
+.cat-add .t{display:flex;flex-direction:column;gap:2px;min-width:0}
+.cat-add b{font-size:13.5px;color:var(--ink-strong)}
+.cat-add i{font-style:normal;font-size:11.5px;color:var(--ink-soft)}
+.cat-add em{font-style:normal;font-size:12px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cat-del{flex:none;border:0;border-left:1px solid var(--rule);background:none;color:var(--ink-soft);font-size:18px;padding:0 14px;border-radius:0 10px 10px 0}
+.cat-del:hover{color:var(--danger)}
+.cat-del.sure{font-size:12px;color:#fff;background:var(--danger)}
+.fold{display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow:auto}
+.fold button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;border:1px solid var(--rule);background:var(--paper);border-radius:10px;padding:10px 12px;text-align:left}
+.fold button:hover{border-color:var(--ink)}
+.fold b{font-size:14px;color:var(--ink-strong)}.fold span{font-size:12px;color:var(--ink-soft)}
 .typegrid span{font-size:11.5px;color:var(--ink-soft);line-height:1.35}
 .dice{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;padding:14px;border:1px solid var(--faint);border-radius:12px}
 .die{width:46px;height:46px;border-radius:10px;border:1.5px solid var(--rule);display:grid;place-items:center;font-family:var(--f-title);font-size:22px;color:var(--ink-soft);font-variant-numeric:tabular-nums;animation:pop .35s both}
@@ -426,13 +448,14 @@ dialog::backdrop{background:rgba(47,51,64,.42)}
       <button class="tool icon" id="b-savemenu" type="button" aria-haspopup="menu" aria-expanded="false" title="Sauvegarde"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3M8 21v-7h8v7"/></svg><i class="sdot" id="sdot"></i></button>
       <div class="menu-pop" role="menu" hidden>
         <button class="mi" id="b-new" type="button" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6v18h12V7z"/><path d="M14 3v4h4M12 11v6M9 14h6"/></svg><span>Nouvelle fiche</span></button>
-        <button class="mi" id="b-open" type="button" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5h6l2 2h8v3"/><path d="M3 7v12h15l3-9H6l-3 9"/></svg><span>Ouvrir…</span></button>
+        <button class="mi" id="b-open" type="button" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5h6l2 2h8v3"/><path d="M3 7v12h15l3-9H6l-3 9"/></svg><span>Ouvrir un dossier…</span></button>
         <div class="msep"></div>
         <button class="mi" id="b-save" type="button" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3M8 21v-7h8v7"/></svg><span>Enregistrer</span><kbd>Ctrl+S</kbd></button>
-        <button class="mi" id="b-saveas" type="button" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13 21H5V3h11l3 3v5"/><path d="M8 3v5h7V3"/><path d="M15 20l5-5 2 2-5 5h-2z"/></svg><span>Enregistrer sous…</span><kbd>Ctrl+Maj+S</kbd></button>
+        <button class="mi" id="b-saveas" type="button" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13 21H5V3h11l3 3v5"/><path d="M8 3v5h7V3"/><path d="M15 20l5-5 2 2-5 5h-2z"/></svg><span>Enregistrer dans un dossier…</span><kbd>Ctrl+Maj+S</kbd></button>
         <div class="msep"></div>
         <div class="mstate" id="savestate"><i></i><span>Pas encore enregistré</span></div>
         <div class="mstate sub" id="autostate"></div>
+        <div class="mstate sub" id="dirstate"></div>
       </div>
     </div>
     <button class="tool icon" id="b-guide" type="button" title="Guide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 0 1 5 0c0 1.8-2.5 2-2.5 4M12 17h.01"/></svg></button>
@@ -527,7 +550,7 @@ dialog::backdrop{background:rgba(47,51,64,.42)}
 
 <dialog id="dlg"><div class="dlg" id="dlg-body"></div></dialog>
 <div class="toast" id="toast"></div>
-<input type="file" id="file-open" accept=".adb,.json" hidden>
+<input type="file" id="file-open" accept=".adb,.adbc,.json" multiple hidden>
 <input type="file" id="file-photo" accept="image/*" hidden>
 
 <script>
@@ -610,7 +633,7 @@ const LS_SHEET='aldebaran.joueur.fiche', LS_PREF='aldebaran.joueur.prefs';
 const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v);return true}catch(e){return false}}};
 let prefs={autosave:60};
 try{Object.assign(prefs,JSON.parse(ls.get(LS_PREF)||'{}'))}catch(e){}
-let C=blankCharacter(), fileHandle=null, fileName=null, dirty=false, lastSaved=null;
+let C=blankCharacter(), fileName=null, dirty=false, lastSaved=null;
 
 function normalize(ch){
   const c=Object.assign(blankCharacter(),ch||{});
@@ -640,52 +663,114 @@ function serialize(){ return JSON.stringify({format:'aldebaran-adb',kind:'joueur
 function fileBase(){ return (C.name||'personnage').trim().replace(/[^\p{L}\p{N}_-]+/gu,'_')||'personnage'; }
 const Store={ // point d'entrée unique : Firebase prendra le relais ici
   saveLocal(){ return ls.set(LS_SHEET,serialize()); },
-  loadLocal(){ try{const d=JSON.parse(ls.get(LS_SHEET)||'null'); return d?normalize(d.character||d):null;}catch(e){return null;} }
+  loadLocal(){ try{const d=JSON.parse(ls.get(LS_SHEET)||'null'); return d?normalize(d.character||d):null;}catch(e){return null;} },
+  saveCat(){ return ls.set(LS_CAT,catSerialize()); },
+  loadCat(){ try{ const d=JSON.parse(ls.get(LS_CAT)||'null'); return d&&Array.isArray(d.items)?d.items:[]; }catch(e){ return []; } }
 };
-function markDirty(){ dirty=true; updateSaveState(); }
+function markDirty(){ dirty=true; syncCat(); updateSaveState(); }
 function updateSaveState(){
   const el=$('savestate'); el.classList.toggle('dirty',dirty); $('sdot').classList.toggle('dirty',dirty);
   $('sdot').title=dirty?'Modifications non enregistrées':'À jour';
   $('autostate').textContent=prefs.autosave>0?`Sauvegarde auto : ${prefs.autosave==60?'chaque minute':prefs.autosave<60?'toutes les '+prefs.autosave+' s':'toutes les '+prefs.autosave/60+' min'}`:'Sauvegarde auto désactivée';
   const t=lastSaved?lastSaved.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):null;
   el.querySelector('span').textContent= dirty?'Modifié':(t?`Enregistré à ${t}`:'Pas encore enregistré');
+  $('dirstate').textContent=dirHandle?`Dossier : ${dirHandle.name}${fileName?' / '+fileName:''}`:(canDir()?'Aucun dossier choisi':'');
 }
-async function writeHandle(h){ const w=await h.createWritable(); await w.write(serialize()); await w.close(); }
-async function save(){ if(fileHandle){ try{ await writeHandle(fileHandle); afterSave(); return; }catch(e){} } return saveAs(); }
+/* ---------- Dossier de sauvegarde : un fichier .adb par fiche + un catalogue commun ---------- */
+const CAT_FILE='catalogue.adbc', LS_CAT='aldebaran.catalogue', LS_FILE='aldebaran.joueur.fichier';
+let dirHandle=null;
+const idb={ op(mode,fn){ return new Promise((res,rej)=>{ let r; try{ r=indexedDB.open('aldebaran',1); }catch(e){ rej(e); return; }
+    r.onupgradeneeded=()=>r.result.createObjectStore('kv');
+    r.onsuccess=()=>{ try{ const tx=r.result.transaction('kv',mode), q=fn(tx.objectStore('kv')); tx.oncomplete=()=>res(q&&q.result); tx.onerror=()=>rej(tx.error); }catch(e){ rej(e); } };
+    r.onerror=()=>rej(r.error); }); },
+  get(k){ return this.op('readonly',st=>st.get(k)).catch(()=>null); },
+  set(k,v){ return this.op('readwrite',st=>st.put(v,k)).catch(()=>null); } };
+const canDir=()=>!!window.showDirectoryPicker;
+async function dirOK(ask){ if(!dirHandle) return false; try{ const o={mode:'readwrite'};
+  if(await dirHandle.queryPermission(o)==='granted') return true; return ask?(await dirHandle.requestPermission(o))==='granted':false; }catch(e){ return false; } }
+async function readJSON(dir,name){ try{ const f=await (await dir.getFileHandle(name)).getFile(); return JSON.parse(await f.text()); }catch(e){ return null; } }
+async function writeText(dir,name,txt){ const h=await dir.getFileHandle(name,{create:true}), w=await h.createWritable(); await w.write(txt); await w.close(); }
+async function exists(dir,name){ try{ await dir.getFileHandle(name); return true; }catch(e){ return false; } }
+async function freeName(dir){ const b=fileBase(); let n=b+'.adb', i=2; while(await exists(dir,n)) n=`${b}_${i++}.adb`; return n; }
+async function writeFolder(){
+  if(!fileName||!fileName.endsWith('.adb')) fileName=await freeName(dirHandle);
+  await writeText(dirHandle,fileName,serialize());
+  await syncCatFolder();
+  ls.set(LS_FILE,fileName);
+}
+async function syncCatFolder(){ const d=await readJSON(dirHandle,CAT_FILE); if(d&&Array.isArray(d.items)) mergeCat(d.items); await writeText(dirHandle,CAT_FILE,catSerialize()); }
+async function useDir(h){ dirHandle=h; await idb.set('dir',h); updateSaveState(); }
+async function save(){
+  if(dirHandle&&await dirOK(true)){ try{ await writeFolder(); afterSave(); return; }catch(e){ toast("Impossible d'écrire dans le dossier."); return; } }
+  return saveAs();
+}
 async function saveAs(){
-  const name=fileBase()+'.adb';
-  if(window.showSaveFilePicker){
-    try{ const h=await showSaveFilePicker({suggestedName:name,types:[{description:'Fiche Aldebaran',accept:{'application/json':['.adb']}}]});
-      await writeHandle(h); fileHandle=h; fileName=h.name; afterSave(); return; }
+  if(canDir()){
+    try{ const h=await showDirectoryPicker({id:'aldebaran',mode:'readwrite'}); await useDir(h); fileName=null; await writeFolder(); afterSave(); toast(`Fiche enregistrée dans « ${h.name} »`); return; }
     catch(e){ if(e&&e.name==='AbortError') return; }
   }
+  // navigateur sans accès aux dossiers : on télécharge la fiche, le catalogue reste dans le navigateur
+  const name=fileBase()+'.adb';
   try{ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([serialize()],{type:'application/json'})); a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),2000); fileName=name; afterSave(); }
   catch(e){ toast("Le téléchargement est bloqué ici. La fiche reste sauvegardée dans ce navigateur."); }
 }
-function afterSave(){ Store.saveLocal(); dirty=false; lastSaved=new Date(); updateSaveState(); toast('Fiche enregistrée'); }
+function afterSave(){ Store.saveLocal(); Store.saveCat(); dirty=false; lastSaved=new Date(); updateSaveState(); toast('Fiche enregistrée'); }
 async function openFile(){
-  if(window.showOpenFilePicker){
-    try{ const [h]=await showOpenFilePicker({types:[{description:'Fiche Aldebaran',accept:{'application/json':['.adb','.json']}}]});
-      const f=await h.getFile(); loadText(await f.text(),f.name); fileHandle=h; return; }
+  if(canDir()){
+    try{ const h=await showDirectoryPicker({id:'aldebaran',mode:'readwrite'}); await useDir(h);
+      const d=await readJSON(h,CAT_FILE); if(d&&Array.isArray(d.items)){ mergeCat(d.items); Store.saveCat(); }
+      return folderDialog(); }
     catch(e){ if(e&&e.name==='AbortError') return; }
   }
   $('file-open').click();
 }
-function loadText(txt,name){
-  try{ const d=JSON.parse(txt); C=normalize(d.character||d); fileHandle=null; fileName=name; dirty=false; lastSaved=new Date();
+async function folderDialog(){
+  const L=[]; try{ for await (const [n,h] of dirHandle.entries()){ if(h.kind==='file'&&n.toLowerCase().endsWith('.adb')){ try{ const d=JSON.parse(await (await h.getFile()).text()), c=d.character||d; L.push({n,name:c.name||n,race:RACE_LABEL[c.race]||'',lvl:c.level}); }catch(e){} } } }catch(e){}
+  L.sort((a,b)=>a.name.localeCompare(b.name,'fr'));
+  const nCat=CAT.filter(x=>!x.del).length;
+  openDialog(`<h3>${esc(dirHandle.name)}</h3><p class="meta" style="text-align:left;margin:0">${L.length} fiche${L.length>1?'s':''} · catalogue de ${nCat} objet${nCat>1?'s':''}</p>
+    <div class="fold">${L.map(f=>`<button type="button" data-fiche="${esc(f.n)}"><b>${esc(f.name)}</b><span>${esc(f.race)}${f.n!==f.name+'.adb'?` · ${esc(f.n)}`:''}</span></button>`).join('')||'<p class="meta">Aucune fiche dans ce dossier pour l\'instant.</p>'}</div>
+    <div class="actions"><button class="btn ghost" type="button" data-close>Fermer</button><button class="btn ghost" type="button" id="fold-cur">Y enregistrer la fiche actuelle</button><button class="btn" type="button" id="fold-new">Nouvelle fiche ici</button></div>`);
+  $('dlg-body').querySelectorAll('[data-fiche]').forEach(b=>b.onclick=async()=>{ const n=b.dataset.fiche;
+    try{ const f=await (await dirHandle.getFileHandle(n)).getFile(); loadText(await f.text(),n,true); dlg.close(); }catch(e){ toast('Lecture impossible.'); } });
+  $('fold-new').onclick=()=>{ dlg.close(); newSheet(); };
+  $('fold-cur').onclick=async()=>{ fileName=null; try{ await writeFolder(); afterSave(); dlg.close(); }catch(e){ toast("Impossible d'écrire dans le dossier."); } };
+}
+function loadText(txt,name,inFolder){
+  try{ const d=JSON.parse(txt);
+    if(d.format==='aldebaran-catalogue'){ mergeCat(d.items||[]); Store.saveCat(); toast('Catalogue importé'); return; }
+    C=normalize(d.character||d); fileName=name; if(!inFolder){ dirHandle=null; idb.set('dir',null); }
+    dirty=false; lastSaved=new Date(); ls.set(LS_FILE,name); syncCat();
     Store.saveLocal(); renderAll(); updateSaveState(); toast(`« ${C.name||name} » ouvert`); }
   catch(e){ toast("Ce fichier n'est pas une fiche Aldebaran lisible."); }
 }
+function newSheet(){ C=blankCharacter(); fileName=null; lastSaved=null; dirty=false; ls.set(LS_FILE,''); Store.saveLocal(); renderAll(); updateSaveState(); playTrace(); }
+
+/* ---------- Catalogue : chaque objet créé y est enregistré ---------- */
+let CAT=[];
+const CAT_SKIP={inv:['id','cid','zone','equipped'],cyb:['id','cid','bodyPart']};
+const catData=(it,col)=>{ const o={}; Object.keys(it).forEach(k=>{ if(!CAT_SKIP[col].includes(k)) o[k]=it[k]; }); return o; };
+const newCid=()=>'o'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+function syncCat(){ let ch=false;
+  [['inv',C.inventory],['cyb',C.cybernetics]].forEach(([col,L])=>L.forEach(it=>{
+    if(!it.cid) it.cid=newCid();
+    const e=CAT.find(x=>x.cid===it.cid), d=catData(it,col);
+    if(!e){ CAT.push({cid:it.cid,col,data:d,at:Date.now()}); ch=true; }
+    else if(!e.del&&JSON.stringify(e.data)!==JSON.stringify(d)){ e.data=d; e.at=Date.now(); ch=true; } }));
+  if(ch) catDirty(); }
+function mergeCat(items){ items.forEach(x=>{ if(!x||!x.cid) return; const e=CAT.find(y=>y.cid===x.cid); if(!e) CAT.push(x); else if((x.at||0)>(e.at||0)) Object.assign(e,x); }); }
+function catSerialize(){ return JSON.stringify({format:'aldebaran-catalogue',version:1,savedAt:new Date().toISOString(),items:CAT},null,2); }
+let catT=null; function catDirty(){ clearTimeout(catT); catT=setTimeout(()=>Store.saveCat(),800); }
 let autoTimer=null;
 function setupAutosave(){
   clearInterval(autoTimer);
   if(prefs.autosave>0) autoTimer=setInterval(async()=>{
-    if(!dirty) return; Store.saveLocal();
-    if(fileHandle){ try{ await writeHandle(fileHandle); }catch(e){} }
+    if(!dirty) return; Store.saveLocal(); Store.saveCat();
+    if(dirHandle&&await dirOK(false)){ try{ await writeFolder(); }catch(e){} }
     dirty=false; lastSaved=new Date(); updateSaveState();
   },prefs.autosave*1000);
 }
-window.addEventListener('beforeunload',()=>{ if(dirty) Store.saveLocal(); });
+window.addEventListener('beforeunload',()=>{ if(dirty) Store.saveLocal(); Store.saveCat(); });
 
 /* =========================================================
    RENDU
@@ -711,6 +796,8 @@ const COUNTERS=[
   {k:'pe',label:'Points d\'Éveil',col:'var(--c-dex)',ico:'<path class="tr" d="M12 5a3 3 0 0 0-5.6 1.4A3 3 0 0 0 4 10.5a3 3 0 0 0 .8 4.8A3 3 0 0 0 7.5 19.5 3 3 0 0 0 12 18z"/><path class="tr" d="M12 5a3 3 0 0 1 5.6 1.4A3 3 0 0 1 20 10.5a3 3 0 0 1-.8 4.8 3 3 0 0 1-2.7 4.2A3 3 0 0 1 12 18z"/><path class="tr" d="M12 5v13M8 9.5c1.2 0 2 .6 2 1.6M16 9.5c-1.2 0-2 .6-2 1.6M8.6 14.6c1 0 1.6-.6 1.6-1.6M15.4 14.6c-1 0-1.6-.6-1.6-1.6"/>'}
 ];
 const IC={
+  book:'<path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H19v15H5.5A1.5 1.5 0 0 0 4 19.5z"/><path d="M4 19.5A1.5 1.5 0 0 0 5.5 21H19v-3"/><path d="M8 7h7M8 10.5h5"/>',
+  folder:'<path d="M3 6.5V19h18V8.5h-9l-2-2z"/>',
   dice:'<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 9h.01M15 15h.01M15 9h.01M9 15h.01M12 12h.01" stroke-width="2.6"/>',
   trophy:'<path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7M10 17h4v3"/>',
   box:'<path d="M4 8l8-4 8 4v8l-8 4-8-4z"/><path d="M4 8l8 4 8-4M12 12v8"/>',
@@ -1176,12 +1263,48 @@ function fxDialog(edit){
 document.addEventListener('click',e=>{ if(e.target.closest('#b-addfx')) fxDialog(); });
 $('b-additem').onclick=()=>{
   const grid=(T)=>Object.entries(T).map(([k,t])=>`<button type="button" data-newtype="${k}">${svgI(t.ico,t.col)}<b>${t.label}</b><span>${t.hint}</span></button>`).join('');
-  openDialog(`<h3>Ajouter</h3><div class="subttl">Équipement</div><div class="typegrid">${grid(ITEM_TYPES)}</div><div class="subttl">Cybernétique &amp; mutations</div><div class="typegrid">${grid(CYB_TYPES)}</div><div class="actions"><button class="btn ghost" type="button" data-close>Annuler</button></div>`);
+  const nCat=CAT.filter(x=>!x.del).length;
+  openDialog(`<h3>Ajouter</h3><div class="subttl">Équipement</div><div class="typegrid">${grid(ITEM_TYPES)}<button type="button" class="cat-tile" id="open-cat">${svgI('book','#fff')}<b>Catalogue</b><span>${nCat?`${nCat} objet${nCat>1?'s':''} déjà créé${nCat>1?'s':''}`:'Vide pour l\'instant'}</span></button></div><div class="subttl">Cybernétique &amp; mutations</div><div class="typegrid">${grid(CYB_TYPES)}</div><div class="actions"><button class="btn ghost" type="button" data-close>Annuler</button></div>`);
   $('dlg-body').querySelectorAll('[data-newtype]').forEach(b=>b.onclick=()=>{ const k=b.dataset.newtype; let id=Date.now();
     if(CYB_TYPES[k]) C.cybernetics.unshift({id,name:CYB_TYPES[k].label,bodyPart:'',type:k,ability:'',stat:'',diceBonus:0,successThreshold:8});
     else { const w=k.startsWith('weapon'); C.inventory.unshift({id,name:w?'Nouvelle arme':k==='backpack'?'Sac à dos':k==='armor'?'Nouvelle armure':'Nouvel objet',itemType:w?'weapon':k,hands:w?(k==='weapon2'?2:1):null,equipped:false,zone:'',stat:w?'DEX':'',diceBonus:0,successThreshold:8,weight:0,armorPoints:0,bastosCost:'-',specialAbility:''}); }
     dlg.close(); renderCards(); renderDerived(); markDirty(); const n=document.querySelector(`.row[data-id="${id}"] .nm`); if(n){ n.focus(); n.select(); } });
+  $('open-cat').onclick=()=>catDialog();
 };
+let catFilter='all', catQ='';
+function catTypeOf(x){ return x.col==='cyb'?(CYB_TYPES[x.data.type]||CYB_TYPES.particularity):(ITEM_TYPES[typeKey(x.data)]||ITEM_TYPES.misc); }
+function catMeta(x){ const d=x.data, m=[];
+  if(d.stat) m.push(`${d.stat}${+d.diceBonus?` +${d.diceBonus}D`:''}`);
+  if(x.col==='inv'){ if(d.itemType==='armor') m.push(`${+d.armorPoints||0} PP`); if(+d.weight) m.push(`${d.itemType==='backpack'?'+':'−'}${d.weight} PC`); if(d.bastosCost&&d.bastosCost!=='-') m.push(`${d.bastosCost} ₿`); }
+  return m; }
+function catDialog(){
+  const groups=[['all','Tout'],['weapon','Armes'],['armor','Armures'],['misc','Divers'],['backpack','Sacs'],['cyb','Cyber & mutations']];
+  openDialog(`<h3>Catalogue</h3><p class="meta" style="text-align:left;margin:0">Tous les objets créés dans vos fiches. Un clic en ajoute un exemplaire à l'inventaire.</p>
+    <input class="line-in" type="search" id="cat-q" placeholder="Rechercher…" value="${esc(catQ)}">
+    <div class="cat-f">${groups.map(([k,l])=>`<button type="button" data-cf="${k}" class="${catFilter===k?'on':''}">${l}</button>`).join('')}</div>
+    <div class="cat-list" id="cat-list"></div>
+    <div class="actions"><button class="btn ghost" type="button" data-close>Fermer</button></div>`);
+  const draw=()=>{ const q=catQ.trim().toLowerCase();
+    const L=CAT.filter(x=>!x.del).filter(x=>catFilter==='all'||(catFilter==='cyb'?x.col==='cyb':x.col==='inv'&&(catFilter==='weapon'?isWeapon(x.data):x.data.itemType===catFilter)))
+      .filter(x=>!q||[x.data.name,x.data.specialAbility,x.data.ability].join(' ').toLowerCase().includes(q))
+      .sort((a,b)=>(a.data.name||'').localeCompare(b.data.name||'','fr'));
+    $('cat-list').innerHTML=L.map(x=>{ const T=catTypeOf(x), ds=x.data.specialAbility||x.data.ability||'';
+      return `<div class="cat-it" data-cid="${x.cid}"><button type="button" class="cat-add" data-catadd="${x.cid}" title="Ajouter à l'inventaire">${svgI(T.ico,T.col)}<span class="t"><b>${esc(x.data.name||'Sans nom')}</b><i>${T.label}${catMeta(x).map(m=>' · '+esc(m)).join('')}</i>${ds?`<em>${esc(ds)}</em>`:''}</span></button><button type="button" class="cat-del" data-catdel="${x.cid}" title="Retirer du catalogue">×</button></div>`; }).join('')
+      ||`<p class="meta">${CAT.some(x=>!x.del)?'Aucun objet ne correspond.':'Le catalogue se remplit tout seul : chaque objet créé dans une fiche y est enregistré.'}</p>`; };
+  draw();
+  $('cat-q').oninput=e=>{ catQ=e.target.value; draw(); };
+  $('dlg-body').querySelectorAll('[data-cf]').forEach(b=>b.onclick=()=>{ catFilter=b.dataset.cf; $('dlg-body').querySelectorAll('[data-cf]').forEach(o=>o.classList.toggle('on',o===b)); draw(); });
+  $('cat-list').onclick=e=>{
+    const del=e.target.closest('[data-catdel]');
+    if(del){ if(!del.classList.contains('sure')){ del.classList.add('sure'); del.textContent='Retirer ?'; setTimeout(()=>{ if(del.isConnected){ del.classList.remove('sure'); del.textContent='×'; } },2500); return; }
+      const x=CAT.find(y=>y.cid===del.dataset.catdel); if(x){ x.del=true; x.at=Date.now(); x.data={name:x.data.name}; catDirty(); dirty=true; updateSaveState(); } draw(); return; }
+    const add=e.target.closest('[data-catadd]'); if(!add) return; const x=CAT.find(y=>y.cid===add.dataset.catadd); if(!x) return;
+    const it=Object.assign(JSON.parse(JSON.stringify(x.data)),{id:Date.now(),cid:x.cid});
+    if(x.col==='cyb'){ it.bodyPart=''; C.cybernetics.unshift(it); } else { it.zone=''; it.equipped=false; C.inventory.unshift(it); }
+    dlg.close(); renderCards(); renderDerived(); markDirty(); toast(`${it.name||'Objet'} ajouté`);
+    const r=document.querySelector(`.row[data-id="${it.id}"]`); if(r){ r.scrollIntoView({block:'nearest',behavior:'smooth'}); r.animate([{background:'rgba(201,166,70,.25)'},{background:'transparent'}],{duration:1400}); } };
+  setTimeout(()=>$('cat-q').focus(),30);
+}
 $('b-bastos').onclick=()=>{
   openDialog(`<h3>Bastos</h3><p>Solde actuel : <b>${(+C.bastos||0).toLocaleString('fr-FR')} ₿</b></p>
     <input class="line-in name-in" type="number" min="0" id="bastos-amt" placeholder="Montant" style="font-size:24px">
@@ -1204,9 +1327,9 @@ $('fr-go').onclick=()=>{ const n=Math.min(30,Math.max(1,parseInt($('fr-n').value
     <div class="verdict ${succ?'win':'lose'}">${succ} succès</div><p class="meta">${tens?`${tens} × 10 · `:''}${ones?`${ones} × 1 · `:''}seuil ${th}+</p>`;
   logRoll('Jet libre',rolls,th,succ); };
 $('b-new').onclick=()=>{
-  openDialog(`<h3>Nouvelle fiche</h3><p>La fiche actuelle sera remplacée par une fiche vierge.${dirty?' <b>Elle contient des modifications non enregistrées.</b>':''}</p>
+  openDialog(`<h3>Nouvelle fiche</h3><p>La fiche actuelle sera remplacée par une fiche vierge${dirHandle?`, enregistrée ensuite comme un nouveau fichier du dossier « ${esc(dirHandle.name)} »`:''}.${dirty?' <b>Elle contient des modifications non enregistrées.</b>':''}</p>
     <div class="actions"><button class="btn ghost" type="button" data-close>Annuler</button><button class="btn danger" type="button" id="new-go">Créer une fiche vierge</button></div>`);
-  $('new-go').onclick=()=>{ C=blankCharacter(); fileHandle=null; fileName=null; lastSaved=null; dirty=false; Store.saveLocal(); renderAll(); updateSaveState(); dlg.close(); playTrace(); };
+  $('new-go').onclick=()=>{ dlg.close(); newSheet(); };
 };
 const SM=$('savemenu'), SMP=SM.querySelector('.menu-pop');
 function setMenu(o){ SM.classList.toggle('open',o); SMP.hidden=!o; $('b-savemenu').setAttribute('aria-expanded',o); if(o) updateSaveState(); }
@@ -1215,7 +1338,7 @@ SMP.addEventListener('click',e=>{ if(e.target.closest('.mi')) setMenu(false); })
 document.addEventListener('click',e=>{ if(!SMP.hidden&&!e.target.closest('#savemenu')) setMenu(false); });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!SMP.hidden) setMenu(false); });
 $('b-open').onclick=openFile;
-$('file-open').onchange=e=>{ const f=e.target.files[0]; if(!f) return; f.text().then(t=>loadText(t,f.name)); e.target.value=''; };
+$('file-open').onchange=async e=>{ const fs=[...e.target.files].sort((a,b)=>a.name.endsWith('.adbc')?-1:1); for(const f of fs) loadText(await f.text(),f.name); e.target.value=''; };
 $('b-save').onclick=save; $('b-saveas').onclick=saveAs;
 document.addEventListener('keydown',e=>{ if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){ e.preventDefault(); e.shiftKey?saveAs():save(); } if(e.key==='Escape') document.querySelectorAll('.drawer.open').forEach(d=>d.classList.remove('open')); });
 $('portrait').onclick=()=>$('file-photo').click();
@@ -1239,7 +1362,7 @@ $('b-guide').onclick=()=>{
     <h4>Inventaire</h4><ul><li>Le « + » ajoute un équipement (arme, armure, divers, sac) ou une cybernétique, mutation, particularité.</li><li>Pour attribuer une ligne au corps, attrapez-la par sa poignée (ou son icône) et déposez-la sur une zone. Le × sur l'étiquette la retire.</li><li>Une arme se dépose sur une main ; déposée sur l'autre main, elle se tient à deux mains. Une main occupée se ferme en poing.</li><li>Une armure se porte en Tête, Haut (torse et bras), Bas (jambes), Pied, ou Combi (tout le corps) : un trait bleu épais longe la partie protégée. Déposée sur le bas des jambes, elle va aux pieds.</li><li>PC = FOR + 3 (+2 Elfe), moins le poids des objets, plus les sacs. PP = armures (+1 Droïde).</li></ul>
     <h4>Effets actifs</h4><p>Chaque effet acquis devient une bulle avec son icône, qui tourne lentement sur le cercle autour de la silhouette : trait racial (ADN), fractures, états du jeu, bonus et malus. Au survol, les bulles s'arrêtent et une infobulle décrit l'effet, avec Modifier / Retirer (ou Soigner pour une fracture). Le « + » en haut à gauche du dessin ajoute un effet.</p>
     <h4>Décompte</h4><p>PV max = RES + 5. Sous 5 PV : « Pas top top » (seuil +1). À 0 : étourdissement. À −1 : hors jeu. À 10 PE, le cadran d'éveil s'allume. Tous les 10 PT, chaque statistique perd 1.</p>
-    <h4>Sauvegarde</h4><p>Les fiches s'enregistrent en <b>.adb</b>. Ctrl+S réécrit le fichier ouvert, Ctrl+Maj+S en crée un nouveau. La sauvegarde automatique se règle dans les Paramètres.</p>
+    <h4>Sauvegarde</h4><p>On enregistre dans un <b>dossier</b> : il contient un fichier <b>.adb</b> par personnage et un <b>catalogue.adbc</b> commun. « Ouvrir un dossier… » liste les fiches qu'il contient. Ctrl+S réécrit la fiche dans le dossier, Ctrl+Maj+S en choisit un autre. La sauvegarde automatique se règle dans les Paramètres. Sur un navigateur qui ne gère pas les dossiers (Firefox, Safari), la fiche se télécharge et le catalogue reste dans le navigateur.</p><h4>Catalogue</h4><p>Chaque objet créé (arme, armure, divers, sac, cyber, mutation, particularité) est enregistré dans le catalogue, et mis à jour quand on le modifie. Dans « Ajouter », la tuile Catalogue permet de le reprendre dans n'importe quelle fiche du dossier.</p>
     </div><div class="actions"><button class="btn" type="button" data-close>Fermer</button></div>`);
 };
 /* Installation (PWA) : manifeste + service worker livrés à côté de la page */
@@ -1510,6 +1633,8 @@ window.addEventListener('resize',placeRibbon); if(window.ResizeObserver) new Res
 /* Démarrage : on arrive directement sur la fiche */
 buildStatic();
 const restored=Store.loadLocal(); if(restored) C=restored;
+CAT=Store.loadCat(); fileName=ls.get(LS_FILE)||null; syncCat();
+idb.get('dir').then(h=>{ if(h&&h.kind==='directory'){ dirHandle=h; updateSaveState(); } });
 renderAll(); updateSaveState(); setupAutosave(); placeRibbon();
 runOpening();
 </script>
