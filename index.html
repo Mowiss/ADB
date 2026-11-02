@@ -636,6 +636,7 @@ function derive(c){
 /* =========================================================
    ÉTAT, SAUVEGARDE (.adb) — l'adaptateur Store sera branché sur Firebase plus tard
    ========================================================= */
+const APP_VER='14';
 const LS_SHEET='aldebaran.joueur.fiche', LS_PREF='aldebaran.joueur.prefs';
 const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v);return true}catch(e){return false}}};
 let prefs={autosave:60};
@@ -1393,9 +1394,9 @@ $('b-addnote').onclick=()=>{ C.notes.unshift({id:Date.now(),title:'Nouvelle entr
 $('b-settings').onclick=()=>{
   openDialog(`<h3>Paramètres</h3><div class="kv">
     <label for="p-auto">Sauvegarde automatique</label><select class="line-in" id="p-auto">${[[0,'Désactivée'],[30,'Toutes les 30 s'],[60,'Toutes les minutes'],[120,'Toutes les 2 min'],[300,'Toutes les 5 min']].map(([v,l])=>`<option value="${v}" ${+prefs.autosave===v?'selected':''}>${l}</option>`).join('')}</select>
-    </div><p class="meta" style="text-align:left">La sauvegarde automatique garde la fiche dans ce navigateur, et réécrit aussi le fichier .adb ouvert quand le navigateur le permet.</p>
+    </div><p class="meta" style="text-align:left">La sauvegarde automatique garde la fiche dans ce navigateur, et réécrit aussi la fiche et le catalogue dans le dossier choisi quand le navigateur le permet.</p>
     <div class="inst"><div><b>Application</b><span id="inst-msg">${installMsg()}</span></div><button class="btn" type="button" id="p-install" ${isStandalone()?'disabled':''}>${isStandalone()?'Installée':'Installer'}</button></div>
-    <div class="actions"><button class="btn ghost" type="button" data-close>Fermer</button></div>`);
+    <div class="actions" style="justify-content:space-between;align-items:center"><span class="meta" style="margin:0">Version ${APP_VER}</span><button class="btn ghost" type="button" data-close>Fermer</button></div>`);
   $('p-install').onclick=doInstall;
   $('p-auto').onchange=e=>{ prefs.autosave=+e.target.value; ls.set(LS_PREF,JSON.stringify(prefs)); setupAutosave(); updateSaveState(); };
 };
