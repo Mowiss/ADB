@@ -570,6 +570,10 @@ const ZONES=Object.keys(ZONE_GEO); // Tête, Corps, Bras G, Bras D, Jambe G, Jam
 const FRACTURE_STAT={'Tête':'PER','Corps':'RES','Bras G':'DEX','Bras D':'DEX','Jambe G':'FOR','Jambe D':'FOR'};
 const HANDS=['Main G','Main D'];
 const HAND_ANCH={'Main G':[108,262],'Main D':[802,262]};
+const ARM_Z=['Tête','Haut','Bas','Pied','Combi'];   // zones d'armure
+const ARM_PARTS={'Tête':['Tête'],'Haut':['Corps','Bras G','Bras D'],'Bas':['Jambe G','Jambe D'],'Pied':['Jambe G','Jambe D'],'Combi':ZONES};
+const ANKLE=852;                                     // limite Bas / Pied dans le dessin
+const armZoneOf=(z,y)=>z==='Tête'?'Tête':/^Jambe/.test(z)?(y>ANKLE?'Pied':'Bas'):z?'Haut':'';
 const armOf=z=>z==='Main G'?'Bras G':z==='Main D'?'Bras D':z;
 const ZFIX=z=>({'Torse':'Corps','Main G':'Bras G','Main D':'Bras D','Général':''}[z]??z);
 
@@ -629,7 +633,7 @@ function normalize(ch){
     if(isWeapon(it)&&it.equipped&&!it.zone){ if((it.hands||1)===2&&!used.size){ it.zone='Mains'; used.add('Main G');used.add('Main D'); } else { const h=HANDS.find(x=>!used.has(x)); if(h){ it.zone=h; used.add(h);} } }
     it.equipped=handsOf(it).length>0; });
   c.cybernetics.forEach(x=>{ x.bodyPart=ZFIX(x.bodyPart||''); });
-  c.inventory.forEach(it=>{ if(!isWeapon(it)&&it.zone!=='Combi') it.zone=ZFIX(it.zone||''); });
+  c.inventory.forEach(it=>{ if(!isWeapon(it)&&it.zone!=='Combi') it.zone=ZFIX(it.zone||''); if(it.itemType==='armor'&&it.zone&&!ARM_Z.includes(it.zone)) it.zone=armZoneOf(armOf(it.zone)); });
   return c;
 }
 function serialize(){ return JSON.stringify({format:'aldebaran-adb',kind:'joueur',version:2,savedAt:new Date().toISOString(),character:C},null,2); }
@@ -751,7 +755,9 @@ function buildStatic(){
   // zones du corps
   $('zones').innerHTML=ZONES.map(z=>{const g=ZONE_GEO[z];
     return g.el==='ellipse'?`<ellipse class="zone" data-zone="${z}" cx="${g.cx}" cy="${g.cy}" rx="${g.rx}" ry="${g.ry}"/>`:`<polygon class="zone" data-zone="${z}" points="${g.pts}"/>`;}).join('');
-  $('clips').innerHTML=ZONES.map((z,i)=>`<clipPath id="clip-${i}"><polygon points="${ZONE_GEO[z].clip}"/></clipPath>`).join('');
+  $('clips').innerHTML=ZONES.map((z,i)=>`<clipPath id="clip-${i}"><polygon points="${ZONE_GEO[z].clip}"/></clipPath>`).join('')
+    +ARM_Z.slice(0,4).map((a,i)=>`<clipPath id="clipa-${i}">${ARM_PARTS[a].map(z=>`<polygon points="${ZONE_GEO[z].clip}"/>`).join('')}</clipPath>`).join('')
+    +`<clipPath id="clipy-all"><rect x="-50" y="-50" width="1010" height="1090"/></clipPath><clipPath id="clipy-b"><rect x="-50" y="-50" width="1010" height="${ANKLE+50}"/></clipPath><clipPath id="clipy-p"><rect x="-50" y="${ANKLE}" width="1010" height="300"/></clipPath>`;
   ['.vit','#zones','#armor'].forEach(q=>document.querySelector(q).setAttribute('mask','url(#handmask)'));
   document.querySelectorAll('svg.ttl text').forEach(t=>{ const s=t.textContent; t.innerHTML=[...s].map(ch=>`<tspan>${ch===' '?'&#160;':esc(ch)}</tspan>`).join(''); });
 }
@@ -856,8 +862,9 @@ function renderMarks(){
     $('mk-'+s).setAttribute('visibility',busy?'visible':'hidden'); $('fist-'+s).setAttribute('opacity',busy?1:0); });
   // armures : trait bleu le long de la silhouette sur la zone protégée
   const d=ARMOR_PATH;
-  const prot=new Set(); C.inventory.forEach(it=>{ if(it.itemType==='armor'&&it.zone) (it.zone==='Combi'?ZONES:[it.zone]).forEach(z=>prot.add(z)); });
-  $('armor').innerHTML=prot.size===ZONES.length?`<path class="armor-line" d="${d}"/>`:[...prot].map(z=>`<path class="armor-line" d="${d}" clip-path="url(#clip-${ZONES.indexOf(z)})"/>`).join('');
+  const prot=new Set(); C.inventory.forEach(it=>{ if(it.itemType==='armor'&&ARM_Z.includes(it.zone)) prot.add(it.zone); });
+  const full=prot.has('Combi')||['Tête','Haut','Bas','Pied'].every(z=>prot.has(z));
+  $('armor').innerHTML=full?`<path class="armor-line" d="${d}"/>`:[...prot].map(z=>`<g clip-path="url(#clipy-${z==='Pied'?'p':z==='Bas'?'b':'all'})"><path class="armor-line" d="${d}" clip-path="url(#clipa-${ARM_Z.indexOf(z)})"/></g>`).join('');
   document.querySelectorAll('#zones .zone').forEach(z=>z.classList.toggle('frac',C.fractures.includes(z.dataset.zone)));
   document.querySelectorAll('.bone').forEach(b=>b.classList.toggle('frac',C.fractures.includes(b.dataset.zone)));
   const out=[];
@@ -869,7 +876,7 @@ const WHY_ICO={
   pt:`<svg viewBox="0 0 24 24" style="stroke:var(--c-per)"><path d="M12.80 12.00 L12.94 12.17 L13.04 12.39 L13.09 12.65 L13.08 12.94 L12.99 13.24 L12.82 13.54 L12.58 13.81 L12.27 14.04 L11.89 14.22 L11.46 14.31 L10.99 14.32 L10.50 14.24 L10.02 14.05 L9.56 13.75 L9.14 13.35 L8.79 12.86 L8.53 12.28 L8.38 11.64 L8.35 10.96 L8.46 10.25 L8.70 9.55 L9.08 8.89 L9.60 8.28 L10.25 7.77 L11.00 7.37 L11.84 7.11 L12.74 7.00 L13.68 7.07 L14.61 7.31 L15.51 7.73 L16.34 8.32 L17.06 9.08 L17.65 9.98 L18.08 11.00 L18.31 12.11 L18.35 13.27 L18.16 14.44 L17.76 15.59 L17.14 16.67 L16.32 17.64 L15.31 18.46 L14.15 19.10 L12.86 19.53 L11.49 19.72 L10.08 19.65 L8.67 19.33 L7.33 18.74 L6.08 17.91 L4.99 16.84 L4.09 15.58 L3.43 14.14 L3.03 12.58 L2.91 10.95 L3.09 9.29 L3.58 7.67 L4.37 6.14 L5.44 4.75 L6.76 3.56"/></svg>`,
   fr:`<svg viewBox="0 0 24 24" style="--c:var(--danger)"><g transform="rotate(-45 12 12)" style="fill:var(--c,currentColor);stroke:none"><rect x="6" y="10.5" width="12" height="3" rx="1"/><circle cx="5.8" cy="10" r="2.4"/><circle cx="5.8" cy="14" r="2.4"/><circle cx="18.2" cy="10" r="2.4"/><circle cx="18.2" cy="14" r="2.4"/></g></svg>`,
   fx:`<svg viewBox="0 0 24 24" style="stroke:var(--gold)"><path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z"/></svg>`};
-const ANCH={'Tête':[452,205],'Corps':[452,410],'Combi':[452,470],'Bras G':[255,306],'Bras D':[655,306],'Main G':[126,302],'Main D':[784,302],'Jambe G':[420,720],'Jambe D':[484,720]};
+const ANCH={'Tête':[452,205],'Corps':[452,410],'Combi':[452,470],'Bras G':[255,306],'Bras D':[655,306],'Main G':[126,302],'Main D':[784,302],'Jambe G':[420,720],'Jambe D':[484,720],'Haut':[452,330],'Bas':[452,700],'Pied':[452,885]};
 const TAGCOL={weapon:'var(--ink-strong)',armor:'var(--c-res)',cyb:'var(--c-per)',misc:'#a0642b'};
 function tagList(){
   const L=[];
@@ -904,7 +911,7 @@ function renderTags(){
   leads.setAttribute('viewBox',`0 0 ${W.width} ${W.height}`); leads.innerHTML=lines.join('');
 }
 window.addEventListener('resize',()=>renderTags());
-function linkedZones(card,col){ if(col==='inv'){ if(isWeapon(card)) return handsOf(card); if(card.zone==='Combi') return []; return card.zone?[card.zone]:[]; } return card.bodyPart?[card.bodyPart]:[]; }
+function linkedZones(card,col){ if(col==='inv'){ if(isWeapon(card)) return handsOf(card); if(card.zone==='Combi') return []; if(card.itemType==='armor') return ARM_PARTS[card.zone]||[]; return card.zone?[card.zone]:[]; } return card.bodyPart?[card.bodyPart]:[]; }
 
 function statOpts(v){ return `<option value="">–</option>`+STATS.map(s=>`<option value="${s}" ${v===s?'selected':''}>${s}</option>`).join(''); }
 const GRIP=`<svg viewBox="0 0 12 18" fill="currentColor"><circle cx="3" cy="3" r="1.5"/><circle cx="9" cy="3" r="1.5"/><circle cx="3" cy="9" r="1.5"/><circle cx="9" cy="9" r="1.5"/><circle cx="3" cy="15" r="1.5"/><circle cx="9" cy="15" r="1.5"/></svg>`;
@@ -914,7 +921,7 @@ function rowInv(it){
   const tk=typeKey(it), T=ITEM_TYPES[tk]||ITEM_TYPES.misc, w=isWeapon(it), d=diceOf(it), t=it.itemType;
   let zoneCell=NA;
   if(w){ const hs=handsOf(it), v=hs.length===2?'Mains':hs[0]||''; zoneCell=`<select class="zc" data-f="hand" aria-label="Main">${[['','—'],...((it.hands||1)===2?[['Mains','Deux mains']]:[['Main G','Main G'],['Main D','Main D'],['Mains','Deux mains']])].map(([k,l])=>`<option value="${k}" ${v===k?'selected':''}>${l}</option>`).join('')}</select>`; }
-  else if(t!=='backpack') zoneCell=`<select class="zc" data-f="zone" aria-label="Zone">${[['','—'],...ZONES.map(z=>[z,z]),...(t==='armor'?[['Combi','Combinaison']]:[])].map(([k,l])=>`<option value="${k}" ${it.zone===k?'selected':''}>${l}</option>`).join('')}</select>`;
+  else if(t!=='backpack') zoneCell=`<select class="zc" data-f="zone" aria-label="Zone">${[['','—'],...(t==='armor'?ARM_Z.map(z=>[z,z==='Combi'?'Combinaison':z]):ZONES.map(z=>[z,z]))].map(([k,l])=>`<option value="${k}" ${it.zone===k?'selected':''}>${l}</option>`).join('')}</select>`;
   const inHand=handsOf(it).length>0;
   return `<div class="row ${inHand?'equipped':''}" data-id="${it.id}" data-col="inv">
     <button type="button" class="grip" data-drag title="Glisser sur le corps" aria-label="Glisser sur le corps">${GRIP}</button>
@@ -1022,7 +1029,7 @@ document.addEventListener('change',e=>{
   const t=e.target;
   if(t.id==='f-race'){ C.race=t.value; clampPv(); renderDerived(); renderCards(); markDirty(); return; }
   if(t.closest('.row')&&t.dataset.f){ const {it,card}=findCard(t); if(!it) return;
-    if(t.tagName==='SELECT'&&t.dataset.f==='type'&&card.dataset.col==='inv'){ const v=t.value; if(v.startsWith('weapon')){ const was=isWeapon(it); it.itemType='weapon'; it.hands=v==='weapon2'?2:1; if(!was) it.zone=''; if(it.hands===2&&handsOf(it).length) it.zone='Mains'; } else { if(isWeapon(it)) it.zone=''; it.itemType=v; it.hands=null; if(v!=='armor'&&it.zone==='Combi') it.zone=''; } it.equipped=handsOf(it).length>0; }
+    if(t.tagName==='SELECT'&&t.dataset.f==='type'&&card.dataset.col==='inv'){ const v=t.value; if(v.startsWith('weapon')){ const was=isWeapon(it); it.itemType='weapon'; it.hands=v==='weapon2'?2:1; if(!was) it.zone=''; if(it.hands===2&&handsOf(it).length) it.zone='Mains'; } else { if(isWeapon(it)) it.zone=''; it.itemType=v; it.hands=null; if(v!=='armor'&&!ZONES.includes(it.zone)) it.zone=''; if(v==='armor'&&it.zone&&!ARM_Z.includes(it.zone)) it.zone=armZoneOf(it.zone); } it.equipped=handsOf(it).length>0; }
     else if(t.dataset.f==='hand'){ const v=t.value; if(!v){ it.zone=''; it.equipped=false; } else assign('inv',it,v==='Mains'?{hand:'Main G',both:true}:{hand:v}); }
     else if(t.tagName==='SELECT') it[t.dataset.f]=t.value;
     if(t.tagName==='SELECT'||['diceBonus','successThreshold','stat'].includes(t.dataset.f)){ renderCards(); renderDerived(); markDirty(); } }
@@ -1052,7 +1059,7 @@ document.addEventListener('focusout',e=>{ if(e.target.classList&&e.target.classL
 let drag=null;
 function dropTarget(x,y){ const el=document.elementFromPoint(x,y); if(!el) return null;
   const h=el.closest('.hand-t'); if(h) return {hand:h.dataset.hand,el:h};
-  const z=el.closest('#zones .zone'); if(z) return {zone:z.dataset.zone,el:z}; return null; }
+  const z=el.closest('#zones .zone'); if(z){ const F=$('figure').getBoundingClientRect(); return {zone:z.dataset.zone,el:z,y:(y-F.top)/(F.width/910)}; } return null; }
 function assign(col,it,t){
   if(col==='cyb'){ it.bodyPart=t.zone||armOf(t.hand); toast(`${it.name||'Élément'} → ${it.bodyPart}`); return; }
   if(isWeapon(it)){
@@ -1064,6 +1071,7 @@ function assign(col,it,t){
     C.inventory.forEach(o=>{ if(o!==it&&isWeapon(o)&&handsOf(o).some(x=>need.includes(x))){ o.zone=''; o.equipped=false; toast(`${o.name||'Arme'} rangée`); } });
     it.zone=want; it.equipped=true; return;
   }
+  if(it.itemType==='armor'){ it.zone=armZoneOf(t.zone||armOf(t.hand),t.y||0); toast(`${it.name||'Armure'} → ${it.zone}`); return; }
   it.zone=t.zone||armOf(t.hand);
 }
 document.addEventListener('pointerdown',e=>{
@@ -1228,7 +1236,7 @@ $('b-guide').onclick=()=>{
   openDialog(`<h3>Guide</h3><div class="guide">
     <h4>Le volet de gauche</h4><p>Personnage, Décompte et Statistiques. Dans chaque statistique, le petit cercle contient la valeur de base, le grand cercle le nombre de dés lancés après malus. Cliquez le grand cercle pour lancer : pool de D10, seuil 8+, un 10 est un critique, un 1 un échec critique.</p>
     <h4>Le corps</h4><ul><li>Un clic sur une partie du corps la fracture, un second clic la soigne. Plusieurs fractures peuvent coexister.</li><li>Six zones : Tête → PER / 2, Corps → RES / 2, Bras (main comprise) → DEX / 2, Jambe → FOR / 2. Les os de la zone fracturée passent au rouge. Deux fractures sur la même statistique ne la divisent qu'une fois.</li><li>Les pastilles indiquent combien de vignettes sont reliées à chaque partie (bleu : inventaire, violet : cyber).</li></ul>
-    <h4>Inventaire</h4><ul><li>Le « + » ajoute un équipement (arme, armure, divers, sac) ou une cybernétique, mutation, particularité.</li><li>Pour attribuer une ligne au corps, attrapez-la par sa poignée (ou son icône) et déposez-la sur une zone. Le × sur l'étiquette la retire.</li><li>Une arme se dépose sur une main ; déposée sur l'autre main, elle se tient à deux mains. Une main occupée se ferme en poing.</li><li>Une armure protège sa zone, ou tout le corps avec « Combi » : un trait bleu épais longe alors la silhouette protégée.</li><li>PC = FOR + 3 (+2 Elfe), moins le poids des objets, plus les sacs. PP = armures (+1 Droïde).</li></ul>
+    <h4>Inventaire</h4><ul><li>Le « + » ajoute un équipement (arme, armure, divers, sac) ou une cybernétique, mutation, particularité.</li><li>Pour attribuer une ligne au corps, attrapez-la par sa poignée (ou son icône) et déposez-la sur une zone. Le × sur l'étiquette la retire.</li><li>Une arme se dépose sur une main ; déposée sur l'autre main, elle se tient à deux mains. Une main occupée se ferme en poing.</li><li>Une armure se porte en Tête, Haut (torse et bras), Bas (jambes), Pied, ou Combi (tout le corps) : un trait bleu épais longe la partie protégée. Déposée sur le bas des jambes, elle va aux pieds.</li><li>PC = FOR + 3 (+2 Elfe), moins le poids des objets, plus les sacs. PP = armures (+1 Droïde).</li></ul>
     <h4>Effets actifs</h4><p>Chaque effet acquis devient une bulle avec son icône, qui tourne lentement sur le cercle autour de la silhouette : trait racial (ADN), fractures, états du jeu, bonus et malus. Au survol, les bulles s'arrêtent et une infobulle décrit l'effet, avec Modifier / Retirer (ou Soigner pour une fracture). Le « + » en haut à gauche du dessin ajoute un effet.</p>
     <h4>Décompte</h4><p>PV max = RES + 5. Sous 5 PV : « Pas top top » (seuil +1). À 0 : étourdissement. À −1 : hors jeu. À 10 PE, le cadran d'éveil s'allume. Tous les 10 PT, chaque statistique perd 1.</p>
     <h4>Sauvegarde</h4><p>Les fiches s'enregistrent en <b>.adb</b>. Ctrl+S réécrit le fichier ouvert, Ctrl+Maj+S en crée un nouveau. La sauvegarde automatique se règle dans les Paramètres.</p>
