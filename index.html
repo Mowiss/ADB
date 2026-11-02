@@ -100,7 +100,9 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 /* Personnage */
 .who{display:grid;grid-template-columns:84px minmax(0,1fr);gap:14px;align-items:center}
 .portrait{width:84px;height:84px;border-radius:50%;border:1.4px solid var(--ink-soft);display:grid;place-items:center;overflow:hidden;background:var(--paper);cursor:pointer;padding:0}
+.portrait{position:relative}
 .portrait img{width:100%;height:100%;object-fit:cover}
+.portrait img.cropped{position:absolute;max-width:none;object-fit:fill}
 .portrait svg{width:32px;height:32px;color:var(--ink-soft)}
 .field{display:flex;flex-direction:column;gap:1px;min-width:0}
 .line-in{border:0;border-bottom:1px solid var(--rule);background:transparent;padding:4px 2px;min-width:0;width:100%;outline:none}
@@ -337,6 +339,12 @@ dialog::backdrop{background:rgba(47,51,64,.42)}
 .typegrid button:hover{border-color:var(--ink)}
 .typegrid button svg{width:22px;height:22px}
 .typegrid b{font-size:13.5px;color:var(--ink-strong)}
+.crop{position:relative;width:min(300px,100%);aspect-ratio:1;margin:4px auto 0;border-radius:12px;overflow:hidden;background:var(--wash);cursor:grab;touch-action:none;user-select:none}
+.crop:active{cursor:grabbing}
+.crop img{position:absolute;max-width:none;display:block;pointer-events:none;-webkit-user-drag:none}
+.crop-ring{position:absolute;inset:0;pointer-events:none;border-radius:50%;box-shadow:0 0 0 999px rgba(20,22,29,.45);outline:2px solid #fff;outline-offset:-1px}
+.crop-z{display:flex;align-items:center;gap:10px;width:min(300px,100%);margin:0 auto;color:var(--ink-soft)}
+.crop-z svg{width:20px;height:20px;flex:none}.crop-z input{flex:1;accent-color:var(--ink-strong)}
 .typegrid .cat-tile{background:var(--ink-strong);border-color:var(--ink-strong)}
 .typegrid .cat-tile b{color:#fff}.typegrid .cat-tile span{color:rgba(255,255,255,.7)}
 .typegrid .cat-tile:hover{border-color:var(--ink-strong);box-shadow:0 0 0 3px rgba(32,34,44,.15)}
@@ -550,7 +558,7 @@ dialog::backdrop{background:rgba(47,51,64,.42)}
 <dialog id="dlg"><div class="dlg" id="dlg-body"></div></dialog>
 <div class="toast" id="toast"></div>
 <input type="file" id="file-open" accept=".adb,.adbc,.json" multiple hidden>
-<input type="file" id="file-photo" accept="image/*" hidden>
+<input type="file" id="file-photo" accept="image/*,.gif" hidden>
 
 <script>
 /* =========================================================
@@ -849,7 +857,7 @@ function buildStatic(){
   document.querySelectorAll('svg.ttl text').forEach(t=>{ const s=t.textContent; t.innerHTML=[...s].map(ch=>`<tspan>${ch===' '?'&#160;':esc(ch)}</tspan>`).join(''); });
 }
 function renderIdentity(){
-  $('portrait').innerHTML=C.photo?`<img src="${C.photo}" alt="Portrait">`:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="9" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>`;
+  const pc=C.photoCrop; $('portrait').innerHTML=C.photo?`<img src="${C.photo}" alt="Portrait"${pc?` class="cropped" style="left:${-pc.l*100}%;top:${-pc.t*100}%;width:${pc.w*100}%;height:${pc.h*100}%"`:''}>`:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="9" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>`;
   if(document.activeElement!==$('f-name')) $('f-name').value=C.name||'';
   $('f-race').value=C.race;
 }
@@ -1342,7 +1350,43 @@ $('file-open').onchange=async e=>{ const fs=[...e.target.files].sort((a,b)=>a.na
 $('b-save').onclick=save; $('b-saveas').onclick=saveAs;
 document.addEventListener('keydown',e=>{ if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){ e.preventDefault(); e.shiftKey?saveAs():save(); } if(e.key==='Escape') document.querySelectorAll('.drawer.open').forEach(d=>d.classList.remove('open')); });
 $('portrait').onclick=()=>$('file-photo').click();
-$('file-photo').onchange=e=>{ const f=e.target.files[0]; if(!f) return; const rd=new FileReader(); rd.onload=()=>{ const im=new Image(); im.onload=()=>{ const cv=document.createElement('canvas'); cv.width=cv.height=300; const x=cv.getContext('2d'); const s=Math.min(im.width,im.height); x.drawImage(im,(im.width-s)/2,(im.height-s)/2,s,s,0,0,300,300); C.photo=cv.toDataURL('image/jpeg',.82); renderIdentity(); markDirty(); }; im.src=rd.result; }; rd.readAsDataURL(f); e.target.value=''; };
+$('file-photo').onchange=e=>{ const f=e.target.files[0]; if(!f) return; const gif=/gif$/i.test(f.type)||/\.gif$/i.test(f.name);
+  if(gif&&f.size>3e6){ toast('GIF trop lourd (3 Mo maximum) : il ne tiendrait pas dans la sauvegarde.'); e.target.value=''; return; }
+  const rd=new FileReader(); rd.onload=()=>{ const im=new Image(); im.onload=()=>cropDialog(im,gif); im.onerror=()=>toast("Cette image n'est pas lisible."); im.src=rd.result; }; rd.readAsDataURL(f); e.target.value=''; };
+/* Recadrage de la photo : on glisse pour cadrer, molette / curseur / pincement pour zoomer */
+function cropDialog(im,gif){
+  const V=300;   // taille de la fenêtre de recadrage (px) et de l'image finale
+  openDialog(`<h3>Recadrer</h3><p class="meta" style="text-align:left;margin:0">Glissez pour placer le visage dans le cercle, zoomez à la molette ou avec le curseur.</p>
+    <div class="crop" id="crop"><img id="crop-im" src="${im.src}" alt="" draggable="false"><div class="crop-ring"></div></div>
+    <div class="crop-z"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="6"/><path d="M8 11h6M20 20l-4.5-4.5"/></svg><input type="range" id="crop-z" min="0" max="1" step="0.001" value="0" aria-label="Zoom"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="6"/><path d="M8 11h6M11 8v6M20 20l-4.5-4.5"/></svg></div>
+    <div class="actions"><button class="btn ghost" type="button" data-close>Annuler</button><button class="btn" type="button" id="crop-ok">Valider</button></div>`);
+  const ci=$('crop-im'), box=$('crop'), zi=$('crop-z');
+  const min=V/Math.min(im.width,im.height), max=min*6;
+  let sc=min, cx=im.width/2, cy=im.height/2;          // centre de l'image affiché au centre du cadre
+  const zFromS=s=>Math.log(s/min)/Math.log(max/min), sFromZ=z=>min*Math.pow(max/min,z);
+  const clamp=()=>{ const h=V/2/sc; cx=Math.min(im.width-h,Math.max(h,cx)); cy=Math.min(im.height-h,Math.max(h,cy)); };
+  // cadrage exprimé en fractions du carré : sert à l'aperçu et, pour un GIF, à l'affichage animé du portrait
+  const frame=()=>{ const side=V/sc, l=cx-side/2, t=cy-side/2; return {l:l/side,t:t/side,w:im.width/side,h:im.height/side}; };
+  const draw=()=>{ clamp(); const f=frame(); Object.assign(ci.style,{left:-f.l*100+'%',top:-f.t*100+'%',width:f.w*100+'%',height:f.h*100+'%'}); };
+  const zoomTo=(ns,px=V/2,py=V/2)=>{ ns=Math.min(max,Math.max(min,ns)); const ix=cx+(px-V/2)/sc, iy=cy+(py-V/2)/sc; sc=ns; cx=ix-(px-V/2)/sc; cy=iy-(py-V/2)/sc; zi.value=zFromS(sc); draw(); };
+  const local=e=>{ const r=box.getBoundingClientRect(); return [(e.clientX-r.left)*V/r.width,(e.clientY-r.top)*V/r.height]; };
+  const pts=new Map(); let pinch=null;
+  box.onpointerdown=e=>{ box.setPointerCapture(e.pointerId); pts.set(e.pointerId,local(e));
+    if(pts.size===2){ const [a,b]=[...pts.values()]; pinch={d:Math.hypot(a[0]-b[0],a[1]-b[1]),s:sc}; } };
+  box.onpointermove=e=>{ if(!pts.has(e.pointerId)) return; const p=local(e), q=pts.get(e.pointerId); pts.set(e.pointerId,p);
+    if(pts.size===2&&pinch){ const [a,b]=[...pts.values()]; zoomTo(pinch.s*Math.hypot(a[0]-b[0],a[1]-b[1])/pinch.d,(a[0]+b[0])/2,(a[1]+b[1])/2); return; }
+    const r=box.getBoundingClientRect(); cx-=(p[0]-q[0])/sc; cy-=(p[1]-q[1])/sc; draw(); };
+  const up=e=>{ pts.delete(e.pointerId); if(pts.size<2) pinch=null; };
+  box.onpointerup=up; box.onpointercancel=up;
+  box.onwheel=e=>{ e.preventDefault(); const [px,py]=local(e); zoomTo(sc*Math.exp(-e.deltaY*0.0015),px,py); };
+  zi.oninput=()=>zoomTo(sFromZ(+zi.value));
+  $('crop-ok').onclick=()=>{
+    if(gif){ C.photo=im.src; C.photoCrop=frame(); renderIdentity(); markDirty(); dlg.close(); return; }   // GIF gardé tel quel : il reste animé
+    const o=document.createElement('canvas'); o.width=o.height=V; const ox=o.getContext('2d'); ox.imageSmoothingQuality='high';
+    ox.fillStyle='#fff'; ox.fillRect(0,0,V,V); ox.drawImage(im,cx-V/2/sc,cy-V/2/sc,V/sc,V/sc,0,0,V,V);
+    C.photo=o.toDataURL('image/jpeg',.85); delete C.photoCrop; renderIdentity(); markDirty(); dlg.close(); };
+  draw();
+}
 $('b-journal').onclick=()=>openDrawer('journal');
 $('b-closej').onclick=()=>$('journal').classList.remove('open');
 $('b-addnote').onclick=()=>{ C.notes.unshift({id:Date.now(),title:'Nouvelle entrée',content:''}); renderNotes(); markDirty(); const i=$('notes').querySelector('input'); if(i){i.focus();i.select();} };
