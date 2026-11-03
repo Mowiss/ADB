@@ -77,13 +77,20 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .mstate.dirty i{background:var(--gold)}
 .mstate.sub{padding-top:0;padding-bottom:6px;padding-left:24px}
 .tool.icon{padding:7px;position:relative}
+.tool[aria-pressed="true"]{background:var(--faint);border-color:var(--rule)}
 .tool.icon .sdot{position:absolute;top:5px;right:5px;border:1.5px solid var(--paper);width:9px;height:9px}
 
 @media (max-width:1180px){.tool .lbl{display:none}}
 @media (max-width:560px){.brand small,.sep{display:none}.tool{padding:5px}.brand{letter-spacing:.14em;font-size:15px;margin-right:0}.appbar{gap:4px}.tool svg{width:17px;height:17px}}
 
 /* Structure */
-.layout{position:relative;z-index:1;display:grid;grid-template-columns:minmax(330px,370px) minmax(0,1fr);min-height:calc(100dvh - var(--bar))}
+.layout{--invw:420px;position:relative;z-index:1;display:grid;grid-template-columns:minmax(310px,350px) minmax(0,1fr) var(--invw);min-height:calc(100dvh - var(--bar));transition:grid-template-columns .35s ease}
+.layout.inv-off{--invw:0px}
+/* Volet Inventaire : colonne de droite, la silhouette se décale à gauche */
+.invpanel{position:sticky;top:calc(var(--bar) + env(safe-area-inset-top,0px));align-self:start;height:calc(100dvh - var(--bar) - env(safe-area-inset-top,0px));overflow:hidden;border-left:1px solid var(--rule);background:rgba(255,255,255,.94);z-index:2}
+.layout.inv-off .invpanel{border-left-color:transparent}
+.invin{width:420px;height:100%;overflow-y:auto;scrollbar-width:none;padding:14px max(16px,env(safe-area-inset-right,0px)) 28px 18px;box-sizing:border-box}
+.invin::-webkit-scrollbar{display:none}
 .panel{z-index:1;position:sticky;top:calc(var(--bar) + env(safe-area-inset-top,0px));align-self:start;max-height:calc(100dvh - var(--bar) - env(safe-area-inset-top,0px));overflow:auto;scrollbar-width:none;-ms-overflow-style:none;
   border-right:1px solid var(--rule);padding:14px 20px 28px max(18px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:6px;scrollbar-width:thin}
 .panel::-webkit-scrollbar{display:none}
@@ -220,7 +227,7 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 .hands-txt span.empty{color:#b9bdc8;font-weight:500}
 
 /* Homme de Vitruve */
-.figure-wrap{position:relative;display:flex;justify-content:center;padding:0 190px;min-width:0}
+.figure-wrap{position:relative;display:flex;justify-content:center;padding:0 130px;min-width:0}
 #leads{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
 #leads path{fill:none;stroke-width:1.4}
 #leads circle{stroke:none}
@@ -234,7 +241,7 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 .tagp .tx:hover{background:var(--danger);color:#fff}
 .tagp.hi{box-shadow:0 0 0 3px rgba(43,121,189,.2)}
 @media (max-width:1100px){.figure-wrap{padding:0;flex-direction:column;align-items:center;gap:10px}#leads{display:none}#tags{position:static;display:flex;flex-wrap:wrap;gap:6px;justify-content:center}.tagp{position:static;transform:none}}
-.figure{position:relative;width:min(100%,600px);aspect-ratio:910/990}
+.figure{position:relative;width:min(100%,680px,calc((100dvh - var(--bar) - 56px)*.919));aspect-ratio:910/990}
 .figure svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
 .vit{fill:none;stroke:var(--ink-strong);stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
 .bone{fill:#e9ebf0;stroke:#b9bdc9;stroke-width:1.1;transition:fill .25s,stroke .25s}
@@ -264,24 +271,32 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 .frames{display:block}
 .frame{display:flex;flex-direction:column;gap:8px;min-width:0}
 .frame-head{display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--ink-soft);padding-bottom:6px}
-.frame-head .ttl{flex:0 0 auto;width:200px;min-width:0;align-self:flex-end}
+.frame-head{flex-wrap:wrap;row-gap:4px}
+.frame-head .ttl{flex:1 0 100%;width:auto;min-width:0;align-self:flex-end}
 .frame-meta{flex:1;min-width:0;font-size:12px;color:var(--ink-soft);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .frame-meta b{color:var(--ink-strong)}.frame-meta.over b{color:var(--danger)}
 .frame-head .sq-add{order:10}
-.invscroll{overflow-x:auto}
-.rows{display:flex;flex-direction:column;min-width:960px}
+.invscroll{overflow:visible}
+.rows{display:flex;flex-direction:column;gap:8px;padding-top:8px}
 .zc{appearance:none;min-width:0;width:100%;border:0;border-bottom:1px solid var(--rule);background:transparent;padding:3px 1px;font-size:12px;font-weight:700;color:var(--link);cursor:pointer;outline:none}
 .zc:focus{border-bottom-color:var(--ink)}
 .row.cyb .zc{color:var(--link-cyb)}
 .empty-frame{border:1px dashed var(--rule);border-radius:10px;padding:22px;text-align:center;color:var(--ink-soft);font-size:13px;background:rgba(255,255,255,.75)}
-.row{display:grid;grid-template-columns:20px 30px minmax(130px,1.3fr) 100px 56px 42px 42px 42px 42px 42px 52px minmax(150px,2fr) 34px;column-gap:8px;align-items:center;min-height:42px;padding:3px 6px 3px 2px;background:rgba(255,255,255,.9);border-bottom:1px solid var(--faint);transition:background .15s,box-shadow .15s}
-.row:not(.head):hover{background:rgba(142,195,236,.08)}
+.row{display:flex;flex-direction:column;gap:6px;padding:8px 10px 9px 4px;background:var(--paper);border:1px solid var(--faint);border-radius:10px;transition:background .15s,box-shadow .15s}
+.row .r1{display:grid;grid-template-columns:18px 30px minmax(0,1fr) 108px 28px;column-gap:8px;align-items:center}
+.row .r2{display:flex;flex-wrap:wrap;gap:6px 12px;padding-left:26px}
+.row .ds{margin-left:26px}
+.fl{display:flex;flex-direction:column;gap:1px;width:52px}
+.fl i{font-style:normal;font-size:9.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-soft);display:flex;align-items:center;gap:3px;white-space:nowrap}
+.fl i svg{width:12px;height:12px;flex:none}
+.row .del{width:26px;height:26px}
+.row:hover{border-color:var(--rule)}
 .row.head{min-height:30px;background:transparent;border-bottom:1px solid var(--rule)}
 .row .h{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;gap:2px;white-space:nowrap}
 .row .h.l{justify-content:flex-start}
 .row .h svg{width:14px;height:14px}
-.row.hi{box-shadow:inset 3px 0 0 var(--link)}
-.row.cyb.hi{box-shadow:inset 3px 0 0 var(--link-cyb)}
+.row.hi{box-shadow:inset 3px 0 0 var(--link);border-color:var(--link)}
+.row.cyb.hi{box-shadow:inset 3px 0 0 var(--link-cyb);border-color:var(--link-cyb)}
 .row.dragging{opacity:.45}
 .grip{width:20px;height:30px;display:grid;place-items:center;cursor:grab;color:#b7bbc6;touch-action:none;border:0;background:none;padding:0}
 .grip:hover{color:var(--ink)}
@@ -296,7 +311,7 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 .c{min-width:0;width:100%;border:0;border-bottom:1px solid var(--rule);background:transparent;padding:3px 1px;font-weight:700;font-size:13px;outline:none;text-align:center;font-variant-numeric:tabular-nums}
 select.c{appearance:none;cursor:pointer}
 .c:focus{border-bottom-color:var(--ink)}
-.c.na{border-bottom:1px dotted var(--faint);height:22px}
+
 .row .ds{min-width:0;border:0;border-bottom:1px dashed var(--rule);background:transparent;font-size:12.5px;padding:3px 2px;outline:none;color:var(--ink)}
 .row .ds:focus{border-bottom-color:var(--ink)}
 .pill{border:1px solid var(--rule);background:var(--paper);border-radius:999px;padding:3px 10px;font-size:11.5px;font-weight:700;color:var(--ink)}
@@ -424,8 +439,14 @@ dialog::backdrop{background:rgba(47,51,64,.42)}
 #tracecatch{position:fixed;inset:0;z-index:90;cursor:pointer}
 
 @media (max-width:1280px){.frames{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:1100px){
+  .layout,.layout.inv-off{grid-template-columns:minmax(290px,330px) minmax(0,1fr)}
+  .invpanel{position:fixed;top:calc(var(--bar) + env(safe-area-inset-top,0px));right:0;bottom:0;height:auto;align-self:stretch;width:min(420px,100vw);z-index:39;transform:none;transition:transform .3s ease;border-left:1px solid var(--rule);background:var(--paper)}
+  .layout.inv-off .invpanel{transform:translateX(102%)}
+  .invin{width:100%}
+}
 @media (max-width:820px){
-  .layout{grid-template-columns:minmax(0,1fr)}
+  .layout,.layout.inv-off{grid-template-columns:minmax(0,1fr)}
   .panel{position:static;max-height:none;border-right:0;border-bottom:1px solid var(--rule);padding:14px max(16px,env(safe-area-inset-right,0px)) 18px max(16px,env(safe-area-inset-left,0px))}
   .center{padding:14px max(16px,env(safe-area-inset-right,0px)) 32px max(16px,env(safe-area-inset-left,0px))}
   .stamp{left:50%}
@@ -448,6 +469,7 @@ dialog::backdrop{background:rgba(47,51,64,.42)}
   <div class="tools">
     <button class="tool" id="b-roll" type="button" title="Jet libre"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l9 5v10l-9 5-9-5V7z"/><path d="M3 7l9 5 9-5M12 12v10"/></svg><span class="lbl">Jet libre</span></button>
     <button class="tool" id="b-journal" type="button" title="Journal de bord"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18H6z"/><path d="M9 3v18M12 8h4M12 12h4"/></svg><span class="lbl">Journal</span></button>
+    <button class="tool" id="b-inv" type="button" title="Inventaire" aria-pressed="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8l8-4 8 4v8l-8 4-8-4z"/><path d="M4 8l8 4 8-4M12 12v8"/></svg><span class="lbl">Inventaire</span></button>
   </div>
   <div class="spacer"></div>
   <div class="tools">
@@ -520,7 +542,9 @@ dialog::backdrop{background:rgba(47,51,64,.42)}
       <div id="tags"></div>
     </div>
 
-    <div class="frames">
+  </main>
+
+  <aside class="invpanel" id="invpanel" aria-label="Inventaire"><div class="invin">
       <section class="frame" id="fr-inv">
         <div class="frame-head">
           <svg class="ttl sm" data-title><text x="0" y="24">INVENTAIRE</text></svg>
@@ -530,8 +554,7 @@ dialog::backdrop{background:rgba(47,51,64,.42)}
         </div>
         <div class="invscroll"><div class="rows" id="inv"></div></div>
       </section>
-    </div>
-  </main>
+  </div></aside>
 </div>
 
 <aside class="drawer" id="journal" aria-label="Journal de bord">
@@ -636,7 +659,7 @@ function derive(c){
 /* =========================================================
    ÉTAT, SAUVEGARDE (.adb) — l'adaptateur Store sera branché sur Firebase plus tard
    ========================================================= */
-const APP_VER='14';
+const APP_VER='15';
 const LS_SHEET='aldebaran.joueur.fiche', LS_PREF='aldebaran.joueur.prefs';
 const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v);return true}catch(e){return false}}};
 let prefs={autosave:60};
@@ -1012,49 +1035,43 @@ function linkedZones(card,col){ if(col==='inv'){ if(isWeapon(card)) return hands
 function statOpts(v){ return `<option value="">–</option>`+STATS.map(s=>`<option value="${s}" ${v===s?'selected':''}>${s}</option>`).join(''); }
 const GRIP=`<svg viewBox="0 0 12 18" fill="currentColor"><circle cx="3" cy="3" r="1.5"/><circle cx="9" cy="3" r="1.5"/><circle cx="3" cy="9" r="1.5"/><circle cx="9" cy="9" r="1.5"/><circle cx="3" cy="15" r="1.5"/><circle cx="9" cy="15" r="1.5"/></svg>`;
 const cell=(f,v)=>`<input class="c n" data-f="${f}" inputmode="numeric" value="${esc(v)}">`;
-const NA='<span class="c na"></span>';
+const NA='';
+const fld=(lbl,tip,inner)=>`<label class="fl" title="${tip}"><i>${lbl}</i>${inner}</label>`;
+const L_STAT=()=>`${svgI('dice','var(--danger)')}Stat`, L_TH=()=>`${svgI('trophy','var(--c-for)')}Seuil`, L_PC=s=>`${svgI('box','#a0642b')}PC${s}`, L_PP=()=>`${svgI('shield','var(--c-res)')}PP`, L_B=()=>`${svgI('burst','#c9a646')}₿`;
 function rowInv(it){
-  const tk=typeKey(it), T=ITEM_TYPES[tk]||ITEM_TYPES.misc, w=isWeapon(it), d=diceOf(it), t=it.itemType;
-  let zoneCell=NA;
-  if(w){ const hs=handsOf(it), v=hs.length===2?'Mains':hs[0]||''; zoneCell=`<select class="zc" data-f="hand" aria-label="Main">${[['','—'],...((it.hands||1)===2?[['Mains','Deux mains']]:[['Main G','Main G'],['Main D','Main D'],['Mains','Deux mains']])].map(([k,l])=>`<option value="${k}" ${v===k?'selected':''}>${l}</option>`).join('')}</select>`; }
-  else if(t!=='backpack') zoneCell=`<select class="zc" data-f="zone" aria-label="Zone">${[['','—'],...(t==='armor'?ARM_Z.map(z=>[z,z==='Combi'?'Combinaison':z]):ZONES.map(z=>[z,z]))].map(([k,l])=>`<option value="${k}" ${it.zone===k?'selected':''}>${l}</option>`).join('')}</select>`;
-  const inHand=handsOf(it).length>0;
-  return `<div class="row ${inHand?'equipped':''}" data-id="${it.id}" data-col="inv">
-    <button type="button" class="grip" data-drag title="Glisser sur le corps" aria-label="Glisser sur le corps">${GRIP}</button>
-    <span class="tico" data-drag title="${T.label}">${svgI(T.ico,T.col)}</span>
-    <input class="nm" data-f="name" value="${esc(it.name)}" aria-label="Nom" title="${T.label}">
-    ${zoneCell}
-    ${w?`<select class="c" data-f="stat" aria-label="Statistique">${statOpts(it.stat)}</select>`:NA}
-    ${w?cell('diceBonus',it.diceBonus||0):NA}
-    ${w?cell('successThreshold',it.successThreshold||8):NA}
-    ${t!=='backpack'?cell('weight',it.weight||0):NA}
-    ${t==='backpack'?cell('weight',it.weight||0):NA}
-    ${t==='armor'?cell('armorPoints',it.armorPoints||0):NA}
-    ${w?`<input class="c n" data-f="bastosCost" value="${esc(it.bastosCost??'-')}">`:NA}
+  const tk=typeKey(it), T=ITEM_TYPES[tk]||ITEM_TYPES.misc, w=isWeapon(it), t=it.itemType;
+  let zoneCell='';
+  if(w){ const hs=handsOf(it), v=hs.length===2?'Mains':hs[0]||''; zoneCell=`<select class="zc" data-f="hand" aria-label="Main">${[['','Rangée'],...((it.hands||1)===2?[['Mains','Deux mains']]:[['Main G','Main G'],['Main D','Main D'],['Mains','Deux mains']])].map(([k,l])=>`<option value="${k}" ${v===k?'selected':''}>${l}</option>`).join('')}</select>`; }
+  else if(t!=='backpack') zoneCell=`<select class="zc" data-f="zone" aria-label="Zone">${[['','Non portée'],...(t==='armor'?ARM_Z.map(z=>[z,z==='Combi'?'Combinaison':z]):ZONES.map(z=>[z,z]))].map(([k,l])=>`<option value="${k}" ${it.zone===k?'selected':''}>${l}</option>`).join('')}</select>`;
+  const f=[];
+  if(w){ f.push(fld(L_STAT(),'Statistique utilisée',`<select class="c" data-f="stat" aria-label="Statistique">${statOpts(it.stat)}</select>`), fld('+ D','Dés ajoutés à la statistique',cell('diceBonus',it.diceBonus||0)), fld(L_TH(),'Seuil de réussite',cell('successThreshold',it.successThreshold||8))); }
+  f.push(fld(L_PC(t==='backpack'?'+':'−'),t==='backpack'?'Charge ajoutée (sac)':'Charge occupée',cell('weight',it.weight||0)));
+  if(t==='armor') f.push(fld(L_PP(),"Points d'armure",cell('armorPoints',it.armorPoints||0)));
+  if(w) f.push(fld(L_B(),'Consommation en Bastos à chaque tir',`<input class="c n" data-f="bastosCost" value="${esc(it.bastosCost??'-')}">`));
+  return `<div class="row ${handsOf(it).length?'equipped':''}" data-id="${it.id}" data-col="inv">
+    <div class="r1"><button type="button" class="grip" data-drag title="Glisser sur le corps" aria-label="Glisser sur le corps">${GRIP}</button>
+      <span class="tico" data-drag title="${T.label}">${svgI(T.ico,T.col)}</span>
+      <input class="nm" data-f="name" value="${esc(it.name)}" aria-label="Nom" title="${T.label}">
+      ${zoneCell}<button type="button" class="ib del" data-a="del" title="Supprimer">${svgI('x')}</button></div>
+    <div class="r2">${f.join('')}</div>
     <input class="ds" data-f="specialAbility" value="${esc(it.specialAbility)}" placeholder="Effets & description" aria-label="Effets et description">
-    <div class="acts"><button type="button" class="ib" data-a="del" title="Supprimer">${svgI('x')}</button></div>
   </div>`;
 }
 function rowCyb(c){
-  const T=CYB_TYPES[c.type]||CYB_TYPES.particularity, d=diceOf(c);
+  const T=CYB_TYPES[c.type]||CYB_TYPES.particularity;
   return `<div class="row cyb" data-id="${c.id}" data-col="cyb">
-    <button type="button" class="grip" data-drag title="Glisser sur le corps" aria-label="Glisser sur le corps">${GRIP}</button>
-    <span class="tico" data-drag title="${T.label}">${svgI(T.ico,T.col)}</span>
-    <input class="nm" data-f="name" value="${esc(c.name)}" aria-label="Nom">
-    <select class="zc" data-f="bodyPart" aria-label="Zone">${[['','—'],...ZONES.map(z=>[z,z])].map(([k,l])=>`<option value="${k}" ${c.bodyPart===k?'selected':''}>${l}</option>`).join('')}</select>
-    <select class="c" data-f="stat" aria-label="Statistique">${statOpts(c.stat)}</select>
-    ${cell('diceBonus',c.diceBonus||0)}${cell('successThreshold',c.successThreshold||8)}${NA}${NA}${NA}${NA}
-    <input class="ds" data-f="ability" value="${esc(c.ability)}" placeholder="Effet & utilisation" aria-label="Effet">
-    <div class="acts"><button type="button" class="ib" data-a="del" title="Supprimer">${svgI('x')}</button></div>
+    <div class="r1"><button type="button" class="grip" data-drag title="Glisser sur le corps" aria-label="Glisser sur le corps">${GRIP}</button>
+      <span class="tico" data-drag title="${T.label}">${svgI(T.ico,T.col)}</span>
+      <input class="nm" data-f="name" value="${esc(c.name)}" aria-label="Nom">
+      <select class="zc" data-f="bodyPart" aria-label="Zone">${[['','Non placée'],...ZONES.map(z=>[z,z])].map(([k,l])=>`<option value="${k}" ${c.bodyPart===k?'selected':''}>${l}</option>`).join('')}</select>
+      <button type="button" class="ib del" data-a="del" title="Supprimer">${svgI('x')}</button></div>
+    <div class="r2">${fld(L_STAT(),'Statistique utilisée',`<select class="c" data-f="stat" aria-label="Statistique">${statOpts(c.stat)}</select>`)}${fld('+ D','Dés ajoutés à la statistique',cell('diceBonus',c.diceBonus||0))}${fld(L_TH(),'Seuil de réussite',cell('successThreshold',c.successThreshold||8))}</div>
+    <input class="ds" data-f="ability" value="${esc(c.ability)}" placeholder="Effets & description" aria-label="Effets et description">
   </div>`;
 }
-const HEAD=`<div class="row head"><span></span><span></span><span class="h l">Nom</span><span class="h l">Zone</span>
-  <span class="h" title="Statistique utilisée">${svgI('dice','var(--danger)')}Stat</span><span class="h" title="Dés ajoutés à la statistique">+ D</span><span class="h" title="Seuil de réussite">${svgI('trophy','var(--c-for)')}</span>
-  <span class="h" title="Charge occupée">${svgI('box','#a0642b')}−</span><span class="h" title="Charge ajoutée (sac)">${svgI('box','#a0642b')}+</span><span class="h" title="Points d'armure">${svgI('shield','var(--c-res)')}</span><span class="h" title="Consommation en Bastos">${svgI('burst','var(--danger)')}₿</span>
-  <span class="h l">Effets &amp; description</span><span></span></div>`;
 function renderCards(){
   const rows=[...C.inventory.map(rowInv),...C.cybernetics.map(rowCyb)];
-  $('inv').innerHTML=rows.length?HEAD+rows.join(''):`<div class="empty-frame">L'inventaire est vide. Le « + » ajoute un équipement, une cybernétique ou une mutation.</div>`;
+  $('inv').innerHTML=rows.length?rows.join(''):`<div class="empty-frame">L'inventaire est vide. Le « + » ajoute un équipement, une cybernétique ou une mutation.</div>`;
 }
 function renderNotes(){
   $('notes').innerHTML=C.notes.length?C.notes.map(n=>`<div class="note" data-id="${n.id}"><div class="top"><input class="line-in" data-nf="title" value="${esc(n.title)}" aria-label="Titre"><button class="ib" type="button" data-a="delnote" title="Supprimer l'entrée">${svgI('x')}</button></div><textarea data-nf="content" aria-label="Contenu">${esc(n.content)}</textarea></div>`).join('')
@@ -1322,7 +1339,14 @@ $('b-bastos').onclick=()=>{
   $('bastos-plus').onclick=()=>go(1); $('bastos-minus').onclick=()=>go(-1); setTimeout(()=>$('bastos-amt').focus(),30);
 };
 /* Volets latéraux : un seul ouvert à la fois */
-function openDrawer(id){ ['journal','roller'].forEach(d=>$(d).classList.toggle('open',d===id&&!$(d).classList.contains('open'))); }
+function openDrawer(id){ ['journal','roller'].forEach(d=>$(d).classList.toggle('open',d===id&&!$(d).classList.contains('open')));
+  if(matchMedia('(max-width:1100px)').matches&&id) setInv(false,true); }
+const narrow=()=>matchMedia('(max-width:1100px)').matches;
+function setInv(on,keepPref){ $('layout').classList.toggle('inv-off',!on); $('b-inv').setAttribute('aria-pressed',on);
+  if(on&&narrow()) ['journal','roller'].forEach(d=>$(d).classList.remove('open'));
+  if(!keepPref&&!narrow()){ prefs.inv=on; ls.set(LS_PREF,JSON.stringify(prefs)); }
+  clearTimeout(setInv.t); setInv.t=setTimeout(()=>{ placeRibbon(); renderTags(); placeBubbles(); },380); }
+$('b-inv').onclick=()=>setInv($('layout').classList.contains('inv-off'));
 document.addEventListener('click',e=>{ if(e.target.closest('[data-closedrawer]')) e.target.closest('.drawer').classList.remove('open'); });
 $('b-roll').onclick=()=>openDrawer('roller');
 document.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>{ const i=$(b.dataset.step), lim=b.dataset.step==='fr-n'?[1,30]:[2,10]; i.value=Math.min(lim[1],Math.max(lim[0],(parseInt(i.value)||0)+(+b.dataset.d))); });
@@ -1404,7 +1428,7 @@ $('b-guide').onclick=()=>{
   openDialog(`<h3>Guide</h3><div class="guide">
     <h4>Le volet de gauche</h4><p>Personnage, Décompte et Statistiques. Dans chaque statistique, le petit cercle contient la valeur de base, le grand cercle le nombre de dés lancés après malus. Cliquez le grand cercle pour lancer : pool de D10, seuil 8+, un 10 est un critique, un 1 un échec critique.</p>
     <h4>Le corps</h4><ul><li>Un clic sur une partie du corps la fracture, un second clic la soigne. Plusieurs fractures peuvent coexister.</li><li>Six zones : Tête → PER / 2, Corps → RES / 2, Bras (main comprise) → DEX / 2, Jambe → FOR / 2. Les os de la zone fracturée passent au rouge. Deux fractures sur la même statistique ne la divisent qu'une fois.</li><li>Les pastilles indiquent combien de vignettes sont reliées à chaque partie (bleu : inventaire, violet : cyber).</li></ul>
-    <h4>Inventaire</h4><ul><li>Le « + » ajoute un équipement (arme, armure, divers, sac) ou une cybernétique, mutation, particularité.</li><li>Pour attribuer une ligne au corps, attrapez-la par sa poignée (ou son icône) et déposez-la sur une zone. Le × sur l'étiquette la retire.</li><li>Une arme se dépose sur une main ; déposée sur l'autre main, elle se tient à deux mains. Une main occupée se ferme en poing.</li><li>Une armure se porte en Tête, Haut (torse et bras), Bas (jambes), Pied, ou Combi (tout le corps) : un trait bleu épais longe la partie protégée. Déposée sur le bas des jambes, elle va aux pieds.</li><li>PC = FOR + 3 (+2 Elfe), moins le poids des objets, plus les sacs. PP = armures (+1 Droïde).</li></ul>
+    <h4>Inventaire</h4><ul><li>L'inventaire est un volet à droite, qui s'ouvre et se ferme avec le bouton « Inventaire » de la barre du haut ; fermé, la silhouette reprend toute la place.</li><li>Le « + » ajoute un équipement (arme, armure, divers, sac) ou une cybernétique, mutation, particularité.</li><li>Pour attribuer une ligne au corps, attrapez-la par sa poignée (ou son icône) et déposez-la sur une zone. Le × sur l'étiquette la retire.</li><li>Une arme se dépose sur une main ; déposée sur l'autre main, elle se tient à deux mains. Une main occupée se ferme en poing.</li><li>Une armure se porte en Tête, Haut (torse et bras), Bas (jambes), Pied, ou Combi (tout le corps) : un trait bleu épais longe la partie protégée. Déposée sur le bas des jambes, elle va aux pieds.</li><li>PC = FOR + 3 (+2 Elfe), moins le poids des objets, plus les sacs. PP = armures (+1 Droïde).</li></ul>
     <h4>Effets actifs</h4><p>Chaque effet acquis devient une bulle avec son icône, qui tourne lentement sur le cercle autour de la silhouette : trait racial (ADN), fractures, états du jeu, bonus et malus. Au survol, les bulles s'arrêtent et une infobulle décrit l'effet, avec Modifier / Retirer (ou Soigner pour une fracture). Le « + » en haut à gauche du dessin ajoute un effet.</p>
     <h4>Décompte</h4><p>PV max = RES + 5. Sous 5 PV : « Pas top top » (seuil +1). À 0 : étourdissement. À −1 : hors jeu. À 10 PE, le cadran d'éveil s'allume. Tous les 10 PT, chaque statistique perd 1.</p>
     <h4>Sauvegarde</h4><p>On enregistre dans un <b>dossier</b> : il contient un fichier <b>.adb</b> par personnage et un <b>catalogue.adbc</b> commun. « Ouvrir un dossier… » liste les fiches qu'il contient. Ctrl+S réécrit la fiche dans le dossier, Ctrl+Maj+S en choisit un autre. La sauvegarde automatique se règle dans les Paramètres. Sur un navigateur qui ne gère pas les dossiers (Firefox, Safari), la fiche se télécharge et le catalogue reste dans le navigateur.</p><h4>Catalogue</h4><p>Chaque objet créé (arme, armure, divers, sac, cyber, mutation, particularité) est enregistré dans le catalogue, et mis à jour quand on le modifie. Dans « Ajouter », la tuile Catalogue permet de le reprendre dans n'importe quelle fiche du dossier.</p>
@@ -1691,6 +1715,7 @@ buildStatic();
 const restored=Store.loadLocal(); if(restored) C=restored;
 CAT=Store.loadCat(); fileName=ls.get(LS_FILE)||null; syncCat();
 idb.get('dir').then(h=>{ if(h&&h.kind==='directory'){ dirHandle=h; updateSaveState(); } });
+setInv(narrow()?false:prefs.inv!==false,true);
 renderAll(); updateSaveState(); setupAutosave(); placeRibbon();
 runOpening();
 </script>
