@@ -252,8 +252,15 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 #leads path{fill:none;stroke-width:1.4}
 #leads circle{stroke:none}
 #tags{position:absolute;inset:0;pointer-events:none}
-.tagp{position:absolute;pointer-events:auto;display:flex;align-items:center;gap:6px;background:var(--paper);border:1.4px solid var(--c);border-radius:999px;padding:3px 4px 3px 11px;font-size:12px;font-weight:700;color:var(--ink-strong);white-space:nowrap;max-width:180px;height:28px;transform:translateY(-50%)}
-.tagp span{overflow:hidden;text-overflow:ellipsis}
+.tagp{position:absolute;pointer-events:auto;display:flex;flex-direction:column;gap:3px;background:var(--paper);border:1.4px solid var(--c);border-radius:14px;padding:3px 4px 3px 5px;font-size:12px;color:var(--ink-strong);max-width:220px;cursor:grab;touch-action:none;user-select:none}
+.tagp.moving{cursor:grabbing;box-shadow:0 0 0 4px rgba(32,34,44,.08);z-index:5}
+.tagp .tg1{display:flex;align-items:center;gap:6px;height:22px;min-width:0}
+.tagp .tg1 b{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1}
+.tagp .ti{width:22px;height:22px;flex:none;border-radius:50%;display:grid;place-items:center;background:var(--wash)}
+.tagp .ti svg{width:14px;height:14px}
+.tagp .tgd{font-size:11px;line-height:1.35;color:var(--ink);padding:0 6px 3px 4px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.tagp .tx{opacity:0;transition:opacity .15s}.tagp:hover .tx,.tagp:focus-within .tx{opacity:1}
+@media (hover:none){.tagp .tx{opacity:1}}
 .tagp button{flex:none;height:20px;min-width:20px;border-radius:999px;border:0;display:grid;place-items:center;padding:0 6px;font-size:11px;font-weight:700}
 .tagp .tr{background:var(--ink-strong);color:#fff;display:flex;gap:3px;align-items:center}
 .tagp .tr svg{width:12px;height:12px}
@@ -652,7 +659,7 @@ const ZFIX=z=>({'Torse':'Corps','Main G':'Bras G','Main D':'Bras D','Général':
 
 function blankCharacter(){
   return {name:'',race:'humain',stats:{FOR:0,RES:0,CHA:0,SAV:0,DEX:0,PER:0},pv:5,pt:0,pe:0,bastos:1000,
-    inventory:[],cybernetics:[],effects:[],fractures:[],notes:[],bankInventory:[],bankBastos:0,vehicle:null,photo:null,id:Date.now()};
+    inventory:[],cybernetics:[],effects:[],fractures:[],notes:[],tagPos:{},bankInventory:[],bankBastos:0,vehicle:null,photo:null,id:Date.now()};
 }
 const isWeapon=it=>it.itemType==='weapon';
 const hasFx=(c,k)=>(c.effects||[]).some(e=>e.key===k);
@@ -679,7 +686,7 @@ function derive(c){
 /* =========================================================
    ÉTAT, SAUVEGARDE (.adb) — l'adaptateur Store sera branché sur Firebase plus tard
    ========================================================= */
-const APP_VER='17';
+const APP_VER='18';
 const LS_SHEET='aldebaran.joueur.fiche', LS_PREF='aldebaran.joueur.prefs';
 const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v);return true}catch(e){return false}}};
 let prefs={autosave:60};
@@ -1029,30 +1036,53 @@ function tagList(){
   return L;
 }
 function diceOf(it){ const D=derive(C); return {stat:it.stat,base:D.r[it.stat]||0,bonus:+it.diceBonus||0,total:(D.r[it.stat]||0)+(+it.diceBonus||0)}; }
+const tagKey=t=>t.col+t.it.id;
+function tagIco(t){ const T=t.col==='cyb'?(CYB_TYPES[t.it.type]||CYB_TYPES.particularity):(ITEM_TYPES[typeKey(t.it)]||ITEM_TYPES.misc); return svgI(T.ico,T.col); }
 function renderTags(){
   const wrap=$('figwrap'), fig=$('figure'), tags=$('tags'), leads=$('leads');
-  const list=tagList();
-  tags.innerHTML=list.map((t,i)=>{ const d=diceOf(t.it), canRoll=t.it.stat&&(t.kind==='weapon'||t.kind==='cyb');
-    return `<div class="tagp" data-i="${i}" data-id="${t.it.id}" data-col="${t.col}" style="--c:${TAGCOL[t.kind]}" title="${esc(t.it.name)} · ${t.z.map(z=>z==='Combi'?'tout le corps':z).join(' + ')}"><span>${esc(t.it.name||'Sans nom')}</span>${canRoll?`<button type="button" class="tr" data-tagroll title="${d.stat} ${d.base}${d.bonus?` + ${d.bonus}`:''} = ${d.total} dés">${svgI('dice','#fff')}${d.total}</button>`:''}<button type="button" class="tx" data-tagx title="Déséquiper">×</button></div>`; }).join('');
+  const list=tagList(); if(!C.tagPos) C.tagPos={};
+  tags.innerHTML=list.map((t,i)=>{ const d=diceOf(t.it), canRoll=t.it.stat&&(t.kind==='weapon'||t.kind==='cyb'), ds=t.col==='cyb'?t.it.ability:t.it.specialAbility;
+    return `<div class="tagp" data-i="${i}" data-id="${t.it.id}" data-col="${t.col}" style="--c:${TAGCOL[t.kind]}" title="${esc(t.it.name)} · ${t.z.map(z=>z==='Combi'?'tout le corps':z).join(' + ')} — glisser pour déplacer">
+      <div class="tg1"><span class="ti">${tagIco(t)}</span><b>${esc(t.it.name||'Sans nom')}</b>${canRoll?`<button type="button" class="tr" data-tagroll title="${d.stat} ${d.base}${d.bonus?` + ${d.bonus}`:''} = ${d.total} dés">${svgI('dice','#fff')}${d.total}</button>`:''}<button type="button" class="tx" data-tagx title="Déséquiper">×</button></div>
+      ${ds?`<div class="tgd">${esc(ds)}</div>`:''}</div>`; }).join('');
   leads.innerHTML='';
   if(getComputedStyle(leads).display==='none') return;
   const W=wrap.getBoundingClientRect(), Fr=fig.getBoundingClientRect(), sc=Fr.width/910, ox=Fr.left-W.left, oy=Fr.top-W.top;
   const P=z=>[ox+ANCH[z][0]*sc, oy+ANCH[z][1]*sc];
+  const els=[...tags.children];
+  // position : celle choisie à la main (relative à la silhouette), sinon placement automatique de part et d'autre
   const sideOf=t=>{ const z=t.z[0]; return /G$/.test(z)?'L':/D$/.test(z)?'R':null; };
   const cnt={L:0,R:0}; list.forEach(t=>{ const s=sideOf(t); if(s) cnt[s]++; });
   list.forEach(t=>{ t.side=sideOf(t)||(cnt.L<=cnt.R?'L':'R'); if(!sideOf(t)) cnt[t.side]++; t.ay=Math.min(...t.z.map(z=>P(z)[1])); });
+  const last={L:-1e9,R:-1e9};
+  [...list].sort((a,b)=>a.ay-b.ay).forEach(t=>{ const el=els[list.indexOf(t)], w=el.offsetWidth, h=el.offsetHeight, p=C.tagPos[tagKey(t)];
+    let x,y;
+    if(p){ x=ox+p[0]*Fr.width; y=oy+p[1]*Fr.width; }
+    else { y=Math.max(t.ay-14,last[t.side]+8); x=t.side==='L'?ox-14-w:ox+Fr.width+14; }
+    x=Math.min(Math.max(0,x),W.width-w); y=Math.min(Math.max(0,y),W.height-h);
+    if(!p) last[t.side]=y+h;
+    el.style.left=x+'px'; el.style.top=y+'px'; t.box=[x,y,w,h]; });
   const lines=[];
-  ['L','R'].forEach(side=>{
-    const S=list.filter(t=>t.side===side).sort((a,b)=>a.ay-b.ay); let last=-1e9;
-    S.forEach(t=>{ const y=Math.max(t.ay,last+34); last=y; const el=tags.querySelector(`.tagp[data-i="${list.indexOf(t)}"]`);
-      el.style.top=y+'px';
-      if(side==='L'){ el.style.right=(W.width-ox+14)+'px'; } else { el.style.left=(ox+Fr.width+14)+'px'; }
-      const ex=side==='L'?ox-14:ox+Fr.width+14, mx=side==='L'?ox+6:ox+Fr.width-6;
-      t.z.forEach(z=>{ const [ax,ay]=P(z); lines.push(`<path d="M${ex} ${y}L${mx} ${y}L${ax} ${ay}" style="stroke:${TAGCOL[t.kind]}"/><circle cx="${ax}" cy="${ay}" r="3.5" style="fill:${TAGCOL[t.kind]}"/>`); });
-    });
-  });
+  list.forEach(t=>{ const [x,y,w,h]=t.box, cy=y+14;
+    t.z.forEach(z=>{ const [ax,ay]=P(z); let d;
+      if(ax>x-20&&ax<x+w+20&&(ay<y||ay>y+h)){ const ex=Math.min(Math.max(ax,x+14),x+w-14), ey=ay<y?y:y+h; d=`M${ex} ${ey}L${ex} ${ey+(ay<y?-10:10)}L${ax} ${ay}`; }   // au-dessus / en dessous
+      else { const right=x+w/2<ax, ex=right?x+w:x, mx=ex+(right?10:-10); d=`M${ex} ${cy}L${mx} ${cy}L${ax} ${ay}`; }
+      lines.push(`<path d="${d}" style="stroke:${TAGCOL[t.kind]}"/><circle cx="${ax}" cy="${ay}" r="3.5" style="fill:${TAGCOL[t.kind]}"/>`); }); });
   leads.setAttribute('viewBox',`0 0 ${W.width} ${W.height}`); leads.innerHTML=lines.join('');
 }
+// les étiquettes se déplacent librement autour de la silhouette et restent reliées
+let tagDrag=null;
+document.addEventListener('pointerdown',e=>{ const tg=e.target.closest('.tagp'); if(!tg||e.button>0||e.target.closest('button')) return;
+  if(getComputedStyle($('leads')).display==='none') return;
+  tagDrag={tg,x0:e.clientX,y0:e.clientY,l:tg.offsetLeft,t:tg.offsetTop,moved:false}; tg.setPointerCapture(e.pointerId); });
+document.addEventListener('pointermove',e=>{ if(!tagDrag) return; const d=tagDrag, dx=e.clientX-d.x0, dy=e.clientY-d.y0;
+  if(!d.moved&&Math.hypot(dx,dy)<4) return; d.moved=true; d.tg.classList.add('moving');
+  const Fr=$('figure').getBoundingClientRect(), W=$('figwrap').getBoundingClientRect(), ox=Fr.left-W.left, oy=Fr.top-W.top;
+  const x=Math.min(Math.max(0,d.l+dx),W.width-d.tg.offsetWidth), y=Math.min(Math.max(0,d.t+dy),W.height-d.tg.offsetHeight);
+  const t=tagList()[+d.tg.dataset.i]; if(!t) return;
+  C.tagPos[tagKey(t)]=[(x-ox)/Fr.width,(y-oy)/Fr.width]; renderTagsLive(); });
+document.addEventListener('pointerup',()=>{ if(!tagDrag) return; const d=tagDrag; tagDrag=null; if(d.moved){ markDirty(); renderTags(); } });
+let tagRaf=0; function renderTagsLive(){ if(tagRaf) return; tagRaf=requestAnimationFrame(()=>{ tagRaf=0; renderTags(); if(tagDrag){ const n=$('tags').querySelector(`.tagp[data-i="${tagDrag.tg.dataset.i}"]`); if(n){ n.classList.add('moving'); tagDrag.tg=n; } } }); }
 window.addEventListener('resize',()=>renderTags());
 function linkedZones(card,col){ if(col==='inv'){ if(isWeapon(card)) return handsOf(card); if(card.zone==='Combi') return []; if(card.itemType==='armor') return ARM_PARTS[card.zone]||[]; return card.zone?[card.zone]:[]; } return card.bodyPart?[card.bodyPart]:[]; }
 
@@ -1146,6 +1176,7 @@ document.addEventListener('click',e=>{
   const tg=e.target.closest('.tagp');
   if(tg&&(e.target.closest('[data-tagx]')||e.target.closest('[data-tagroll]'))){ const list=listOf(tg.dataset.col), it=list.find(x=>x.id===+tg.dataset.id); if(!it) return;
     if(e.target.closest('[data-tagroll]')){ tg.dataset.col==='inv'?useItem(it,true):rollItem(it.name||'Capacité',it.stat,it.diceBonus,it.successThreshold); return; }
+    if(C.tagPos) delete C.tagPos[tg.dataset.col+it.id];
     if(tg.dataset.col==='cyb') it.bodyPart=''; else { it.zone=''; it.equipped=false; }
     renderCards(); renderDerived(); markDirty(); return; }
   const a=e.target.closest('.row [data-a]');
@@ -1466,7 +1497,7 @@ function showGuide(){
   openDialog(`<h3>Guide</h3><div class="guide">
     <h4>Le volet de gauche</h4><p>Personnage, Décompte et Statistiques. Dans chaque statistique, le petit cercle contient la valeur de base, le grand cercle le nombre de dés lancés après malus. Cliquez le grand cercle pour lancer : pool de D10, seuil 8+, un 10 est un critique, un 1 un échec critique.</p>
     <h4>Le corps</h4><ul><li>Un clic sur une partie du corps la fracture, un second clic la soigne. Plusieurs fractures peuvent coexister.</li><li>Six zones : Tête → PER / 2, Corps → RES / 2, Bras (main comprise) → DEX / 2, Jambe → FOR / 2. Les os de la zone fracturée passent au rouge. Deux fractures sur la même statistique ne la divisent qu'une fois.</li><li>Les pastilles indiquent combien de vignettes sont reliées à chaque partie (bleu : inventaire, violet : cyber).</li></ul>
-    <h4>Inventaire</h4><ul><li>Le bouton (i) d'une ligne affiche ou masque sa description. Pour retirer un objet de l'inventaire, glissez-le sur le « + » qui devient une poubelle : il reste dans le catalogue.</li><li>Inventaire, Jet libre et Journal s'ouvrent avec les onglets collés au bord droit de l'écran ; un clic sur l'onglet actif referme le volet. Un seul volet à la fois.</li><li>Une arme à deux mains ferme les deux poings ; une main fermée n'accepte pas d'autre arme.</li><li>Le « + » ajoute un équipement (arme, armure, divers, sac) ou une cybernétique, mutation, particularité.</li><li>Pour attribuer une ligne au corps, attrapez-la par sa poignée (ou son icône) et déposez-la sur une zone. Le × sur l'étiquette la retire.</li><li>Une arme se dépose sur une main ; déposée sur l'autre main, elle se tient à deux mains. Une main occupée se ferme en poing.</li><li>Une armure se porte en Tête, Haut (torse et bras), Bas (jambes), Pied, ou Combi (tout le corps) : un trait bleu épais longe la partie protégée. Déposée sur le bas des jambes, elle va aux pieds.</li><li>PC = FOR + 3 (+2 Elfe), moins le poids des objets, plus les sacs. PP = armures (+1 Droïde).</li></ul>
+    <h4>Inventaire</h4><ul><li>Le bouton (i) d'une ligne affiche ou masque sa description. Pour retirer un objet de l'inventaire, glissez-le sur le « + » qui devient une poubelle : il reste dans le catalogue.</li><li>Inventaire, Jet libre et Journal s'ouvrent avec les onglets collés au bord droit de l'écran ; un clic sur l'onglet actif referme le volet. Un seul volet à la fois.</li><li>Une arme à deux mains ferme les deux poings ; une main fermée n'accepte pas d'autre arme.</li><li>Chaque objet équipé a sa bulle près de la silhouette (picto, nom, dés, description). Glissez une bulle pour la placer où vous voulez : elle reste reliée à sa zone et garde sa place dans la fiche.</li><li>Le « + » ajoute un équipement (arme, armure, divers, sac) ou une cybernétique, mutation, particularité.</li><li>Pour attribuer une ligne au corps, attrapez-la par sa poignée (ou son icône) et déposez-la sur une zone. Le × sur l'étiquette la retire.</li><li>Une arme se dépose sur une main ; déposée sur l'autre main, elle se tient à deux mains. Une main occupée se ferme en poing.</li><li>Une armure se porte en Tête, Haut (torse et bras), Bas (jambes), Pied, ou Combi (tout le corps) : un trait bleu épais longe la partie protégée. Déposée sur le bas des jambes, elle va aux pieds.</li><li>PC = FOR + 3 (+2 Elfe), moins le poids des objets, plus les sacs. PP = armures (+1 Droïde).</li></ul>
     <h4>Effets actifs</h4><p>Chaque effet acquis devient une bulle avec son icône, qui tourne lentement sur le cercle autour de la silhouette : trait racial (ADN), fractures, états du jeu, bonus et malus. Au survol, les bulles s'arrêtent et une infobulle décrit l'effet, avec Modifier / Retirer (ou Soigner pour une fracture). Le « + » en haut à gauche du dessin ajoute un effet.</p>
     <h4>Décompte</h4><p>PV max = RES + 5. Sous 5 PV : « Pas top top » (seuil +1). À 0 : étourdissement. À −1 : hors jeu. À 10 PE, le cadran d'éveil s'allume. Tous les 10 PT, chaque statistique perd 1.</p>
     <h4>Sauvegarde</h4><p>On enregistre dans un <b>dossier</b> : il contient un fichier <b>.adb</b> par personnage et un <b>catalogue.adbc</b> commun. « Ouvrir un dossier… » liste les fiches qu'il contient. Ctrl+S réécrit la fiche dans le dossier, Ctrl+Maj+S en choisit un autre. La sauvegarde automatique se règle dans les Paramètres. Sur un navigateur qui ne gère pas les dossiers (Firefox, Safari), la fiche se télécharge et le catalogue reste dans le navigateur.</p><h4>Catalogue</h4><p>Chaque objet créé (arme, armure, divers, sac, cyber, mutation, particularité) est enregistré dans le catalogue, et mis à jour quand on le modifie. Dans « Ajouter », la tuile Catalogue permet de le reprendre dans n'importe quelle fiche du dossier.</p>
@@ -1530,7 +1561,7 @@ function playTrace(){
   [...document.querySelectorAll('#armor .armor-line')].forEach(p=>dash(p,T+.1,.8));
   qa('.row').forEach((el,i)=>fade(el,T+Math.min(i,20)*.04));
   qa('#leads').forEach(el=>fade(el,T+.35));
-  qa('.tagp').forEach((el,i)=>A(el,[{opacity:0,transform:'translateY(6px)'},{opacity:1,transform:'none'}],{delay:(T+.4+i*.08)*1000,duration:380,easing:'ease-out'}));
+  qa('.tagp').forEach((el,i)=>A(el,[{opacity:0,translate:'0 6px'},{opacity:1,translate:'0 0'}],{delay:(T+.4+i*.08)*1000,duration:380,easing:'ease-out'}));
   qa('.bub').forEach((el,i)=>A(el,[{opacity:0,scale:.4},{opacity:1,scale:1}],{delay:(T+.5+i*.08)*1000,duration:420,easing:'cubic-bezier(.3,1.5,.5,1)'}));
   const end=Math.max(...traceAnims.map(a=>{const t=a.effect.getTiming(); return t.delay+t.duration;}));
   return new Promise(res=>{
