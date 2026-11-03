@@ -45,7 +45,7 @@ button{cursor:pointer}
 .band{height:60px;opacity:.26}
 
 /* Barre d'appli */
-.appbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;height:var(--bar);background:var(--wash);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+.appbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;height:var(--bar);background:var(--paper);
   display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--rule);
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:31;background:var(--paper)}
@@ -137,6 +137,11 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 .dial.alert .ring{stroke:var(--danger);stroke-width:2}
 .dial.glow .ring{stroke:var(--gold);stroke-width:2.2}.dial.glow .big{color:var(--gold)}
 .bastos{display:flex;align-items:baseline;gap:8px;order:9;margin-left:auto}
+.bastos.hb{order:0;margin:0 10px 0 4px;align-items:center;padding-left:14px;border-left:1px solid var(--rule)}
+.bastos.hb .cap{font-size:10px}
+.bastos.hb button{font-size:20px;padding:0 4px}
+@media (max-width:560px){.bastos.hb .cap{display:none}.bastos.hb{margin:0 2px;padding-left:6px}.bastos.hb button{font-size:16px;padding:0 2px}.brand{font-size:12.5px!important;letter-spacing:.1em!important}.brand .dot{display:none}.tools{gap:0!important}.tool{padding:4px!important}}
+@media (max-width:400px){.brand{font-size:0!important;letter-spacing:0!important}.brand .dot{display:inline-block;width:10px;height:10px}}
 .bastos .cap{letter-spacing:.3em}
 .bastos button{display:flex;align-items:baseline;gap:6px;background:none;border:0;border-bottom:1px solid var(--rule);padding:2px 4px;font-family:var(--f-title);font-size:23px;color:var(--ink-strong);font-variant-numeric:tabular-nums}
 .bastos button:hover{border-bottom-color:var(--ink)}
@@ -173,10 +178,15 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 .mini svg{width:13px;height:13px}
 .mini.ghost{background:transparent;color:var(--ink-strong);border-color:var(--rule)}
 .fx-list{display:flex;flex-direction:column;gap:0;margin-top:2px}
-#orbit{position:absolute;inset:0;pointer-events:none;z-index:3}
-.bub{position:absolute;width:38px;height:38px;margin:-19px 0 0 -19px;border-radius:50%;background:var(--paper);border:1.6px solid var(--c);display:grid;place-items:center;pointer-events:auto;cursor:help;transition:transform .15s,box-shadow .15s}
+#orbit{position:absolute;left:50%;top:53%;width:0;height:0;pointer-events:none;z-index:3;animation:orb 150s linear infinite}
+.oslot{position:absolute;left:0;top:0;width:0;height:0}
+.oslot .bub{animation:orb 150s linear infinite reverse}
+#orbit.paused,#orbit.paused .bub{animation-play-state:paused}
+@keyframes orb{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){#orbit,.oslot .bub{animation:none}}
+.bub{position:absolute;width:38px;height:38px;margin:-19px 0 0 -19px;border-radius:50%;background:var(--paper);border:1.6px solid var(--c);display:grid;place-items:center;pointer-events:auto;cursor:help;transition:scale .15s,box-shadow .15s}
 .bub svg{width:21px;height:21px;fill:none;stroke:var(--c);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.bub:hover,.bub:focus-visible{transform:scale(1.15);box-shadow:0 0 0 4px rgba(255,255,255,.9),0 0 0 5.5px var(--c);outline:none;z-index:2}
+.bub:hover,.bub:focus-visible{scale:1.15;box-shadow:0 0 0 4px rgba(255,255,255,.9),0 0 0 5.5px var(--c);outline:none;z-index:2}
 .bub-tip{position:absolute;left:calc(100% + 10px);top:50%;transform:translateY(-50%);width:230px;background:var(--paper);border:1px solid var(--rule);border-radius:10px;padding:9px 11px;display:none;flex-direction:column;gap:3px;font-size:12px;line-height:1.4;color:var(--ink);box-shadow:0 10px 26px rgba(47,51,64,.16);cursor:default;text-align:left}
 .bub-tip::before{content:"";position:absolute;right:100%;top:0;bottom:0;width:12px}
 .bub.tip-l .bub-tip{left:auto;right:calc(100% + 10px)}
@@ -185,7 +195,7 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 .bub-tip b{font-size:13px;color:var(--ink-strong)}
 .bub-tip .st{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--c)}
 .bub-tip .bt{display:flex;gap:6px;margin-top:5px}
-.shell{position:fixed;z-index:25;width:12px;height:29px;pointer-events:none}
+.shell{position:fixed;z-index:35;width:12px;height:29px;pointer-events:none}
 .shell svg{width:100%;height:100%;display:block}
 #bastos-val{display:inline-block}
 .bub.add{background:var(--ink-strong);border-color:var(--ink-strong);cursor:pointer}
@@ -247,7 +257,7 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 .bone{fill:#e9ebf0;stroke:#b9bdc9;stroke-width:1.1;transition:fill .25s,stroke .25s}
 .bone.open{fill:none}
 .bone.hl{fill:#d7e7f5;stroke:var(--link)}
-.bone.frac{fill:#ef5a62;stroke:#c2333b;stroke-width:1.2;animation:throb 1.8s ease-in-out infinite}
+.bone.frac{fill:#ef5a62;stroke:#c2333b;stroke-width:1.2;animation:throb 1.8s ease-in-out 3}
 .bone.open.frac{fill:none;stroke:#e0444d;stroke-width:1.8}
 @keyframes throb{0%,100%{filter:drop-shadow(0 0 0 rgba(226,60,70,0))}50%{filter:drop-shadow(0 0 4px rgba(226,60,70,.55))}}
 @media (prefers-reduced-motion:reduce){.bone.frac{animation:none}}
@@ -276,6 +286,11 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 .frame-meta{flex:1;min-width:0;font-size:12px;color:var(--ink-soft);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .frame-meta b{color:var(--ink-strong)}.frame-meta.over b{color:var(--danger)}
 .frame-head .sq-add{order:10}
+#b-additem .i-bin{display:none}
+#b-additem.trash{background:var(--danger);border-color:var(--danger);transform:scale(1.15);transition:transform .15s}
+#b-additem.trash .i-add{display:none}#b-additem.trash .i-bin{display:block}
+#b-additem.trash.drop{transform:scale(1.35);box-shadow:0 0 0 5px rgba(239,90,98,.25)}
+.ghost-drag.bin{border-color:var(--danger);color:var(--danger)}
 .invscroll{overflow:visible}
 .rows{display:flex;flex-direction:column;gap:8px;padding-top:8px}
 .zc{appearance:none;min-width:0;width:100%;border:0;border-bottom:1px solid var(--rule);background:transparent;padding:3px 1px;font-size:12px;font-weight:700;color:var(--link);cursor:pointer;outline:none}
@@ -284,10 +299,17 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 .empty-frame{border:1px dashed var(--rule);border-radius:10px;padding:22px;text-align:center;color:var(--ink-soft);font-size:13px;background:rgba(255,255,255,.75)}
 .row{display:flex;flex-direction:column;gap:6px;padding:8px 10px 9px 4px;background:var(--paper);border:1px solid var(--faint);border-radius:10px;transition:background .15s,box-shadow .15s}
 .row .r1{display:grid;grid-template-columns:18px 30px minmax(0,1fr) 108px 28px;column-gap:8px;align-items:center}
+.row .r2{display:grid!important;grid-template-columns:repeat(7,minmax(0,1fr));gap:0 6px!important}
+.fl{width:auto!important;min-width:0}
+.fl.off{opacity:.38}
+.fl .c.na{display:block;text-align:center;border-bottom:1px dotted var(--rule);color:var(--ink-soft);font-weight:400;padding:3px 0}
+.ib.info{width:26px;height:26px;color:var(--ink-soft)}
+.ib.info.has{color:var(--link)}
+.ib.info.on{background:var(--ink-strong);border-color:var(--ink-strong);color:#fff}
 .row .r2{display:flex;flex-wrap:wrap;gap:6px 12px;padding-left:26px}
 .row .ds{margin-left:26px}
 .fl{display:flex;flex-direction:column;gap:1px;width:52px}
-.fl i{font-style:normal;font-size:9.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-soft);display:flex;align-items:center;gap:3px;white-space:nowrap}
+.fl i{overflow:hidden;font-style:normal;font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-soft);display:flex;align-items:center;gap:3px;white-space:nowrap}
 .fl i svg{width:12px;height:12px;flex:none}
 .row .del{width:26px;height:26px}
 .row:hover{border-color:var(--rule)}
@@ -465,7 +487,8 @@ dialog::backdrop{background:rgba(47,51,64,.42)}
 
 
 <header class="appbar">
-  <div class="brand"><span class="dot"></span>ALDEBARAN <small>Joueur</small></div>
+  <div class="brand"><span class="dot"></span>ALDEBARAN</div>
+  <div class="bastos hb"><span class="cap">Bastos</span><button type="button" id="b-bastos" title="Gagner ou dépenser des Bastos"><b id="bastos-val">0</b><span>₿</span></button></div>
   <div class="tools">
     <button class="tool" id="b-roll" type="button" title="Jet libre"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l9 5v10l-9 5-9-5V7z"/><path d="M3 7l9 5 9-5M12 12v10"/></svg><span class="lbl">Jet libre</span></button>
     <button class="tool" id="b-journal" type="button" title="Journal de bord"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18H6z"/><path d="M9 3v18M12 8h4M12 12h4"/></svg><span class="lbl">Journal</span></button>
@@ -549,8 +572,7 @@ dialog::backdrop{background:rgba(47,51,64,.42)}
         <div class="frame-head">
           <svg class="ttl sm" data-title><text x="0" y="24">INVENTAIRE</text></svg>
           <span class="frame-meta fade" id="capline"></span>
-          <div class="bastos fade"><span class="cap">Bastos</span><button type="button" id="b-bastos" title="Gagner ou dépenser des Bastos"><b id="bastos-val">0</b><span>₿</span></button></div>
-          <button class="sq-add fade" type="button" id="b-additem" title="Ajouter à l'inventaire" aria-label="Ajouter à l'inventaire"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+          <button class="sq-add fade" type="button" id="b-additem" title="Ajouter à l'inventaire" aria-label="Ajouter à l'inventaire"><svg class="i-add" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><svg class="i-bin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4.5h6V7M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg></button>
         </div>
         <div class="invscroll"><div class="rows" id="inv"></div></div>
       </section>
@@ -659,7 +681,7 @@ function derive(c){
 /* =========================================================
    ÉTAT, SAUVEGARDE (.adb) — l'adaptateur Store sera branché sur Firebase plus tard
    ========================================================= */
-const APP_VER='15';
+const APP_VER='16';
 const LS_SHEET='aldebaran.joueur.fiche', LS_PREF='aldebaran.joueur.prefs';
 const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v);return true}catch(e){return false}}};
 let prefs={autosave:60};
@@ -877,7 +899,9 @@ function buildStatic(){
     +ARM_Z.slice(0,4).map((a,i)=>`<clipPath id="clipa-${i}">${ARM_PARTS[a].map(z=>`<polygon points="${ZONE_GEO[z].clip}"/>`).join('')}</clipPath>`).join('')
     +`<clipPath id="clipy-all"><rect x="-50" y="-50" width="1010" height="1090"/></clipPath><clipPath id="clipy-b"><rect x="-50" y="-50" width="1010" height="${ANKLE+50}"/></clipPath><clipPath id="clipy-p"><rect x="-50" y="${ANKLE}" width="1010" height="300"/></clipPath>`;
   // le masque des mains ne touche que la silhouette : le cercle et le carré restent entiers
-  document.querySelectorAll('.vit > :not(circle):not(rect), #zones, #armor').forEach(el=>el.setAttribute('mask','url(#handmask)'));
+  { const v=document.querySelector('.vit'), g=document.createElementNS('http://www.w3.org/2000/svg','g'); g.setAttribute('class','vit');
+    [...v.children].filter(e=>e.tagName==='circle'||e.tagName==='rect').forEach(e=>g.appendChild(e)); v.before(g); v.setAttribute('mask','url(#handmask)'); }
+  ['#zones','#armor'].forEach(q=>document.querySelector(q).setAttribute('mask','url(#handmask)'));
   document.querySelectorAll('svg.ttl text').forEach(t=>{ const s=t.textContent; t.innerHTML=[...s].map(ch=>`<tspan>${ch===' '?'&#160;':esc(ch)}</tspan>`).join(''); });
 }
 function renderIdentity(){
@@ -942,27 +966,28 @@ function fxBubbles(){
 let orbAng=-Math.PI/2, orbPaused=false, orbLast=null;
 function renderFx(){
   const box=$('orbit'), L=fxBubbles();
-  box.innerHTML=`<button type="button" class="bub add" id="b-addfx" title="Ajouter un effet" aria-label="Ajouter un effet"><svg viewBox="0 0 24 24"><path d="M12 6v12M6 12h12"/></svg></button>`+L.map((b,i)=>`<div class="bub" data-i="${i}" style="--c:${b.col}" tabindex="0" aria-label="${esc(b.name)}">
+  box.innerHTML=`<div class="oslot"><button type="button" class="bub add" id="b-addfx" title="Ajouter un effet" aria-label="Ajouter un effet"><svg viewBox="0 0 24 24"><path d="M12 6v12M6 12h12"/></svg></button></div>`+L.map((b,i)=>`<div class="oslot"><div class="bub" data-i="${i}" style="--c:${b.col}" tabindex="0" aria-label="${esc(b.name)}">
     <svg viewBox="0 0 24 24">${b.ico}</svg>
     <div class="bub-tip" role="tooltip"><b>${esc(b.name)}</b><span class="st">${esc(b.sub)}</span>${b.desc?`<span>${esc(b.desc)}</span>`:''}
-      ${b.heal?`<div class="bt"><button type="button" class="mini" data-heal="${esc(b.heal)}">Soigner</button></div>`:b.fx?`<div class="bt"><button type="button" class="mini ghost" data-fxedit="${b.fx}">Modifier</button><button type="button" class="mini" data-fxdel="${b.fx}">Retirer</button></div>`:''}</div></div>`).join('');
-  placeBubbles();
+      ${b.heal?`<div class="bt"><button type="button" class="mini" data-heal="${esc(b.heal)}">Soigner</button></div>`:b.fx?`<div class="bt"><button type="button" class="mini ghost" data-fxedit="${b.fx}">Modifier</button><button type="button" class="mini" data-fxdel="${b.fx}">Retirer</button></div>`:''}</div></div></div>`).join('');
+  syncOrbit(); placeBubbles();
 }
+// les bulles tournent en sens inverse de l'orbite pour rester droites : on les cale sur le temps de l'orbite
+function syncOrbit(){ const box=$('orbit'), an=box.getAnimations?box.getAnimations()[0]:null, ct=an?an.currentTime||0:0;
+  box.querySelectorAll('.bub').forEach(b=>{ b.style.animationDelay=(-ct)+'ms'; }); }
 function placeBubbles(){
   const box=$('orbit'), fig=$('figure'); if(!box||!fig) return;
-  const sc=fig.clientWidth/910, bs=[...box.children], n=bs.length; if(!n) return;
+  const R=ORB.r*fig.clientWidth/910, bs=[...box.children], n=bs.length; if(!n) return;
   const step=Math.min(2*Math.PI/n, .42);           // rapprochées si peu nombreuses
-  bs.forEach((b,i)=>{ const a=orbAng+i*step, x=(ORB.cx+ORB.r*Math.cos(a))*sc, y=(ORB.cy+ORB.r*Math.sin(a))*sc;
-    b.style.left=x+'px'; b.style.top=y+'px'; b.classList.toggle('tip-l',Math.cos(a)>0.3); b.classList.toggle('tip-up',Math.sin(a)>0.5); });
+  box.style.left=ORB.cx/910*100+'%'; box.style.top=ORB.cy/990*100+'%';
+  bs.forEach((s,i)=>{ const a=-Math.PI/2+i*step; s.style.transform=`rotate(${a}rad) translateX(${R}px) rotate(${-a}rad)`; });
 }
-function orbitLoop(t){
-  if(orbLast!==null&&!orbPaused) orbAng+=(t-orbLast)/1000*(2*Math.PI/150);   // un tour en 2 min 30
-  orbLast=t; placeBubbles(); requestAnimationFrame(orbitLoop);
-}
-if(!matchMedia('(prefers-reduced-motion: reduce)').matches) requestAnimationFrame(orbitLoop);
 window.addEventListener('resize',placeBubbles);
-document.addEventListener('pointerover',e=>{ orbPaused=!!e.target.closest('#orbit .bub'); });
-document.addEventListener('focusin',e=>{ if(e.target.closest&&e.target.closest('#orbit .bub')) orbPaused=true; });
+// infobulle du bon côté selon la position réelle de la bulle ; l'orbite s'arrête au survol
+function orbHover(b){ const r=b.getBoundingClientRect(), f=$('figure').getBoundingClientRect(), dx=r.left+r.width/2-(f.left+f.width*ORB.cx/910), dy=r.top+r.height/2-(f.top+f.height*ORB.cy/990), R=f.width*ORB.r/910;
+  b.classList.toggle('tip-l',dx>R*.3); b.classList.toggle('tip-up',dy>R*.5); }
+document.addEventListener('pointerover',e=>{ const b=e.target.closest&&e.target.closest('#orbit .bub'); $('orbit').classList.toggle('paused',!!b); if(b) orbHover(b); });
+document.addEventListener('focusin',e=>{ const b=e.target.closest&&e.target.closest('#orbit .bub'); if(b){ $('orbit').classList.add('paused'); orbHover(b); } });
 function renderFxList(){
   const rows=[], R=RACES[C.race];
   rows.push(`<div class="fx racial-fx"><span class="dot" style="background:var(--gold)"></span><div class="nm">${esc(R.name)}<span class="tg race">Trait racial · ${RACE_LABEL[C.race]}</span></div><div class="ds">${esc(R.desc)}</div></div>`);
@@ -1036,6 +1061,8 @@ function statOpts(v){ return `<option value="">–</option>`+STATS.map(s=>`<opti
 const GRIP=`<svg viewBox="0 0 12 18" fill="currentColor"><circle cx="3" cy="3" r="1.5"/><circle cx="9" cy="3" r="1.5"/><circle cx="3" cy="9" r="1.5"/><circle cx="9" cy="9" r="1.5"/><circle cx="3" cy="15" r="1.5"/><circle cx="9" cy="15" r="1.5"/></svg>`;
 const cell=(f,v)=>`<input class="c n" data-f="${f}" inputmode="numeric" value="${esc(v)}">`;
 const NA='';
+const openDesc=new Set();   // descriptions dépliées (affichage seulement, non sauvegardé)
+const NAF=(lbl,tip)=>`<span class="fl off" title="${tip} : sans objet"><i>${lbl}</i><span class="c na">—</span></span>`;
 const fld=(lbl,tip,inner)=>`<label class="fl" title="${tip}"><i>${lbl}</i>${inner}</label>`;
 const L_STAT=()=>`${svgI('dice','var(--danger)')}Stat`, L_TH=()=>`${svgI('trophy','var(--c-for)')}Seuil`, L_PC=s=>`${svgI('box','#a0642b')}PC${s}`, L_PP=()=>`${svgI('shield','var(--c-res)')}PP`, L_B=()=>`${svgI('burst','#c9a646')}₿`;
 function rowInv(it){
@@ -1043,18 +1070,22 @@ function rowInv(it){
   let zoneCell='';
   if(w){ const hs=handsOf(it), v=hs.length===2?'Mains':hs[0]||''; zoneCell=`<select class="zc" data-f="hand" aria-label="Main">${[['','Rangée'],...((it.hands||1)===2?[['Mains','Deux mains']]:[['Main G','Main G'],['Main D','Main D'],['Mains','Deux mains']])].map(([k,l])=>`<option value="${k}" ${v===k?'selected':''}>${l}</option>`).join('')}</select>`; }
   else if(t!=='backpack') zoneCell=`<select class="zc" data-f="zone" aria-label="Zone">${[['','Non portée'],...(t==='armor'?ARM_Z.map(z=>[z,z==='Combi'?'Combinaison':z]):ZONES.map(z=>[z,z]))].map(([k,l])=>`<option value="${k}" ${it.zone===k?'selected':''}>${l}</option>`).join('')}</select>`;
-  const f=[];
-  if(w){ f.push(fld(L_STAT(),'Statistique utilisée',`<select class="c" data-f="stat" aria-label="Statistique">${statOpts(it.stat)}</select>`), fld('+ D','Dés ajoutés à la statistique',cell('diceBonus',it.diceBonus||0)), fld(L_TH(),'Seuil de réussite',cell('successThreshold',it.successThreshold||8))); }
-  f.push(fld(L_PC(t==='backpack'?'+':'−'),t==='backpack'?'Charge ajoutée (sac)':'Charge occupée',cell('weight',it.weight||0)));
-  if(t==='armor') f.push(fld(L_PP(),"Points d'armure",cell('armorPoints',it.armorPoints||0)));
-  if(w) f.push(fld(L_B(),'Consommation en Bastos à chaque tir',`<input class="c n" data-f="bastosCost" value="${esc(it.bastosCost??'-')}">`));
+  const bp=t==='backpack';
+  const f=[
+    w?fld(L_STAT(),'Statistique utilisée',`<select class="c" data-f="stat" aria-label="Statistique">${statOpts(it.stat)}</select>`):NAF(L_STAT(),'Statistique'),
+    w?fld('+ D','Dés ajoutés à la statistique',cell('diceBonus',it.diceBonus||0)):NAF('+ D','Dés ajoutés'),
+    w?fld(L_TH(),'Seuil de réussite',cell('successThreshold',it.successThreshold||8)):NAF(L_TH(),'Seuil'),
+    !bp?fld(L_PC('−'),'Charge occupée',cell('weight',it.weight||0)):NAF(L_PC('−'),'Charge occupée'),
+    bp?fld(L_PC('+'),'Charge ajoutée (sac)',cell('weight',it.weight||0)):NAF(L_PC('+'),'Charge ajoutée'),
+    t==='armor'?fld(L_PP(),"Points d'armure",cell('armorPoints',it.armorPoints||0)):NAF(L_PP(),"Points d'armure"),
+    w?fld(L_B(),'Consommation en Bastos à chaque tir',`<input class="c n" data-f="bastosCost" value="${esc(it.bastosCost??'-')}">`):NAF(L_B(),'Consommation en Bastos')];
   return `<div class="row ${handsOf(it).length?'equipped':''}" data-id="${it.id}" data-col="inv">
     <div class="r1"><button type="button" class="grip" data-drag title="Glisser sur le corps" aria-label="Glisser sur le corps">${GRIP}</button>
       <span class="tico" data-drag title="${T.label}">${svgI(T.ico,T.col)}</span>
       <input class="nm" data-f="name" value="${esc(it.name)}" aria-label="Nom" title="${T.label}">
-      ${zoneCell}<button type="button" class="ib del" data-a="del" title="Supprimer">${svgI('x')}</button></div>
+      ${zoneCell}<button type="button" class="ib info ${it.specialAbility?'has':''} ${openDesc.has('inv'+it.id)?'on':''}" data-a="info" title="Afficher ou masquer la description" aria-expanded="${openDesc.has('inv'+it.id)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01" stroke-width="2.4"/></svg></button></div>
     <div class="r2">${f.join('')}</div>
-    <input class="ds" data-f="specialAbility" value="${esc(it.specialAbility)}" placeholder="Effets & description" aria-label="Effets et description">
+    <input class="ds" data-f="specialAbility" value="${esc(it.specialAbility)}" placeholder="Effets & description" aria-label="Effets et description" ${openDesc.has('inv'+it.id)?'':'hidden'}>
   </div>`;
 }
 function rowCyb(c){
@@ -1064,9 +1095,9 @@ function rowCyb(c){
       <span class="tico" data-drag title="${T.label}">${svgI(T.ico,T.col)}</span>
       <input class="nm" data-f="name" value="${esc(c.name)}" aria-label="Nom">
       <select class="zc" data-f="bodyPart" aria-label="Zone">${[['','Non placée'],...ZONES.map(z=>[z,z])].map(([k,l])=>`<option value="${k}" ${c.bodyPart===k?'selected':''}>${l}</option>`).join('')}</select>
-      <button type="button" class="ib del" data-a="del" title="Supprimer">${svgI('x')}</button></div>
-    <div class="r2">${fld(L_STAT(),'Statistique utilisée',`<select class="c" data-f="stat" aria-label="Statistique">${statOpts(c.stat)}</select>`)}${fld('+ D','Dés ajoutés à la statistique',cell('diceBonus',c.diceBonus||0))}${fld(L_TH(),'Seuil de réussite',cell('successThreshold',c.successThreshold||8))}</div>
-    <input class="ds" data-f="ability" value="${esc(c.ability)}" placeholder="Effets & description" aria-label="Effets et description">
+      <button type="button" class="ib info ${c.ability?'has':''} ${openDesc.has('cyb'+c.id)?'on':''}" data-a="info" title="Afficher ou masquer la description" aria-expanded="${openDesc.has('cyb'+c.id)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01" stroke-width="2.4"/></svg></button></div>
+    <div class="r2">${fld(L_STAT(),'Statistique utilisée',`<select class="c" data-f="stat" aria-label="Statistique">${statOpts(c.stat)}</select>`)}${fld('+ D','Dés ajoutés à la statistique',cell('diceBonus',c.diceBonus||0))}${fld(L_TH(),'Seuil de réussite',cell('successThreshold',c.successThreshold||8))}${NAF(L_PC('−'),'Charge occupée')}${NAF(L_PC('+'),'Charge ajoutée')}${NAF(L_PP(),"Points d'armure")}${NAF(L_B(),'Consommation en Bastos')}</div>
+    <input class="ds" data-f="ability" value="${esc(c.ability)}" placeholder="Effets & description" aria-label="Effets et description" ${openDesc.has('cyb'+c.id)?'':'hidden'}>
   </div>`;
 }
 function renderCards(){
@@ -1121,6 +1152,8 @@ document.addEventListener('click',e=>{
   const a=e.target.closest('.row [data-a]');
   if(a){ const {list,it,card}=findCard(a); if(!it) return;
     if(a.dataset.a==='del'){ list.splice(list.indexOf(it),1); }
+    else if(a.dataset.a==='info'){ const k=card.dataset.col+it.id, on=!openDesc.has(k); on?openDesc.add(k):openDesc.delete(k);
+      const ds=card.querySelector('.ds'); ds.hidden=!on; a.classList.toggle('on',on); a.setAttribute('aria-expanded',on); if(on) ds.focus(); return; }
     else if(a.dataset.a==='unassign'){ if(card.dataset.col==='cyb') it.bodyPart=''; else { it.zone=''; it.equipped=false; } }
     else if(a.dataset.a==='combi'){ it.zone=it.zone==='Combi'?'':'Combi'; }
     else if(a.dataset.a==='use'){ card.dataset.col==='inv'?useItem(it):rollItem(it.name||'Capacité',it.stat,it.diceBonus,it.successThreshold); return; }
@@ -1171,6 +1204,7 @@ document.addEventListener('focusout',e=>{ if(e.target.classList&&e.target.classL
 /* Glisser-déposer : une ligne de l'inventaire sur une zone du corps ou une main */
 let drag=null;
 function dropTarget(x,y){ const el=document.elementFromPoint(x,y); if(!el) return null;
+  const tr=el.closest('#b-additem'); if(tr) return {trash:true,el:tr};
   const h=el.closest('.hand-t'); if(h) return {hand:h.dataset.hand,el:h};
   const z=el.closest('#zones .zone'); if(z){ const F=$('figure').getBoundingClientRect(); return {zone:z.dataset.zone,el:z,y:(y-F.top)/(F.width/910)}; } return null; }
 function assign(col,it,t){
@@ -1193,7 +1227,7 @@ document.addEventListener('pointerdown',e=>{
   const ic=card.querySelector('.tico').innerHTML;
   const gh=document.createElement('div'); gh.className='ghost-drag'; gh.innerHTML=`${ic}<span>${esc(it.name||'Élément')}</span><small>sur le corps</small>`; document.body.appendChild(gh);
   drag={card,it,col:card.dataset.col,gh,target:null,x:e.clientX,y:e.clientY,moved:false};
-  card.classList.add('dragging'); document.body.classList.add('dragmode');
+  card.classList.add('dragging'); document.body.classList.add('dragmode'); $('b-additem').classList.add('trash'); $('b-additem').title='Lâcher ici pour retirer de l\'inventaire';
   gh.style.left=e.clientX+'px'; gh.style.top=e.clientY+'px';
   const loop=()=>{ if(!drag) return; if(drag.y<70) window.scrollBy(0,-14); else if(drag.y>innerHeight-50) window.scrollBy(0,14); requestAnimationFrame(loop); }; requestAnimationFrame(loop);
 });
@@ -1202,13 +1236,15 @@ document.addEventListener('pointermove',e=>{
   drag.gh.style.left=e.clientX+'px'; drag.gh.style.top=e.clientY+'px';
   const t=dropTarget(e.clientX,e.clientY);
   document.querySelectorAll('.drop').forEach(x=>x.classList.remove('drop'));
-  if(t){ let el=t.el; if(isWeapon(drag.it)&&drag.col==='inv'&&t.zone&&/Bras/.test(t.zone)) el=document.querySelector(`.hand-t[data-hand="${t.zone.replace('Bras','Main')}"]`); el.classList.add('drop'); }
+  if(t&&t.trash){ t.el.classList.add('drop'); drag.gh.classList.add('bin'); } else drag.gh.classList.remove('bin');
+  if(t&&!t.trash){ let el=t.el; if(isWeapon(drag.it)&&drag.col==='inv'&&t.zone&&/Bras/.test(t.zone)) el=document.querySelector(`.hand-t[data-hand="${t.zone.replace('Bras','Main')}"]`); el.classList.add('drop'); }
   drag.target=t;
 });
 function endDrag(ok){
   if(!drag) return; const d=drag; drag=null;
-  d.gh.remove(); d.card.classList.remove('dragging'); document.body.classList.remove('dragmode');
+  d.gh.remove(); d.card.classList.remove('dragging'); document.body.classList.remove('dragmode'); $('b-additem').classList.remove('trash'); $('b-additem').title='Ajouter à l\'inventaire';
   document.querySelectorAll('.drop').forEach(x=>x.classList.remove('drop'));
+  if(ok&&d.target&&d.target.trash){ syncCat(); const L=listOf(d.col); L.splice(L.indexOf(d.it),1); renderCards(); renderDerived(); markDirty(); toast(`${d.it.name||'Objet'} retiré de l'inventaire (toujours au catalogue)`); return; }
   if(ok&&d.target){ assign(d.col,d.it,d.target); renderCards(); renderDerived(); markDirty(); }
 }
 document.addEventListener('pointerup',()=>endDrag(true));
@@ -1428,7 +1464,7 @@ $('b-guide').onclick=()=>{
   openDialog(`<h3>Guide</h3><div class="guide">
     <h4>Le volet de gauche</h4><p>Personnage, Décompte et Statistiques. Dans chaque statistique, le petit cercle contient la valeur de base, le grand cercle le nombre de dés lancés après malus. Cliquez le grand cercle pour lancer : pool de D10, seuil 8+, un 10 est un critique, un 1 un échec critique.</p>
     <h4>Le corps</h4><ul><li>Un clic sur une partie du corps la fracture, un second clic la soigne. Plusieurs fractures peuvent coexister.</li><li>Six zones : Tête → PER / 2, Corps → RES / 2, Bras (main comprise) → DEX / 2, Jambe → FOR / 2. Les os de la zone fracturée passent au rouge. Deux fractures sur la même statistique ne la divisent qu'une fois.</li><li>Les pastilles indiquent combien de vignettes sont reliées à chaque partie (bleu : inventaire, violet : cyber).</li></ul>
-    <h4>Inventaire</h4><ul><li>L'inventaire est un volet à droite, qui s'ouvre et se ferme avec le bouton « Inventaire » de la barre du haut ; fermé, la silhouette reprend toute la place.</li><li>Le « + » ajoute un équipement (arme, armure, divers, sac) ou une cybernétique, mutation, particularité.</li><li>Pour attribuer une ligne au corps, attrapez-la par sa poignée (ou son icône) et déposez-la sur une zone. Le × sur l'étiquette la retire.</li><li>Une arme se dépose sur une main ; déposée sur l'autre main, elle se tient à deux mains. Une main occupée se ferme en poing.</li><li>Une armure se porte en Tête, Haut (torse et bras), Bas (jambes), Pied, ou Combi (tout le corps) : un trait bleu épais longe la partie protégée. Déposée sur le bas des jambes, elle va aux pieds.</li><li>PC = FOR + 3 (+2 Elfe), moins le poids des objets, plus les sacs. PP = armures (+1 Droïde).</li></ul>
+    <h4>Inventaire</h4><ul><li>Le bouton (i) d'une ligne affiche ou masque sa description. Pour retirer un objet de l'inventaire, glissez-le sur le « + » qui devient une poubelle : il reste dans le catalogue.</li><li>L'inventaire est un volet à droite, qui s'ouvre et se ferme avec le bouton « Inventaire » de la barre du haut ; fermé, la silhouette reprend toute la place.</li><li>Le « + » ajoute un équipement (arme, armure, divers, sac) ou une cybernétique, mutation, particularité.</li><li>Pour attribuer une ligne au corps, attrapez-la par sa poignée (ou son icône) et déposez-la sur une zone. Le × sur l'étiquette la retire.</li><li>Une arme se dépose sur une main ; déposée sur l'autre main, elle se tient à deux mains. Une main occupée se ferme en poing.</li><li>Une armure se porte en Tête, Haut (torse et bras), Bas (jambes), Pied, ou Combi (tout le corps) : un trait bleu épais longe la partie protégée. Déposée sur le bas des jambes, elle va aux pieds.</li><li>PC = FOR + 3 (+2 Elfe), moins le poids des objets, plus les sacs. PP = armures (+1 Droïde).</li></ul>
     <h4>Effets actifs</h4><p>Chaque effet acquis devient une bulle avec son icône, qui tourne lentement sur le cercle autour de la silhouette : trait racial (ADN), fractures, états du jeu, bonus et malus. Au survol, les bulles s'arrêtent et une infobulle décrit l'effet, avec Modifier / Retirer (ou Soigner pour une fracture). Le « + » en haut à gauche du dessin ajoute un effet.</p>
     <h4>Décompte</h4><p>PV max = RES + 5. Sous 5 PV : « Pas top top » (seuil +1). À 0 : étourdissement. À −1 : hors jeu. À 10 PE, le cadran d'éveil s'allume. Tous les 10 PT, chaque statistique perd 1.</p>
     <h4>Sauvegarde</h4><p>On enregistre dans un <b>dossier</b> : il contient un fichier <b>.adb</b> par personnage et un <b>catalogue.adbc</b> commun. « Ouvrir un dossier… » liste les fiches qu'il contient. Ctrl+S réécrit la fiche dans le dossier, Ctrl+Maj+S en choisit un autre. La sauvegarde automatique se règle dans les Paramètres. Sur un navigateur qui ne gère pas les dossiers (Firefox, Safari), la fiche se télécharge et le catalogue reste dans le navigateur.</p><h4>Catalogue</h4><p>Chaque objet créé (arme, armure, divers, sac, cyber, mutation, particularité) est enregistré dans le catalogue, et mis à jour quand on le modifie. Dans « Ajouter », la tuile Catalogue permet de le reprendre dans n'importe quelle fiche du dossier.</p>
