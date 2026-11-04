@@ -759,7 +759,7 @@ function derive(c){
 /* =========================================================
    ÉTAT, SAUVEGARDE (.adb) — l'adaptateur Store sera branché sur Firebase plus tard
    ========================================================= */
-const APP_VER='23';
+const APP_VER='24';
 const LS_SHEET='aldebaran.joueur.fiche', LS_PREF='aldebaran.joueur.prefs';
 const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v);return true}catch(e){return false}}};
 let prefs={autosave:60};
@@ -977,7 +977,7 @@ function buildStatic(){
     return g.el==='ellipse'?`<ellipse class="zone" data-zone="${z}" cx="${g.cx}" cy="${g.cy}" rx="${g.rx}" ry="${g.ry}"/>`:`<polygon class="zone" data-zone="${z}" points="${g.pts}"/>`;}).join('');
   $('clips').innerHTML=ZONES.map((z,i)=>`<clipPath id="clip-${i}"><polygon points="${ZONE_GEO[z].clip}"/></clipPath>`).join('')
     +ARM_Z.slice(0,4).map((a,i)=>`<clipPath id="clipa-${i}">${ARM_PARTS[a].map(z=>`<polygon points="${ZONE_GEO[z].clip}"/>`).join('')}</clipPath>`).join('')
-    +`<clipPath id="clipy-all"><rect x="-50" y="-50" width="1010" height="1090"/></clipPath><clipPath id="clipy-b"><rect x="-50" y="-50" width="1010" height="${ANKLE+50}"/></clipPath><clipPath id="clipy-p"><rect x="-50" y="${ANKLE}" width="1010" height="300"/></clipPath>`;
+    +`<clipPath id="clip-wrist"><rect x="158" y="-50" width="594" height="1100"/></clipPath><clipPath id="clipy-all"><rect x="-50" y="-50" width="1010" height="1090"/></clipPath><clipPath id="clipy-b"><rect x="-50" y="-50" width="1010" height="${ANKLE+50}"/></clipPath><clipPath id="clipy-p"><rect x="-50" y="${ANKLE}" width="1010" height="300"/></clipPath>`;
   // le masque des mains ne touche que la silhouette : le cercle et le carré restent entiers
   { const v=document.querySelector('.vit'), g=document.createElementNS('http://www.w3.org/2000/svg','g'); g.setAttribute('class','vit');
     [...v.children].filter(e=>e.tagName==='circle'||e.tagName==='rect').forEach(e=>g.appendChild(e)); v.before(g); v.setAttribute('mask','url(#handmask)'); }
@@ -1088,7 +1088,7 @@ function renderMarks(){
   const d=ARMOR_PATH;
   const prot=new Set(); C.inventory.forEach(it=>{ if(it.itemType==='armor'&&ARM_Z.includes(it.zone)) prot.add(it.zone); });
   const full=prot.has('Combi')||['Tête','Haut','Bas','Pied'].every(z=>prot.has(z));
-  $('armor').innerHTML=full?`<path class="armor-line" d="${d}"/>`:[...prot].map(z=>`<g clip-path="url(#clipy-${z==='Pied'?'p':z==='Bas'?'b':'all'})"><path class="armor-line" d="${d}" clip-path="url(#clipa-${ARM_Z.indexOf(z)})"/></g>`).join('');
+  $('armor').innerHTML='<g clip-path="url(#clip-wrist)">'+(full?`<path class="armor-line" d="${d}"/>`:[...prot].map(z=>`<g clip-path="url(#clipy-${z==='Pied'?'p':z==='Bas'?'b':'all'})"><path class="armor-line" d="${d}" clip-path="url(#clipa-${ARM_Z.indexOf(z)})"/></g>`).join(''))+'</g>';
   document.querySelectorAll('#zones .zone').forEach(z=>z.classList.toggle('frac',C.fractures.includes(z.dataset.zone)));
   document.querySelectorAll('.bone').forEach(b=>b.classList.toggle('frac',C.fractures.includes(b.dataset.zone)));
   const out=[];
