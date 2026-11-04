@@ -305,6 +305,10 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 .frame-meta b{color:var(--ink-strong)}.frame-meta.over b{color:var(--danger)}
 .frame-head .sq-add{order:10}
 #b-additem .i-bin{display:none}
+.droptgt{display:none!important}
+body.dragmode.drag-inv #inv-bankdrop,body.dragmode.drag-bank #bank-invdrop{display:grid!important;background:var(--gold);border-color:var(--gold);color:#fff;transform:scale(1.15);transition:transform .15s;order:10}
+#inv-bankdrop.drop,#bank-invdrop.drop{transform:scale(1.35);box-shadow:0 0 0 5px rgba(201,166,70,.3)}
+#inv-bankdrop svg,#bank-invdrop svg{width:18px;height:18px}
 #b-additem.trash{background:var(--danger);border-color:var(--danger);transform:scale(1.15);transition:transform .15s}
 #b-additem.trash .i-add{display:none}#b-additem.trash .i-bin{display:block}
 #b-additem.trash.drop{transform:scale(1.35);box-shadow:0 0 0 5px rgba(239,90,98,.25)}
@@ -457,10 +461,13 @@ dialog::backdrop{background:rgba(47,51,64,.42)}
 .bk-bal > div:first-child{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
 .bk-bal b{font-family:var(--f-title);font-size:34px;font-weight:400;color:var(--ink-strong);font-variant-numeric:tabular-nums}
 .bk-bal .cur{color:var(--gold);font-weight:700}
-.bk-move{display:flex;gap:8px;align-items:center}.bk-move input{flex:1;min-width:0;font-size:18px}
+.bk-move{display:flex;gap:8px;align-items:center}
+.btn.gold{background:var(--gold);border-color:var(--gold);color:#fff}.bk-move input{flex:1;min-width:0;font-size:18px}
+input[type=number]{-moz-appearance:textfield;appearance:textfield}input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 .bk-hint{text-align:left!important;margin:-6px 0 0!important;font-size:12px}
 .bk-list{display:flex;flex-direction:column;gap:6px}
-.bk-it{display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:10px;align-items:center;border:1px solid var(--faint);border-radius:10px;padding:8px 8px 8px 10px;background:var(--paper)}
+.bk-it.bk-row{display:grid!important;flex-direction:row;grid-template-columns:18px 30px minmax(0,1fr);gap:8px;align-items:center;border:1px solid var(--faint);border-radius:10px;padding:8px 8px 8px 10px;background:var(--paper)}
+.bk-head{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:34px}
 .bk-it .t{display:flex;flex-direction:column;min-width:0}.bk-it b{font-size:13.5px;color:var(--ink-strong);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bk-it i{font-style:normal;font-size:11.5px;color:var(--ink-soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bk-empty{border:1px dashed var(--rule);border-radius:10px;padding:18px;text-align:center;color:var(--ink-soft);font-size:13px}
@@ -598,7 +605,7 @@ dialog::backdrop{background:rgba(47,51,64,.42)}
         <div class="frame-head">
           <svg class="ttl sm" data-title><text x="0" y="24">INVENTAIRE</text></svg>
           <span class="frame-meta fade" id="capline"></span>
-          <button class="sq-add fade" type="button" id="b-additem" title="Ajouter à l'inventaire" aria-label="Ajouter à l'inventaire"><svg class="i-add" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><svg class="i-bin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4.5h6V7M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg></button>
+          <button class="sq-add droptgt" type="button" id="inv-bankdrop" title="Lâcher ici pour mettre au coffre (Quantum Bank)" aria-label="Mettre au coffre" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="15" rx="2"/><circle cx="12" cy="11.5" r="3.6"/><path d="M12 7.9v1.4M12 13.7v1.4M8.4 11.5h1.4M14.2 11.5h1.4M6 19v2M18 19v2"/></svg></button><button class="sq-add fade" type="button" id="b-additem" title="Ajouter à l'inventaire" aria-label="Ajouter à l'inventaire"><svg class="i-add" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><svg class="i-bin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4.5h6V7M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg></button>
         </div>
         <div class="invscroll"><div class="rows" id="inv"></div></div>
       </section>
@@ -609,9 +616,9 @@ dialog::backdrop{background:rgba(47,51,64,.42)}
   <div class="bankin">
     <div class="bk-bal"><div><span class="cap">Solde en banque</span><b id="bank-val">0</b><span class="cur">₿</span></div><div class="cap" id="bank-wallet"></div></div>
     <div class="bk-move"><input class="line-in" type="number" min="0" id="bank-amt" placeholder="Montant" aria-label="Montant">
-      <button class="btn ghost" type="button" id="bank-dep" title="Du portefeuille vers la banque">Déposer</button><button class="btn" type="button" id="bank-wd" title="De la banque vers le portefeuille">Retirer</button></div>
-    <div class="subttl">Objets en coffre</div>
-    <p class="meta bk-hint">Glissez un objet de l'inventaire sur l'onglet Quantum Bank pour le mettre au coffre. Il ne pèse plus sur la charge.</p>
+      <button class="btn" type="button" id="bank-wd" title="De la banque vers le portefeuille">Retirer</button></div>
+    <div class="bk-head"><div class="subttl">Objets en coffre</div><button class="sq-add droptgt" type="button" id="bank-invdrop" title="Lâcher ici pour remettre dans l'inventaire" aria-label="Remettre dans l'inventaire" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 9.5L12 13l8.5-3.5"/><path d="M3.5 9.5V18l8.5 3.5 8.5-3.5V9.5"/><path d="M12 13v8.5"/><path d="M3.5 9.5L1.5 6 10 2.8l2 3.6M20.5 9.5l2-3.5L14 2.8l-2 3.6"/><path d="M12 6.4L3.5 9.5M12 6.4l8.5 3.1"/></svg></button></div>
+    <p class="meta bk-hint">Pour déposer un objet, glissez-le depuis l'inventaire sur l'icône du coffre (ou sur cet onglet). Pour le récupérer, glissez-le ici sur l'icône de l'inventaire. Au coffre, il ne pèse plus sur la charge.</p>
     <div class="bk-list" id="bank-list"></div>
   </div>
 </aside>
@@ -724,7 +731,7 @@ function derive(c){
 /* =========================================================
    ÉTAT, SAUVEGARDE (.adb) — l'adaptateur Store sera branché sur Firebase plus tard
    ========================================================= */
-const APP_VER='19';
+const APP_VER='20';
 const LS_SHEET='aldebaran.joueur.fiche', LS_PREF='aldebaran.joueur.prefs';
 const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v);return true}catch(e){return false}}};
 let prefs={autosave:60};
@@ -1201,7 +1208,7 @@ function takeHand(it,target){
   if(busy.length){ toast(`${want.length>1?'Les mains sont':want[0]+' est'} déjà prise${want.length>1?'s':''} : rangez d'abord ${busy.map(b=>b.name||'l\'arme').join(', ')}.`); return; }
   it.zone=target; it.equipped=true;
 }
-const listOf=col=>col==='inv'?C.inventory:C.cybernetics;
+const listOf=col=>col==='inv'?C.inventory:col==='bank'?C.bankInventory:C.cybernetics;
 const findCard=el=>{ const card=el.closest('.row:not(.head)'); if(!card) return {}; const list=listOf(card.dataset.col); return {card,list,it:list.find(x=>x.id===+card.dataset.id)}; };
 
 document.addEventListener('click',e=>{
@@ -1273,8 +1280,10 @@ document.addEventListener('focusout',e=>{ if(e.target.classList&&e.target.classL
 /* Glisser-déposer : une ligne de l'inventaire sur une zone du corps ou une main */
 let drag=null;
 function dropTarget(x,y){ const el=document.elementFromPoint(x,y); if(!el) return null;
+  if(drag&&drag.col==='bank'){ const ib=el.closest('#bank-invdrop,.vtab[data-drawer="invpanel"]'); return ib?{toinv:true,el:$('bank-invdrop')}:null; }
+  const ib=el.closest('#inv-bankdrop'); if(ib&&drag&&drag.col==='inv') return {bank:true,el:ib};
   const tr=el.closest('#b-additem'); if(tr) return {trash:true,el:tr};
-  const bk=el.closest('.vtab[data-drawer="bank"],#bank'); if(bk&&drag&&drag.col==='inv') return {bank:true,el:document.querySelector('.vtab[data-drawer="bank"]')};
+  const bk=el.closest('.vtab[data-drawer="bank"]'); if(bk&&drag&&drag.col==='inv') return {bank:true,el:bk};
   const h=el.closest('.hand-t'); if(h) return {hand:h.dataset.hand,el:h};
   const z=el.closest('#zones .zone'); if(z){ const F=$('figure').getBoundingClientRect(); return {zone:z.dataset.zone,el:z,y:(y-F.top)/(F.width/910)}; } return null; }
 function assign(col,it,t){
@@ -1296,9 +1305,9 @@ document.addEventListener('pointerdown',e=>{
   const g=e.target.closest('[data-drag]'); if(!g||e.button>0) return;
   const {card,it}=findCard(g); if(!it) return; e.preventDefault();
   const ic=card.querySelector('.tico').innerHTML;
-  const gh=document.createElement('div'); gh.className='ghost-drag'; gh.innerHTML=`${ic}<span>${esc(it.name||'Élément')}</span><small>sur le corps</small>`; document.body.appendChild(gh);
+  const gh=document.createElement('div'); gh.className='ghost-drag'; gh.innerHTML=`${ic}<span>${esc(it.name||'Élément')}</span><small>${card.dataset.col==='bank'?'vers l\'inventaire':'sur le corps'}</small>`; document.body.appendChild(gh);
   drag={card,it,col:card.dataset.col,gh,target:null,x:e.clientX,y:e.clientY,moved:false};
-  card.classList.add('dragging'); document.body.classList.add('dragmode'); $('b-additem').classList.add('trash'); $('b-additem').title='Lâcher ici pour retirer de l\'inventaire';
+  card.classList.add('dragging'); document.body.classList.add('dragmode','drag-'+card.dataset.col); if(card.dataset.col!=='bank') $('b-additem').classList.add('trash'); $('b-additem').title='Lâcher ici pour retirer de l\'inventaire';
   gh.style.left=e.clientX+'px'; gh.style.top=e.clientY+'px';
   const loop=()=>{ if(!drag) return; if(drag.y<70) window.scrollBy(0,-14); else if(drag.y>innerHeight-50) window.scrollBy(0,14); requestAnimationFrame(loop); }; requestAnimationFrame(loop);
 });
@@ -1308,15 +1317,16 @@ document.addEventListener('pointermove',e=>{
   const t=dropTarget(e.clientX,e.clientY);
   document.querySelectorAll('.drop').forEach(x=>x.classList.remove('drop'));
   if(t&&t.trash){ t.el.classList.add('drop'); drag.gh.classList.add('bin'); } else drag.gh.classList.remove('bin');
-  if(t&&t.bank){ t.el.classList.add('drop'); }
+  if(t&&(t.bank||t.toinv)){ t.el.classList.add('drop'); }
   else if(t&&!t.trash){ let el=t.el; if(isWeapon(drag.it)&&drag.col==='inv'&&t.zone&&/Bras/.test(t.zone)) el=document.querySelector(`.hand-t[data-hand="${t.zone.replace('Bras','Main')}"]`); el.classList.add('drop'); }
   drag.target=t;
 });
 function endDrag(ok){
   if(!drag) return; const d=drag; drag=null;
-  d.gh.remove(); d.card.classList.remove('dragging'); document.body.classList.remove('dragmode'); $('b-additem').classList.remove('trash'); $('b-additem').title='Ajouter à l\'inventaire';
+  d.gh.remove(); d.card.classList.remove('dragging'); document.body.classList.remove('dragmode','drag-inv','drag-cyb','drag-bank'); $('b-additem').classList.remove('trash'); $('b-additem').title='Ajouter à l\'inventaire';
   document.querySelectorAll('.drop').forEach(x=>x.classList.remove('drop'));
   if(ok&&d.target&&d.target.bank){ bankDeposit(d.it); return; }
+  if(ok&&d.target&&d.target.toinv){ bankWithdraw(d.it); return; }
   if(ok&&d.target&&d.target.trash){ syncCat(); const L=listOf(d.col); L.splice(L.indexOf(d.it),1); renderCards(); renderDerived(); markDirty(); toast(`${d.it.name||'Objet'} retiré de l'inventaire (toujours au catalogue)`); return; }
   if(ok&&d.target){ assign(d.col,d.it,d.target); renderCards(); renderDerived(); markDirty(); }
 }
@@ -1443,9 +1453,11 @@ function catDialog(){
 $('b-bastos').onclick=()=>{
   openDialog(`<h3>Bastos</h3><p>Solde actuel : <b>${(+C.bastos||0).toLocaleString('fr-FR')} ₿</b></p>
     <input class="line-in name-in" type="number" min="0" id="bastos-amt" placeholder="Montant" style="font-size:24px">
-    <div class="actions"><button class="btn ghost" type="button" data-close>Annuler</button><button class="btn danger" type="button" id="bastos-minus">Dépenser</button><button class="btn" type="button" id="bastos-plus">Gagner</button></div>`);
+    <div class="actions"><button class="btn ghost" type="button" data-close>Annuler</button><button class="btn danger" type="button" id="bastos-minus">Dépenser</button><button class="btn" type="button" id="bastos-plus">Gagner</button><button class="btn gold" type="button" id="bastos-save" title="Mettre en banque (Quantum Bank)">Épargner</button></div>`);
   const go=s=>{ const v=parseInt($('bastos-amt').value)||0; if(!v){ dlg.close(); return; } if(s<0&&v>C.bastos){ toast('Solde insuffisant.'); return; } C.bastos=Math.max(0,(+C.bastos||0)+s*v); renderDerived(); markDirty(); dlg.close(); };
-  $('bastos-plus').onclick=()=>go(1); $('bastos-minus').onclick=()=>go(-1); setTimeout(()=>$('bastos-amt').focus(),30);
+  $('bastos-plus').onclick=()=>go(1); $('bastos-minus').onclick=()=>go(-1);
+  $('bastos-save').onclick=()=>{ const v=parseInt($('bastos-amt').value)||0; if(!v){ $('bastos-amt').focus(); return; } if(v>(+C.bastos||0)){ toast('Solde insuffisant.'); return; }
+    C.bastos=(+C.bastos||0)-v; C.bankBastos=(+C.bankBastos||0)+v; renderDerived(); markDirty(); dlg.close(); toast(`${v.toLocaleString('fr-FR')} ₿ épargnés`); }; setTimeout(()=>$('bastos-amt').focus(),30);
 };
 /* Volets latéraux : un seul ouvert à la fois */
 const DRAWERS=['invpanel','roller','journal','bank','mapdrw'];
@@ -1464,20 +1476,19 @@ function renderBank(){
   $('bank-val').textContent=(+C.bankBastos||0).toLocaleString('fr-FR');
   $('bank-wallet').textContent=`Portefeuille : ${(+C.bastos||0).toLocaleString('fr-FR')} ₿`;
   $('bank-list').innerHTML=C.bankInventory.length?C.bankInventory.map(it=>{ const T=ITEM_TYPES[typeKey(it)]||ITEM_TYPES.misc;
-    return `<div class="bk-it"><span class="tico">${svgI(T.ico,T.col)}</span><div class="t"><b>${esc(it.name||'Sans nom')}</b><i>${esc(T.label+(bankMeta(it)?' · '+bankMeta(it):''))}</i></div><button class="btn ghost" type="button" data-bankout="${it.id}" title="Remettre dans l'inventaire">Sortir</button></div>`; }).join('')
+    return `<div class="bk-it row bk-row" data-id="${it.id}" data-col="bank"><button type="button" class="grip" data-drag title="Glisser vers l'inventaire" aria-label="Glisser vers l'inventaire">${GRIP}</button><span class="tico" data-drag>${svgI(T.ico,T.col)}</span><div class="t"><b>${esc(it.name||'Sans nom')}</b><i>${esc(T.label+(bankMeta(it)?' · '+bankMeta(it):''))}</i></div></div>`; }).join('')
     :`<div class="bk-empty">Le coffre est vide.</div>`;
 }
 function bankDeposit(it){ C.inventory.splice(C.inventory.indexOf(it),1); it.zone=''; it.equipped=false; if(C.tagPos) delete C.tagPos['inv'+it.id];
   C.bankInventory.unshift(it); renderCards(); renderDerived(); renderBank(); markDirty(); toast(`${it.name||'Objet'} mis au coffre`);
   const tb=document.querySelector('.vtab[data-drawer="bank"]'); if(tb&&tb.animate) tb.animate([{background:'rgba(201,166,70,.35)'},{background:'transparent'}],{duration:900}); }
-document.addEventListener('click',e=>{ const b=e.target.closest('[data-bankout]'); if(!b) return; const it=C.bankInventory.find(x=>x.id===+b.dataset.bankout); if(!it) return;
-  C.bankInventory.splice(C.bankInventory.indexOf(it),1); C.inventory.unshift(it); renderCards(); renderDerived(); renderBank(); markDirty(); toast(`${it.name||'Objet'} sorti du coffre`); });
+function bankWithdraw(it){ C.bankInventory.splice(C.bankInventory.indexOf(it),1); C.inventory.unshift(it); renderCards(); renderDerived(); renderBank(); markDirty(); toast(`${it.name||'Objet'} sorti du coffre`); }
 function bankMove(dir){ const v=parseInt($('bank-amt').value)||0; if(v<=0){ $('bank-amt').focus(); return; }
   if(dir>0&&v>(+C.bastos||0)){ toast('Pas assez de Bastos dans le portefeuille.'); return; }
   if(dir<0&&v>(+C.bankBastos||0)){ toast('Pas assez de Bastos en banque.'); return; }
   C.bastos=(+C.bastos||0)-dir*v; C.bankBastos=(+C.bankBastos||0)+dir*v; $('bank-amt').value=''; renderDerived(); renderBank(); markDirty(); }
-$('bank-dep').onclick=()=>bankMove(1); $('bank-wd').onclick=()=>bankMove(-1);
-$('bank-amt').addEventListener('keydown',e=>{ if(e.key==='Enter') bankMove(e.shiftKey?-1:1); });
+$('bank-wd').onclick=()=>bankMove(-1);
+$('bank-amt').addEventListener('keydown',e=>{ if(e.key==='Enter') bankMove(-1); });
 document.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>{ const i=$(b.dataset.step), lim=b.dataset.step==='fr-n'?[1,30]:[2,10]; i.value=Math.min(lim[1],Math.max(lim[0],(parseInt(i.value)||0)+(+b.dataset.d))); });
 ['fr-n','fr-t'].forEach(id=>$(id).addEventListener('input',e=>{ e.target.value=e.target.value.replace(/\D/g,''); }));
 let rollHist=[];
@@ -1560,7 +1571,7 @@ function showGuide(){
   openDialog(`<h3>Guide</h3><div class="guide">
     <h4>Le volet de gauche</h4><p>Personnage, Décompte et Statistiques. Dans chaque statistique, le petit cercle contient la valeur de base, le grand cercle le nombre de dés lancés après malus. Cliquez le grand cercle pour lancer : pool de D10, seuil 8+, un 10 est un critique, un 1 un échec critique.</p>
     <h4>Le corps</h4><ul><li>Un clic sur une partie du corps la fracture, un second clic la soigne. Plusieurs fractures peuvent coexister.</li><li>Six zones : Tête → PER / 2, Corps → RES / 2, Bras (main comprise) → DEX / 2, Jambe → FOR / 2. Les os de la zone fracturée passent au rouge. Deux fractures sur la même statistique ne la divisent qu'une fois.</li><li>Les pastilles indiquent combien de vignettes sont reliées à chaque partie (bleu : inventaire, violet : cyber).</li></ul>
-    <h4>Inventaire</h4><ul><li>Le bouton (i) d'une ligne affiche ou masque sa description. Pour retirer un objet de l'inventaire, glissez-le sur le « + » qui devient une poubelle : il reste dans le catalogue.</li><li>Inventaire, Jet libre, Journal, Quantum Bank et Map s'ouvrent avec la bande d'onglets fixe du bord droit ; un clic sur l'onglet actif referme le volet. Un seul volet à la fois.</li><li>Quantum Bank : déposez ou retirez des Bastos, et glissez un objet de l'inventaire sur l'onglet pour le mettre au coffre (il ne pèse plus sur la charge). « Sortir » le remet dans l'inventaire.</li><li>Une arme à deux mains ferme les deux poings ; une main fermée n'accepte pas d'autre arme.</li><li>Chaque objet équipé a sa bulle près de la silhouette (picto, nom, dés, description). Glissez une bulle pour la placer où vous voulez : elle reste reliée à sa zone et garde sa place dans la fiche.</li><li>Le « + » ajoute un équipement (arme, armure, divers, sac) ou une cybernétique, mutation, particularité.</li><li>Pour attribuer une ligne au corps, attrapez-la par sa poignée (ou son icône) et déposez-la sur une zone. Le × sur l'étiquette la retire.</li><li>Une arme se dépose sur une main ; déposée sur l'autre main, elle se tient à deux mains. Une main occupée se ferme en poing.</li><li>Une armure se porte en Tête, Haut (torse et bras), Bas (jambes), Pied, ou Combi (tout le corps) : un trait bleu épais longe la partie protégée. Déposée sur le bas des jambes, elle va aux pieds.</li><li>PC = FOR + 3 (+2 Elfe), moins le poids des objets, plus les sacs. PP = armures (+1 Droïde).</li></ul>
+    <h4>Inventaire</h4><ul><li>Le bouton (i) d'une ligne affiche ou masque sa description. Pour retirer un objet de l'inventaire, glissez-le sur le « + » qui devient une poubelle : il reste dans le catalogue.</li><li>Inventaire, Jet libre, Journal, Quantum Bank et Map s'ouvrent avec la bande d'onglets fixe du bord droit ; un clic sur l'onglet actif referme le volet. Un seul volet à la fois.</li><li>Quantum Bank : « Épargner » (dans la fenêtre Bastos) met des Bastos en banque, « Retirer » (dans la banque) les rend au portefeuille. Pendant qu'on glisse un objet de l'inventaire, l'icône du coffre apparaît à côté de la poubelle ; dans la banque, l'icône de l'inventaire permet de le récupérer.</li><li>Une arme à deux mains ferme les deux poings ; une main fermée n'accepte pas d'autre arme.</li><li>Chaque objet équipé a sa bulle près de la silhouette (picto, nom, dés, description). Glissez une bulle pour la placer où vous voulez : elle reste reliée à sa zone et garde sa place dans la fiche.</li><li>Le « + » ajoute un équipement (arme, armure, divers, sac) ou une cybernétique, mutation, particularité.</li><li>Pour attribuer une ligne au corps, attrapez-la par sa poignée (ou son icône) et déposez-la sur une zone. Le × sur l'étiquette la retire.</li><li>Une arme se dépose sur une main ; déposée sur l'autre main, elle se tient à deux mains. Une main occupée se ferme en poing.</li><li>Une armure se porte en Tête, Haut (torse et bras), Bas (jambes), Pied, ou Combi (tout le corps) : un trait bleu épais longe la partie protégée. Déposée sur le bas des jambes, elle va aux pieds.</li><li>PC = FOR + 3 (+2 Elfe), moins le poids des objets, plus les sacs. PP = armures (+1 Droïde).</li></ul>
     <h4>Effets actifs</h4><p>Chaque effet acquis devient une bulle avec son icône, qui tourne lentement sur le cercle autour de la silhouette : trait racial (ADN), fractures, états du jeu, bonus et malus. Au survol, les bulles s'arrêtent et une infobulle décrit l'effet, avec Modifier / Retirer (ou Soigner pour une fracture). Le « + » en haut à gauche du dessin ajoute un effet.</p>
     <h4>Décompte</h4><p>PV max = RES + 5. Sous 5 PV : « Pas top top » (seuil +1). À 0 : étourdissement. À −1 : hors jeu. À 10 PE, le cadran d'éveil s'allume. Tous les 10 PT, chaque statistique perd 1.</p>
     <h4>Sauvegarde</h4><p>On enregistre dans un <b>dossier</b> : il contient un fichier <b>.adb</b> par personnage et un <b>catalogue.adbc</b> commun. « Ouvrir un dossier… » liste les fiches qu'il contient. Ctrl+S réécrit la fiche dans le dossier, Ctrl+Maj+S en choisit un autre. La sauvegarde automatique se règle dans les Paramètres. Sur un navigateur qui ne gère pas les dossiers (Firefox, Safari), la fiche se télécharge et le catalogue reste dans le navigateur.</p><h4>Catalogue</h4><p>Chaque objet créé (arme, armure, divers, sac, cyber, mutation, particularité) est enregistré dans le catalogue, et mis à jour quand on le modifie. Dans « Ajouter », la tuile Catalogue permet de le reprendre dans n'importe quelle fiche du dossier.</p>
