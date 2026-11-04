@@ -92,14 +92,15 @@ body{overflow-x:clip}
 .invin{flex:1;min-height:0;overflow-y:auto;scrollbar-width:none;margin:0 -4px;padding:0 4px}
 .invin::-webkit-scrollbar{display:none}
 .inv-drawer{width:min(460px,100vw - 40px)}
+.bank-drawer{width:min(460px,100vw - 40px)}
 /* Onglets verticaux collés au bord droit ; ils suivent le volet ouvert */
-.vtabs{position:fixed;right:0;top:calc(var(--bar) + 24px + env(safe-area-inset-top,0px));z-index:41;display:flex;flex-direction:column;gap:6px;transition:right .3s ease}
-body.drawer-open .vtabs{right:var(--dw,440px)}
-.vtab{display:flex;flex-direction:column;align-items:center;gap:8px;width:38px;padding:12px 0;border:1px solid var(--rule);border-right:0;border-radius:10px 0 0 10px;background:var(--paper);color:var(--ink);cursor:pointer}
+.vtabs{position:fixed;right:0;top:calc(var(--bar) + env(safe-area-inset-top,0px));bottom:0;width:40px;z-index:41;display:flex;flex-direction:column;gap:4px;padding:14px 0 calc(14px + env(safe-area-inset-bottom,0px));background:var(--paper);border-left:1px solid var(--rule);overflow-y:auto}
+.vtab{display:flex;flex-direction:column;align-items:center;gap:7px;width:40px;padding:10px 0;border:0;border-left:3px solid transparent;border-radius:0;flex:none;background:var(--paper);color:var(--ink);cursor:pointer}
 .vtab svg{width:20px;height:20px;flex:none}
-.vtab span{writing-mode:vertical-rl;transform:rotate(180deg);font-size:11.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
+.vtab span{writing-mode:vertical-rl;transform:rotate(180deg);font-size:10.5px;white-space:nowrap;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
 .vtab:hover{color:var(--ink-strong);background:var(--wash)}
-.vtab.on{background:var(--ink-strong);border-color:var(--ink-strong);color:#fff}
+.vtab.on{background:var(--wash);border-left-color:var(--ink-strong);color:var(--ink-strong)}
+.vtab.drop{background:rgba(201,166,70,.18);border-left-color:var(--gold)}
 @media (prefers-reduced-motion:reduce){.vtabs{transition:none}}
 .panel{z-index:1;position:sticky;top:calc(var(--bar) + env(safe-area-inset-top,0px));align-self:start;max-height:calc(100dvh - var(--bar) - env(safe-area-inset-top,0px));overflow:auto;scrollbar-width:none;-ms-overflow-style:none;
   border-right:1px solid var(--rule);padding:14px 20px 28px max(18px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:6px;scrollbar-width:thin}
@@ -447,9 +448,26 @@ dialog::backdrop{background:rgba(47,51,64,.42)}
 .guide{max-height:62vh;overflow:auto;padding-right:6px}
 
 /* Journal */
-.drawer{position:fixed;top:0;right:0;bottom:0;width:min(440px,100vw - 40px);background:var(--paper);border-left:1px solid var(--rule);z-index:40;transform:translateX(102%);transition:transform .3s ease;display:flex;flex-direction:column;
-  padding:calc(16px + env(safe-area-inset-top,0px)) calc(18px + env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) 18px}
+.drawer{position:fixed;top:calc(var(--bar) + env(safe-area-inset-top,0px));right:40px;bottom:0;width:min(440px,100vw - 40px);background:var(--paper);border-left:1px solid var(--rule);z-index:40;transform:translateX(102%);transition:transform .3s ease;display:flex;flex-direction:column;
+  padding:16px 18px calc(16px + env(safe-area-inset-bottom,0px)) 18px}
+.drawer{transform:translateX(calc(100% + 42px))}
 .drawer.open{transform:none}
+.bankin{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:12px}
+.bk-bal{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;border-bottom:1px solid var(--ink-soft);padding-bottom:8px}
+.bk-bal > div:first-child{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.bk-bal b{font-family:var(--f-title);font-size:34px;font-weight:400;color:var(--ink-strong);font-variant-numeric:tabular-nums}
+.bk-bal .cur{color:var(--gold);font-weight:700}
+.bk-move{display:flex;gap:8px;align-items:center}.bk-move input{flex:1;min-width:0;font-size:18px}
+.bk-hint{text-align:left!important;margin:-6px 0 0!important;font-size:12px}
+.bk-list{display:flex;flex-direction:column;gap:6px}
+.bk-it{display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:10px;align-items:center;border:1px solid var(--faint);border-radius:10px;padding:8px 8px 8px 10px;background:var(--paper)}
+.bk-it .t{display:flex;flex-direction:column;min-width:0}.bk-it b{font-size:13.5px;color:var(--ink-strong);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bk-it i{font-style:normal;font-size:11.5px;color:var(--ink-soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bk-empty{border:1px dashed var(--rule);border-radius:10px;padding:18px;text-align:center;color:var(--ink-soft);font-size:13px}
+.map-drawer{width:min(980px,100vw - 40px)}
+.mapwrap{flex:1;min-height:0;border:1px solid var(--rule);border-radius:10px;overflow:hidden;background:var(--wash)}
+.mapwrap iframe{width:100%;height:100%;border:0;display:block}
+.maplink{font-size:12.5px;color:var(--link);margin-top:8px;align-self:flex-start}
 .drawer header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .drawer h3{margin:0;font-family:var(--f-title);font-weight:300;letter-spacing:.24em;font-size:24px;text-transform:uppercase;color:var(--ink-strong)}
 .roller{flex:1;overflow:auto;display:flex;flex-direction:column;gap:12px}
@@ -516,6 +534,8 @@ dialog::backdrop{background:rgba(47,51,64,.42)}
   <button type="button" class="vtab" data-drawer="invpanel" title="Inventaire"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 9.5L12 13l8.5-3.5"/><path d="M3.5 9.5V18l8.5 3.5 8.5-3.5V9.5"/><path d="M12 13v8.5"/><path d="M3.5 9.5L1.5 6 10 2.8l2 3.6M20.5 9.5l2-3.5L14 2.8l-2 3.6"/><path d="M12 6.4L3.5 9.5M12 6.4l8.5 3.1"/></svg><span>Inventaire</span></button>
   <button type="button" class="vtab" data-drawer="roller" title="Jet libre"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M11.97 22.00L1.80 14.72L2.10 9.84L11.93 2.00L21.87 9.91L22.20 14.76ZM11.97 22.00L11.97 17.75L18.35 14.59L22.20 14.76M11.97 17.75L5.62 14.66L1.80 14.72M5.62 14.66L11.93 2.00L18.35 14.59"/><path d="M8.92 10.11L8.92 10.90L10.16 10.20L10.16 15.01L11.00 15.01L11.00 8.45L10.41 8.45ZM13.31 14.11L13.02 14.03L12.75 13.79L12.52 13.40L12.35 12.91L12.24 12.33L12.21 11.71L12.25 11.10L12.37 10.52L12.55 10.03L12.78 9.65L13.05 9.41L13.34 9.33L13.63 9.42L13.90 9.66L14.13 10.04L14.30 10.53L14.41 11.11L14.44 11.73L14.40 12.35L14.28 12.92L14.10 13.41L13.87 13.79L13.60 14.03ZM13.31 8.51L13.79 8.62L14.24 8.94L14.62 9.44L14.92 10.11L15.11 10.88L15.18 11.71L15.12 12.54L14.94 13.32L14.65 13.98L14.27 14.50L13.82 14.82L13.34 14.93L12.86 14.83L12.41 14.51L12.03 14.00L11.73 13.34L11.54 12.56L11.47 11.73L11.53 10.90L11.71 10.13L12.00 9.46L12.38 8.95L12.83 8.62Z" fill="currentColor" stroke="none" fill-rule="evenodd"/></svg><span>Jet libre</span></button>
   <button type="button" class="vtab" data-drawer="journal" title="Journal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18H6z"/><path d="M9 3v18M12 8h4M12 12h4"/></svg><span>Journal</span></button>
+  <button type="button" class="vtab" data-drawer="bank" title="Quantum Bank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="15" rx="2"/><circle cx="12" cy="11.5" r="3.6"/><path d="M12 7.9v1.4M12 13.7v1.4M8.4 11.5h1.4M14.2 11.5h1.4M6 19v2M18 19v2"/></svg><span>Quantum Bank</span></button>
+  <button type="button" class="vtab" data-drawer="mapdrw" title="Map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4L3 6.5v13.5l6-2.5 6 2.5 6-2.5V4l-6 2.5z"/><path d="M9 4v13.5M15 6.5V20"/></svg><span>Map</span></button>
 </nav>
 
 <div class="layout" id="layout">
@@ -583,6 +603,24 @@ dialog::backdrop{background:rgba(47,51,64,.42)}
         <div class="invscroll"><div class="rows" id="inv"></div></div>
       </section>
   </div></aside>
+
+<aside class="drawer bank-drawer" id="bank" aria-label="Quantum Bank">
+  <header><h3>Quantum Bank</h3><span class="spacer"></span><button class="ib" type="button" data-closedrawer title="Fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></header>
+  <div class="bankin">
+    <div class="bk-bal"><div><span class="cap">Solde en banque</span><b id="bank-val">0</b><span class="cur">₿</span></div><div class="cap" id="bank-wallet"></div></div>
+    <div class="bk-move"><input class="line-in" type="number" min="0" id="bank-amt" placeholder="Montant" aria-label="Montant">
+      <button class="btn ghost" type="button" id="bank-dep" title="Du portefeuille vers la banque">Déposer</button><button class="btn" type="button" id="bank-wd" title="De la banque vers le portefeuille">Retirer</button></div>
+    <div class="subttl">Objets en coffre</div>
+    <p class="meta bk-hint">Glissez un objet de l'inventaire sur l'onglet Quantum Bank pour le mettre au coffre. Il ne pèse plus sur la charge.</p>
+    <div class="bk-list" id="bank-list"></div>
+  </div>
+</aside>
+
+<aside class="drawer map-drawer" id="mapdrw" aria-label="Carte">
+  <header><h3>Map</h3><span class="spacer"></span><button class="ib" type="button" data-closedrawer title="Fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></header>
+  <div class="mapwrap" id="mapwrap"></div>
+  <a class="maplink" href="https://framacarte.org/fr/map/aldebaran_185113?scaleControl=false&amp;miniMap=false&amp;scrollWheelZoom=true&amp;zoomControl=true&amp;editMode=disabled&amp;moreControl=true&amp;searchControl=null&amp;tilelayersControl=null&amp;embedControl=null&amp;datalayersControl=true&amp;onLoadPanel=none&amp;captionBar=false&amp;captionMenus=true" target="_blank" rel="noopener">Voir en plein écran ↗</a>
+</aside>
 
 <aside class="drawer" id="journal" aria-label="Journal de bord">
   <header><h3>Journal</h3><span class="spacer"></span>
@@ -686,7 +724,7 @@ function derive(c){
 /* =========================================================
    ÉTAT, SAUVEGARDE (.adb) — l'adaptateur Store sera branché sur Firebase plus tard
    ========================================================= */
-const APP_VER='18';
+const APP_VER='19';
 const LS_SHEET='aldebaran.joueur.fiche', LS_PREF='aldebaran.joueur.prefs';
 const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v);return true}catch(e){return false}}};
 let prefs={autosave:60};
@@ -710,6 +748,7 @@ function normalize(ch){
   }
   // mains : les anciennes armes « équipées » prennent une main
   const used=new Set();
+  if(!Array.isArray(c.bankInventory)) c.bankInventory=[]; c.bankBastos=+c.bankBastos||0;
   c.inventory.forEach(it=>{ if(!it.itemType) it.itemType='misc'; if(it.zone===undefined) it.zone='';
     if(isWeapon(it)&&it.equipped&&!it.zone){ if((it.hands||1)===2&&!used.size){ it.zone='Mains'; used.add('Main G');used.add('Main D'); } else { const h=HANDS.find(x=>!used.has(x)); if(h){ it.zone=h; used.add(h);} } }
     it.equipped=handsOf(it).length>0; });
@@ -923,7 +962,7 @@ function renderDerived(){
   $('v-pa').textContent=D.pa; $('c-pa').textContent='DEX / 3';
   $('v-pp').textContent=D.pp; $('c-pp').textContent=C.race==='droide'?'+1 droïde':'armures';
   $('v-pt').textContent=C.pt; $('v-pe').textContent=C.pe; $('d-pe').classList.toggle('glow',C.pe>=10);
-  $('bastos-val').textContent=(+C.bastos||0).toLocaleString('fr-FR');
+  $('bastos-val').textContent=(+C.bastos||0).toLocaleString('fr-FR'); if($('bank').classList.contains('open')) renderBank();
   STATS.forEach(s=>{ const base=C.stats[s]||0, eff=D.r[s], el=$('s-'+s);
     $('sv-'+s).textContent=eff;
     const b=$('sc-'+s); if(document.activeElement!==b) b.value=base;
@@ -1235,6 +1274,7 @@ document.addEventListener('focusout',e=>{ if(e.target.classList&&e.target.classL
 let drag=null;
 function dropTarget(x,y){ const el=document.elementFromPoint(x,y); if(!el) return null;
   const tr=el.closest('#b-additem'); if(tr) return {trash:true,el:tr};
+  const bk=el.closest('.vtab[data-drawer="bank"],#bank'); if(bk&&drag&&drag.col==='inv') return {bank:true,el:document.querySelector('.vtab[data-drawer="bank"]')};
   const h=el.closest('.hand-t'); if(h) return {hand:h.dataset.hand,el:h};
   const z=el.closest('#zones .zone'); if(z){ const F=$('figure').getBoundingClientRect(); return {zone:z.dataset.zone,el:z,y:(y-F.top)/(F.width/910)}; } return null; }
 function assign(col,it,t){
@@ -1268,13 +1308,15 @@ document.addEventListener('pointermove',e=>{
   const t=dropTarget(e.clientX,e.clientY);
   document.querySelectorAll('.drop').forEach(x=>x.classList.remove('drop'));
   if(t&&t.trash){ t.el.classList.add('drop'); drag.gh.classList.add('bin'); } else drag.gh.classList.remove('bin');
-  if(t&&!t.trash){ let el=t.el; if(isWeapon(drag.it)&&drag.col==='inv'&&t.zone&&/Bras/.test(t.zone)) el=document.querySelector(`.hand-t[data-hand="${t.zone.replace('Bras','Main')}"]`); el.classList.add('drop'); }
+  if(t&&t.bank){ t.el.classList.add('drop'); }
+  else if(t&&!t.trash){ let el=t.el; if(isWeapon(drag.it)&&drag.col==='inv'&&t.zone&&/Bras/.test(t.zone)) el=document.querySelector(`.hand-t[data-hand="${t.zone.replace('Bras','Main')}"]`); el.classList.add('drop'); }
   drag.target=t;
 });
 function endDrag(ok){
   if(!drag) return; const d=drag; drag=null;
   d.gh.remove(); d.card.classList.remove('dragging'); document.body.classList.remove('dragmode'); $('b-additem').classList.remove('trash'); $('b-additem').title='Ajouter à l\'inventaire';
   document.querySelectorAll('.drop').forEach(x=>x.classList.remove('drop'));
+  if(ok&&d.target&&d.target.bank){ bankDeposit(d.it); return; }
   if(ok&&d.target&&d.target.trash){ syncCat(); const L=listOf(d.col); L.splice(L.indexOf(d.it),1); renderCards(); renderDerived(); markDirty(); toast(`${d.it.name||'Objet'} retiré de l'inventaire (toujours au catalogue)`); return; }
   if(ok&&d.target){ assign(d.col,d.it,d.target); renderCards(); renderDerived(); markDirty(); }
 }
@@ -1406,15 +1448,36 @@ $('b-bastos').onclick=()=>{
   $('bastos-plus').onclick=()=>go(1); $('bastos-minus').onclick=()=>go(-1); setTimeout(()=>$('bastos-amt').focus(),30);
 };
 /* Volets latéraux : un seul ouvert à la fois */
-const DRAWERS=['invpanel','roller','journal'];
+const DRAWERS=['invpanel','roller','journal','bank','mapdrw'];
 function openDrawer(id){ const was=id&&$(id).classList.contains('open');
   DRAWERS.forEach(d=>$(d).classList.toggle('open',d===id&&!was));
   const cur=DRAWERS.find(d=>$(d).classList.contains('open'));
-  document.body.classList.toggle('drawer-open',!!cur); if(cur) document.body.style.setProperty('--dw',$(cur).offsetWidth+'px');
+  if(cur==='mapdrw'&&!$('mapwrap').firstChild) $('mapwrap').innerHTML=`<iframe title="Carte d'Aldebaran" allowfullscreen allow="geolocation" loading="lazy" src="https://framacarte.org/fr/map/aldebaran_185113?scaleControl=false&miniMap=false&scrollWheelZoom=true&zoomControl=true&editMode=disabled&moreControl=true&searchControl=null&tilelayersControl=null&embedControl=null&datalayersControl=true&onLoadPanel=none&captionBar=false&captionMenus=true"></iframe>`;
+  if(cur==='bank') renderBank();
   document.querySelectorAll('.vtab').forEach(t=>{ t.classList.toggle('on',t.dataset.drawer===cur); t.setAttribute('aria-expanded',t.dataset.drawer===cur); }); }
 document.querySelectorAll('.vtab').forEach(t=>t.onclick=()=>openDrawer(t.dataset.drawer));
 document.addEventListener('click',e=>{ if(e.target.closest('[data-closedrawer]')) openDrawer(null); });
-window.addEventListener('resize',()=>{ const cur=DRAWERS.find(d=>$(d).classList.contains('open')); if(cur) document.body.style.setProperty('--dw',$(cur).offsetWidth+'px'); });
+/* Quantum Bank : Bastos et objets mis au coffre (hors charge) */
+function bankMeta(it){ const m=[]; if(isWeapon(it)&&it.stat) m.push(`${it.stat}${+it.diceBonus?' +'+it.diceBonus+'D':''}`); if(it.itemType==='armor') m.push(`${+it.armorPoints||0} PP`); if(+it.weight) m.push(`${it.itemType==='backpack'?'+':'−'}${it.weight} PC`); if(it.specialAbility) m.push(it.specialAbility); return m.join(' · '); }
+function renderBank(){
+  if(!Array.isArray(C.bankInventory)) C.bankInventory=[];
+  $('bank-val').textContent=(+C.bankBastos||0).toLocaleString('fr-FR');
+  $('bank-wallet').textContent=`Portefeuille : ${(+C.bastos||0).toLocaleString('fr-FR')} ₿`;
+  $('bank-list').innerHTML=C.bankInventory.length?C.bankInventory.map(it=>{ const T=ITEM_TYPES[typeKey(it)]||ITEM_TYPES.misc;
+    return `<div class="bk-it"><span class="tico">${svgI(T.ico,T.col)}</span><div class="t"><b>${esc(it.name||'Sans nom')}</b><i>${esc(T.label+(bankMeta(it)?' · '+bankMeta(it):''))}</i></div><button class="btn ghost" type="button" data-bankout="${it.id}" title="Remettre dans l'inventaire">Sortir</button></div>`; }).join('')
+    :`<div class="bk-empty">Le coffre est vide.</div>`;
+}
+function bankDeposit(it){ C.inventory.splice(C.inventory.indexOf(it),1); it.zone=''; it.equipped=false; if(C.tagPos) delete C.tagPos['inv'+it.id];
+  C.bankInventory.unshift(it); renderCards(); renderDerived(); renderBank(); markDirty(); toast(`${it.name||'Objet'} mis au coffre`);
+  const tb=document.querySelector('.vtab[data-drawer="bank"]'); if(tb&&tb.animate) tb.animate([{background:'rgba(201,166,70,.35)'},{background:'transparent'}],{duration:900}); }
+document.addEventListener('click',e=>{ const b=e.target.closest('[data-bankout]'); if(!b) return; const it=C.bankInventory.find(x=>x.id===+b.dataset.bankout); if(!it) return;
+  C.bankInventory.splice(C.bankInventory.indexOf(it),1); C.inventory.unshift(it); renderCards(); renderDerived(); renderBank(); markDirty(); toast(`${it.name||'Objet'} sorti du coffre`); });
+function bankMove(dir){ const v=parseInt($('bank-amt').value)||0; if(v<=0){ $('bank-amt').focus(); return; }
+  if(dir>0&&v>(+C.bastos||0)){ toast('Pas assez de Bastos dans le portefeuille.'); return; }
+  if(dir<0&&v>(+C.bankBastos||0)){ toast('Pas assez de Bastos en banque.'); return; }
+  C.bastos=(+C.bastos||0)-dir*v; C.bankBastos=(+C.bankBastos||0)+dir*v; $('bank-amt').value=''; renderDerived(); renderBank(); markDirty(); }
+$('bank-dep').onclick=()=>bankMove(1); $('bank-wd').onclick=()=>bankMove(-1);
+$('bank-amt').addEventListener('keydown',e=>{ if(e.key==='Enter') bankMove(e.shiftKey?-1:1); });
 document.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>{ const i=$(b.dataset.step), lim=b.dataset.step==='fr-n'?[1,30]:[2,10]; i.value=Math.min(lim[1],Math.max(lim[0],(parseInt(i.value)||0)+(+b.dataset.d))); });
 ['fr-n','fr-t'].forEach(id=>$(id).addEventListener('input',e=>{ e.target.value=e.target.value.replace(/\D/g,''); }));
 let rollHist=[];
@@ -1497,7 +1560,7 @@ function showGuide(){
   openDialog(`<h3>Guide</h3><div class="guide">
     <h4>Le volet de gauche</h4><p>Personnage, Décompte et Statistiques. Dans chaque statistique, le petit cercle contient la valeur de base, le grand cercle le nombre de dés lancés après malus. Cliquez le grand cercle pour lancer : pool de D10, seuil 8+, un 10 est un critique, un 1 un échec critique.</p>
     <h4>Le corps</h4><ul><li>Un clic sur une partie du corps la fracture, un second clic la soigne. Plusieurs fractures peuvent coexister.</li><li>Six zones : Tête → PER / 2, Corps → RES / 2, Bras (main comprise) → DEX / 2, Jambe → FOR / 2. Les os de la zone fracturée passent au rouge. Deux fractures sur la même statistique ne la divisent qu'une fois.</li><li>Les pastilles indiquent combien de vignettes sont reliées à chaque partie (bleu : inventaire, violet : cyber).</li></ul>
-    <h4>Inventaire</h4><ul><li>Le bouton (i) d'une ligne affiche ou masque sa description. Pour retirer un objet de l'inventaire, glissez-le sur le « + » qui devient une poubelle : il reste dans le catalogue.</li><li>Inventaire, Jet libre et Journal s'ouvrent avec les onglets collés au bord droit de l'écran ; un clic sur l'onglet actif referme le volet. Un seul volet à la fois.</li><li>Une arme à deux mains ferme les deux poings ; une main fermée n'accepte pas d'autre arme.</li><li>Chaque objet équipé a sa bulle près de la silhouette (picto, nom, dés, description). Glissez une bulle pour la placer où vous voulez : elle reste reliée à sa zone et garde sa place dans la fiche.</li><li>Le « + » ajoute un équipement (arme, armure, divers, sac) ou une cybernétique, mutation, particularité.</li><li>Pour attribuer une ligne au corps, attrapez-la par sa poignée (ou son icône) et déposez-la sur une zone. Le × sur l'étiquette la retire.</li><li>Une arme se dépose sur une main ; déposée sur l'autre main, elle se tient à deux mains. Une main occupée se ferme en poing.</li><li>Une armure se porte en Tête, Haut (torse et bras), Bas (jambes), Pied, ou Combi (tout le corps) : un trait bleu épais longe la partie protégée. Déposée sur le bas des jambes, elle va aux pieds.</li><li>PC = FOR + 3 (+2 Elfe), moins le poids des objets, plus les sacs. PP = armures (+1 Droïde).</li></ul>
+    <h4>Inventaire</h4><ul><li>Le bouton (i) d'une ligne affiche ou masque sa description. Pour retirer un objet de l'inventaire, glissez-le sur le « + » qui devient une poubelle : il reste dans le catalogue.</li><li>Inventaire, Jet libre, Journal, Quantum Bank et Map s'ouvrent avec la bande d'onglets fixe du bord droit ; un clic sur l'onglet actif referme le volet. Un seul volet à la fois.</li><li>Quantum Bank : déposez ou retirez des Bastos, et glissez un objet de l'inventaire sur l'onglet pour le mettre au coffre (il ne pèse plus sur la charge). « Sortir » le remet dans l'inventaire.</li><li>Une arme à deux mains ferme les deux poings ; une main fermée n'accepte pas d'autre arme.</li><li>Chaque objet équipé a sa bulle près de la silhouette (picto, nom, dés, description). Glissez une bulle pour la placer où vous voulez : elle reste reliée à sa zone et garde sa place dans la fiche.</li><li>Le « + » ajoute un équipement (arme, armure, divers, sac) ou une cybernétique, mutation, particularité.</li><li>Pour attribuer une ligne au corps, attrapez-la par sa poignée (ou son icône) et déposez-la sur une zone. Le × sur l'étiquette la retire.</li><li>Une arme se dépose sur une main ; déposée sur l'autre main, elle se tient à deux mains. Une main occupée se ferme en poing.</li><li>Une armure se porte en Tête, Haut (torse et bras), Bas (jambes), Pied, ou Combi (tout le corps) : un trait bleu épais longe la partie protégée. Déposée sur le bas des jambes, elle va aux pieds.</li><li>PC = FOR + 3 (+2 Elfe), moins le poids des objets, plus les sacs. PP = armures (+1 Droïde).</li></ul>
     <h4>Effets actifs</h4><p>Chaque effet acquis devient une bulle avec son icône, qui tourne lentement sur le cercle autour de la silhouette : trait racial (ADN), fractures, états du jeu, bonus et malus. Au survol, les bulles s'arrêtent et une infobulle décrit l'effet, avec Modifier / Retirer (ou Soigner pour une fracture). Le « + » en haut à gauche du dessin ajoute un effet.</p>
     <h4>Décompte</h4><p>PV max = RES + 5. Sous 5 PV : « Pas top top » (seuil +1). À 0 : étourdissement. À −1 : hors jeu. À 10 PE, le cadran d'éveil s'allume. Tous les 10 PT, chaque statistique perd 1.</p>
     <h4>Sauvegarde</h4><p>On enregistre dans un <b>dossier</b> : il contient un fichier <b>.adb</b> par personnage et un <b>catalogue.adbc</b> commun. « Ouvrir un dossier… » liste les fiches qu'il contient. Ctrl+S réécrit la fiche dans le dossier, Ctrl+Maj+S en choisit un autre. La sauvegarde automatique se règle dans les Paramètres. Sur un navigateur qui ne gère pas les dossiers (Firefox, Safari), la fiche se télécharge et le catalogue reste dans le navigateur.</p><h4>Catalogue</h4><p>Chaque objet créé (arme, armure, divers, sac, cyber, mutation, particularité) est enregistré dans le catalogue, et mis à jour quand on le modifie. Dans « Ajouter », la tuile Catalogue permet de le reprendre dans n'importe quelle fiche du dossier.</p>
