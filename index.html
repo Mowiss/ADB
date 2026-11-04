@@ -759,7 +759,7 @@ function derive(c){
 /* =========================================================
    ÉTAT, SAUVEGARDE (.adb) — l'adaptateur Store sera branché sur Firebase plus tard
    ========================================================= */
-const APP_VER='22';
+const APP_VER='23';
 const LS_SHEET='aldebaran.joueur.fiche', LS_PREF='aldebaran.joueur.prefs';
 const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v);return true}catch(e){return false}}};
 let prefs={autosave:60};
@@ -939,8 +939,8 @@ const IC={
   x:'<path d="M6 6l12 12M18 6L6 18"/>',
   pen:'<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',
   chev:'<path d="M6 9l6 6 6-6"/>',
-  sword:'<path d="M14.5 3H21v6.5L10 20.5 3.5 14z"/><path d="M6 17l-3 3M8 15l1 1"/>',
-  gun:'<path d="M3 8h17v4h-6l-1 2h-3l-1 5H5l1.5-7H3z"/><path d="M20 8V6"/>',
+  sword:'<path d="M2.5 7.5h16.5v3.2H11.4l-1 2.1c-.3.6-.9.9-1.5.9h-.4l-1 4.8H4.2l1.7-7H2.5z"/><path d="M19 8.6h2.2M9.6 10.7v1.8"/>',
+  gun:'<path d="M1.6 10.6l3.4-1.9h17.5v2.2H14l-1.3 1.6H9.6l-.9 2.3H6.6l.6-2.3H5.3L2 14.6z"/><path d="M11 12.5l.5 3.2h1.6l-.4-3.2M8.5 8.7V7h5.5v1.7M20.5 8.7V7.6"/>',
   armor:'<path d="M8 3l4 2 4-2 4 3-2 4v10H6V10L4 6z"/><path d="M12 5v15"/>',
   bag:'<path d="M6 8h12l1 12H5z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>',
   misc:'<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>',
