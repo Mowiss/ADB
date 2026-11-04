@@ -99,7 +99,10 @@ body{overflow-x:clip}
 .vtab svg{width:20px;height:20px;flex:none}
 .vtab span{writing-mode:vertical-rl;transform:rotate(180deg);font-size:10.5px;white-space:nowrap;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
 .vtab:hover{color:var(--ink-strong);background:var(--wash)}
-.vtab.on{background:var(--wash);border-left-color:var(--ink-strong);color:var(--ink-strong)}
+.vtab.on{background:color-mix(in srgb,var(--tc) 14%,var(--paper));border-left-color:var(--tc);color:var(--tc)}
+.drawer.open{box-shadow:inset 3px 0 0 var(--tc,transparent)}
+.drawer h3{color:var(--ink-strong)}
+.drawer.open h3{color:var(--tc,var(--ink-strong))}
 .vtab.drop{background:rgba(201,166,70,.18);border-left-color:var(--gold)}
 @media (prefers-reduced-motion:reduce){.vtabs{transition:none}}
 .panel{z-index:1;position:sticky;top:calc(var(--bar) + env(safe-area-inset-top,0px));align-self:start;max-height:calc(100dvh - var(--bar) - env(safe-area-inset-top,0px));overflow:auto;scrollbar-width:none;-ms-overflow-style:none;
@@ -568,11 +571,11 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}input[type=num
 </header>
 <!-- Onglets latéraux des volets : Inventaire, Jet libre, Journal -->
 <nav class="vtabs" id="vtabs" aria-label="Volets">
-  <button type="button" class="vtab" data-drawer="invpanel" title="Inventaire"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 9.5L12 13l8.5-3.5"/><path d="M3.5 9.5V18l8.5 3.5 8.5-3.5V9.5"/><path d="M12 13v8.5"/><path d="M3.5 9.5L1.5 6 10 2.8l2 3.6M20.5 9.5l2-3.5L14 2.8l-2 3.6"/><path d="M12 6.4L3.5 9.5M12 6.4l8.5 3.1"/></svg><span>Inventaire</span></button>
-  <button type="button" class="vtab" data-drawer="roller" title="Jet libre"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M11.97 22.00L1.80 14.72L2.10 9.84L11.93 2.00L21.87 9.91L22.20 14.76ZM11.97 22.00L11.97 17.75L18.35 14.59L22.20 14.76M11.97 17.75L5.62 14.66L1.80 14.72M5.62 14.66L11.93 2.00L18.35 14.59"/><path d="M8.92 10.11L8.92 10.90L10.16 10.20L10.16 15.01L11.00 15.01L11.00 8.45L10.41 8.45ZM13.31 14.11L13.02 14.03L12.75 13.79L12.52 13.40L12.35 12.91L12.24 12.33L12.21 11.71L12.25 11.10L12.37 10.52L12.55 10.03L12.78 9.65L13.05 9.41L13.34 9.33L13.63 9.42L13.90 9.66L14.13 10.04L14.30 10.53L14.41 11.11L14.44 11.73L14.40 12.35L14.28 12.92L14.10 13.41L13.87 13.79L13.60 14.03ZM13.31 8.51L13.79 8.62L14.24 8.94L14.62 9.44L14.92 10.11L15.11 10.88L15.18 11.71L15.12 12.54L14.94 13.32L14.65 13.98L14.27 14.50L13.82 14.82L13.34 14.93L12.86 14.83L12.41 14.51L12.03 14.00L11.73 13.34L11.54 12.56L11.47 11.73L11.53 10.90L11.71 10.13L12.00 9.46L12.38 8.95L12.83 8.62Z" fill="currentColor" stroke="none" fill-rule="evenodd"/></svg><span>Jet libre</span></button>
-  <button type="button" class="vtab" data-drawer="journal" title="Journal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18H6z"/><path d="M9 3v18M12 8h4M12 12h4"/></svg><span>Journal</span></button>
-  <button type="button" class="vtab" data-drawer="bank" title="Quantum Bank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="15" rx="2"/><circle cx="12" cy="11.5" r="3.6"/><path d="M12 7.9v1.4M12 13.7v1.4M8.4 11.5h1.4M14.2 11.5h1.4M6 19v2M18 19v2"/></svg><span>Quantum Bank</span></button>
-  <button type="button" class="vtab" data-drawer="mapdrw" title="Map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4L3 6.5v13.5l6-2.5 6 2.5 6-2.5V4l-6 2.5z"/><path d="M9 4v13.5M15 6.5V20"/></svg><span>Map</span></button>
+  <button type="button" class="vtab" data-drawer="invpanel" style="--tc:var(--c-for)" title="Inventaire"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 9.5L12 13l8.5-3.5"/><path d="M3.5 9.5V18l8.5 3.5 8.5-3.5V9.5"/><path d="M12 13v8.5"/><path d="M3.5 9.5L1.5 6 10 2.8l2 3.6M20.5 9.5l2-3.5L14 2.8l-2 3.6"/><path d="M12 6.4L3.5 9.5M12 6.4l8.5 3.1"/></svg><span>Inventaire</span></button>
+  <button type="button" class="vtab" data-drawer="roller" style="--tc:var(--c-sav)" title="Jet libre"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M11.97 22.00L1.80 14.72L2.10 9.84L11.93 2.00L21.87 9.91L22.20 14.76ZM11.97 22.00L11.97 17.75L18.35 14.59L22.20 14.76M11.97 17.75L5.62 14.66L1.80 14.72M5.62 14.66L11.93 2.00L18.35 14.59"/><path d="M8.92 10.11L8.92 10.90L10.16 10.20L10.16 15.01L11.00 15.01L11.00 8.45L10.41 8.45ZM13.31 14.11L13.02 14.03L12.75 13.79L12.52 13.40L12.35 12.91L12.24 12.33L12.21 11.71L12.25 11.10L12.37 10.52L12.55 10.03L12.78 9.65L13.05 9.41L13.34 9.33L13.63 9.42L13.90 9.66L14.13 10.04L14.30 10.53L14.41 11.11L14.44 11.73L14.40 12.35L14.28 12.92L14.10 13.41L13.87 13.79L13.60 14.03ZM13.31 8.51L13.79 8.62L14.24 8.94L14.62 9.44L14.92 10.11L15.11 10.88L15.18 11.71L15.12 12.54L14.94 13.32L14.65 13.98L14.27 14.50L13.82 14.82L13.34 14.93L12.86 14.83L12.41 14.51L12.03 14.00L11.73 13.34L11.54 12.56L11.47 11.73L11.53 10.90L11.71 10.13L12.00 9.46L12.38 8.95L12.83 8.62Z" fill="currentColor" stroke="none" fill-rule="evenodd"/></svg><span>Jet libre</span></button>
+  <button type="button" class="vtab" data-drawer="journal" style="--tc:var(--c-per)" title="Journal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18H6z"/><path d="M9 3v18M12 8h4M12 12h4"/></svg><span>Journal</span></button>
+  <button type="button" class="vtab" data-drawer="bank" style="--tc:var(--c-res)" title="Quantum Bank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="15" rx="2"/><circle cx="12" cy="11.5" r="3.6"/><path d="M12 7.9v1.4M12 13.7v1.4M8.4 11.5h1.4M14.2 11.5h1.4M6 19v2M18 19v2"/></svg><span>Quantum Bank</span></button>
+  <button type="button" class="vtab" data-drawer="mapdrw" style="--tc:var(--c-cha)" title="Map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4L3 6.5v13.5l6-2.5 6 2.5 6-2.5V4l-6 2.5z"/><path d="M9 4v13.5M15 6.5V20"/></svg><span>Map</span></button>
 </nav>
 
 <div class="layout" id="layout">
@@ -634,7 +637,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}input[type=num
 
 </div>
 
-<aside class="drawer inv-drawer" id="invpanel" aria-label="Inventaire"><div class="invin">
+<aside class="drawer inv-drawer" id="invpanel" style="--tc:var(--c-for)" aria-label="Inventaire"><div class="invin">
       <section class="frame" id="fr-inv">
         <div class="frame-head">
           <svg class="ttl sm" data-title><text x="0" y="24">INVENTAIRE</text></svg>
@@ -645,8 +648,8 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}input[type=num
       </section>
   </div></aside>
 
-<aside class="drawer bank-drawer" id="bank" aria-label="Quantum Bank">
-  <header><h3>Quantum Bank</h3><span class="spacer"></span><button class="ib" type="button" data-closedrawer title="Fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></header>
+<aside class="drawer bank-drawer" id="bank" style="--tc:var(--c-res)" aria-label="Quantum Bank">
+  <header><h3>Quantum Bank</h3><span class="spacer"></span></header>
   <div class="bankin">
     <div class="bk-bal"><div><span class="cap">Solde en banque</span><b id="bank-val">0</b><span class="cur">₿</span></div><div class="cap" id="bank-wallet"></div></div>
     <div class="bk-move"><input class="line-in" type="number" min="0" id="bank-amt" placeholder="Montant" aria-label="Montant">
@@ -657,21 +660,20 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}input[type=num
   </div>
 </aside>
 
-<aside class="drawer map-drawer" id="mapdrw" aria-label="Carte">
-  <header><h3>Map</h3><span class="spacer"></span><button class="ib" type="button" data-closedrawer title="Fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></header>
+<aside class="drawer map-drawer" id="mapdrw" style="--tc:var(--c-cha)" aria-label="Carte">
+  <header><h3>Map</h3><span class="spacer"></span></header>
   <div class="mapwrap" id="mapwrap"></div>
   <a class="maplink" href="https://framacarte.org/fr/map/aldebaran_185113?scaleControl=false&amp;miniMap=false&amp;scrollWheelZoom=true&amp;zoomControl=true&amp;editMode=disabled&amp;moreControl=true&amp;searchControl=null&amp;tilelayersControl=null&amp;embedControl=null&amp;datalayersControl=true&amp;onLoadPanel=none&amp;captionBar=false&amp;captionMenus=true" target="_blank" rel="noopener">Voir en plein écran ↗</a>
 </aside>
 
-<aside class="drawer" id="journal" aria-label="Journal de bord">
+<aside class="drawer" id="journal" style="--tc:var(--c-per)" aria-label="Journal de bord">
   <header><h3>Journal</h3><span class="spacer"></span>
-    <button class="btn ghost" type="button" id="b-addnote">Ajouter une entrée</button>
-    <button class="ib" type="button" id="b-closej" title="Fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></header>
+    <button class="btn ghost" type="button" id="b-addnote">Ajouter une entrée</button></header>
   <div class="notes" id="notes"></div>
 </aside>
 
-<aside class="drawer" id="roller" aria-label="Jet libre">
-  <header><h3>Jet libre</h3><span class="spacer"></span><button class="ib" type="button" data-closedrawer title="Fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></header>
+<aside class="drawer" id="roller" style="--tc:var(--c-sav)" aria-label="Jet libre">
+  <header><h3>Jet libre</h3><span class="spacer"></span></header>
   <div class="roller">
     <div class="rl-row">
       <div class="rl-f"><span class="cap">Dés (D10)</span><div class="stepper"><button type="button" data-step="fr-n" data-d="-1">−</button><input id="fr-n" inputmode="numeric" value="3" aria-label="Nombre de dés"><button type="button" data-step="fr-n" data-d="1">+</button></div></div>
@@ -766,7 +768,7 @@ function derive(c){
 /* =========================================================
    ÉTAT, SAUVEGARDE (.adb) — l'adaptateur Store sera branché sur Firebase plus tard
    ========================================================= */
-const APP_VER='26';
+const APP_VER='27';
 const LS_SHEET='aldebaran.joueur.fiche', LS_PREF='aldebaran.joueur.prefs';
 const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v);return true}catch(e){return false}}};
 let prefs={autosave:60};
@@ -1591,7 +1593,6 @@ function cropDialog(im,gif){
     C.photo=o.toDataURL('image/jpeg',.85); delete C.photoCrop; renderIdentity(); markDirty(); dlg.close(); };
   draw();
 }
-$('b-closej').onclick=()=>openDrawer(null);
 $('b-addnote').onclick=()=>{ C.notes.unshift({id:Date.now(),title:'Nouvelle entrée',content:''}); renderNotes(); markDirty(); const i=$('notes').querySelector('input'); if(i){i.focus();i.select();} };
 const IB=(p)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
 $('b-settings').onclick=()=>{
