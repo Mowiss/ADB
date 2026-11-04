@@ -199,9 +199,9 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 #orbit.paused,#orbit.paused .bub{animation-play-state:paused}
 #iorbit{position:absolute;left:0;top:0;width:0;height:0;z-index:4;pointer-events:none}
 .islot{position:absolute;left:0;top:0;width:0;height:0}
-.iic{position:absolute;width:36px;height:36px;margin:-18px 0 0 -18px;border-radius:50%;border:1.6px solid var(--c);background:var(--paper);display:grid;place-items:center;padding:0;pointer-events:auto;cursor:pointer;transition:scale .15s,box-shadow .15s}
+.iic{position:absolute;width:var(--is,36px);height:var(--is,36px);margin:calc(var(--is,36px) / -2) 0 0 calc(var(--is,36px) / -2);border-radius:50%;border:1.6px solid var(--c);background:var(--paper);display:grid;place-items:center;padding:0;pointer-events:auto;cursor:pointer;transition:scale .15s,box-shadow .15s}
 .figure .iic svg{position:static;inset:auto;overflow:visible}
-.iic > svg{width:19px;height:19px}
+.iic > svg{width:calc(var(--is,36px) * .53);height:calc(var(--is,36px) * .53)}
 .iic:hover,.iic.open{scale:1.15;box-shadow:0 0 0 4px rgba(255,255,255,.9),0 0 0 5.5px var(--c);z-index:3}
 #iorbit.paused,#iorbit.paused .iic{animation-play-state:paused}
 .iic-tip{position:absolute;left:calc(100% + 12px);top:50%;transform:translateY(-50%);width:240px;background:var(--paper);border:1px solid var(--rule);border-radius:10px;padding:10px 12px;display:none;flex-direction:column;gap:4px;font-size:12px;line-height:1.4;text-align:left;color:var(--ink);cursor:default;box-shadow:0 0 0 1px var(--faint)}
@@ -331,7 +331,7 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 .frame-head .sq-add{order:10}
 #b-additem .i-bin{display:none}
 .droptgt{display:none!important}
-body.dragmode.drag-inv #inv-bankdrop,body.dragmode.drag-bank #bank-invdrop{display:grid!important;background:var(--gold);border-color:var(--gold);color:#fff;transform:scale(1.15);transition:transform .15s;order:10}
+body.dragmode.drag-bankable #inv-bankdrop,body.dragmode.drag-bank #bank-invdrop{display:grid!important;background:var(--gold);border-color:var(--gold);color:#fff;transform:scale(1.15);transition:transform .15s;order:10}
 #inv-bankdrop.drop,#bank-invdrop.drop{transform:scale(1.35);box-shadow:0 0 0 5px rgba(201,166,70,.3)}
 #inv-bankdrop svg,#bank-invdrop svg{width:18px;height:18px}
 #b-additem.trash{background:var(--danger);border-color:var(--danger);transform:scale(1.15);transition:transform .15s}
@@ -765,6 +765,7 @@ function derive(c){
   armorMods(c).forEach(a=>{ r[a.stat]=Math.max(0,r[a.stat]+a.mod); });
   let pcItems=0,ppItems=0;
   c.inventory.forEach(it=>{const w=+it.weight||0; if(it.itemType==='backpack') pcItems+=w; else pcItems-=w; if(it.itemType==='armor') ppItems+=+it.armorPoints||0;});
+  (c.cybernetics||[]).forEach(x=>{ if(x.type==='cybernetic'&&!x.bodyPart) pcItems-=+x.weight||0; });   // cybernétique non implantée : elle se porte
   const pcMax=(r.FOR+3)+(c.race==='elfe'?2:0);
   return {r,halved,ptRed,pc:pcMax+pcItems,pcMax,pvMax:r.RES+5,pa:Math.max(1,Math.ceil(r.DEX/3)),pp:(c.race==='droide'?1:0)+ppItems};
 }
@@ -772,7 +773,7 @@ function derive(c){
 /* =========================================================
    ÉTAT, SAUVEGARDE (.adb) — l'adaptateur Store sera branché sur Firebase plus tard
    ========================================================= */
-const APP_VER='29';
+const APP_VER='30';
 const LS_SHEET='aldebaran.joueur.fiche', LS_PREF='aldebaran.joueur.prefs';
 const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v);return true}catch(e){return false}}};
 let prefs={autosave:60};
@@ -1131,7 +1132,9 @@ const tagKey=t=>t.col+t.it.id;
 function tagIco(t){ const T=t.col==='cyb'?(CYB_TYPES[t.it.type]||CYB_TYPES.particularity):(ITEM_TYPES[typeKey(t.it)]||ITEM_TYPES.misc); return svgI(T.ico,T.col); }
 const IORB={cx:452,cy:463,r:276.3, L:[164,246], R:[376,296]};   // arcs intérieurs (DXF) : gauche = équipement, droite = amélioration (angles en degrés, du haut vers le bas)
 function renderTags(){
-  const box=$('iorbit'), list=tagList(); $('tags').innerHTML=''; $('leads').innerHTML='';
+  const RANK={weapon:0,armor:1,misc:2,cybernetic:0,mutation:1,particularity:2};
+  const rk=t=>t.col==='cyb'?(RANK[t.it.type]??3):(RANK[t.kind]??3);
+  const box=$('iorbit'), list=tagList().map((t,i)=>({t,i})).sort((a,b)=>rk(a.t)-rk(b.t)||a.i-b.i).map(x=>x.t); $('tags').innerHTML=''; $('leads').innerHTML='';   // armes, armures… / cyber, mutations, particularités
   const ct=box.getAnimations&&box.getAnimations()[0]?box.getAnimations()[0].currentTime||0:0;
   box.innerHTML=list.map((t,i)=>{ const d=diceOf(t.it), canRoll=t.it.stat&&(t.kind==='weapon'||t.kind==='cyb'), ds=t.col==='cyb'?t.it.ability:t.it.specialAbility,
       T=t.col==='cyb'?(CYB_TYPES[t.it.type]||CYB_TYPES.particularity):(ITEM_TYPES[typeKey(t.it)]||ITEM_TYPES.misc),
@@ -1148,9 +1151,10 @@ function placeItems(){ const box=$('iorbit'), fig=$('figure'); if(!box||!fig) re
   const sc=fig.clientWidth/910, bs=[...box.children];
   const groups={L:bs.filter(x=>x.dataset.side==='L'), R:bs.filter(x=>x.dataset.side==='R')};
   ['L','R'].forEach(k=>{ const [a0,a1]=IORB[k], g=groups[k], n=g.length; if(!n) return;
-    const span=(a1-a0)*.62, step=Math.sign(span)*Math.min(13, Math.abs(span)/Math.max(n-1,1));   // icônes sur le haut de l'arc, le titre en bas
-    g.forEach((sl,i)=>{ const a=(a0+step*i)*Math.PI/180, x=(IORB.cx+IORB.r*Math.cos(a))*sc, y=(IORB.cy-IORB.r*Math.sin(a))*sc;
-      sl.style.transform=`translate(${x}px,${y}px)`; sl.firstElementChild.classList.toggle('tip-l',k==='L'); }); }); }
+    // chaque pastille prend une part égale de l'arc (le titre garde le bas) ; elles rétrécissent si la place manque
+    const span=(a1-a0)*.64, step=span/n, R=IORB.r*sc, chord=2*R*Math.sin(Math.abs(step)*Math.PI/360), size=Math.max(18,Math.min(36,chord*.9));
+    g.forEach((sl,i)=>{ const a=(a0+step*(i+.5))*Math.PI/180, x=(IORB.cx+IORB.r*Math.cos(a))*sc, y=(IORB.cy-IORB.r*Math.sin(a))*sc;
+      sl.style.transform=`translate(${x}px,${y}px)`; sl.style.setProperty('--is',size+'px'); sl.firstElementChild.classList.toggle('tip-l',k==='L'); }); }); }
 window.addEventListener('resize',placeItems);
 // clic sur une icône : infobulle (et bouton Utiliser) ; l'orbite s'arrête tant qu'elle est ouverte
 function closeItemTips(){ document.querySelectorAll('.iic.open').forEach(x=>x.classList.remove('open')); $('iorbit').classList.remove('paused'); $('itip').hidden=true; }
@@ -1227,7 +1231,7 @@ function rowCyb(c){
       <input class="nm" data-f="name" value="${esc(c.name)}" aria-label="Nom">
       <select class="zc" data-f="bodyPart" aria-label="Zone">${[['','Non placée'],...ZONES.map(z=>[z,z])].map(([k,l])=>`<option value="${k}" ${c.bodyPart===k?'selected':''}>${l}</option>`).join('')}</select>
       <button type="button" class="ib info ${c.ability?'has':''} ${openDesc.has('cyb'+c.id)?'on':''}" data-a="info" title="Afficher ou masquer la description" aria-expanded="${openDesc.has('cyb'+c.id)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01" stroke-width="2.4"/></svg></button></div>
-    <div class="r2">${fld(L_STAT(),'Statistique utilisée',`<select class="c" data-f="stat" aria-label="Statistique">${statOpts(c.stat)}</select>`)}${fld('+ D','Dés ajoutés à la statistique',cell('diceBonus',c.diceBonus||0))}${fld(L_TH(),'Seuil de réussite',cell('successThreshold',c.successThreshold||8))}${NAF(L_PC('−'),'Charge occupée')}${NAF(L_PC('+'),'Charge ajoutée')}${NAF(L_PP(),"Points d'armure")}${NAF(L_B(),'Consommation en Bastos')}</div>
+    <div class="r2">${fld(L_STAT(),'Statistique utilisée',`<select class="c" data-f="stat" aria-label="Statistique">${statOpts(c.stat)}</select>`)}${fld('+ D','Dés ajoutés à la statistique',cell('diceBonus',c.diceBonus||0))}${fld(L_TH(),'Seuil de réussite',cell('successThreshold',c.successThreshold||8))}${c.type==='cybernetic'?fld(L_PC('−'),'Charge quand elle n\'est pas implantée',cell('weight',c.weight||0)):NAF(L_PC('−'),'Charge occupée')}${NAF(L_PC('+'),'Charge ajoutée')}${NAF(L_PP(),"Points d'armure")}${NAF(L_B(),'Consommation en Bastos')}</div>
     <input class="ds" data-f="ability" value="${esc(c.ability)}" placeholder="Effets & description" aria-label="Effets et description" ${openDesc.has('cyb'+c.id)?'':'hidden'}>
   </div>`;
 }
@@ -1335,11 +1339,12 @@ document.addEventListener('click',e=>{ const ef=e.target.closest('.stat .eff'); 
 document.addEventListener('focusout',e=>{ if(e.target.classList&&e.target.classList.contains('statin')) e.target.closest('.stat').classList.remove('editing'); });
 /* Glisser-déposer : une ligne de l'inventaire sur une zone du corps ou une main */
 let drag=null;
+const bankable=d=>d.col==='inv'||(d.col==='cyb'&&d.it.type==='cybernetic');
 function dropTarget(x,y){ const el=document.elementFromPoint(x,y); if(!el) return null;
   if(drag&&drag.col==='bank'){ const ib=el.closest('#bank-invdrop,.vtab[data-drawer="invpanel"]'); return ib?{toinv:true,el:$('bank-invdrop')}:null; }
-  const ib=el.closest('#inv-bankdrop'); if(ib&&drag&&drag.col==='inv') return {bank:true,el:ib};
+  const ib=el.closest('#inv-bankdrop'); if(ib&&drag&&bankable(drag)) return {bank:true,el:ib};
   const tr=el.closest('#b-additem'); if(tr) return {trash:true,el:tr};
-  const bk=el.closest('.vtab[data-drawer="bank"]'); if(bk&&drag&&drag.col==='inv') return {bank:true,el:bk};
+  const bk=el.closest('.vtab[data-drawer="bank"]'); if(bk&&drag&&bankable(drag)) return {bank:true,el:bk};
   const h=el.closest('.hand-t'); if(h) return {hand:h.dataset.hand,el:h};
   const z=el.closest('#zones .zone'); if(z){ const F=$('figure').getBoundingClientRect(); return {zone:z.dataset.zone,el:z,y:(y-F.top)/(F.width/910)}; } return null; }
 function assign(col,it,t){
@@ -1363,7 +1368,7 @@ document.addEventListener('pointerdown',e=>{
   const ic=card.querySelector('.tico').innerHTML;
   const gh=document.createElement('div'); gh.className='ghost-drag'; gh.innerHTML=`${ic}<span>${esc(it.name||'Élément')}</span><small>${card.dataset.col==='bank'?'vers l\'inventaire':'sur le corps'}</small>`; document.body.appendChild(gh);
   drag={card,it,col:card.dataset.col,gh,target:null,x:e.clientX,y:e.clientY,moved:false};
-  card.classList.add('dragging'); document.body.classList.add('dragmode','drag-'+card.dataset.col); if(card.dataset.col!=='bank') $('b-additem').classList.add('trash'); $('b-additem').title='Lâcher ici pour retirer de l\'inventaire';
+  card.classList.add('dragging'); document.body.classList.add('dragmode','drag-'+card.dataset.col); if(bankable({col:card.dataset.col,it})) document.body.classList.add('drag-bankable'); if(card.dataset.col!=='bank') $('b-additem').classList.add('trash'); $('b-additem').title='Lâcher ici pour retirer de l\'inventaire';
   gh.style.left=e.clientX+'px'; gh.style.top=e.clientY+'px';
   const loop=()=>{ if(!drag) return; if(drag.y<70) window.scrollBy(0,-14); else if(drag.y>innerHeight-50) window.scrollBy(0,14); requestAnimationFrame(loop); }; requestAnimationFrame(loop);
 });
@@ -1379,9 +1384,9 @@ document.addEventListener('pointermove',e=>{
 });
 function endDrag(ok){
   if(!drag) return; const d=drag; drag=null;
-  d.gh.remove(); d.card.classList.remove('dragging'); document.body.classList.remove('dragmode','drag-inv','drag-cyb','drag-bank'); $('b-additem').classList.remove('trash'); $('b-additem').title='Ajouter à l\'inventaire';
+  d.gh.remove(); d.card.classList.remove('dragging'); document.body.classList.remove('dragmode','drag-inv','drag-cyb','drag-bank','drag-bankable'); $('b-additem').classList.remove('trash'); $('b-additem').title='Ajouter à l\'inventaire';
   document.querySelectorAll('.drop').forEach(x=>x.classList.remove('drop'));
-  if(ok&&d.target&&d.target.bank){ bankDeposit(d.it); return; }
+  if(ok&&d.target&&d.target.bank){ bankDeposit(d.it,d.col); return; }
   if(ok&&d.target&&d.target.toinv){ bankWithdraw(d.it); return; }
   if(ok&&d.target&&d.target.trash){ syncCat(); const L=listOf(d.col); L.splice(L.indexOf(d.it),1); renderCards(); renderDerived(); markDirty(); toast(`${d.it.name||'Objet'} retiré de l'inventaire (toujours au catalogue)`); return; }
   if(ok&&d.target){ assign(d.col,d.it,d.target); renderCards(); renderDerived(); markDirty(); }
@@ -1531,14 +1536,14 @@ function renderBank(){
   if(!Array.isArray(C.bankInventory)) C.bankInventory=[];
   $('bank-val').textContent=(+C.bankBastos||0).toLocaleString('fr-FR');
   $('bank-wallet').textContent=`Portefeuille : ${(+C.bastos||0).toLocaleString('fr-FR')} ₿`;
-  $('bank-list').innerHTML=C.bankInventory.length?C.bankInventory.map(it=>{ const T=ITEM_TYPES[typeKey(it)]||ITEM_TYPES.misc;
+  $('bank-list').innerHTML=C.bankInventory.length?C.bankInventory.map(it=>{ const T=it._col==='cyb'?(CYB_TYPES[it.type]||CYB_TYPES.cybernetic):(ITEM_TYPES[typeKey(it)]||ITEM_TYPES.misc);
     return `<div class="bk-it row bk-row" data-id="${it.id}" data-col="bank"><button type="button" class="grip" data-drag title="Glisser vers l'inventaire" aria-label="Glisser vers l'inventaire">${GRIP}</button><span class="tico" data-drag>${svgI(T.ico,T.col)}</span><div class="t"><b>${esc(it.name||'Sans nom')}</b><i>${esc(T.label+(bankMeta(it)?' · '+bankMeta(it):''))}</i></div></div>`; }).join('')
     :`<div class="bk-empty">Le coffre est vide.</div>`;
 }
-function bankDeposit(it){ C.inventory.splice(C.inventory.indexOf(it),1); it.zone=''; it.equipped=false; if(C.tagPos) delete C.tagPos['inv'+it.id];
+function bankDeposit(it,col='inv'){ const L=listOf(col); L.splice(L.indexOf(it),1); if(col==='cyb'){ it.bodyPart=''; it._col='cyb'; } else { it.zone=''; it.equipped=false; delete it._col; } if(C.tagPos) delete C.tagPos[col+it.id];
   C.bankInventory.unshift(it); renderCards(); renderDerived(); renderBank(); markDirty(); toast(`${it.name||'Objet'} mis au coffre`);
   const tb=document.querySelector('.vtab[data-drawer="bank"]'); if(tb&&tb.animate) tb.animate([{background:'rgba(201,166,70,.35)'},{background:'transparent'}],{duration:900}); }
-function bankWithdraw(it){ C.bankInventory.splice(C.bankInventory.indexOf(it),1); C.inventory.unshift(it); renderCards(); renderDerived(); renderBank(); markDirty(); toast(`${it.name||'Objet'} sorti du coffre`); }
+function bankWithdraw(it){ C.bankInventory.splice(C.bankInventory.indexOf(it),1); if(it._col==='cyb'){ delete it._col; C.cybernetics.unshift(it); } else C.inventory.unshift(it); renderCards(); renderDerived(); renderBank(); markDirty(); toast(`${it.name||'Objet'} sorti du coffre`); }
 function bankMove(dir){ const v=parseInt($('bank-amt').value)||0; if(v<=0){ $('bank-amt').focus(); return; }
   if(dir>0&&v>(+C.bastos||0)){ toast('Pas assez de Bastos dans le portefeuille.'); return; }
   if(dir<0&&v>(+C.bankBastos||0)){ toast('Pas assez de Bastos en banque.'); return; }
@@ -1626,7 +1631,7 @@ function showGuide(){
   openDialog(`<h3>Guide</h3><div class="guide">
     <h4>Le volet de gauche</h4><p>Personnage, Décompte et Statistiques. Dans chaque statistique, le petit cercle contient la valeur de base, le grand cercle le nombre de dés lancés après malus. Cliquez le grand cercle pour lancer : pool de D10, seuil 8+, un 10 est un critique, un 1 un échec critique.</p>
     <h4>Le corps</h4><ul><li>Un clic sur une partie du corps la fracture, un second clic la soigne. Plusieurs fractures peuvent coexister.</li><li>Six zones : Tête → PER / 2, Corps → RES / 2, Bras (main comprise) → DEX / 2, Jambe → FOR / 2. Les os de la zone fracturée passent au rouge. Deux fractures sur la même statistique ne la divisent qu'une fois.</li><li>Les pastilles indiquent combien de vignettes sont reliées à chaque partie (bleu : inventaire, violet : cyber).</li></ul>
-    <h4>Inventaire</h4><ul><li>Le bouton (i) d'une ligne affiche ou masque sa description. Pour retirer un objet de l'inventaire, glissez-le sur le « + » qui devient une poubelle : il reste dans le catalogue.</li><li>Inventaire, Jet libre, Journal, Quantum Bank et Map s'ouvrent avec la bande d'onglets fixe du bord droit ; un clic sur l'onglet actif referme le volet. Un seul volet à la fois.</li><li>Quantum Bank : « Épargner » (dans la fenêtre Bastos) met des Bastos en banque, « Retirer » (dans la banque) les rend au portefeuille. Pendant qu'on glisse un objet de l'inventaire, l'icône du coffre apparaît à côté de la poubelle ; dans la banque, l'icône de l'inventaire permet de le récupérer.</li><li>Une arme à deux mains ferme les deux poings ; une main fermée n'accepte pas d'autre arme.</li><li>Une armure peut modifier une statistique (colonnes Stat et ± D, ex. DEX −1) : l'effet s'applique tant qu'elle est portée, et un petit bouclier le signale sur la statistique.</li><li>Les objets équipés apparaissent en icônes sur l'arc ÉQUIPEMENT (à gauche) ; cybernétiques, mutations et particularités sur l'arc AMÉLIORATION (à droite). Un clic sur une icône affiche son infobulle (zone, dés, description) avec « Utiliser » si l'objet se lance, et « Déséquiper ».</li><li>Le « + » ajoute un équipement (arme, armure, divers, sac) ou une cybernétique, mutation, particularité.</li><li>Pour attribuer une ligne au corps, attrapez-la par sa poignée (ou son icône) et déposez-la sur une zone. Le × sur l'étiquette la retire.</li><li>Une arme se dépose sur une main ; déposée sur l'autre main, elle se tient à deux mains. Une main occupée se ferme en poing.</li><li>Une armure se porte en Tête, Haut (torse et bras), Bas (jambes), Pied, ou Combi (tout le corps) : un trait bleu épais longe la partie protégée. Déposée sur le bas des jambes, elle va aux pieds.</li><li>PC = FOR + 3 (+2 Elfe), moins le poids des objets, plus les sacs. PP = armures (+1 Droïde).</li></ul>
+    <h4>Inventaire</h4><ul><li>Le bouton (i) d'une ligne affiche ou masque sa description. Pour retirer un objet de l'inventaire, glissez-le sur le « + » qui devient une poubelle : il reste dans le catalogue.</li><li>Inventaire, Jet libre, Journal, Quantum Bank et Map s'ouvrent avec la bande d'onglets fixe du bord droit ; un clic sur l'onglet actif referme le volet. Un seul volet à la fois.</li><li>Quantum Bank (objets et cybernétique non implantée) : « Épargner » (dans la fenêtre Bastos) met des Bastos en banque, « Retirer » (dans la banque) les rend au portefeuille. Pendant qu'on glisse un objet de l'inventaire, l'icône du coffre apparaît à côté de la poubelle ; dans la banque, l'icône de l'inventaire permet de le récupérer.</li><li>Une arme à deux mains ferme les deux poings ; une main fermée n'accepte pas d'autre arme.</li><li>Seule la cybernétique peut être retirée du corps : non implantée, elle pèse sur la charge (colonne PC−) et peut aller au coffre. Mutations et particularités ne pèsent rien.</li><li>Une armure peut modifier une statistique (colonnes Stat et ± D, ex. DEX −1) : l'effet s'applique tant qu'elle est portée, et un petit bouclier le signale sur la statistique.</li><li>Les objets équipés apparaissent en icônes sur l'arc ÉQUIPEMENT (à gauche) ; cybernétiques, mutations et particularités sur l'arc AMÉLIORATION (à droite). Un clic sur une icône affiche son infobulle (zone, dés, description) avec « Utiliser » si l'objet se lance, et « Déséquiper ».</li><li>Le « + » ajoute un équipement (arme, armure, divers, sac) ou une cybernétique, mutation, particularité.</li><li>Pour attribuer une ligne au corps, attrapez-la par sa poignée (ou son icône) et déposez-la sur une zone. Le × sur l'étiquette la retire.</li><li>Une arme se dépose sur une main ; déposée sur l'autre main, elle se tient à deux mains. Une main occupée se ferme en poing.</li><li>Une armure se porte en Tête, Haut (torse et bras), Bas (jambes), Pied, ou Combi (tout le corps) : un trait bleu épais longe la partie protégée. Déposée sur le bas des jambes, elle va aux pieds.</li><li>PC = FOR + 3 (+2 Elfe), moins le poids des objets, plus les sacs. PP = armures (+1 Droïde).</li></ul>
     <h4>Effets actifs</h4><p>Chaque effet acquis devient une bulle avec son icône, qui tourne lentement sur le cercle autour de la silhouette : trait racial (ADN), fractures, états du jeu, bonus et malus. Au survol, les bulles s'arrêtent et une infobulle décrit l'effet, avec Modifier / Retirer (ou Soigner pour une fracture). Le « + » en haut à gauche du dessin ajoute un effet.</p>
     <h4>Décompte</h4><p>PV max = RES + 5. Sous 5 PV : « Pas top top » (seuil +1). À 0 : étourdissement. À −1 : hors jeu. À 10 PE, le cadran d'éveil s'allume. Tous les 10 PT, chaque statistique perd 1.</p>
     <h4>Sauvegarde</h4><p>On enregistre dans un <b>dossier</b> : il contient un fichier <b>.adb</b> par personnage et un <b>catalogue.adbc</b> commun. « Ouvrir un dossier… » liste les fiches qu'il contient. Ctrl+S réécrit la fiche dans le dossier, Ctrl+Maj+S en choisit un autre. La sauvegarde automatique se règle dans les Paramètres. Sur un navigateur qui ne gère pas les dossiers (Firefox, Safari), la fiche se télécharge et le catalogue reste dans le navigateur.</p><h4>Catalogue</h4><p>Chaque objet créé (arme, armure, divers, sac, cyber, mutation, particularité) est enregistré dans le catalogue, et mis à jour quand on le modifie. Dans « Ajouter », la tuile Catalogue permet de le reprendre dans n'importe quelle fiche du dossier.</p>
