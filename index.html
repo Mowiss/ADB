@@ -99,7 +99,8 @@ body{overflow-x:clip}
 .vtab svg{width:20px;height:20px;flex:none}
 .vtab span{writing-mode:vertical-rl;transform:rotate(180deg);font-size:10.5px;white-space:nowrap;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
 .vtab:hover{color:var(--ink-strong);background:var(--wash)}
-.vtab.on{background:color-mix(in srgb,var(--tc) 14%,var(--paper));border-left-color:var(--tc);color:var(--tc)}
+.vtab.on{background:var(--paper);border-left-color:var(--tc);color:var(--tc)}
+.vtab.on:hover{background:var(--paper)}
 .drawer.open{box-shadow:inset 3px 0 0 var(--tc,transparent)}
 .drawer h3{color:var(--ink-strong)}
 .drawer.open h3{color:var(--tc,var(--ink-strong))}
@@ -768,7 +769,7 @@ function derive(c){
 /* =========================================================
    ÉTAT, SAUVEGARDE (.adb) — l'adaptateur Store sera branché sur Firebase plus tard
    ========================================================= */
-const APP_VER='27';
+const APP_VER='28';
 const LS_SHEET='aldebaran.joueur.fiche', LS_PREF='aldebaran.joueur.prefs';
 const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v);return true}catch(e){return false}}};
 let prefs={autosave:60};
