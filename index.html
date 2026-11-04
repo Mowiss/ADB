@@ -432,6 +432,7 @@ body.dragmode .hand-t{pointer-events:all}
 .fistg{transition:opacity .2s}
 .fistg .fo{fill:none;stroke:var(--ink-strong);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
 .fistg .bone{stroke-linejoin:round}
+.fistg path{vector-effect:non-scaling-stroke}
 .armor-line{fill:none;stroke:var(--c-res);stroke-width:6;stroke-linejoin:round;stroke-linecap:round;opacity:.8;pointer-events:none}
 @media (max-width:820px){.frame-head{flex-wrap:wrap}.frame-head .ttl{width:100%}}
 
@@ -806,7 +807,7 @@ function derive(c){
 /* =========================================================
    ÉTAT, SAUVEGARDE (.adb) — l'adaptateur Store sera branché sur Firebase plus tard
    ========================================================= */
-const APP_VER='39';
+const APP_VER='40';
 const LS_SHEET='aldebaran.joueur.fiche', LS_PREF='aldebaran.joueur.prefs';
 const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v);return true}catch(e){return false}}};
 let prefs={autosave:60};
@@ -1033,11 +1034,23 @@ function buildZones(){
     return g.el==='ellipse'?`<ellipse class="zone" data-zone="${z}" cx="${g.cx}" cy="${g.cy}" rx="${g.rx}" ry="${g.ry}"/>`:`<polygon class="zone" data-zone="${z}" points="${g.pts}"/>`;}).join('');
   $('clips').innerHTML=ZONES.map((z,i)=>`<clipPath id="clip-${i}"><polygon points="${ZONE_GEO[z].clip}"/></clipPath>`).join('')
     +ARM_Z.slice(0,4).map((a,i)=>`<clipPath id="clipa-${i}">${ARM_PARTS[a].map(z=>`<polygon points="${ZONE_GEO[z].clip}"/>`).join('')}</clipPath>`).join('')
-    +`<clipPath id="clip-wrist"><rect x="158" y="-50" width="594" height="1100"/></clipPath><clipPath id="clipy-all"><rect x="-50" y="-50" width="1010" height="1090"/></clipPath><clipPath id="clipy-b"><rect x="-50" y="-50" width="1010" height="${ANKLE+50}"/></clipPath><clipPath id="clipy-p"><rect x="-50" y="${ANKLE}" width="1010" height="300"/></clipPath>`;
+    +`<clipPath id="clip-wrist"><rect x="${HFX().w[0]}" y="-50" width="${HFX().w[1]-HFX().w[0]}" height="1100"/></clipPath><clipPath id="clipy-all"><rect x="-50" y="-50" width="1010" height="1090"/></clipPath><clipPath id="clipy-b"><rect x="-50" y="-50" width="1010" height="${ANKLE+50}"/></clipPath><clipPath id="clipy-p"><rect x="-50" y="${ANKLE}" width="1010" height="300"/></clipPath>`;
 }
 // silhouette de la race (Elfe : oreilles…) ; zones, os et contour d'armure suivent
+/* poings fermés par race : masque de la main ouverte, poing (dessin humain) recalé sur le poignet [x,y] avec une échelle sx,sy ; w = poignets (fin de l'armure) */
+const HAND_FX={humain:{w:[158,752]},
+  troll:{w:[131,769],G:{m:[24,250,107,115],wr:[137,303],s:[1.75,2.25]},D:{m:[769,250,117,115],wr:[763,303],s:[1.75,2.25]}}};
+const HFX=()=>HAND_FX[curSil]||HAND_FX.humain;
+function applyHands(){ const H=HFX();
+  ['G','D'].forEach(k=>{ const mk=$('mk-'+k), f=$('fist-'+k), c=H[k];
+    if(!mk.dataset.m) { mk.dataset.m=[mk.getAttribute('x'),mk.getAttribute('y'),mk.getAttribute('width'),mk.getAttribute('height')].join(','); f.dataset.t=f.getAttribute('transform')||''; }
+    const m=c?c.m:mk.dataset.m.split(',');
+    ['x','y','width','height'].forEach((a,i)=>mk.setAttribute(a,m[i]));
+    if(!c){ f.dataset.t?f.setAttribute('transform',f.dataset.t):f.removeAttribute('transform'); return; }
+    const [sx,sy]=c.s,[wx,wy]=c.wr;
+    f.setAttribute('transform',k==='G'?`matrix(${sx} 0 0 ${sy} ${wx-154*sx} ${wy-308*sy})`:`matrix(${-sx} 0 0 ${sy} ${wx+154*sx} ${wy-308*sy})`); }); }
 function applySilhouette(race){ const k=SILS[race]?race:'humain'; if(k===curSil||!SIL_BASE) return; curSil=k;
-  const S=k==='humain'?SIL_BASE:SILS[k]; $('vitbody').innerHTML=S.body; ZONE_GEO=S.zones; ARMOR_PATH=S.armor; buildZones(); }
+  const S=k==='humain'?SIL_BASE:SILS[k]; $('vitbody').innerHTML=S.body; ZONE_GEO=S.zones; ARMOR_PATH=S.armor; applyHands(); buildZones(); }
 /* Fiche imprimable (A4) : construite à la demande puis imprimée ; « Enregistrer au format PDF » dans la fenêtre d'impression */
 function printSheet(){
   const D=derive(C), e=esc, R=RACES[C.race];
