@@ -1,5 +1,5 @@
 // Service worker Aldebaran Joueur : met l'appli en cache pour qu'elle s'ouvre hors ligne.
-const CACHE='aldebaran-joueur-v40';
+const CACHE='aldebaran-joueur-v41';
 const FILES=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./icon-maskable-512.png','./apple-touch-icon.png','./favicon.png'];
 self.addEventListener('install',e=>{ e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES)).then(()=>self.skipWaiting())); });
 self.addEventListener('activate',e=>{ e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(n=>n!==CACHE).map(n=>caches.delete(n)))).then(()=>self.clients.claim())); });
