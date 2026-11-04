@@ -203,7 +203,8 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 .iic-tip{position:absolute;left:calc(100% + 12px);top:50%;transform:translateY(-50%);width:240px;background:var(--paper);border:1px solid var(--rule);border-radius:10px;padding:10px 12px;display:none;flex-direction:column;gap:4px;font-size:12px;line-height:1.4;text-align:left;color:var(--ink);cursor:default;box-shadow:0 0 0 1px var(--faint)}
 .iic.tip-l .iic-tip{left:auto;right:calc(100% + 12px)}
 .iic.tip-up .iic-tip{top:auto;bottom:-10px;transform:none}
-.iic.open .iic-tip{display:flex}
+#itip{position:fixed;z-index:45;display:flex;transform:none;width:min(250px,calc(100vw - 64px));left:0;top:0}
+#itip[hidden]{display:none}
 .iic-tip > b{font-size:13.5px;color:var(--ink-strong)}
 .iic-tip .st{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--c)}
 .iic-tip .dd{display:flex;align-items:center;gap:5px;font-variant-numeric:tabular-nums}.iic-tip .dd svg{width:14px;height:14px}
@@ -683,6 +684,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}input[type=num
   </div>
 </aside>
 
+<div class="iic-tip" id="itip" role="tooltip" hidden></div>
 <dialog id="dlg"><div class="dlg" id="dlg-body"></div></dialog>
 <div class="toast" id="toast"></div>
 <input type="file" id="file-open" accept=".adb,.adbc,.json" multiple hidden>
@@ -764,7 +766,7 @@ function derive(c){
 /* =========================================================
    ÉTAT, SAUVEGARDE (.adb) — l'adaptateur Store sera branché sur Firebase plus tard
    ========================================================= */
-const APP_VER='25';
+const APP_VER='26';
 const LS_SHEET='aldebaran.joueur.fiche', LS_PREF='aldebaran.joueur.prefs';
 const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v);return true}catch(e){return false}}};
 let prefs={autosave:60};
@@ -1142,11 +1144,23 @@ function placeItems(){ const box=$('iorbit'), fig=$('figure'); if(!box||!fig) re
       sl.style.transform=`translate(${x}px,${y}px)`; sl.firstElementChild.classList.toggle('tip-l',k==='L'); }); }); }
 window.addEventListener('resize',placeItems);
 // clic sur une icône : infobulle (et bouton Utiliser) ; l'orbite s'arrête tant qu'elle est ouverte
-function closeItemTips(){ document.querySelectorAll('.iic.open').forEach(x=>x.classList.remove('open')); $('iorbit').classList.remove('paused'); }
+function closeItemTips(){ document.querySelectorAll('.iic.open').forEach(x=>x.classList.remove('open')); $('iorbit').classList.remove('paused'); $('itip').hidden=true; }
+// l'infobulle est affichée hors de la silhouette et gardée dans l'écran (téléphone compris)
+function showItemTip(ic){ const tp=$('itip'), src=ic.querySelector('.iic-tip');
+  tp.innerHTML=src.innerHTML; tp.dataset.id=ic.dataset.id; tp.dataset.col=ic.dataset.col; tp.style.setProperty('--c',ic.style.getPropertyValue('--c')); tp.hidden=false;
+  const r=ic.getBoundingClientRect(), w=tp.offsetWidth, h=tp.offsetHeight, gap=12, band=44, top0=(parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bar'))||56)+8;
+  const left=ic.closest('.islot').dataset.side==='L';
+  let x=left?r.left-gap-w:r.right+gap;
+  if(x<8||x+w>innerWidth-band){ x=left?r.right+gap:r.left-gap-w; }                     // pas la place : de l'autre côté
+  if(x<8||x+w>innerWidth-band){ x=Math.min(Math.max(8,r.left+r.width/2-w/2),innerWidth-band-w); }   // toujours pas : centrée, sous l'icône
+  let y=x>=r.right||x+w<=r.left?r.top+r.height/2-h/2:r.bottom+gap;
+  y=Math.min(Math.max(top0,y),innerHeight-8-h);
+  tp.style.left=x+'px'; tp.style.top=y+'px'; }
+window.addEventListener('resize',()=>{ if(!$('itip').hidden) closeItemTips(); });
+window.addEventListener('scroll',()=>{ if(!$('itip').hidden) closeItemTips(); },{passive:true});
 document.addEventListener('click',e=>{
   const ic=e.target.closest('.iic');
-  if(ic&&!e.target.closest('.iic-tip')){ const was=ic.classList.contains('open'); closeItemTips(); if(!was){ ic.classList.add('open'); $('iorbit').classList.add('paused');
-      const r=ic.getBoundingClientRect(), f=$('figure').getBoundingClientRect(); ic.classList.toggle('tip-up',r.top>f.top+f.height*.62); } return; }
+  if(ic&&!e.target.closest('.iic-tip')){ const was=ic.classList.contains('open'); closeItemTips(); if(!was){ ic.classList.add('open'); $('iorbit').classList.add('paused'); showItemTip(ic); } return; }
   if(!e.target.closest('.iic-tip')) closeItemTips(); });
 document.addEventListener('pointerover',e=>{ if(e.target.closest&&e.target.closest('.iic')) $('iorbit').classList.add('paused'); else if(!document.querySelector('.iic.open')) $('iorbit').classList.remove('paused'); });
 // les étiquettes se déplacent librement autour de la silhouette et restent reliées
@@ -1252,7 +1266,7 @@ document.addEventListener('click',e=>{
   const fd=e.target.closest('[data-fxdel]'); if(fd){ C.effects=C.effects.filter(x=>x.id!==+fd.dataset.fxdel); clampPv(); renderDerived(); renderCards(); markDirty(); return; }
   const fe=e.target.closest('[data-fxedit]'); if(fe){ fxDialog(C.effects.find(x=>x.id===+fe.dataset.fxedit)); return; }
   const hl=e.target.closest('[data-heal]'); if(hl){ toggleFracture(hl.dataset.heal); return; }
-  const tg=e.target.closest('.tagp,.iic');
+  const tg=e.target.closest('.tagp,.iic,#itip');
   if(tg&&(e.target.closest('[data-tagx]')||e.target.closest('[data-tagroll]'))){ closeItemTips(); const list=listOf(tg.dataset.col), it=list.find(x=>x.id===+tg.dataset.id); if(!it) return;
     if(e.target.closest('[data-tagroll]')){ tg.dataset.col==='inv'?useItem(it,true):rollItem(it.name||'Capacité',it.stat,it.diceBonus,it.successThreshold); return; }
     if(C.tagPos) delete C.tagPos[tg.dataset.col+it.id];
