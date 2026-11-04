@@ -752,6 +752,8 @@ function addFx(k){ if(!hasFx(C,k)) C.effects.push(presetFx(k)); }
 function delFx(k){ C.effects=C.effects.filter(e=>e.key!==k); }
 const handsOf=it=>{ const z=it.zone||''; if(z==='Mains') return ['Main G','Main D']; return HANDS.includes(z)?[z]:[]; };
 
+// armures portées : bonus ou malus de dés sur une statistique
+const armorMods=c=>(c.inventory||[]).filter(it=>it.itemType==='armor'&&it.zone&&it.stat&&STATS.includes(it.stat)&&+it.diceBonus).map(it=>({name:it.name||'Armure',stat:it.stat,mod:+it.diceBonus}));
 function derive(c){
   const ptRed=Math.floor((c.pt||0)/10);
   const r={}; STATS.forEach(s=>r[s]=Math.max(0,(c.stats[s]||0)-ptRed));
@@ -760,6 +762,7 @@ function derive(c){
   (c.fractures||[]).forEach(z=>{ if(FRACTURE_STAT[z]) halved.add(FRACTURE_STAT[z]); });
   halved.forEach(s=>r[s]=Math.ceil(r[s]/2));
   (c.effects||[]).forEach(e=>{ if(e.stat&&STATS.includes(e.stat)&&+e.mod) r[e.stat]=Math.max(0,r[e.stat]+(+e.mod)); });
+  armorMods(c).forEach(a=>{ r[a.stat]=Math.max(0,r[a.stat]+a.mod); });
   let pcItems=0,ppItems=0;
   c.inventory.forEach(it=>{const w=+it.weight||0; if(it.itemType==='backpack') pcItems+=w; else pcItems-=w; if(it.itemType==='armor') ppItems+=+it.armorPoints||0;});
   const pcMax=(r.FOR+3)+(c.race==='elfe'?2:0);
@@ -769,7 +772,7 @@ function derive(c){
 /* =========================================================
    ÉTAT, SAUVEGARDE (.adb) — l'adaptateur Store sera branché sur Firebase plus tard
    ========================================================= */
-const APP_VER='28';
+const APP_VER='29';
 const LS_SHEET='aldebaran.joueur.fiche', LS_PREF='aldebaran.joueur.prefs';
 const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v);return true}catch(e){return false}}};
 let prefs={autosave:60};
@@ -1015,6 +1018,7 @@ function renderDerived(){
     const why=[]; if(D.ptRed>0) why.push(['pt',`Tourment −${D.ptRed}`]);
     if(D.halved.has(s)) why.push(['fr',(C.fractures.filter(z=>FRACTURE_STAT[z]===s).map(z=>'Fracture '+z).join(', ')||'Hypoesthésie')+' ÷ 2']);
     const fxm=C.effects.filter(e=>e.stat===s&&+e.mod); if(fxm.length) why.push(['fx',fxm.map(e=>`${e.name} ${+e.mod>0?'+':''}${+e.mod}`).join(', ')]);
+    const arm=armorMods(C).filter(a=>a.stat===s); if(arm.length) why.push(['ar',arm.map(a=>`${a.name} ${a.mod>0?'+':''}${a.mod}`).join(', ')]);
     const bub=$('sb-'+s); bub.classList.toggle('n2',why.length>1);
     bub.innerHTML=why.slice(0,2).map(([k])=>WHY_ICO[k]).join(''); bub.title=`Base ${base} · `+why.map(w=>w[1]).join(' · ');
     el.classList.toggle('mod',eff!==base); el.classList.toggle('malus',eff<base); el.classList.toggle('bonus',eff>base); });
@@ -1111,6 +1115,7 @@ const dieHTML=(r,cls,delay)=>`<div class="die ${cls}" style="animation-delay:${d
 const WHY_ICO={
   pt:`<svg viewBox="0 0 24 24" style="stroke:var(--c-per)"><path d="M12.80 12.00 L12.94 12.17 L13.04 12.39 L13.09 12.65 L13.08 12.94 L12.99 13.24 L12.82 13.54 L12.58 13.81 L12.27 14.04 L11.89 14.22 L11.46 14.31 L10.99 14.32 L10.50 14.24 L10.02 14.05 L9.56 13.75 L9.14 13.35 L8.79 12.86 L8.53 12.28 L8.38 11.64 L8.35 10.96 L8.46 10.25 L8.70 9.55 L9.08 8.89 L9.60 8.28 L10.25 7.77 L11.00 7.37 L11.84 7.11 L12.74 7.00 L13.68 7.07 L14.61 7.31 L15.51 7.73 L16.34 8.32 L17.06 9.08 L17.65 9.98 L18.08 11.00 L18.31 12.11 L18.35 13.27 L18.16 14.44 L17.76 15.59 L17.14 16.67 L16.32 17.64 L15.31 18.46 L14.15 19.10 L12.86 19.53 L11.49 19.72 L10.08 19.65 L8.67 19.33 L7.33 18.74 L6.08 17.91 L4.99 16.84 L4.09 15.58 L3.43 14.14 L3.03 12.58 L2.91 10.95 L3.09 9.29 L3.58 7.67 L4.37 6.14 L5.44 4.75 L6.76 3.56"/></svg>`,
   fr:`<svg viewBox="0 0 24 24" style="--c:var(--danger)"><g transform="rotate(-45 12 12)" style="fill:var(--c,currentColor);stroke:none"><rect x="6" y="10.5" width="12" height="3" rx="1"/><circle cx="5.8" cy="10" r="2.4"/><circle cx="5.8" cy="14" r="2.4"/><circle cx="18.2" cy="10" r="2.4"/><circle cx="18.2" cy="14" r="2.4"/></g></svg>`,
+  ar:`<svg viewBox="0 0 24 24" style="stroke:var(--c-res)"><path d="M12 3l7 3v5c0 5-3.5 8-7 10-3.5-2-7-5-7-10V6z"/></svg>`,
   fx:`<svg viewBox="0 0 24 24" style="stroke:var(--gold)"><path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z"/></svg>`};
 const ANCH={'Tête':[452,205],'Corps':[452,410],'Combi':[452,470],'Bras G':[255,306],'Bras D':[655,306],'Main G':[126,302],'Main D':[784,302],'Jambe G':[420,720],'Jambe D':[484,720],'Haut':[452,330],'Bas':[452,700],'Pied':[452,885]};
 const TAGCOL={weapon:'var(--ink-strong)',armor:'var(--c-res)',cyb:'var(--c-per)',misc:'#a0642b'};
@@ -1134,6 +1139,7 @@ function renderTags(){
     return `<div class="islot" data-side="${t.col==='cyb'?'R':'L'}"><button type="button" class="iic" data-i="${i}" data-id="${t.it.id}" data-col="${t.col}" style="--c:${TAGCOL[t.kind]};animation-delay:${-ct}ms" aria-label="${esc(t.it.name)}">${svgI(T.ico,T.col,1.9)}
       <div class="iic-tip" role="tooltip"><b>${esc(t.it.name||'Sans nom')}</b><span class="st">${esc(T.label)} · ${esc(zones)}</span>
         ${canRoll?`<span class="dd">${svgI('dice')}${d.stat} ${d.base}${d.bonus?` + ${d.bonus}`:''} = <b>${d.total} dés</b>${t.col==='inv'&&t.it.bastosCost&&t.it.bastosCost!=='-'?` · ${esc(t.it.bastosCost)} ₿ par tir`:''}</span>`:''}
+        ${t.col==='inv'&&t.it.itemType==='armor'?`<span class="dd">${svgI('shield')}${+t.it.armorPoints||0} PP${t.it.stat&&+t.it.diceBonus?` · <b>${t.it.stat} ${+t.it.diceBonus>0?'+':''}${+t.it.diceBonus} D</b>`:''}</span>`:''}
         ${ds?`<span class="ds">${esc(ds)}</span>`:''}
         <span class="bt">${canRoll?`<span class="mini" role="button" tabindex="0" data-tagroll>Utiliser</span>`:''}<span class="mini ghost" role="button" tabindex="0" data-tagx>Déséquiper</span></span></div></button></div>`; }).join('');
   placeItems();
@@ -1197,8 +1203,8 @@ function rowInv(it){
   else if(t!=='backpack') zoneCell=`<select class="zc" data-f="zone" aria-label="Zone">${[['','Non portée'],...(t==='armor'?ARM_Z.map(z=>[z,z==='Combi'?'Combinaison':z]):ZONES.map(z=>[z,z]))].map(([k,l])=>`<option value="${k}" ${it.zone===k?'selected':''}>${l}</option>`).join('')}</select>`;
   const bp=t==='backpack';
   const f=[
-    w?fld(L_STAT(),'Statistique utilisée',`<select class="c" data-f="stat" aria-label="Statistique">${statOpts(it.stat)}</select>`):NAF(L_STAT(),'Statistique'),
-    w?fld('+ D','Dés ajoutés à la statistique',cell('diceBonus',it.diceBonus||0)):NAF('+ D','Dés ajoutés'),
+    w?fld(L_STAT(),'Statistique utilisée',`<select class="c" data-f="stat" aria-label="Statistique">${statOpts(it.stat)}</select>`):t==='armor'?fld(L_STAT(),'Statistique modifiée quand l\'armure est portée',`<select class="c" data-f="stat" aria-label="Statistique">${statOpts(it.stat)}</select>`):NAF(L_STAT(),'Statistique'),
+    w?fld('+ D','Dés ajoutés à la statistique',cell('diceBonus',it.diceBonus||0)):t==='armor'?fld('± D','Dés en plus ou en moins sur la statistique (ex. −1)',`<input class="c n" data-f="diceBonus" inputmode="text" value="${esc(it.diceBonus||0)}">`):NAF('+ D','Dés ajoutés'),
     w?fld(L_TH(),'Seuil de réussite',cell('successThreshold',it.successThreshold||8)):NAF(L_TH(),'Seuil'),
     !bp?fld(L_PC('−'),'Charge occupée',cell('weight',it.weight||0)):NAF(L_PC('−'),'Charge occupée'),
     bp?fld(L_PC('+'),'Charge ajoutée (sac)',cell('weight',it.weight||0)):NAF(L_PC('+'),'Charge ajoutée'),
@@ -1291,7 +1297,7 @@ document.addEventListener('input',e=>{
   if(t.id==='f-name'){ C.name=t.value; markDirty(); return; }
   if(t.id&&t.id.startsWith('sc-')){ const v=t.value.replace(/\D/g,''); if(v!==t.value) t.value=v; C.stats[t.id.slice(3)]=Math.min(99,parseInt(v)||0); clampPv(); renderDerived(); markDirty(); return; }
   if(t.tagName!=='SELECT'&&t.dataset.f){ const {it}=findCard(t); if(!it) return; const f=t.dataset.f;
-    it[f]=['diceBonus','successThreshold','weight','armorPoints'].includes(f)?(parseInt(t.value)||0):t.value;
+    it[f]=['diceBonus','successThreshold','weight','armorPoints'].includes(f)?(parseInt(String(t.value).replace(/[−–]/,'-'))||0):t.value;
     if(['weight','armorPoints','name'].includes(f)) renderDerived();
     markDirty(); return; }
   const nt=t.closest('.note'); if(nt){ const n=C.notes.find(x=>x.id===+nt.dataset.id); if(n){ n[t.dataset.nf]=t.value; markDirty(); } }
@@ -1620,7 +1626,7 @@ function showGuide(){
   openDialog(`<h3>Guide</h3><div class="guide">
     <h4>Le volet de gauche</h4><p>Personnage, Décompte et Statistiques. Dans chaque statistique, le petit cercle contient la valeur de base, le grand cercle le nombre de dés lancés après malus. Cliquez le grand cercle pour lancer : pool de D10, seuil 8+, un 10 est un critique, un 1 un échec critique.</p>
     <h4>Le corps</h4><ul><li>Un clic sur une partie du corps la fracture, un second clic la soigne. Plusieurs fractures peuvent coexister.</li><li>Six zones : Tête → PER / 2, Corps → RES / 2, Bras (main comprise) → DEX / 2, Jambe → FOR / 2. Les os de la zone fracturée passent au rouge. Deux fractures sur la même statistique ne la divisent qu'une fois.</li><li>Les pastilles indiquent combien de vignettes sont reliées à chaque partie (bleu : inventaire, violet : cyber).</li></ul>
-    <h4>Inventaire</h4><ul><li>Le bouton (i) d'une ligne affiche ou masque sa description. Pour retirer un objet de l'inventaire, glissez-le sur le « + » qui devient une poubelle : il reste dans le catalogue.</li><li>Inventaire, Jet libre, Journal, Quantum Bank et Map s'ouvrent avec la bande d'onglets fixe du bord droit ; un clic sur l'onglet actif referme le volet. Un seul volet à la fois.</li><li>Quantum Bank : « Épargner » (dans la fenêtre Bastos) met des Bastos en banque, « Retirer » (dans la banque) les rend au portefeuille. Pendant qu'on glisse un objet de l'inventaire, l'icône du coffre apparaît à côté de la poubelle ; dans la banque, l'icône de l'inventaire permet de le récupérer.</li><li>Une arme à deux mains ferme les deux poings ; une main fermée n'accepte pas d'autre arme.</li><li>Les objets équipés apparaissent en icônes sur l'arc ÉQUIPEMENT (à gauche) ; cybernétiques, mutations et particularités sur l'arc AMÉLIORATION (à droite). Un clic sur une icône affiche son infobulle (zone, dés, description) avec « Utiliser » si l'objet se lance, et « Déséquiper ».</li><li>Le « + » ajoute un équipement (arme, armure, divers, sac) ou une cybernétique, mutation, particularité.</li><li>Pour attribuer une ligne au corps, attrapez-la par sa poignée (ou son icône) et déposez-la sur une zone. Le × sur l'étiquette la retire.</li><li>Une arme se dépose sur une main ; déposée sur l'autre main, elle se tient à deux mains. Une main occupée se ferme en poing.</li><li>Une armure se porte en Tête, Haut (torse et bras), Bas (jambes), Pied, ou Combi (tout le corps) : un trait bleu épais longe la partie protégée. Déposée sur le bas des jambes, elle va aux pieds.</li><li>PC = FOR + 3 (+2 Elfe), moins le poids des objets, plus les sacs. PP = armures (+1 Droïde).</li></ul>
+    <h4>Inventaire</h4><ul><li>Le bouton (i) d'une ligne affiche ou masque sa description. Pour retirer un objet de l'inventaire, glissez-le sur le « + » qui devient une poubelle : il reste dans le catalogue.</li><li>Inventaire, Jet libre, Journal, Quantum Bank et Map s'ouvrent avec la bande d'onglets fixe du bord droit ; un clic sur l'onglet actif referme le volet. Un seul volet à la fois.</li><li>Quantum Bank : « Épargner » (dans la fenêtre Bastos) met des Bastos en banque, « Retirer » (dans la banque) les rend au portefeuille. Pendant qu'on glisse un objet de l'inventaire, l'icône du coffre apparaît à côté de la poubelle ; dans la banque, l'icône de l'inventaire permet de le récupérer.</li><li>Une arme à deux mains ferme les deux poings ; une main fermée n'accepte pas d'autre arme.</li><li>Une armure peut modifier une statistique (colonnes Stat et ± D, ex. DEX −1) : l'effet s'applique tant qu'elle est portée, et un petit bouclier le signale sur la statistique.</li><li>Les objets équipés apparaissent en icônes sur l'arc ÉQUIPEMENT (à gauche) ; cybernétiques, mutations et particularités sur l'arc AMÉLIORATION (à droite). Un clic sur une icône affiche son infobulle (zone, dés, description) avec « Utiliser » si l'objet se lance, et « Déséquiper ».</li><li>Le « + » ajoute un équipement (arme, armure, divers, sac) ou une cybernétique, mutation, particularité.</li><li>Pour attribuer une ligne au corps, attrapez-la par sa poignée (ou son icône) et déposez-la sur une zone. Le × sur l'étiquette la retire.</li><li>Une arme se dépose sur une main ; déposée sur l'autre main, elle se tient à deux mains. Une main occupée se ferme en poing.</li><li>Une armure se porte en Tête, Haut (torse et bras), Bas (jambes), Pied, ou Combi (tout le corps) : un trait bleu épais longe la partie protégée. Déposée sur le bas des jambes, elle va aux pieds.</li><li>PC = FOR + 3 (+2 Elfe), moins le poids des objets, plus les sacs. PP = armures (+1 Droïde).</li></ul>
     <h4>Effets actifs</h4><p>Chaque effet acquis devient une bulle avec son icône, qui tourne lentement sur le cercle autour de la silhouette : trait racial (ADN), fractures, états du jeu, bonus et malus. Au survol, les bulles s'arrêtent et une infobulle décrit l'effet, avec Modifier / Retirer (ou Soigner pour une fracture). Le « + » en haut à gauche du dessin ajoute un effet.</p>
     <h4>Décompte</h4><p>PV max = RES + 5. Sous 5 PV : « Pas top top » (seuil +1). À 0 : étourdissement. À −1 : hors jeu. À 10 PE, le cadran d'éveil s'allume. Tous les 10 PT, chaque statistique perd 1.</p>
     <h4>Sauvegarde</h4><p>On enregistre dans un <b>dossier</b> : il contient un fichier <b>.adb</b> par personnage et un <b>catalogue.adbc</b> commun. « Ouvrir un dossier… » liste les fiches qu'il contient. Ctrl+S réécrit la fiche dans le dossier, Ctrl+Maj+S en choisit un autre. La sauvegarde automatique se règle dans les Paramètres. Sur un navigateur qui ne gère pas les dossiers (Firefox, Safari), la fiche se télécharge et le catalogue reste dans le navigateur.</p><h4>Catalogue</h4><p>Chaque objet créé (arme, armure, divers, sac, cyber, mutation, particularité) est enregistré dans le catalogue, et mis à jour quand on le modifie. Dans « Ajouter », la tuile Catalogue permet de le reprendre dans n'importe quelle fiche du dossier.</p>
