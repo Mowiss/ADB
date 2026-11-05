@@ -2224,6 +2224,9 @@ svg.i{width:18px;height:18px;flex:none}
 #fond .drop{min-height:0;height:auto;padding:16px}
 #fond .btn{align-self:flex-start}
 .wxrow{display:flex;flex-wrap:wrap;gap:8px}
+.gsw{display:block;width:30px;height:22px;border-radius:6px;border:1px solid var(--rule)}
+.gnd .wxb{min-width:60px}
+.gcol{display:flex;align-items:center;gap:12px}.gcol input{width:56px;height:32px;border:1px solid var(--rule);border-radius:8px;padding:2px;background:var(--paper)}
 .wxb{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:76px;flex:1 1 0;padding:10px 6px 8px;border:1px solid var(--rule);border-radius:10px;background:var(--paper);color:var(--ink)}
 .wxb svg{width:22px;height:22px}.wxb span{font-size:11px;font-weight:700;letter-spacing:.04em}
 .wxb:hover{border-color:var(--ink)}.wxb.on{border-color:var(--tc);color:var(--tc);box-shadow:inset 0 0 0 1px var(--tc)}
@@ -2245,6 +2248,8 @@ svg.i{width:18px;height:18px;flex:none}
 #grid::after{content:"";position:absolute;inset:0;border:1.5px solid var(--rule)}
 #grid.fade::after{display:none}
 .nogrid #grid{background-image:none}
+#ground{position:absolute;inset:0;z-index:0;pointer-events:none;background-repeat:repeat}
+#board.grounded .bands{opacity:0}
 #dmap{position:absolute;pointer-events:none;z-index:2}
 .map-text-input{position:absolute;z-index:9;background:#ece0c3;color:#241a12;border:1.5px dashed #241a12;border-radius:6px;font-family:monospace;line-height:1.22;resize:none;outline:none;padding:4px 8px;min-width:40px;overflow:hidden}
 #draw{position:absolute;left:0;top:0;width:1px;height:1px;overflow:visible;pointer-events:none;z-index:2}
@@ -2729,6 +2734,7 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
   </nav>
   <div id="board">
     <div class="bands" aria-hidden="true"><div class="ribbon"><div class="band" style="background:var(--b-yel)"></div><div class="band" style="background:var(--b-blu)"></div><div class="band" style="background:var(--b-gre)"></div><div class="band" style="background:var(--b-red)"></div><div class="band" style="background:var(--b-pin)"></div><div class="band" style="background:var(--b-vio)"></div></div></div>
+    <div id="ground" hidden></div>
     <div id="world">
       <div id="geo"></div><div id="ggrid" hidden></div>
       <div id="bg"></div>
@@ -2953,7 +2959,7 @@ const bx=(x,t)=>keepIn(t)?clamp(x,0,S.bgW):x, by=(y,t)=>keepIn(t)?clamp(y,0,S.bg
 /* =========================================================
    État de la table
    ========================================================= */
-const blankTable=()=>({bg:'',light:true,weather:'',drawings:[],tokens:[],order:[],turn:-1,scenes:[],scene:-1,notes:'',bestiary:[],view:null,profusion:2,grid:true});
+const blankTable=()=>({bg:'',light:true,weather:'',ground:null,drawings:[],tokens:[],order:[],turn:-1,scenes:[],scene:-1,notes:'',bestiary:[],view:null,profusion:2,grid:true});
 let S=blankTable();
 let prefs={autosave:60,ink:'#2f3340',width:4};
 const LS_TABLE='aldebaran.mj.table', LS_PREF='aldebaran.mj.prefs', LS_SYNC='aldebaran.mj.sync';
@@ -2979,7 +2985,7 @@ function confirmDialog(title,text,okLbl,fn){ openDialog(`<h3>${title}</h3><p>${t
    ========================================================= */
 const board=$('board'), world=$('world');
 function applyView(){ world.style.transform=`translate(${V.x}px,${V.y}px) scale(${V.z})`; drawMapLater(); world.style.setProperty('--gl',Math.max(1,1/V.z).toFixed(2)+'px'); geoLater();
-  board.style.backgroundSize=`${CELL*V.z}px ${CELL*V.z}px`; board.style.backgroundPosition=`${V.x}px ${V.y}px`;
+  board.style.backgroundSize=`${CELL*V.z}px ${CELL*V.z}px`; board.style.backgroundPosition=`${V.x}px ${V.y}px`; groundView();
   placeCard(); placeMeasureLabel(); placePtrs(); if(!S.light) fowLater(); if(!isPlayer){ S.view={...V}; sendView(); } }
 function toWorld(cx,cy){ const r=board.getBoundingClientRect(); return [(cx-r.left-V.x)/V.z,(cy-r.top-V.y)/V.z]; }
 function toScreen(wx,wy){ const r=board.getBoundingClientRect(); return [r.left+V.x+wx*V.z, r.top+V.y+wy*V.z]; }
@@ -3035,7 +3041,7 @@ function renderBoard(){
   if(S.bg&&S.bgW){ const e=Math.round(Math.min(S.bgW,S.bgH)*.07);
     [bg,gr].forEach(el=>{ el.classList.add('fade'); el.style.setProperty('--mx',`linear-gradient(to right,transparent,#000 ${e}px,#000 calc(100% - ${e}px),transparent)`); el.style.setProperty('--my',`linear-gradient(to bottom,transparent,#000 ${e}px,#000 calc(100% - ${e}px),transparent)`); }); }
   else [bg,gr].forEach(el=>el.classList.remove('fade'));
-  renderGeo(); renderWeather(); fondRefresh();
+  renderGeo(); renderGround(); renderWeather(); fondRefresh();
   bg.style.width=gr.style.width=(S.bg?S.bgW:0)+'px'; bg.style.height=gr.style.height=(S.bg?S.bgH:0)+'px'; gr.hidden=!S.bg; board.classList.toggle('inf',!S.bg&&!S.geo); board.classList.toggle('geo',!!S.geo); board.classList.toggle('img',!!S.bg);
   document.body.classList.toggle('nogrid',S.grid===false);
   $('fow').hidden=S.light; renderFoW();
@@ -4287,11 +4293,11 @@ function showRoll(label,n){ const th=threshold(), R=diceBlock(n,th); logRoll(lab
    Scénario : scènes (fond, nuit/jour, tracés, jetons de scène)
    ========================================================= */
 function snapshot(){ if(S.scene<0||!S.scenes[S.scene]) return; S.tokens.forEach(t=>t.scene=true); const sc=S.scenes[S.scene], ids=new Set(S.tokens.filter(t=>t.scene).map(t=>t.id));
-  Object.assign(sc,{bg:S.bg,bgKind:S.bgKind||'',bgW:S.bgW||0,bgH:S.bgH||0,bgNW:S.bgNW||0,bgNH:S.bgNH||0,bgScale:S.bgScale||1,geo:S.geo?{...S.geo}:null,light:S.light,weather:S.weather||'',drawings:clone(S.drawings),tokens:clone(S.tokens.filter(t=>t.scene)),order:S.order.filter(id=>ids.has(id))}); }
+  Object.assign(sc,{bg:S.bg,bgKind:S.bgKind||'',bgW:S.bgW||0,bgH:S.bgH||0,bgNW:S.bgNW||0,bgNH:S.bgNH||0,bgScale:S.bgScale||1,geo:S.geo?{...S.geo}:null,light:S.light,weather:S.weather||'',ground:S.ground?{...S.ground}:null,drawings:clone(S.drawings),tokens:clone(S.tokens.filter(t=>t.scene)),order:S.order.filter(id=>ids.has(id))}); }
 function loadScene(i){
   closeCard(); const keep=S.tokens.filter(t=>!t.scene); S.tokens=keep; S.order=S.order.filter(id=>keep.some(t=>t.id===id)); S.scene=i;
   const sc=S.scenes[i];
-  if(sc){ S.bg=sc.bg||''; S.bgKind=sc.bgKind||''; S.bgW=sc.bgW||0; S.bgH=sc.bgH||0; S.bgNW=sc.bgNW||0; S.bgNH=sc.bgNH||0; S.bgScale=sc.bgScale||1; S.geo=sc.geo?{...sc.geo}:null; S.light=sc.light!==false; S.weather=sc.weather||''; S.drawings=clone(sc.drawings||[]); S.tokens.push(...clone(sc.tokens||[])); S.order.push(...(sc.order||[]).filter(id=>tok(id))); }
+  if(sc){ S.bg=sc.bg||''; S.bgKind=sc.bgKind||''; S.bgW=sc.bgW||0; S.bgH=sc.bgH||0; S.bgNW=sc.bgNW||0; S.bgNH=sc.bgNH||0; S.bgScale=sc.bgScale||1; S.geo=sc.geo?{...sc.geo}:null; S.light=sc.light!==false; S.weather=sc.weather||''; S.ground=sc.ground?{...sc.ground}:null; S.drawings=clone(sc.drawings||[]); S.tokens.push(...clone(sc.tokens||[])); S.order.push(...(sc.order||[]).filter(id=>tok(id))); }
   if(typeof PL!=='undefined') S.tokens.forEach(t=>{ const P=t.owner&&PL.get(t.owner); if(P&&P.sheet) Object.assign(t,tokenData(P.sheet)); });
   S.turn=-1; renderAllBoard(); renderScenes(); markDirty(); sync(); if(typeof renderPtabs==='function') renderPtabs();
   if(sc) send({t:'scene',title:sc.title||`Scène ${i+1}`,idx:i+1});
@@ -4397,7 +4403,7 @@ function send(m){ if(isPlayer) return; m.n=Date.now()*100+(seq++%100); m.from='m
   if(bc&&m.t!=='state') return;   // le canal direct suffit ; le stockage local ne garde que l'état complet
   try{ localStorage.setItem(LS_SYNC,JSON.stringify(m)); }catch(e){ if(m.t==='state'){ const lite={...m,bg:m.bg&&m.bg.length>1.5e6?'':m.bg}; try{ localStorage.setItem(LS_SYNC,JSON.stringify(lite)); }catch(e2){} } } }
 function publicState(){ const pub=t=>({id:t.id,type:t.type,name:t.name,hp:t.hp,hpMax:t.hpMax,img:t.img,ico:t.ico,x:t.x,y:t.y,s:t.s,r:t.r,owner:t.owner||null,note:t.type==='prop'&&t.note?' ':''});
-  return {t:'state',bg:S.bg,bgKind:S.bgKind||'',bgW:S.bgW||0,bgH:S.bgH||0,geo:S.geo||null,light:S.light,weather:S.weather||'',grid:S.grid,drawings:S.drawings,tokens:S.tokens.filter(t=>!t.hidden).map(pub),order:S.order.filter(id=>{ const t=tok(id); return t&&!t.hidden; }),turn:turnIdForPlayers(),view:viewMsg()}; }
+  return {t:'state',bg:S.bg,bgKind:S.bgKind||'',bgW:S.bgW||0,bgH:S.bgH||0,geo:S.geo||null,light:S.light,weather:S.weather||'',ground:S.ground||null,grid:S.grid,drawings:S.drawings,tokens:S.tokens.filter(t=>!t.hidden).map(pub),order:S.order.filter(id=>{ const t=tok(id); return t&&!t.hidden; }),turn:turnIdForPlayers(),view:viewMsg()}; }
 function turnIdForPlayers(){ const L=orderToks(), c=L[S.turn]; return c&&!c.hidden?c.id:null; }
 let syncRaf=0; function sync(){ if(isPlayer||syncRaf) return; syncRaf=requestAnimationFrame(()=>{ syncRaf=0; send(publicState()); }); }
 let syncT=0; function syncLater(){ clearTimeout(syncT); syncT=setTimeout(sync,120); }
@@ -4414,7 +4420,7 @@ function receive(m){ if(!m) return;
   if(m.from!=='mj'||m.n<=lastSeq) return; lastSeq=m.n;
   if(m.t==='state'){ $('pwait').classList.add('gone');
     if(m.bg!==undefined) S.bg=m.bg;
-    Object.assign(S,{bgKind:m.bgKind||'',bgW:m.bgW||0,bgH:m.bgH||0,geo:m.geo||null,light:m.light,weather:m.weather||'',grid:m.grid,drawings:m.drawings,tokens:m.tokens,order:m.order}); const L=orderToks(); S.turn=L.findIndex(t=>t.id===m.turn);
+    Object.assign(S,{bgKind:m.bgKind||'',bgW:m.bgW||0,bgH:m.bgH||0,geo:m.geo||null,light:m.light,weather:m.weather||'',ground:m.ground||null,grid:m.grid,drawings:m.drawings,tokens:m.tokens,order:m.order}); const L=orderToks(); S.turn=L.findIndex(t=>t.id===m.turn);
     if(myDrag){ const t=tok(myDrag.id); if(t){ t.x=myDrag.x; t.y=myDrag.y; } }
     renderAllBoard(); if(NETVIEW) followMe(); else if(m.view) setPlayerView(m.view); }
   else if(m.t==='roll') toast(`${m.who} · ${m.label} : ${m.succ} réussite${m.succ>1?'s':''}`);
@@ -4729,6 +4735,33 @@ function scaleAsk(g){ const L=Math.hypot(g.x2-g.x1,g.y2-g.y1); if(L<8/V.z||!S.bg
   const i=$('ech-m'); setTimeout(()=>{ i.focus(); i.select(); },50);
   const go=()=>{ const m=parseFloat(String(i.value).replace(',','.')); if(!(m>0)) { i.focus(); return; } dlg.close(); setBgScale((S.bgScale||1)*m/cur); toast(`Carte à l'échelle : ${fmtM(S.bgW/PX_M)} × ${fmtM(S.bgH/PX_M)} m`); };
   $('ech-ok').onclick=go; i.onkeydown=e=>{ if(e.key==='Enter') go(); }; }
+/* Sol du plateau : couleur unie ou texture (parchemin, herbe, sable, terre), sous la carte, infini */
+const GROUNDS={color:'Couleur unie',parchment:'Parchemin',grass:'Herbe',sand:'Sable',dirt:'Terre'};
+const GROUND_TS=256, groundTiles={};
+function seedRnd(n){ let x=n>>>0||1; return ()=>((x=Math.imul(x^x>>>15,x|1)^(x+Math.imul(x^x>>>7,x|61)),((x^x>>>14)>>>0)/4294967296)); }
+function groundTile(k){ if(groundTiles[k]) return groundTiles[k]; const T=GROUND_TS, c=document.createElement('canvas'); c.width=c.height=T; const x=c.getContext('2d'), R=seedRnd(k.length*977+13);
+  const wrap=(f)=>{ for(const dx of [-T,0,T]) for(const dy of [-T,0,T]){ x.save(); x.translate(dx,dy); f(); x.restore(); } };
+  const blot=(n,cols,r0,r1,a)=>{ for(let i=0;i<n;i++){ const px=R()*T, py=R()*T, r=r0+R()*(r1-r0), col=cols[Math.floor(R()*cols.length)]; wrap(()=>{ const g=x.createRadialGradient(px,py,0,px,py,r); g.addColorStop(0,col.replace('A',a)); g.addColorStop(1,col.replace('A','0')); x.fillStyle=g; x.fillRect(px-r,py-r,2*r,2*r); }); } };
+  const dots=(n,cols,r0,r1)=>{ for(let i=0;i<n;i++){ const px=R()*T, py=R()*T, r=r0+R()*(r1-r0); x.fillStyle=cols[Math.floor(R()*cols.length)]; wrap(()=>{ x.beginPath(); x.arc(px,py,r,0,Math.PI*2); x.fill(); }); } };
+  if(k==='parchment'){ x.fillStyle='#ece0c3'; x.fillRect(0,0,T,T); blot(26,['rgba(196,168,118,A)','rgba(214,190,140,A)'],20,70,'.35'); blot(10,['rgba(160,120,70,A)'],6,22,'.18'); dots(140,['rgba(120,90,50,.10)','rgba(255,250,235,.35)'],.4,1.1); }
+  else if(k==='grass'){ x.fillStyle='#7f9a5a'; x.fillRect(0,0,T,T); blot(22,['rgba(98,128,64,A)','rgba(140,166,96,A)'],20,60,'.45');
+    x.lineCap='round'; for(let i=0;i<620;i++){ const px=R()*T, py=R()*T, L=4+R()*7, a=-Math.PI/2+(R()-.5)*.9; x.strokeStyle=R()<.5?'rgba(66,92,40,.55)':'rgba(170,196,120,.5)'; x.lineWidth=.8+R()*.7; wrap(()=>{ x.beginPath(); x.moveTo(px,py); x.lineTo(px+Math.cos(a)*L,py+Math.sin(a)*L); x.stroke(); }); } }
+  else if(k==='sand'){ x.fillStyle='#e3cc94'; x.fillRect(0,0,T,T); blot(20,['rgba(205,176,112,A)','rgba(240,222,170,A)'],24,70,'.45'); dots(900,['rgba(150,118,60,.35)','rgba(255,246,214,.5)'],.3,.9);
+    x.strokeStyle='rgba(170,138,80,.25)'; x.lineWidth=1.2; for(let i=0;i<9;i++){ const py=R()*T, ph=R()*6; wrap(()=>{ x.beginPath(); for(let px=0;px<=T;px+=4){ const yy=py+Math.sin(px/T*Math.PI*4+ph)*5; px?x.lineTo(px,yy):x.moveTo(px,yy); } x.stroke(); }); } }
+  else if(k==='dirt'){ x.fillStyle='#8a6a48'; x.fillRect(0,0,T,T); blot(28,['rgba(110,82,54,A)','rgba(160,128,92,A)'],16,60,'.45'); dots(420,['rgba(60,42,26,.35)','rgba(190,160,120,.35)'],.4,1.3);
+    for(let i=0;i<40;i++){ const px=R()*T, py=R()*T, rx=2+R()*4, ry=1.5+R()*3; const col=R()<.5?'#9c8f80':'#7d7166'; wrap(()=>{ x.fillStyle=col; x.strokeStyle='rgba(40,30,20,.45)'; x.lineWidth=.8; x.beginPath(); x.ellipse(px,py,rx,ry,R()*3,0,Math.PI*2); x.fill(); x.stroke(); }); } }
+  return groundTiles[k]=c.toDataURL('image/jpeg',.9); }
+function renderGround(){ const el=$('ground'); if(!el) return; const G=S.ground; board.classList.toggle('grounded',!!G);
+  if(!G){ el.hidden=true; return; } el.hidden=false;
+  const dark=G.k==='color'?(()=>{ const h=(G.c||'#2a2e36').replace('#',''), n=parseInt(h.length===3?h.split('').map(c=>c+c).join(''):h,16); return ((n>>16&255)*.3+(n>>8&255)*.59+(n&255)*.11)<128; })():G.k==='dirt'||G.k==='grass';
+  const line=dark?'rgba(255,255,255,.14)':'rgba(47,51,64,.12)', grid=S.grid!==false&&!S.bg&&!S.geo;
+  el.dataset.grid=grid?'1':''; el.style.backgroundColor=G.k==='color'?(G.c||'#2a2e36'):'transparent';
+  el.style.backgroundImage=[grid?`linear-gradient(to right,${line} 1px,transparent 1px),linear-gradient(to bottom,${line} 1px,transparent 1px)`:'',G.k!=='color'?`url("${groundTile(G.k)}")`:''].filter(Boolean).join(',')||'none';
+  groundView(); }
+function groundView(){ const el=$('ground'); if(!el||el.hidden||!S.ground) return; const g=CELL*V.z, t=GROUND_TS*V.z, grid=el.dataset.grid==='1', tex=S.ground.k!=='color';
+  el.style.backgroundSize=[grid?`${g}px ${g}px`:'',grid?`${g}px ${g}px`:'',tex?`${t}px ${t}px`:''].filter(Boolean).join(',');
+  el.style.backgroundPosition=[grid?`${V.x}px ${V.y}px`:'',grid?`${V.x}px ${V.y}px`:'',tex?`${V.x}px ${V.y}px`:''].filter(Boolean).join(','); }
+
 /* Météo : pluie et orage dessinés par-dessus le plateau (aussi chez les joueurs) */
 const WX={raf:0,drops:[],kind:'',w:0,h:0,next:0};
 function renderWeather(){ const cv=$('wx'); if(!cv) return; const k=S.weather||'';
@@ -4755,6 +4788,9 @@ function renderFond(){ const box=$('fond-body'); if(!box) return;
   const sc=Math.log10(S.bgScale||1), W=S.weather||'';
   const wb=(id,ico,lbl,on)=>`<button type="button" class="wxb${on?' on':''}" id="${id}" title="${lbl}" aria-pressed="${on?'true':'false'}">${IB(ico)}<span>${lbl}</span></button>`;
   box.innerHTML=(`
+    <div class="subttl">Fond</div>
+    <div class="wxrow gnd">${Object.entries(GROUNDS).map(([k,l])=>`<button type="button" class="wxb${S.ground&&S.ground.k===k?' on':''}" data-gnd="${k}" title="${l}${S.ground&&S.ground.k===k?' — cliquer pour revenir au fond normal':''}"><i class="gsw" style="${k==='color'?`background:${esc(S.ground&&S.ground.c||'#2a2e36')}`:`background-image:url('${groundTile(k)}');background-size:120px`}"></i><span>${l}</span></button>`).join('')}</div>
+    ${S.ground&&S.ground.k==='color'?`<label class="gcol"><span class="cap">Couleur</span><input type="color" id="gnd-c" value="${esc(S.ground.c||'#2a2e36')}"></label>`:''}
     <div class="subttl">Ambiance</div>
     <div class="wxrow">${wb('wx-day',S.light?'sun':'moon',S.light?'Jour':'Nuit',!S.light)}${wb('wx-fine','fine','Beau temps',!W)}${wb('wx-rain','rain','Pluie',W==='rain')}${wb('wx-storm','storm','Orage',W==='storm')}</div>
     <div class="subttl">Plateau</div>
@@ -4770,6 +4806,8 @@ function renderFond(){ const box=$('fond-body'); if(!box) return;
     <div class="geores" id="geo-res"></div>
     <p class="meta" style="text-align:left">Orthophotos à l'échelle 1 : un jeton ≈ 1 m. Zoomez à fond ou dézoomez jusqu'à voir la région. Recherche © OpenStreetMap, orthophotos © IGN (hors France © Esri).</p>
     <button class="btn ghost" type="button" id="bg-rm" ${S.bg||S.geo?'':'disabled'}>${IB('bin')}Retirer le fond</button>`);
+  box.querySelectorAll('[data-gnd]').forEach(b=>b.onclick=()=>{ const k=b.dataset.gnd; S.ground=S.ground&&S.ground.k===k?null:{k,c:(S.ground&&S.ground.c)||'#2a2e36'}; renderBoard(); markDirty(); sync(); });
+  if($('gnd-c')) $('gnd-c').oninput=e=>{ S.ground={k:'color',c:e.target.value}; fondHold=true; try{ renderGround(); } finally{ fondHold=false; } box.querySelector('[data-gnd="color"] .gsw').style.background=e.target.value; markDirty(); syncLater(); };
   $('wx-day').onclick=()=>{ S.light=!S.light; renderBoard(); renderTracker(); markDirty(); sync(); toast(S.light?'Jour : le brouillard se lève':'Nuit : brouillard de guerre'); };
   const setW=w=>{ S.weather=w; renderBoard(); markDirty(); sync(); };
   $('wx-fine').onclick=()=>setW(''); $('wx-rain').onclick=()=>setW(S.weather==='rain'?'':'rain'); $('wx-storm').onclick=()=>setW(S.weather==='storm'?'':'storm');
@@ -5069,7 +5107,7 @@ runOpening();
   if('serviceWorker' in navigator&&location.protocol.startsWith('http')){
     const had=!!navigator.serviceWorker.controller; let reloaded=false;
     navigator.serviceWorker.register('sw.js').then(r=>{ r.update().catch(()=>{}); }).catch(()=>{});
-    navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(had&&!reloaded&&!window.__adbGone){ reloaded=true; location.reload(); } });
+    navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(had&&!reloaded&&!window.__adbGone){ reloaded=true; try{ sessionStorage.setItem('aldebaran.maj','1'); }catch(e){} location.reload(); } });
   }
   window.__adbInstall=null;
   window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); window.__adbInstall=e; });
@@ -5292,9 +5330,9 @@ function render(t){
 
   let onReadyCb=null, isReady=false;
   function ready(){ DEBRIS=makeDebris(); isReady=true; if(onReadyCb) onReadyCb(); }
-  function play(){
+  function play(skip){
     return new Promise(res=>{
-      const go=()=>{ let t0=null, stop=false; const sp=document.getElementById('splash');
+      const go=()=>{ if(skip){ render(T); res(); return; } let t0=null, stop=false; const sp=document.getElementById('splash');
         const end=()=>{ sp.onclick=null; res(); };
         sp.onclick=()=>{ stop=true; render(T); end(); };
         function tick(now){ if(stop) return; if(t0===null) t0=now; const t=(now-t0)/1000; render(Math.min(t,T)); if(t<T+0.45) requestAnimationFrame(tick); else end(); }
@@ -5306,13 +5344,16 @@ function render(t){
 })();
 
 
+  let started=false;
   const start=()=>{
     const role=q.get('role'), mode=(q.get('mode')||'').toLowerCase();
     const table=(q.get('table')||'').trim(); if(table){ window.__adbJoin=table; window.__adbRelay=(q.get('relay')||'').trim()||null; $('splash').hidden=true; launch('ply'); return; }
     if(role==='player'||mode==='mj'||mode==='mdd'){ $('splash').hidden=true; launch('mj'); return; }
     if(mode==='aventurier'||mode==='joueur'){ $('splash').hidden=true; launch('ply'); return; }
-    if(matchMedia('(prefers-reduced-motion: reduce)').matches){ Logo.play().then(choose); return; }
-    Logo.play().then(choose);
+    /* rechargement pour une mise à jour : le logo a déjà été joué, on passe directement au choix */
+    let maj=false; try{ maj=sessionStorage.getItem('aldebaran.maj')==='1'; sessionStorage.removeItem('aldebaran.maj'); }catch(e){}
+    if(started) return; started=true;
+    Logo.play(maj).then(choose);
   };
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',start); else start();
 })();
