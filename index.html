@@ -2132,7 +2132,7 @@ svg.i{width:18px;height:18px;flex:none}
 .brand .dot{width:8px;height:8px;border-radius:50%;background:var(--danger);display:inline-block}
 .brand small{font-family:var(--f-body);letter-spacing:.08em;font-size:11px;color:var(--ink-soft);font-weight:600;text-transform:uppercase}
 .spacer{flex:1}
-.tools{display:flex;gap:2px;align-items:center;min-width:0}
+.tools{display:flex;gap:2px;align-items:center;flex:none}
 .tool{display:inline-flex;align-items:center;gap:6px;background:transparent;border:1px solid transparent;border-radius:8px;padding:6px 9px;font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap;position:relative}
 .tool:hover{border-color:var(--rule);background:var(--paper)}
 .tool svg{width:18px;height:18px;flex:none}
@@ -2141,15 +2141,16 @@ svg.i{width:18px;height:18px;flex:none}
 .sep{width:1px;height:22px;background:var(--rule);margin:0 4px}
 .sdot{width:9px;height:9px;border-radius:50%;background:var(--ok);display:inline-block;position:absolute;top:5px;right:5px;border:1.5px solid var(--paper)}
 .sdot.dirty{background:var(--gold)}
-.scenenav{display:flex;align-items:center;gap:4px;min-width:0;border-left:1px solid var(--rule);padding-left:12px}
-.scenenav .cap{letter-spacing:.3em}
+.scenenav{display:flex;align-items:center;gap:4px;min-width:0;flex:0 1 auto;border-left:1px solid var(--rule);padding-left:12px}
+.sc-ico{display:grid;place-items:center;color:var(--ink-soft);margin-right:2px;flex:none}.sc-ico svg{width:18px;height:18px}
 .scenenav b{font-family:var(--f-title);font-weight:400;font-size:16px;letter-spacing:.12em;color:var(--ink-strong);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:32vw;cursor:pointer;padding:0 6px}
 .scenenav b.none{color:var(--ink-soft);font-size:13px;letter-spacing:.06em}
 .nb{width:28px;height:28px;border-radius:50%;border:1px solid var(--rule);background:var(--paper);display:grid;place-items:center;padding:0;color:var(--ink)}
 .nb:hover{border-color:var(--ink)}.nb:disabled{opacity:.35;cursor:default;border-color:var(--rule)}
 .nb svg{width:14px;height:14px}
 @media (max-width:1180px){.tool .lbl{display:none}}
-@media (max-width:760px){.brand small,.scenenav .cap{display:none}.brand{letter-spacing:.14em;font-size:14px}}
+@media (max-width:760px){.brand small{display:none}.brand{letter-spacing:.14em;font-size:14px;margin-right:0}.appbar{gap:6px;padding:0 10px}.scenenav{padding-left:8px}.scenenav b{max-width:none}.tool.icon{padding:5px}}
+@media (max-width:520px){.brand{font-size:0;letter-spacing:0;gap:0}.brand .dot{width:10px;height:10px}.nb{width:24px;height:24px}.tools .sep{display:none}}
 
 .ttl{display:block;height:30px;overflow:visible}
 .ttl text{font-family:var(--f-title);font-weight:300;font-size:21px;letter-spacing:.24em;fill:var(--ink);stroke:var(--ink);stroke-width:.7;stroke-opacity:0}
@@ -2594,7 +2595,7 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 <header class="appbar">
   <div class="brand"><span class="dot"></span>ALDEBARAN<small>Maître du destin</small></div>
   <div class="scenenav">
-    <span class="cap">Scène</span>
+    <span class="sc-ico" id="sc-ico" title="Scène"></span>
     <button class="nb" type="button" id="sc-prev" title="Scène précédente"></button>
     <b id="sc-title" title="Ouvrir le scénario"></b>
     <button class="nb" type="button" id="sc-next" title="Scène suivante"></button>
@@ -2787,6 +2788,7 @@ const IC={
   table:'<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/>',
   wifi:'<path d="M2.5 9a14 14 0 0 1 19 0M5.5 12.3a9.5 9.5 0 0 1 13 0M8.7 15.6a5 5 0 0 1 6.6 0"/><circle cx="12" cy="19" r="1.2" fill="currentColor"/>',
   copy:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>',
+  film:'<rect x="3" y="5" width="18" height="14" rx="1.5"/><path d="M7 5v14M17 5v14M3 9.5h4M3 14.5h4M17 9.5h4M17 14.5h4"/>',
   newf:'<path d="M14 3H6v18h12V7z"/><path d="M14 3v4h4M12 11v6M9 14h6"/>',
   help:'<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 0 1 5 0c0 1.8-2.5 2-2.5 4M12 17h.01"/>',
   book:'<path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H19v15H5.5A1.5 1.5 0 0 0 4 19.5z"/><path d="M4 19.5A1.5 1.5 0 0 0 5.5 21H19v-3"/><path d="M8 7h7M8 10.5h5"/>',
@@ -3472,7 +3474,7 @@ function fitBoard(){ const r=board.getBoundingClientRect();
   const L=S.tokens; if(L.length){ const cx=L.reduce((a,t)=>a+t.x,0)/L.length, cy=L.reduce((a,t)=>a+t.y,0)/L.length; centerOn(cx,cy,1); } else centerOn(0,0,1); }
 function wire(){
   // icônes de l'interface
-  $('sc-prev').innerHTML=IB('left',2); $('sc-next').innerHTML=IB('right',2); $('sc-up').innerHTML=IB('up',2); $('sc-down').innerHTML=IB('down',2);
+  $('sc-ico').innerHTML=IB('film'); $('sc-prev').innerHTML=IB('left',2); $('sc-next').innerHTML=IB('right',2); $('sc-up').innerHTML=IB('up',2); $('sc-down').innerHTML=IB('down',2);
   $('b-player').innerHTML=IB('screen'); $('b-player').classList.add('icon'); $('b-net').insertAdjacentHTML('afterbegin',IB('table')); $('b-full').innerHTML=IB('full'); $('b-settings').insertAdjacentHTML('afterbegin',IB('gear'));
   document.querySelector('[data-tool="measure"]').insertAdjacentHTML('afterbegin',IB('ruler'));
   document.querySelector('[data-tool="draw"]').insertAdjacentHTML('afterbegin',IB('pen'));
