@@ -37,9 +37,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 #choice{position:fixed;left:0;right:0;bottom:calc(9vh + env(safe-area-inset-bottom,0px));z-index:2;display:flex;justify-content:center;align-items:center;gap:min(48px,3.5vw);padding:0 12px;flex-wrap:nowrap}
 .role{position:relative;background:transparent;border:0;padding:10px 4px 12px;font-family:var(--f-title);font-weight:300;font-size:min(22px,2.6vw);letter-spacing:.55em;margin-right:-.55em;color:var(--ink-strong);white-space:nowrap;transition:color .25s}
 .role span{display:inline-block;opacity:0}
-.role::after{content:"";position:absolute;left:50%;right:50%;bottom:2px;height:1px;background:currentColor;transition:left .3s,right .3s}
 .role:hover,.role:focus-visible{color:var(--rc)}
-.role:hover::after,.role:focus-visible::after{left:0;right:.55em}
 .role:focus-visible{outline:none}
 .or{flex:none;width:1px;height:1.6em;background:var(--ink-strong);font-size:min(22px,2.6vw);opacity:0;transition:opacity .6s .3s}
 .choosing .or{opacity:.5}
@@ -2210,7 +2208,8 @@ svg.i{width:18px;height:18px;flex:none}
 .map-drawer{width:min(980px,100vw - 40px)}
 .mapwrap{flex:1;min-height:0;border:1px solid var(--rule);border-radius:10px;overflow:hidden;background:var(--wash)}
 .mapwrap iframe{width:100%;height:100%;border:0;display:block}
-.maplink{font-size:12.5px;color:var(--c-res);margin-top:8px;align-self:flex-start}
+.maplink{font-size:12.5px;color:var(--c-res);margin-top:8px;align-self:flex-start;text-decoration:none}
+a{text-decoration:none}
 .dscroll{flex:1;min-height:0;overflow-y:auto;overflow-x:clip;display:flex;flex-direction:column;gap:12px}
 .dfoot{display:flex;gap:8px;align-items:center;border-top:1px solid var(--rule);padding-top:12px;margin-top:10px}
 
