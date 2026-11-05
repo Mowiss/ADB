@@ -2288,7 +2288,7 @@ svg.i{width:18px;height:18px;flex:none}
 .player .tk{cursor:default;pointer-events:none}
 /* son propre jeton : un liseré au-delà de la barre de vie, qui reste visible */
 .mineo{display:none}
-.player .tk.mine .mineo{display:block;position:absolute;inset:-12px;border-radius:50%;border:2px solid var(--c-res);opacity:.75;pointer-events:none}
+.player .tk.mine .mineo{display:block;position:absolute;inset:-18px;border-radius:50%;border:2px solid var(--c-res);opacity:.75;pointer-events:none}
 .netb .nd{position:absolute;top:5px;right:5px;width:9px;height:9px;border-radius:50%;border:1.5px solid var(--paper);background:var(--rule);display:none}
 .netb.on .nd,.netb.wait .nd{display:block}
 .netb.on{color:var(--ok)}.netb.on .nd{background:var(--ok)}
@@ -2351,7 +2351,11 @@ svg.i{width:18px;height:18px;flex:none}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
 .tk .turn{position:absolute;left:50%;bottom:calc(100% + 4px);width:38px;height:38px;margin-left:-19px;color:var(--gold);display:none;pointer-events:none;stroke-width:1.8;overflow:visible}
 .tk.current .turn{display:block;animation:bob 1s ease-in-out infinite}
-.tk.current .face{box-shadow:0 0 0 3px var(--paper),0 0 0 5px var(--gold)}
+/* tour en cours et jeton ouvert : un anneau AU-DELÀ de la barre de vie, qui ne la recouvre jamais */
+.tk::before{content:'';position:absolute;inset:-13px;border-radius:50%;border:2.5px solid transparent;pointer-events:none}
+.tk.current::before{border-color:var(--gold)}
+.tk.open:not(.current)::before{border-color:var(--c);border-width:1.5px;border-style:dashed}
+.tk.prop::before,.tk.light::before{inset:-6px}
 @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
 .tk.player{--c:var(--c-res)}.tk.npc{--c:var(--c-cha)}.tk.mob{--c:var(--danger)}.tk.prop{--c:var(--brown)}.tk.light{--c:var(--gold)}
 .tk.prop{width:58px;height:58px;margin:-29px 0 0 -29px}
@@ -2367,8 +2371,8 @@ svg.i{width:18px;height:18px;flex:none}
 .tk.light.open .halo{display:block}
 .tk.hid{opacity:.45}
 .tk.hid .face{border-style:dashed}
-.tk.open .face{box-shadow:0 0 0 3px var(--paper),0 0 0 4.5px var(--c)}
-.tk.current.open .face{box-shadow:0 0 0 3px var(--paper),0 0 0 5px var(--gold)}
+
+
 
 /* Corbeille de dépose */
 #bin{position:absolute;right:22px;bottom:22px;width:64px;height:64px;border-radius:50%;border:1.6px dashed var(--danger);background:var(--paper);color:var(--danger);display:grid;place-items:center;z-index:7;pointer-events:none;opacity:0;transform:scale(.6);transition:opacity .15s,transform .15s,background .15s}
@@ -2682,7 +2686,7 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 .player .pmark{display:flex}
 .netview .pmark{display:none!important}
 .netview .tk.current:not(.mine) .turn{display:none!important}
-.netview .tk.current:not(.mine) .face{box-shadow:none}
+.netview .tk.current:not(.mine)::before{border-color:transparent}
 .netview #board{cursor:crosshair}
 .pwait{display:none}
 .player .pwait{display:grid;position:fixed;inset:0;z-index:11;place-items:center;pointer-events:none;color:var(--ink-soft);font-size:13px;letter-spacing:.2em;text-transform:uppercase}
