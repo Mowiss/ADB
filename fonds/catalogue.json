@@ -1,8 +1,4 @@
 {
-  "info": "Catalogue des fonds de carte d'Aldebaran. Tout fichier image (jpg, png, webp, gif, avif) ou vidéo (mp4, webm) déposé dans ce dossier apparaît dans « Fond de carte ». Cette liste sert seulement à donner un joli nom (et l'ordre d'affichage).",
-  "fonds": [
-    { "fichier": "forest_day1.mp4", "nom": "Forêt de jour" },
-    { "fichier": "forest_road_5.mp4", "nom": "Route forestière" },
-    { "fichier": "Fighting_Pit_01_Daytime.mp4", "nom": "Fosse de combat (jour)" }
-  ]
+  "info": "Catalogue des fonds de carte d'Aldebaran. Déposez des photos ou images (jpg, png, webp, gif, avif) dans ce dossier : elles apparaissent toutes seules dans « Fond de carte ». Ajoutez-les ici seulement pour leur donner un joli nom.",
+  "fonds": []
 }

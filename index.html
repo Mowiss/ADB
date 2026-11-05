@@ -2204,6 +2204,16 @@ svg.i{width:18px;height:18px;flex:none}
 .band{height:60px;opacity:.26}
 #world{position:absolute;left:0;top:0;width:0;height:0;overflow:visible;transform-origin:0 0;z-index:1}
 #bg{position:absolute;left:0;top:0;background-size:100% 100%;background-repeat:no-repeat}
+#ggrid{position:absolute;pointer-events:none;background-size:40px 40px;background-image:linear-gradient(to right,rgba(255,255,255,.22) 1px,transparent 1px),linear-gradient(to bottom,rgba(255,255,255,.22) 1px,transparent 1px)}
+.nogrid #ggrid{background-image:none}
+#board.geo{background:#2a2e36}#board.geo .bands{display:none}
+#geo{position:absolute;left:0;top:0;width:0;height:0;overflow:visible}
+.gt{position:absolute;max-width:none;user-select:none;pointer-events:none;-webkit-user-drag:none}
+#geo-attr{position:absolute;right:8px;bottom:6px;z-index:6;font-size:10px;color:#fff;background:rgba(0,0,0,.45);padding:1px 6px;border-radius:4px;pointer-events:none}
+.bgscale{display:flex;align-items:center;gap:12px}.bgscale input{flex:1;accent-color:var(--ink-strong)}.bgscale b{font-size:12px;color:var(--ink-strong);min-width:150px;text-align:right;font-variant-numeric:tabular-nums}
+.georow{display:flex;gap:8px}.georow input{flex:1}
+.geores{display:flex;flex-direction:column;gap:4px;max-height:24vh;overflow:auto}
+.geores button{border:1px solid var(--rule);background:var(--paper);border-radius:8px;padding:7px 10px;text-align:left;font-size:12.5px;color:var(--ink-strong)}.geores button:hover{border-color:var(--ink)}
 #bg video{width:100%;height:100%;object-fit:fill;display:block;pointer-events:none}
 .fdgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;max-height:40vh;overflow:auto}
 .fd{display:flex;flex-direction:column;gap:5px;border:1px solid var(--rule);border-radius:10px;background:var(--paper);padding:5px;text-align:left}
@@ -2660,6 +2670,7 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
   <div id="board">
     <div class="bands" aria-hidden="true"><div class="ribbon"><div class="band" style="background:var(--b-yel)"></div><div class="band" style="background:var(--b-blu)"></div><div class="band" style="background:var(--b-gre)"></div><div class="band" style="background:var(--b-red)"></div><div class="band" style="background:var(--b-pin)"></div><div class="band" style="background:var(--b-vio)"></div></div></div>
     <div id="world">
+      <div id="geo"></div><div id="ggrid" hidden></div>
       <div id="bg"></div>
       <div id="grid"></div>
       <svg id="draw"></svg>
@@ -2669,6 +2680,7 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
     <canvas id="fow" hidden></canvas>
     <div id="bin" title="Lâcher ici pour retirer du plateau"></div>
     <div id="mlabel" class="mlabel" hidden></div>
+    <div id="geo-attr" hidden>Imagerie © Esri — Maxar, Earthstar Geographics</div>
   </div>
 </div>
 
@@ -2878,13 +2890,13 @@ function confirmDialog(title,text,okLbl,fn){ openDialog(`<h3>${title}</h3><p>${t
    Vue : déplacement et zoom
    ========================================================= */
 const board=$('board'), world=$('world');
-function applyView(){ world.style.transform=`translate(${V.x}px,${V.y}px) scale(${V.z})`;
+function applyView(){ world.style.transform=`translate(${V.x}px,${V.y}px) scale(${V.z})`; geoLater();
   board.style.backgroundSize=`${CELL*V.z}px ${CELL*V.z}px`; board.style.backgroundPosition=`${V.x}px ${V.y}px`;
   placeCard(); placeMeasureLabel(); placePtrs(); if(!S.light) fowLater(); if(!isPlayer){ S.view={...V}; sendView(); } }
 function toWorld(cx,cy){ const r=board.getBoundingClientRect(); return [(cx-r.left-V.x)/V.z,(cy-r.top-V.y)/V.z]; }
 function toScreen(wx,wy){ const r=board.getBoundingClientRect(); return [r.left+V.x+wx*V.z, r.top+V.y+wy*V.z]; }
 function centerOn(wx,wy,z){ const r=board.getBoundingClientRect(); if(z) V.z=z; V.x=r.width/2-wx*V.z; V.y=r.height/2-wy*V.z; applyView(); }
-function zoomAt(cx,cy,f){ const r=board.getBoundingClientRect(), z=clamp(V.z*f,.15,3.5), k=z/V.z; V.x=cx-r.left-(cx-r.left-V.x)*k; V.y=cy-r.top-(cy-r.top-V.y)*k; V.z=z; applyView(); }
+function zoomAt(cx,cy,f){ const r=board.getBoundingClientRect(), z=clamp(V.z*f,S.geo?.0004:.15,3.5), k=z/V.z; V.x=cx-r.left-(cx-r.left-V.x)*k; V.y=cy-r.top-(cy-r.top-V.y)*k; V.z=z; applyView(); }
 
 /* =========================================================
    Rendu
@@ -2929,7 +2941,8 @@ function renderBoard(){
   if(S.bg&&S.bgKind==='video'){ bg.style.backgroundImage=''; let v=bg.querySelector('video');
     if(!v||v.getAttribute('src')!==S.bg){ bg.innerHTML=`<video src="${esc(S.bg)}" muted loop autoplay playsinline disablepictureinpicture></video>`; v=bg.querySelector('video'); v.muted=true; const pl=v.play(); if(pl) pl.catch(()=>{}); } }
   else { if(bg.firstChild) bg.innerHTML=''; bg.style.backgroundImage=S.bg?`url("${S.bg}")`:''; }
-  bg.style.width=gr.style.width=(S.bg?S.bgW:0)+'px'; bg.style.height=gr.style.height=(S.bg?S.bgH:0)+'px'; gr.hidden=!S.bg; board.classList.toggle('inf',!S.bg);
+  renderGeo();
+  bg.style.width=gr.style.width=(S.bg?S.bgW:0)+'px'; bg.style.height=gr.style.height=(S.bg?S.bgH:0)+'px'; gr.hidden=!S.bg; board.classList.toggle('inf',!S.bg&&!S.geo); board.classList.toggle('geo',!!S.geo);
   document.body.classList.toggle('nogrid',S.grid===false);
   $('fow').hidden=S.light; renderFoW();
   const bl=$('b-light'); if(bl){ bl.innerHTML=IB(S.light?'sun':'moon'); bl.setAttribute('aria-pressed',S.light?'false':'true'); bl.title=S.light?'Jour — cliquer pour passer en nuit (brouillard)':'Nuit — cliquer pour revenir au jour'; }
@@ -3208,11 +3221,11 @@ function showRoll(label,n){ const th=threshold(), R=diceBlock(n,th); logRoll(lab
    Scénario : scènes (fond, nuit/jour, tracés, jetons de scène)
    ========================================================= */
 function snapshot(){ if(S.scene<0||!S.scenes[S.scene]) return; S.tokens.forEach(t=>t.scene=true); const sc=S.scenes[S.scene], ids=new Set(S.tokens.filter(t=>t.scene).map(t=>t.id));
-  Object.assign(sc,{bg:S.bg,bgKind:S.bgKind||'',bgW:S.bgW||0,bgH:S.bgH||0,light:S.light,drawings:clone(S.drawings),tokens:clone(S.tokens.filter(t=>t.scene)),order:S.order.filter(id=>ids.has(id))}); }
+  Object.assign(sc,{bg:S.bg,bgKind:S.bgKind||'',bgW:S.bgW||0,bgH:S.bgH||0,bgNW:S.bgNW||0,bgNH:S.bgNH||0,bgScale:S.bgScale||1,geo:S.geo?{...S.geo}:null,light:S.light,drawings:clone(S.drawings),tokens:clone(S.tokens.filter(t=>t.scene)),order:S.order.filter(id=>ids.has(id))}); }
 function loadScene(i){
   closeCard(); const keep=S.tokens.filter(t=>!t.scene); S.tokens=keep; S.order=S.order.filter(id=>keep.some(t=>t.id===id)); S.scene=i;
   const sc=S.scenes[i];
-  if(sc){ S.bg=sc.bg||''; S.bgKind=sc.bgKind||''; S.bgW=sc.bgW||0; S.bgH=sc.bgH||0; S.light=sc.light!==false; S.drawings=clone(sc.drawings||[]); S.tokens.push(...clone(sc.tokens||[])); S.order.push(...(sc.order||[]).filter(id=>tok(id))); }
+  if(sc){ S.bg=sc.bg||''; S.bgKind=sc.bgKind||''; S.bgW=sc.bgW||0; S.bgH=sc.bgH||0; S.bgNW=sc.bgNW||0; S.bgNH=sc.bgNH||0; S.bgScale=sc.bgScale||1; S.geo=sc.geo?{...sc.geo}:null; S.light=sc.light!==false; S.drawings=clone(sc.drawings||[]); S.tokens.push(...clone(sc.tokens||[])); S.order.push(...(sc.order||[]).filter(id=>tok(id))); }
   if(typeof PL!=='undefined') S.tokens.forEach(t=>{ const P=t.owner&&PL.get(t.owner); if(P&&P.sheet) Object.assign(t,tokenData(P.sheet)); });
   S.turn=-1; renderAllBoard(); renderScenes(); markDirty(); sync(); if(typeof renderPtabs==='function') renderPtabs();
   if(sc) send({t:'scene',title:sc.title||`Scène ${i+1}`,idx:i+1});
@@ -3224,7 +3237,7 @@ function newSceneDialog(){
     <button type="button" id="ns-blank">${IB('page')}<b>Scène vierge</b><span>Un plateau vide ; les jetons des joueurs retournent dans leurs onglets.</span></button></div>
     <div class="actions"><button class="btn ghost" type="button" data-close>Annuler</button></div>`,'var(--c-per)');
   $('ns-cap').onclick=()=>{ dlg.close(); snapshot(); S.tokens.forEach(t=>{ t.scene=true; }); S.scenes.push({id:nid(),title:`Scène ${S.scenes.length+1}`,content:''}); S.scene=S.scenes.length-1; snapshot(); renderScenes(); markDirty(); openDrawer('scenario',true); focusScene(); };
-  $('ns-blank').onclick=()=>{ dlg.close(); snapshot(); S.scenes.push({id:nid(),title:`Scène ${S.scenes.length+1}`,content:'',bg:'',bgW:0,bgH:0,light:true,drawings:[],tokens:[],order:[]}); loadScene(S.scenes.length-1); openDrawer('scenario',true); focusScene(); };
+  $('ns-blank').onclick=()=>{ dlg.close(); snapshot(); S.scenes.push({id:nid(),title:`Scène ${S.scenes.length+1}`,content:'',bg:'',bgW:0,bgH:0,geo:null,light:true,drawings:[],tokens:[],order:[]}); loadScene(S.scenes.length-1); openDrawer('scenario',true); focusScene(); };
 }
 function focusScene(){ setTimeout(()=>{ const i=document.querySelector('.scn.on .stt'); if(i){ i.focus({preventScroll:true}); i.select(); i.scrollLeft=0; $('scenes').scrollLeft=0; i.scrollIntoView({block:'nearest',inline:'nearest'}); $('scenes').scrollLeft=0; } },340); }
 function deleteScene(){ if(S.scene<0) return; const sc=S.scenes[S.scene];
@@ -3317,7 +3330,7 @@ function send(m){ if(isPlayer) return; m.n=Date.now()*100+(seq++%100); m.from='m
   if(bc&&m.t!=='state') return;   // le canal direct suffit ; le stockage local ne garde que l'état complet
   try{ localStorage.setItem(LS_SYNC,JSON.stringify(m)); }catch(e){ if(m.t==='state'){ const lite={...m,bg:m.bg&&m.bg.length>1.5e6?'':m.bg}; try{ localStorage.setItem(LS_SYNC,JSON.stringify(lite)); }catch(e2){} } } }
 function publicState(){ const pub=t=>({id:t.id,type:t.type,name:t.name,hp:t.hp,hpMax:t.hpMax,img:t.img,ico:t.ico,x:t.x,y:t.y,s:t.s,r:t.r,owner:t.owner||null,note:t.type==='prop'&&t.note?' ':''});
-  return {t:'state',bg:S.bg,bgKind:S.bgKind||'',bgW:S.bgW||0,bgH:S.bgH||0,light:S.light,grid:S.grid,drawings:S.drawings,tokens:S.tokens.filter(t=>!t.hidden).map(pub),order:S.order.filter(id=>{ const t=tok(id); return t&&!t.hidden; }),turn:turnIdForPlayers(),view:viewMsg()}; }
+  return {t:'state',bg:S.bg,bgKind:S.bgKind||'',bgW:S.bgW||0,bgH:S.bgH||0,geo:S.geo||null,light:S.light,grid:S.grid,drawings:S.drawings,tokens:S.tokens.filter(t=>!t.hidden).map(pub),order:S.order.filter(id=>{ const t=tok(id); return t&&!t.hidden; }),turn:turnIdForPlayers(),view:viewMsg()}; }
 function turnIdForPlayers(){ const L=orderToks(), c=L[S.turn]; return c&&!c.hidden?c.id:null; }
 let syncRaf=0; function sync(){ if(isPlayer||syncRaf) return; syncRaf=requestAnimationFrame(()=>{ syncRaf=0; send(publicState()); }); }
 let syncT=0; function syncLater(){ clearTimeout(syncT); syncT=setTimeout(sync,120); }
@@ -3334,7 +3347,7 @@ function receive(m){ if(!m) return;
   if(m.from!=='mj'||m.n<=lastSeq) return; lastSeq=m.n;
   if(m.t==='state'){ $('pwait').classList.add('gone');
     if(m.bg!==undefined) S.bg=m.bg;
-    Object.assign(S,{bgKind:m.bgKind||'',bgW:m.bgW||0,bgH:m.bgH||0,light:m.light,grid:m.grid,drawings:m.drawings,tokens:m.tokens,order:m.order}); const L=orderToks(); S.turn=L.findIndex(t=>t.id===m.turn);
+    Object.assign(S,{bgKind:m.bgKind||'',bgW:m.bgW||0,bgH:m.bgH||0,geo:m.geo||null,light:m.light,grid:m.grid,drawings:m.drawings,tokens:m.tokens,order:m.order}); const L=orderToks(); S.turn=L.findIndex(t=>t.id===m.turn);
     if(myDrag){ const t=tok(myDrag.id); if(t){ t.x=myDrag.x; t.y=myDrag.y; } }
     renderAllBoard(); if(NETVIEW) followMe(); else if(m.view) setPlayerView(m.view); }
   else if(m.t==='roll') toast(`${m.who} · ${m.label} : ${m.succ} réussite${m.succ>1?'s':''}`);
@@ -3579,13 +3592,16 @@ function wire(){
 }
 function nextTurn(){ const L=orderToks(); if(!L.length) return; S.turn=(S.turn+1)%L.length; renderTracker(); markTurn(); const on=$('tracker').querySelector('.tr.on'); if(on) on.scrollIntoView({block:'nearest',inline:'center',behavior:'smooth'}); const t=L[S.turn]; if(t) centerOnIfOut(t); markDirty(); sync(); }
 function centerOnIfOut(t){ const r=board.getBoundingClientRect(), [sx,sy]=toScreen(t.x,t.y); if(sx<r.left+60||sx>r.right-60||sy<r.top+60||sy>r.bottom-60) centerOn(t.x,t.y); }
+/* Fond image : importé de l'ordinateur ou pris dans le catalogue ; sa taille est réglable */
+function useImage(url,nw,nh,msg){ S.geo=null; S.bg=url; S.bgKind='img'; S.bgNW=nw; S.bgNH=nh; S.bgScale=1; S.bgW=nw; S.bgH=nh;
+  S.tokens.forEach(t=>{ t.x=bx(t.x); t.y=by(t.y); }); renderAllBoard(); fitBoard(); markDirty(); sync(); toast(msg||`Fond appliqué : ${nw} × ${nh} px`); }
+function setBgScale(k){ if(!S.bg) return; if(!S.bgNW){ S.bgNW=S.bgW; S.bgNH=S.bgH; } S.bgScale=k; S.bgW=Math.max(40,Math.round(S.bgNW*k)); S.bgH=Math.max(40,Math.round(S.bgNH*k));
+  S.tokens.forEach(t=>{ t.x=bx(t.x); t.y=by(t.y); moveTokenEl(t); }); renderBoard(); markDirty(); syncLater(); }
 function setBackground(f){ const r=new FileReader(); r.onload=()=>{ const im=new Image(); im.onload=()=>{ const M=4096, k=Math.min(1,M/Math.max(im.width,im.height)), c=document.createElement('canvas'); c.width=Math.round(im.width*k); c.height=Math.round(im.height*k);
-  c.getContext('2d').drawImage(im,0,0,c.width,c.height); const first=!S.bg; S.bg=c.toDataURL('image/jpeg',.86); S.bgKind='img'; S.bgW=c.width; S.bgH=c.height;
-  S.tokens.forEach(t=>{ t.x=bx(t.x); t.y=by(t.y); }); renderAllBoard(); fitBoard(); markDirty(); sync(); toast(`Fond de carte appliqué : le plateau fait ${c.width} × ${c.height} px`); }; im.src=r.result; }; r.readAsDataURL(f); }
-/* Catalogue des fonds de carte : le dossier « fonds/ » à côté de l'appli (images et vidéos).
+  c.getContext('2d').drawImage(im,0,0,c.width,c.height); useImage(c.toDataURL('image/jpeg',.86),c.width,c.height,`Fond de carte appliqué : ${c.width} × ${c.height} px — taille réglable dans « Fond de carte »`); }; im.src=r.result; }; r.readAsDataURL(f); }
+/* Catalogue des fonds de carte : le dossier « fonds/ » à côté de l'appli (photos et images).
    Un fichier déposé dans le dossier sur GitHub apparaît tout seul ; fonds/catalogue.json peut lui donner un joli nom. */
-const FONDS='fonds/', FOND_RE=/\.(mp4|webm|m4v|mov|jpe?g|png|webp|gif|avif)$/i;
-const fondKind=f=>/\.(mp4|webm|m4v|mov)$/i.test(f)?'video':'img';
+const FONDS='fonds/', FOND_RE=/\.(jpe?g|png|webp|gif|avif)$/i;
 const fondName=f=>{ const n=f.replace(/\.[^.]+$/,'').replace(/[_-]+/g,' ').trim(); return n.charAt(0).toUpperCase()+n.slice(1); };
 let fondsCache=null;
 async function loadFonds(){ if(fondsCache) return fondsCache; const out=new Map();
@@ -3593,30 +3609,70 @@ async function loadFonds(){ if(fondsCache) return fondsCache; const out=new Map(
   try{ const m=location.hostname.match(/^([^.]+)\.github\.io$/i), repo=location.pathname.split('/').filter(Boolean)[0];
     if(m&&repo){ const r=await fetch(`https://api.github.com/repos/${m[1]}/${repo}/contents/fonds`); if(r.ok){ (await r.json()).forEach(x=>{ if(x.type==='file'&&FOND_RE.test(x.name)&&!out.has(x.name)) out.set(x.name,{f:x.name,nom:fondName(x.name)}); }); } } }catch(e){}
   fondsCache=[...out.values()]; return fondsCache; }
-function mediaSize(url,kind){ return new Promise((res,rej)=>{ if(kind==='video'){ const v=document.createElement('video'); v.preload='metadata'; v.muted=true; v.onloadedmetadata=()=>res([v.videoWidth,v.videoHeight]); v.onerror=rej; v.src=url; }
-  else { const im=new Image(); im.onload=()=>res([im.naturalWidth,im.naturalHeight]); im.onerror=rej; im.src=url; } }); }
-async function setFond(f){ const url=FONDS+f, kind=fondKind(f);
-  try{ const [w,h]=await mediaSize(url,kind); S.bg=url; S.bgKind=kind; S.bgW=w; S.bgH=h;
-    S.tokens.forEach(t=>{ t.x=bx(t.x); t.y=by(t.y); }); renderAllBoard(); fitBoard(); markDirty(); sync(); toast(`Fond « ${fondName(f)} » : le plateau fait ${w} × ${h} px`); }
-  catch(e){ toast('Ce fond est introuvable ou illisible',true); } }
+function setFond(f){ const url=FONDS+f, im=new Image(); im.onload=()=>useImage(url,im.naturalWidth,im.naturalHeight,`Fond « ${fondName(f)} » : ${im.naturalWidth} × ${im.naturalHeight} px`); im.onerror=()=>toast('Ce fond est introuvable ou illisible',true); im.src=url; }
+
+/* Vue satellite (Esri World Imagery, sur fond OpenStreetMap pour la recherche) à l'échelle 1 :
+   une case = 0,5 m, un jeton ≈ un humain vu de dessus. Le plateau reste infini. */
+const M0=CELL_M/CELL;   // mètres par pixel du plateau
+const GEO_TILE='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/';
+const geoTiles=new Map();
+function geoProj(lat,lon,z){ const n=256*Math.pow(2,z), si=Math.sin(lat*Math.PI/180); return [(lon+180)/360*n,(0.5-Math.log((1+si)/(1-si))/(4*Math.PI))*n]; }
+const geoScale=z=>156543.03392*Math.cos(S.geo.lat*Math.PI/180)/Math.pow(2,z)/M0;   // pixels du plateau par pixel de tuile
+let geoRaf=0; function geoLater(){ if(!S.geo||geoRaf) return; geoRaf=requestAnimationFrame(()=>{ geoRaf=0; renderGeo(); }); }
+function renderGeo(){ const L=$('geo'); if(!L) return;
+  const G=$('ggrid');
+  if(!S.geo){ if(geoTiles.size){ L.innerHTML=''; geoTiles.clear(); } $('geo-attr').hidden=true; G.hidden=true; return; }
+  $('geo-attr').hidden=false; const r=board.getBoundingClientRect(); if(!r.width) return;
+  { const gx=Math.floor(-V.x/V.z/CELL)*CELL, gy=Math.floor(-V.y/V.z/CELL)*CELL; G.hidden=V.z<.3; Object.assign(G.style,{left:gx+'px',top:gy+'px',width:(r.width/V.z+2*CELL)+'px',height:(r.height/V.z+2*CELL)+'px'}); }
+  const key=S.geo.lat+','+S.geo.lon; if(L.dataset.k!==key){ L.innerHTML=''; geoTiles.clear(); L.dataset.k=key; }
+  const z=clamp(Math.round(Math.log2(156543.03392*Math.cos(S.geo.lat*Math.PI/180)*V.z/M0)),3,19), sc=geoScale(z), [ox,oy]=geoProj(S.geo.lat,S.geo.lon,z), N=Math.pow(2,z);
+  const wx0=-V.x/V.z, wy0=-V.y/V.z, wx1=(r.width-V.x)/V.z, wy1=(r.height-V.y)/V.z;
+  const tx0=Math.floor(ox/256+wx0/sc/256), tx1=Math.floor(ox/256+wx1/sc/256), ty0=Math.floor(oy/256+wy0/sc/256), ty1=Math.floor(oy/256+wy1/sc/256);
+  if((tx1-tx0+1)*(ty1-ty0+1)>160) return;
+  const want=new Set();
+  for(let ty=Math.max(0,ty0);ty<=Math.min(N-1,ty1);ty++) for(let tx=tx0;tx<=tx1;tx++){ const k=z+'/'+ty+'/'+tx; want.add(k); if(geoTiles.has(k)) continue;
+    const im=document.createElement('img'); im.className='gt'; im.alt=''; im.draggable=false; im.dataset.z=z; im.style.zIndex=z;
+    im.style.left=((tx*256-ox)*sc)+'px'; im.style.top=((ty*256-oy)*sc)+'px'; im.style.width=im.style.height=(256*sc+1)+'px';
+    im.onload=()=>{ im.dataset.ok=1; geoClean(); }; im.onerror=()=>{ im.dataset.ok=1; im.style.visibility='hidden'; geoClean(); };
+    im.src=GEO_TILE+z+'/'+ty+'/'+(((tx%N)+N)%N); L.appendChild(im); geoTiles.set(k,im); }
+  geoTiles.forEach((im,k)=>{ if(!want.has(k)&&+im.dataset.z===z){ im.remove(); geoTiles.delete(k); } });
+  renderGeo.want=want; geoClean(); }
+/* les tuiles d'un autre niveau de zoom restent en dessous tant que les nouvelles chargent */
+function geoClean(){ const w=renderGeo.want; if(!w) return; for(const k of w){ const im=geoTiles.get(k); if(im&&!im.dataset.ok) return; }
+  geoTiles.forEach((im,k)=>{ if(!w.has(k)){ im.remove(); geoTiles.delete(k); } }); }
+function useGeo(lat,lon,label){ S.bg=''; S.bgKind=''; S.bgW=S.bgH=S.bgNW=S.bgNH=0; S.geo={lat:+(+lat).toFixed(6),lon:+(+lon).toFixed(6),label:label||''};
+  renderAllBoard(); centerOn(0,0,.3); markDirty(); sync(); toast(`Vue satellite : ${label||(lat.toFixed(4)+', '+lon.toFixed(4))} — échelle 1 (une case = 0,5 m)`); }
+
 function bgDialog(){
-  const cur=S.bg?(S.bgKind==='video'?`<video src="${esc(S.bg)}" muted loop autoplay playsinline></video>`:`<img src="${S.bg}" alt="">`):'';
+  const sc=Math.round((S.bgScale||1)*100);
   openDialog(`<h3>Fond de carte</h3>
+    ${S.bg&&S.bgKind!=='video'?`<div class="subttl">Taille de l'image</div><div class="bgscale"><input type="range" id="bg-sc" min="10" max="400" step="5" value="${sc}"><b id="bg-scv"></b></div>`:''}
     <div class="subttl">Catalogue</div><div class="fdgrid" id="fd-grid"><p class="meta" style="text-align:left">Chargement du catalogue…</p></div>
     <div class="subttl">Depuis l'ordinateur</div>
     <div class="drop" id="bg-drop">Cliquer ou déposer une image ici</div>
-    <p class="meta" style="text-align:left">Sans fond, le plateau est infini. Avec un fond (image ou vidéo), il prend sa taille (1 px = 1 px, une case = 40 px) et les jetons restent dedans. Le fond est enregistré avec la scène active.</p>
-    <div class="actions"><button class="btn ghost" type="button" id="bg-rm" ${S.bg?'':'disabled'} style="margin-right:auto">${IB('bin')}Retirer le fond</button><button class="btn" type="button" data-close>Fermer</button></div>`);
+    <div class="subttl">Vue satellite</div>
+    <div class="georow"><input class="line-in" id="geo-q" placeholder="Un lieu, une adresse, ou « 44.559, 6.079 »" value="${esc(S.geo&&S.geo.label||'')}"><button class="mini" type="button" id="geo-go">Chercher</button><button class="mini" type="button" id="geo-me" title="Ma position">${IB('target')}</button></div>
+    <div class="geores" id="geo-res"></div>
+    <p class="meta" style="text-align:left">Photos satellites à l'échelle 1 : une case = 0,5 m, un jeton a la taille d'un humain. Le plateau reste infini ; dézoomez largement pour voir les environs. Recherche © OpenStreetMap (Nominatim), imagerie © Esri.</p>
+    <div class="actions"><button class="btn ghost" type="button" id="bg-rm" ${S.bg||S.geo?'':'disabled'} style="margin-right:auto">${IB('bin')}Retirer le fond</button><button class="btn" type="button" data-close>Fermer</button></div>`);
+  const sv=$('bg-sc'); if(sv){ const lab=()=>{ $('bg-scv').textContent=`${sv.value} % · ${S.bgW} × ${S.bgH} px · ${Math.round(S.bgW/CELL)} × ${Math.round(S.bgH/CELL)} cases`; }; lab(); sv.oninput=()=>{ setBgScale(+sv.value/100); lab(); }; }
   loadFonds().then(L=>{ const g=$('fd-grid'); if(!g) return;
-    g.innerHTML=L.length?L.map(x=>{ const u=FONDS+x.f, v=fondKind(x.f)==='video';
-      return `<button type="button" class="fd${S.bg===u?' on':''}" data-f="${esc(x.f)}" title="${esc(x.nom)}"><span class="m">${v?`<video src="${esc(u)}#t=2" muted loop playsinline preload="metadata"></video><i>VIDÉO</i>`:`<img src="${esc(u)}" alt="" loading="lazy">`}</span><b>${esc(x.nom)}</b></button>`; }).join('')
-      :`<p class="meta" style="text-align:left">${location.protocol.startsWith('http')?'Le dossier « fonds » est vide pour l\'instant.':'Le catalogue s\'affiche sur la version en ligne de l\'appli.'}</p>`;
-    g.querySelectorAll('.fd').forEach(b=>{ const v=b.querySelector('video');
-      if(v){ b.onmouseenter=()=>{ const pl=v.play(); if(pl) pl.catch(()=>{}); }; b.onmouseleave=()=>v.pause(); }
-      b.onclick=()=>{ dlg.close(); setFond(b.dataset.f); }; }); });
+    g.innerHTML=L.length?L.map(x=>{ const u=FONDS+x.f; return `<button type="button" class="fd${S.bg===u?' on':''}" data-f="${esc(x.f)}" title="${esc(x.nom)}"><span class="m"><img src="${esc(u)}" alt="" loading="lazy"></span><b>${esc(x.nom)}</b></button>`; }).join('')
+      :`<p class="meta" style="text-align:left;grid-column:1/-1">${location.protocol.startsWith('http')?'Le catalogue est vide pour l\'instant : déposez des photos dans le dossier « fonds » du dépôt.':'Le catalogue s\'affiche sur la version en ligne de l\'appli.'}</p>`;
+    g.querySelectorAll('.fd').forEach(b=>b.onclick=()=>{ dlg.close(); setFond(b.dataset.f); }); });
   const d=$('bg-drop'); d.onclick=()=>{ imgTarget=null; const i=document.createElement('input'); i.type='file'; i.accept='image/*'; i.onchange=()=>{ if(i.files[0]){ setBackground(i.files[0]); dlg.close(); } }; i.click(); };
   d.ondragover=e=>e.preventDefault(); d.ondrop=e=>{ e.preventDefault(); const f=e.dataTransfer.files[0]; if(f&&f.type.startsWith('image/')){ setBackground(f); dlg.close(); } };
-  $('bg-rm').onclick=()=>{ S.bg=''; S.bgKind=''; S.bgW=S.bgH=0; renderAllBoard(); markDirty(); sync(); dlg.close(); };
+  const search=async()=>{ const q=$('geo-q').value.trim(), res=$('geo-res'); if(!q) return;
+    const ll=q.match(/^\s*(-?\d+(?:[.,]\d+)?)\s*[,; ]\s*(-?\d+(?:[.,]\d+)?)\s*$/); if(ll){ dlg.close(); useGeo(+ll[1].replace(',','.'),+ll[2].replace(',','.'),q); return; }
+    res.innerHTML='<p class="meta" style="text-align:left">Recherche…</p>';
+    try{ const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=6&accept-language=fr&q='+encodeURIComponent(q)); const L=await r.json();
+      res.innerHTML=L.length?L.map((x,i)=>`<button type="button" data-i="${i}">${esc(x.display_name)}</button>`).join(''):'<p class="meta" style="text-align:left">Aucun lieu trouvé.</p>';
+      res.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{ const x=L[+b.dataset.i]; dlg.close(); useGeo(+x.lat,+x.lon,x.display_name.split(',').slice(0,2).join(',')); }); }
+    catch(e){ res.innerHTML='<p class="meta" style="text-align:left">Recherche impossible (connexion ?).</p>'; } };
+  $('geo-go').onclick=search; $('geo-q').onkeydown=e=>{ if(e.key==='Enter') search(); };
+  $('geo-me').onclick=()=>{ if(!navigator.geolocation){ toast('Position indisponible sur cet appareil',true); return; }
+    navigator.geolocation.getCurrentPosition(p=>{ dlg.close(); useGeo(p.coords.latitude,p.coords.longitude,'Ma position'); },()=>toast('Position refusée ou indisponible',true),{enableHighAccuracy:true,timeout:10000}); };
+  $('bg-rm').onclick=()=>{ S.bg=''; S.bgKind=''; S.bgW=S.bgH=S.bgNW=S.bgNH=0; S.geo=null; renderAllBoard(); markDirty(); sync(); dlg.close(); };
 }
 
 /* =========================================================
