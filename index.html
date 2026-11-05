@@ -2206,7 +2206,10 @@ svg.i{width:18px;height:18px;flex:none}
 .ribbon{position:absolute;left:-25%;width:150%;top:58%;transform:translateY(-50%) rotate(-14deg);display:flex;flex-direction:column;gap:12px}
 .band{height:60px;opacity:.26}
 #world{position:absolute;left:0;top:0;width:0;height:0;overflow:visible;transform-origin:0 0;z-index:1}
-#bg{position:absolute;left:0;top:0;background-size:100% 100%;background-repeat:no-repeat}
+#bg{position:absolute;left:0;top:0}
+#bg img.bgi{position:absolute;inset:0;width:100%;height:100%;display:block;user-select:none;pointer-events:none;-webkit-user-drag:none}
+/* bords de la carte fondus dans le noir */
+.fade{-webkit-mask-image:var(--mx),var(--my);mask-image:var(--mx),var(--my);-webkit-mask-composite:source-in;mask-composite:intersect}
 #ggrid{position:absolute;pointer-events:none;background-size:72px 72px;background-image:linear-gradient(to right,rgba(255,255,255,.22) 1px,transparent 1px),linear-gradient(to bottom,rgba(255,255,255,.22) 1px,transparent 1px)}
 .nogrid #ggrid{background-image:none}
 #geo{position:absolute;left:0;top:0;width:0;height:0;overflow:visible}
@@ -2226,6 +2229,7 @@ svg.i{width:18px;height:18px;flex:none}
 .fd b{font-size:12px;color:var(--ink-strong);padding:0 3px 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #grid{position:absolute;left:0;top:0;pointer-events:none;background-size:72px 72px;background-image:linear-gradient(to right,rgba(47,51,64,.075) 1px,transparent 1px),linear-gradient(to bottom,rgba(47,51,64,.075) 1px,transparent 1px)}
 #grid::after{content:"";position:absolute;inset:0;border:1.5px solid var(--rule)}
+#grid.fade::after{display:none}
 .nogrid #grid{background-image:none}
 #draw{position:absolute;left:0;top:0;width:1px;height:1px;overflow:visible;pointer-events:none;z-index:2}
 #draw path{fill:none;stroke-linecap:round;stroke-linejoin:round}
@@ -2944,7 +2948,13 @@ function renderBoard(){
   const bg=$('bg'), gr=$('grid');
   if(S.bg&&S.bgKind==='video'){ bg.style.backgroundImage=''; let v=bg.querySelector('video');
     if(!v||v.getAttribute('src')!==S.bg){ bg.innerHTML=`<video src="${esc(S.bg)}" muted loop autoplay playsinline disablepictureinpicture></video>`; v=bg.querySelector('video'); v.muted=true; const pl=v.play(); if(pl) pl.catch(()=>{}); } }
-  else { if(bg.firstChild) bg.innerHTML=''; bg.style.backgroundImage=S.bg?`url("${S.bg}")`:''; }
+  else { bg.style.backgroundImage=''; let im=bg.querySelector('img.bgi');
+    if(!S.bg){ if(bg.firstChild) bg.innerHTML=''; }
+    else if(!im||im.getAttribute('src')!==S.bg){ bg.innerHTML=''; im=document.createElement('img'); im.className='bgi'; im.alt=''; im.draggable=false; im.decoding='async'; im.src=S.bg; bg.appendChild(im); } }
+  /* fondu des bords : une marge proportionnelle à la carte */
+  if(S.bg&&S.bgW){ const e=Math.round(Math.min(S.bgW,S.bgH)*.07);
+    [bg,gr].forEach(el=>{ el.classList.add('fade'); el.style.setProperty('--mx',`linear-gradient(to right,transparent,#000 ${e}px,#000 calc(100% - ${e}px),transparent)`); el.style.setProperty('--my',`linear-gradient(to bottom,transparent,#000 ${e}px,#000 calc(100% - ${e}px),transparent)`); }); }
+  else [bg,gr].forEach(el=>el.classList.remove('fade'));
   renderGeo();
   bg.style.width=gr.style.width=(S.bg?S.bgW:0)+'px'; bg.style.height=gr.style.height=(S.bg?S.bgH:0)+'px'; gr.hidden=!S.bg; board.classList.toggle('inf',!S.bg&&!S.geo); board.classList.toggle('geo',!!S.geo); board.classList.toggle('img',!!S.bg);
   document.body.classList.toggle('nogrid',S.grid===false);
