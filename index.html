@@ -665,8 +665,13 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}input[type=num
 .tb-live{flex:1;min-height:0;border:1px solid var(--rule);border-radius:10px;overflow:hidden;background:#fff}
 .tb-frame{width:100%;height:100%;border:0;display:block}
 .sheetview .vtab[data-drawer="tabledrw"],.sheetview #b-settings{display:none!important}
-.tb-st{font-size:12px;font-weight:600;color:var(--ink-soft);display:flex;align-items:center;gap:6px;white-space:nowrap}
-.tb-st i{width:8px;height:8px;border-radius:50%;background:var(--ink-soft)}
+.tb-head{min-width:0}
+.tb-head h3{flex:none}
+.tb-st{flex:1 1 auto;min-width:0;justify-content:flex-end;font-size:12px;font-weight:600;color:var(--ink-soft);display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden}
+.tb-st span{overflow:hidden;text-overflow:ellipsis;min-width:0}
+.tb-st i{flex:none;width:8px;height:8px;border-radius:50%;background:var(--ink-soft)}
+.tb-x{flex:none;width:32px;height:32px;border-radius:50%;border:1px solid var(--rule);background:var(--paper);display:grid;place-items:center;padding:0;color:var(--ink)}
+.tb-x:hover{border-color:var(--danger);color:var(--danger)}.tb-x svg{width:16px;height:16px}
 .tb-st.on i{background:var(--ok)}.tb-st.wait i{background:var(--gold)}
 .vtab.net-on svg{color:var(--ok)}
 .sheetview input,.sheetview select,.sheetview textarea,.sheetview button:not(.vtab):not(.iic),.sheetview .zone,.sheetview .tagp,.sheetview .grip,.sheetview .tico,.sheetview .hand-t,.sheetview .portrait,.sheetview .bub.add{pointer-events:none!important}
@@ -781,7 +786,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}input[type=num
 </aside>
 
 <aside class="drawer map-drawer" id="tabledrw" style="--tc:var(--c-dex)" aria-label="Table en ligne">
-  <header><h3>Table</h3><span class="spacer"></span><span class="tb-st" id="tb-st"></span><button class="btn ghost" type="button" id="tb-leave" hidden>Quitter</button></header>
+  <header class="tb-head"><h3>Table</h3><span class="tb-st" id="tb-st"></span><button class="tb-x" type="button" id="tb-leave" title="Quitter la table" aria-label="Quitter la table" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></header>
   <div class="tb-join" id="tb-join">
     <p>Rejoignez la table du maître du destin avec le code qu'il vous donne. Votre fiche est partagée ; vous voyez le plateau centré sur votre jeton dès que le maître du destin l'a posé, et vous montrez des choses avec votre pointeur.</p>
     <input id="tb-code" class="tb-code" maxlength="5" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="CODE" aria-label="Code de la table">
@@ -1991,7 +1996,7 @@ async function netIce(){ const o=netPeerOpts(); if(o.config) return o; let ice=I
 const NETP={peer:null,conn:null,code:null,frame:null,ready:false,want:false,last:{state:null,bg:null},pid:null,retry:0};
 NETP.pid=ls.get('aldebaran.joueur.netid')||('p'+Date.now().toString(36)+Math.random().toString(36).slice(2,7)); ls.set('aldebaran.joueur.netid',NETP.pid);
 
-function tbStatus(st,txt){ const e=$('tb-st'); e.className='tb-st '+st; e.innerHTML=`<i></i>${esc(txt||'')}`;
+function tbStatus(st,txt){ const e=$('tb-st'); e.className='tb-st '+st; e.title=txt||''; e.innerHTML=`<i></i><span>${esc(txt||'')}</span>`;
   const v=document.querySelector('.vtab[data-drawer="tabledrw"]'); if(v) v.classList.toggle('net-on',st==='on'); }
 function tbMsg(t){ $('tb-msg').textContent=t||''; }
 function tbShowJoin(){ $('tb-join').hidden=false; $('tb-live').hidden=true; $('tb-leave').hidden=true; }
@@ -2033,7 +2038,7 @@ function tbConnect(){
   const late=setTimeout(()=>{ if(NETP.conn!==c||c.open) return; NETP.want=false; NETP.conn=null; try{ c.close(); }catch(e){}
     tbStatus('off','Hors ligne'); tbShowJoin();
     tbMsg('La table est trouvée, mais la connexion directe n\'aboutit pas : votre réseau la bloque (fréquent en 4G/5G). Essayez sur le même Wi-Fi que le maître du destin, ou demandez-lui d\'activer le serveur relais puis de vous renvoyer le lien ou le QR code.'); },20000);
-  c.on('open',async()=>{ clearTimeout(late); NETP.retry=0; c.send({t:'join',pid:NETP.pid,sheet:await sheetData()}); tbStatus('on',`Table ${NETP.code}`); tbLive(); });
+  c.on('open',async()=>{ clearTimeout(late); NETP.retry=0; c.send({t:'join',pid:NETP.pid,sheet:await sheetData()}); tbStatus('on',NETP.code); tbLive(); });
   c.on('data',tbIn);
   c.on('close',()=>{ if(NETP.conn!==c) return; NETP.conn=null;
     if(NETP.want&&NETP.retry<20){ NETP.retry++; tbStatus('wait','Reconnexion…'); setTimeout(()=>{ if(NETP.want&&!NETP.conn) tbConnect(); },2500); }
