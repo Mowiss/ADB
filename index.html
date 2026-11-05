@@ -1888,7 +1888,7 @@ function showGuide(){
 };
 /* Installation (PWA) : manifeste + service worker livrés à côté de la page */
 let installEvt=window.__adbInstall||null;
-window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); installEvt=e; const m=$('inst-msg'); if(m) m.textContent=installMsg(); });
+window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); installEvt=window.__adbInstall=e; const m=$('inst-msg'); if(m) m.textContent=installMsg(); });
 window.addEventListener('appinstalled',()=>{ installEvt=null; toast('Aldebaran est installée'); });
 const isStandalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
 const isIOS=()=>/iphone|ipad|ipod/i.test(navigator.userAgent);
@@ -1898,10 +1898,16 @@ function installMsg(){
   if(isIOS()) return 'Sur iPhone / iPad : bouton Partager, puis « Sur l\'écran d\'accueil ».';
   return 'Si rien ne se passe, utilisez « Installer » dans le menu du navigateur (Chrome, Edge).';
 }
-async function doInstall(){
-  if(installEvt){ installEvt.prompt(); const r=await installEvt.userChoice; installEvt=null; if(r.outcome==='accepted') dlg.close(); else $('inst-msg').textContent=installMsg(); return; }
-  toast(installMsg());
-}
+function installHelp(){ const ua=navigator.userAgent, m=$('inst-msg');
+  const t=isStandalone()?'Vous utilisez déjà l\'application installée.'
+   :isIOS()?'Sur iPhone / iPad (Safari) : bouton Partager, puis « Sur l\'écran d\'accueil ».'
+   :/android/i.test(ua)?'Le navigateur ne propose pas l\'installation directe : menu ⋮ du navigateur, puis « Installer l\'application » ou « Ajouter à l\'écran d\'accueil ».'
+   :/firefox/i.test(ua)?'Firefox n\'installe pas les applis web : ouvrez Aldebaran dans Chrome ou Edge pour l\'installer.'
+   :'Le navigateur ne propose pas l\'installation directe : cliquez l\'icône d\'installation à droite de la barre d\'adresse, ou menu ⋮ › « Caster, enregistrer et partager » › « Installer la page en tant qu\'appli ». Si Aldebaran est déjà installée, ouvrez-la depuis vos applications.';
+  if(m) m.textContent=t; else toast(t); }
+async function doInstall(){ const ev=installEvt||window.__adbInstall;
+  if(ev){ try{ await ev.prompt(); const r=await ev.userChoice; installEvt=window.__adbInstall=null; if(r&&r.outcome==='accepted'){ toast('Installation en cours…'); try{ dlg.close(); }catch(e){} } else installHelp(); return; }catch(e){ installEvt=window.__adbInstall=null; } }
+  installHelp(); }
 if('serviceWorker' in navigator&&location.protocol.startsWith('http')){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
 
 /* =========================================================
@@ -3645,14 +3651,25 @@ function showGuide(){
   </div><div class="actions"><button class="btn" type="button" data-close>Fermer</button></div>`);
 }
 let installEvt=window.__adbInstall||null;
-window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); installEvt=e; const m=$('inst-msg'); if(m) m.textContent=installMsg(); });
+window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); installEvt=window.__adbInstall=e; const m=$('inst-msg'); if(m) m.textContent=installMsg(); });
 window.addEventListener('appinstalled',()=>{ installEvt=null; toast('Aldebaran MJ est installée'); });
 const isStandalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
 const isIOS=()=>/iphone|ipad|ipod/i.test(navigator.userAgent);
 function installMsg(){ if(isStandalone()) return 'Vous utilisez déjà l\'application installée.'; if(installEvt) return 'Ajoute Aldebaran MJ à vos applications, avec son icône.';
   if(isIOS()) return 'Sur iPad : bouton Partager, puis « Sur l\'écran d\'accueil ».'; return 'Si rien ne se passe, utilisez « Installer » dans le menu du navigateur (Chrome, Edge).'; }
-async function doInstall(){ if(installEvt){ installEvt.prompt(); const r=await installEvt.userChoice; installEvt=null; if(r.outcome==='accepted') dlg.close(); else $('inst-msg').textContent=installMsg(); return; } toast(installMsg()); }
-(function manifest(){ if(window.__ADB||!location.protocol.startsWith('http')||isPlayer) return; const icon=document.querySelector('link[rel="apple-touch-icon"]');
+function installHelp(){ const ua=navigator.userAgent, m=$('inst-msg');
+  const t=isStandalone()?'Vous utilisez déjà l\'application installée.'
+   :isIOS()?'Sur iPhone / iPad (Safari) : bouton Partager, puis « Sur l\'écran d\'accueil ».'
+   :/android/i.test(ua)?'Le navigateur ne propose pas l\'installation directe : menu ⋮ du navigateur, puis « Installer l\'application » ou « Ajouter à l\'écran d\'accueil ».'
+   :/firefox/i.test(ua)?'Firefox n\'installe pas les applis web : ouvrez Aldebaran dans Chrome ou Edge pour l\'installer.'
+   :'Le navigateur ne propose pas l\'installation directe : cliquez l\'icône d\'installation à droite de la barre d\'adresse, ou menu ⋮ › « Caster, enregistrer et partager » › « Installer la page en tant qu\'appli ». Si Aldebaran est déjà installée, ouvrez-la depuis vos applications.';
+  if(m) m.textContent=t; else toast(t); }
+async function doInstall(){ const ev=installEvt||window.__adbInstall;
+  if(ev){ try{ await ev.prompt(); const r=await ev.userChoice; installEvt=window.__adbInstall=null; if(r&&r.outcome==='accepted'){ toast('Installation en cours…'); try{ dlg.close(); }catch(e){} } else installHelp(); return; }catch(e){ installEvt=window.__adbInstall=null; } }
+  installHelp(); }
+(function manifest(){ if(!location.protocol.startsWith('http')||isPlayer) return;
+  /* dans l'appli complète (accueil), même manifeste que la fiche : la page reste installable */
+  if(window.__ADB){ if(!document.querySelector('link[rel="manifest"]')){ const l=document.createElement('link'); l.rel='manifest'; l.href='manifest.webmanifest'; document.head.appendChild(l); } return; } const icon=document.querySelector('link[rel="apple-touch-icon"]');
   const m={name:'Aldebaran MJ',short_name:'Aldebaran MJ',start_url:location.href.split('?')[0],display:'standalone',background_color:'#ffffff',theme_color:'#ffffff',icons:icon?[{src:icon.href,sizes:'180x180',type:'image/png'}]:[]};
   const l=document.createElement('link'); l.rel='manifest'; l.href='data:application/manifest+json,'+encodeURIComponent(JSON.stringify(m)); document.head.appendChild(l);
   if('serviceWorker' in navigator) fetch('sw.js',{method:'HEAD'}).then(r=>{ if(r.ok) navigator.serviceWorker.register('sw.js').catch(()=>{}); }).catch(()=>{}); })();
