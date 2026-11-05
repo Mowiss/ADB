@@ -2204,6 +2204,14 @@ svg.i{width:18px;height:18px;flex:none}
 .band{height:60px;opacity:.26}
 #world{position:absolute;left:0;top:0;width:0;height:0;overflow:visible;transform-origin:0 0;z-index:1}
 #bg{position:absolute;left:0;top:0;background-size:100% 100%;background-repeat:no-repeat}
+#bg video{width:100%;height:100%;object-fit:fill;display:block;pointer-events:none}
+.fdgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;max-height:40vh;overflow:auto}
+.fd{display:flex;flex-direction:column;gap:5px;border:1px solid var(--rule);border-radius:10px;background:var(--paper);padding:5px;text-align:left}
+.fd:hover{border-color:var(--ink)}.fd.on{border-color:var(--c-res);box-shadow:inset 0 0 0 1px var(--c-res)}
+.fd .m{position:relative;aspect-ratio:16/9;border-radius:6px;overflow:hidden;background:var(--faint)}
+.fd .m video,.fd .m img{width:100%;height:100%;object-fit:cover;display:block}
+.fd .m i{position:absolute;right:5px;bottom:5px;font-style:normal;font-size:9.5px;font-weight:700;letter-spacing:.08em;background:rgba(47,51,64,.75);color:#fff;border-radius:999px;padding:1px 7px}
+.fd b{font-size:12px;color:var(--ink-strong);padding:0 3px 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #grid{position:absolute;left:0;top:0;pointer-events:none;background-size:40px 40px;background-image:linear-gradient(to right,rgba(47,51,64,.075) 1px,transparent 1px),linear-gradient(to bottom,rgba(47,51,64,.075) 1px,transparent 1px)}
 #grid::after{content:"";position:absolute;inset:0;border:1.5px solid var(--rule)}
 .nogrid #grid{background-image:none}
@@ -2917,7 +2925,10 @@ function renderDrawings(){
 }
 function renderBoard(){
   if(S.bg&&!S.bgW){ S.bgW=S.bgH=4000; }   // ancienne table : fond sur 4000 × 4000
-  const bg=$('bg'), gr=$('grid'); bg.style.backgroundImage=S.bg?`url("${S.bg}")`:'';
+  const bg=$('bg'), gr=$('grid');
+  if(S.bg&&S.bgKind==='video'){ bg.style.backgroundImage=''; let v=bg.querySelector('video');
+    if(!v||v.getAttribute('src')!==S.bg){ bg.innerHTML=`<video src="${esc(S.bg)}" muted loop autoplay playsinline disablepictureinpicture></video>`; v=bg.querySelector('video'); v.muted=true; const pl=v.play(); if(pl) pl.catch(()=>{}); } }
+  else { if(bg.firstChild) bg.innerHTML=''; bg.style.backgroundImage=S.bg?`url("${S.bg}")`:''; }
   bg.style.width=gr.style.width=(S.bg?S.bgW:0)+'px'; bg.style.height=gr.style.height=(S.bg?S.bgH:0)+'px'; gr.hidden=!S.bg; board.classList.toggle('inf',!S.bg);
   document.body.classList.toggle('nogrid',S.grid===false);
   $('fow').hidden=S.light; renderFoW();
@@ -3197,11 +3208,11 @@ function showRoll(label,n){ const th=threshold(), R=diceBlock(n,th); logRoll(lab
    Scénario : scènes (fond, nuit/jour, tracés, jetons de scène)
    ========================================================= */
 function snapshot(){ if(S.scene<0||!S.scenes[S.scene]) return; S.tokens.forEach(t=>t.scene=true); const sc=S.scenes[S.scene], ids=new Set(S.tokens.filter(t=>t.scene).map(t=>t.id));
-  Object.assign(sc,{bg:S.bg,bgW:S.bgW||0,bgH:S.bgH||0,light:S.light,drawings:clone(S.drawings),tokens:clone(S.tokens.filter(t=>t.scene)),order:S.order.filter(id=>ids.has(id))}); }
+  Object.assign(sc,{bg:S.bg,bgKind:S.bgKind||'',bgW:S.bgW||0,bgH:S.bgH||0,light:S.light,drawings:clone(S.drawings),tokens:clone(S.tokens.filter(t=>t.scene)),order:S.order.filter(id=>ids.has(id))}); }
 function loadScene(i){
   closeCard(); const keep=S.tokens.filter(t=>!t.scene); S.tokens=keep; S.order=S.order.filter(id=>keep.some(t=>t.id===id)); S.scene=i;
   const sc=S.scenes[i];
-  if(sc){ S.bg=sc.bg||''; S.bgW=sc.bgW||0; S.bgH=sc.bgH||0; S.light=sc.light!==false; S.drawings=clone(sc.drawings||[]); S.tokens.push(...clone(sc.tokens||[])); S.order.push(...(sc.order||[]).filter(id=>tok(id))); }
+  if(sc){ S.bg=sc.bg||''; S.bgKind=sc.bgKind||''; S.bgW=sc.bgW||0; S.bgH=sc.bgH||0; S.light=sc.light!==false; S.drawings=clone(sc.drawings||[]); S.tokens.push(...clone(sc.tokens||[])); S.order.push(...(sc.order||[]).filter(id=>tok(id))); }
   if(typeof PL!=='undefined') S.tokens.forEach(t=>{ const P=t.owner&&PL.get(t.owner); if(P&&P.sheet) Object.assign(t,tokenData(P.sheet)); });
   S.turn=-1; renderAllBoard(); renderScenes(); markDirty(); sync(); if(typeof renderPtabs==='function') renderPtabs();
   if(sc) send({t:'scene',title:sc.title||`Scène ${i+1}`,idx:i+1});
@@ -3306,7 +3317,7 @@ function send(m){ if(isPlayer) return; m.n=Date.now()*100+(seq++%100); m.from='m
   if(bc&&m.t!=='state') return;   // le canal direct suffit ; le stockage local ne garde que l'état complet
   try{ localStorage.setItem(LS_SYNC,JSON.stringify(m)); }catch(e){ if(m.t==='state'){ const lite={...m,bg:m.bg&&m.bg.length>1.5e6?'':m.bg}; try{ localStorage.setItem(LS_SYNC,JSON.stringify(lite)); }catch(e2){} } } }
 function publicState(){ const pub=t=>({id:t.id,type:t.type,name:t.name,hp:t.hp,hpMax:t.hpMax,img:t.img,ico:t.ico,x:t.x,y:t.y,s:t.s,r:t.r,owner:t.owner||null,note:t.type==='prop'&&t.note?' ':''});
-  return {t:'state',bg:S.bg,bgW:S.bgW||0,bgH:S.bgH||0,light:S.light,grid:S.grid,drawings:S.drawings,tokens:S.tokens.filter(t=>!t.hidden).map(pub),order:S.order.filter(id=>{ const t=tok(id); return t&&!t.hidden; }),turn:turnIdForPlayers(),view:viewMsg()}; }
+  return {t:'state',bg:S.bg,bgKind:S.bgKind||'',bgW:S.bgW||0,bgH:S.bgH||0,light:S.light,grid:S.grid,drawings:S.drawings,tokens:S.tokens.filter(t=>!t.hidden).map(pub),order:S.order.filter(id=>{ const t=tok(id); return t&&!t.hidden; }),turn:turnIdForPlayers(),view:viewMsg()}; }
 function turnIdForPlayers(){ const L=orderToks(), c=L[S.turn]; return c&&!c.hidden?c.id:null; }
 let syncRaf=0; function sync(){ if(isPlayer||syncRaf) return; syncRaf=requestAnimationFrame(()=>{ syncRaf=0; send(publicState()); }); }
 let syncT=0; function syncLater(){ clearTimeout(syncT); syncT=setTimeout(sync,120); }
@@ -3318,12 +3329,12 @@ function openPlayerView(){ playerWin=window.open(location.href.split('?')[0].spl
 function receive(m){ if(!m) return;
   if(!isPlayer){ if(m.t==='hello') sync(); return; }
   if(m.t==='me'){ ME=m.id; renderTokens(); followMe(); return; }
-  if(m.t==='bg'){ S.bg=m.data||''; renderBoard(); return; }
+  if(m.t==='bg'){ S.bg=m.data||''; S.bgKind=m.kind||''; renderBoard(); return; }
   if(m.t==='closed'){ $('pwait').textContent='Le maître du destin a fermé la table'; $('pwait').classList.remove('gone'); return; }
   if(m.from!=='mj'||m.n<=lastSeq) return; lastSeq=m.n;
   if(m.t==='state'){ $('pwait').classList.add('gone');
     if(m.bg!==undefined) S.bg=m.bg;
-    Object.assign(S,{bgW:m.bgW||0,bgH:m.bgH||0,light:m.light,grid:m.grid,drawings:m.drawings,tokens:m.tokens,order:m.order}); const L=orderToks(); S.turn=L.findIndex(t=>t.id===m.turn);
+    Object.assign(S,{bgKind:m.bgKind||'',bgW:m.bgW||0,bgH:m.bgH||0,light:m.light,grid:m.grid,drawings:m.drawings,tokens:m.tokens,order:m.order}); const L=orderToks(); S.turn=L.findIndex(t=>t.id===m.turn);
     if(myDrag){ const t=tok(myDrag.id); if(t){ t.x=myDrag.x; t.y=myDrag.y; } }
     renderAllBoard(); if(NETVIEW) followMe(); else if(m.view) setPlayerView(m.view); }
   else if(m.t==='roll') toast(`${m.who} · ${m.label} : ${m.succ} réussite${m.succ>1?'s':''}`);
@@ -3569,15 +3580,43 @@ function wire(){
 function nextTurn(){ const L=orderToks(); if(!L.length) return; S.turn=(S.turn+1)%L.length; renderTracker(); markTurn(); const on=$('tracker').querySelector('.tr.on'); if(on) on.scrollIntoView({block:'nearest',inline:'center',behavior:'smooth'}); const t=L[S.turn]; if(t) centerOnIfOut(t); markDirty(); sync(); }
 function centerOnIfOut(t){ const r=board.getBoundingClientRect(), [sx,sy]=toScreen(t.x,t.y); if(sx<r.left+60||sx>r.right-60||sy<r.top+60||sy>r.bottom-60) centerOn(t.x,t.y); }
 function setBackground(f){ const r=new FileReader(); r.onload=()=>{ const im=new Image(); im.onload=()=>{ const M=4096, k=Math.min(1,M/Math.max(im.width,im.height)), c=document.createElement('canvas'); c.width=Math.round(im.width*k); c.height=Math.round(im.height*k);
-  c.getContext('2d').drawImage(im,0,0,c.width,c.height); const first=!S.bg; S.bg=c.toDataURL('image/jpeg',.86); S.bgW=c.width; S.bgH=c.height;
+  c.getContext('2d').drawImage(im,0,0,c.width,c.height); const first=!S.bg; S.bg=c.toDataURL('image/jpeg',.86); S.bgKind='img'; S.bgW=c.width; S.bgH=c.height;
   S.tokens.forEach(t=>{ t.x=bx(t.x); t.y=by(t.y); }); renderAllBoard(); fitBoard(); markDirty(); sync(); toast(`Fond de carte appliqué : le plateau fait ${c.width} × ${c.height} px`); }; im.src=r.result; }; r.readAsDataURL(f); }
+/* Catalogue des fonds de carte : le dossier « fonds/ » à côté de l'appli (images et vidéos).
+   Un fichier déposé dans le dossier sur GitHub apparaît tout seul ; fonds/catalogue.json peut lui donner un joli nom. */
+const FONDS='fonds/', FOND_RE=/\.(mp4|webm|m4v|mov|jpe?g|png|webp|gif|avif)$/i;
+const fondKind=f=>/\.(mp4|webm|m4v|mov)$/i.test(f)?'video':'img';
+const fondName=f=>{ const n=f.replace(/\.[^.]+$/,'').replace(/[_-]+/g,' ').trim(); return n.charAt(0).toUpperCase()+n.slice(1); };
+let fondsCache=null;
+async function loadFonds(){ if(fondsCache) return fondsCache; const out=new Map();
+  try{ const r=await fetch(FONDS+'catalogue.json',{cache:'no-store'}); if(r.ok){ const j=await r.json(); (Array.isArray(j)?j:j.fonds||[]).forEach(x=>{ if(x&&x.fichier&&FOND_RE.test(x.fichier)) out.set(x.fichier,{f:x.fichier,nom:x.nom||fondName(x.fichier)}); }); } }catch(e){}
+  try{ const m=location.hostname.match(/^([^.]+)\.github\.io$/i), repo=location.pathname.split('/').filter(Boolean)[0];
+    if(m&&repo){ const r=await fetch(`https://api.github.com/repos/${m[1]}/${repo}/contents/fonds`); if(r.ok){ (await r.json()).forEach(x=>{ if(x.type==='file'&&FOND_RE.test(x.name)&&!out.has(x.name)) out.set(x.name,{f:x.name,nom:fondName(x.name)}); }); } } }catch(e){}
+  fondsCache=[...out.values()]; return fondsCache; }
+function mediaSize(url,kind){ return new Promise((res,rej)=>{ if(kind==='video'){ const v=document.createElement('video'); v.preload='metadata'; v.muted=true; v.onloadedmetadata=()=>res([v.videoWidth,v.videoHeight]); v.onerror=rej; v.src=url; }
+  else { const im=new Image(); im.onload=()=>res([im.naturalWidth,im.naturalHeight]); im.onerror=rej; im.src=url; } }); }
+async function setFond(f){ const url=FONDS+f, kind=fondKind(f);
+  try{ const [w,h]=await mediaSize(url,kind); S.bg=url; S.bgKind=kind; S.bgW=w; S.bgH=h;
+    S.tokens.forEach(t=>{ t.x=bx(t.x); t.y=by(t.y); }); renderAllBoard(); fitBoard(); markDirty(); sync(); toast(`Fond « ${fondName(f)} » : le plateau fait ${w} × ${h} px`); }
+  catch(e){ toast('Ce fond est introuvable ou illisible',true); } }
 function bgDialog(){
-  openDialog(`<h3>Fond de carte</h3><div class="drop ${S.bg?'has':''}" id="bg-drop" style="${S.bg?`background-image:url('${S.bg}')`:''}">Cliquer ou déposer une image ici</div>
-    <p class="meta" style="text-align:left">Sans fond, le plateau est infini. Avec un fond, il prend la taille de l'image (1 px = 1 px, une case = 40 px) et les jetons restent dedans. Le fond est enregistré avec la scène active.</p>
-    <div class="actions"><button class="btn ghost" type="button" id="bg-rm" ${S.bg?'':'disabled'} style="margin-right:auto">${IB('bin')}Retirer</button><button class="btn" type="button" data-close>Fermer</button></div>`);
+  const cur=S.bg?(S.bgKind==='video'?`<video src="${esc(S.bg)}" muted loop autoplay playsinline></video>`:`<img src="${S.bg}" alt="">`):'';
+  openDialog(`<h3>Fond de carte</h3>
+    <div class="subttl">Catalogue</div><div class="fdgrid" id="fd-grid"><p class="meta" style="text-align:left">Chargement du catalogue…</p></div>
+    <div class="subttl">Depuis l'ordinateur</div>
+    <div class="drop" id="bg-drop">Cliquer ou déposer une image ici</div>
+    <p class="meta" style="text-align:left">Sans fond, le plateau est infini. Avec un fond (image ou vidéo), il prend sa taille (1 px = 1 px, une case = 40 px) et les jetons restent dedans. Le fond est enregistré avec la scène active.</p>
+    <div class="actions"><button class="btn ghost" type="button" id="bg-rm" ${S.bg?'':'disabled'} style="margin-right:auto">${IB('bin')}Retirer le fond</button><button class="btn" type="button" data-close>Fermer</button></div>`);
+  loadFonds().then(L=>{ const g=$('fd-grid'); if(!g) return;
+    g.innerHTML=L.length?L.map(x=>{ const u=FONDS+x.f, v=fondKind(x.f)==='video';
+      return `<button type="button" class="fd${S.bg===u?' on':''}" data-f="${esc(x.f)}" title="${esc(x.nom)}"><span class="m">${v?`<video src="${esc(u)}#t=2" muted loop playsinline preload="metadata"></video><i>VIDÉO</i>`:`<img src="${esc(u)}" alt="" loading="lazy">`}</span><b>${esc(x.nom)}</b></button>`; }).join('')
+      :`<p class="meta" style="text-align:left">${location.protocol.startsWith('http')?'Le dossier « fonds » est vide pour l\'instant.':'Le catalogue s\'affiche sur la version en ligne de l\'appli.'}</p>`;
+    g.querySelectorAll('.fd').forEach(b=>{ const v=b.querySelector('video');
+      if(v){ b.onmouseenter=()=>{ const pl=v.play(); if(pl) pl.catch(()=>{}); }; b.onmouseleave=()=>v.pause(); }
+      b.onclick=()=>{ dlg.close(); setFond(b.dataset.f); }; }); });
   const d=$('bg-drop'); d.onclick=()=>{ imgTarget=null; const i=document.createElement('input'); i.type='file'; i.accept='image/*'; i.onchange=()=>{ if(i.files[0]){ setBackground(i.files[0]); dlg.close(); } }; i.click(); };
   d.ondragover=e=>e.preventDefault(); d.ondrop=e=>{ e.preventDefault(); const f=e.dataTransfer.files[0]; if(f&&f.type.startsWith('image/')){ setBackground(f); dlg.close(); } };
-  $('bg-rm').onclick=()=>{ S.bg=''; S.bgW=S.bgH=0; renderAllBoard(); markDirty(); sync(); dlg.close(); };
+  $('bg-rm').onclick=()=>{ S.bg=''; S.bgKind=''; S.bgW=S.bgH=0; renderAllBoard(); markDirty(); sync(); dlg.close(); };
 }
 
 /* =========================================================
@@ -3608,7 +3647,7 @@ const players=()=>[...NET.conns].filter(c=>c.pid);
 
 /* envoi : le fond de carte ne part qu'une fois par joueur (et quand il change) */
 function netSendTo(c,m){ if(!c.open) return; try{
-  if(m.t==='state'){ const id=bgId(m.bg); if(c.bgId!==id){ c.send({t:'bg',data:m.bg||''}); c.bgId=id; } const o=Object.assign({},m); delete o.bg; c.send(o); }
+  if(m.t==='state'){ const id=bgId(m.bg); if(c.bgId!==id){ c.send({t:'bg',data:m.bg||'',kind:m.bgKind||''}); c.bgId=id; } const o=Object.assign({},m); delete o.bg; c.send(o); }
   else c.send(m); }catch(e){} }
 function netSend(m){ if(!NET.conns.size) return; NET.conns.forEach(c=>{ if(c.pid) netSendTo(c,m); }); }
 const PL=new Map();   // joueurs de la séance : pid → {pid,name,sheet,online}
