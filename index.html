@@ -3005,17 +3005,18 @@ function bindToken(el){
     e.preventDefault(); e.stopPropagation();
     const t=tok(el.dataset.id); if(!t) return;
     const [wx,wy]=toWorld(e.clientX,e.clientY), d={t,el,dx:t.x-wx,dy:t.y-wy,sx:e.clientX,sy:e.clientY,moved:false};
-    el.parentNode.appendChild(el); el.setPointerCapture(e.pointerId);
-    const mv=ev=>{ if(!d.moved&&Math.hypot(ev.clientX-d.sx,ev.clientY-d.sy)<5) return;
+    el.parentNode.appendChild(el);
+    /* écoute sur la fenêtre : le jeton suit la souris même si elle va plus vite que lui */
+    const mv=ev=>{ if(ev.pointerId!==e.pointerId) return; if(!d.moved&&Math.hypot(ev.clientX-d.sx,ev.clientY-d.sy)<5) return;
       if(!d.moved){ d.moved=true; el.classList.add('moving'); document.body.classList.add('dragging'); closeCard(); }
       const [x,y]=toWorld(ev.clientX,ev.clientY); t.x=bx(Math.round(x+d.dx)); t.y=by(Math.round(y+d.dy)); moveTokenEl(t);
       const b=$('bin').getBoundingClientRect(); $('bin').classList.toggle('over',ev.clientX>=b.left-8&&ev.clientX<=b.right+8&&ev.clientY>=b.top-8&&ev.clientY<=b.bottom+8);
       fowLater(); if(!d.raf) d.raf=requestAnimationFrame(()=>{ d.raf=0; send({t:'mv',id:t.id,x:t.x,y:t.y,s:t.s}); }); };
-    const up=()=>{ el.removeEventListener('pointermove',mv); el.removeEventListener('pointerup',up); el.removeEventListener('pointercancel',up);
+    const up=ev=>{ if(ev&&ev.pointerId!==e.pointerId) return; window.removeEventListener('pointermove',mv); window.removeEventListener('pointerup',up); window.removeEventListener('pointercancel',up);
       el.classList.remove('moving'); document.body.classList.remove('dragging');
       if(d.moved){ if($('bin').classList.contains('over')){ $('bin').classList.remove('over'); removeToken(t.id); return; } markDirty(); sync(); }
       else toggleCard(t.id); };
-    el.addEventListener('pointermove',mv); el.addEventListener('pointerup',up); el.addEventListener('pointercancel',up);
+    window.addEventListener('pointermove',mv); window.addEventListener('pointerup',up); window.addEventListener('pointercancel',up);
   });
   el.addEventListener('wheel',e=>{ if(!e.shiftKey) return; e.preventDefault(); e.stopPropagation(); const t=tok(el.dataset.id); if(!t) return;
     t.s=clamp(Math.round(((t.s||1)+(e.deltaY>0?-.1:.1))*10)/10,.5,5); moveTokenEl(t); placeCard(); markDirty(); send({t:'mv',id:t.id,x:t.x,y:t.y,s:t.s}); },{passive:false});
@@ -3497,8 +3498,8 @@ function wire(){
   // plateau
   board.addEventListener('pointerdown',boardDown);
   board.addEventListener('mousedown',e=>{ if(e.button===1) e.preventDefault(); });   // pas de défilement automatique au clic molette
-  board.addEventListener('dragstart',e=>e.preventDefault()); board.addEventListener('pointermove',boardMove);
-  board.addEventListener('pointerup',boardUp); board.addEventListener('pointercancel',boardUp);
+  board.addEventListener('dragstart',e=>e.preventDefault()); window.addEventListener('pointermove',boardMove);
+  window.addEventListener('pointerup',boardUp); window.addEventListener('pointercancel',boardUp);
   board.addEventListener('wheel',e=>{ if(e.shiftKey) return; e.preventDefault(); zoomAt(e.clientX,e.clientY,e.deltaY>0?1/1.12:1.12); },{passive:false});
   board.addEventListener('contextmenu',e=>{ e.preventDefault(); if(e.target.closest('.tk')||e.target.closest('#card')) return; const [x,y]=toWorld(e.clientX,e.clientY); ping(x,y); send({t:'ping',x,y}); });
   board.addEventListener('dragover',e=>e.preventDefault());
