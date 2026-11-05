@@ -3009,6 +3009,7 @@ function bindToken(el){
   el.addEventListener('wheel',e=>{ if(!e.shiftKey) return; e.preventDefault(); e.stopPropagation(); const t=tok(el.dataset.id); if(!t) return;
     t.s=clamp(Math.round(((t.s||1)+(e.deltaY>0?-.1:.1))*10)/10,.5,5); moveTokenEl(t); placeCard(); markDirty(); send({t:'mv',id:t.id,x:t.x,y:t.y,s:t.s}); },{passive:false});
   el.addEventListener('contextmenu',e=>{ e.preventDefault(); e.stopPropagation(); });
+  el.addEventListener('touchend',e=>{ if(e.cancelable) e.preventDefault(); },{passive:false});
 }
 function removeToken(id){ const t=tok(id); if(!t) return; S.tokens=S.tokens.filter(x=>x.id!==id); S.order=S.order.filter(x=>x!==id); if(cardId===id) closeCard();
   const L=orderToks(); if(S.turn>=L.length) S.turn=L.length?0:-1;
@@ -3028,8 +3029,9 @@ function addToken(t){
 let cardId=null;
 function toggleCard(id){ if(cardId===id) closeCard(); else openCard(id); }
 function closeCard(){ if(!cardId) return; const el=document.querySelector(`.tk[data-id="${cardId}"]`); if(el) el.classList.remove('open'); cardId=null; $('card').hidden=true; }
+let cardAt=0;
 function openCard(id){
-  const t=tok(id); if(!t) return; closeCard(); cardId=id;
+  const t=tok(id); if(!t) return; closeCard(); cardId=id; cardAt=performance.now();
   const el=document.querySelector(`.tk[data-id="${id}"]`); if(el) el.classList.add('open');
   renderCard(); $('card').hidden=false; placeCard();
 }
@@ -3050,7 +3052,7 @@ function renderCard(){
   if(t.type==='player') body+=`<span class="cap">Vision dans le noir</span><div class="crange"><input type="range" min="0" max="1000" step="10" value="${t.r??250}" id="c-r"><b id="c-rv">${((t.r??250)/CELL*CELL_M).toFixed(1).replace('.',',')} m</b></div>`;
   body+=`<div class="cfoot"><span class="cap">Maj + molette : taille</span><button class="mini" type="button" data-a="del">${IB('bin')}Retirer</button></div>`;
   c.innerHTML=head+body;
-  c.onclick=e=>{ const b=e.target.closest('button'); if(!b) return;
+  c.onclick=e=>{ const b=e.target.closest('button'); if(!b) return; if(performance.now()-cardAt<450) return;
     if(b.dataset.a==='close') closeCard();
     else if(b.dataset.a==='hide'){ t.hidden=!t.hidden; tokenEl(t); renderCard(); renderTracker(); renderFoW(); markDirty(); sync(); toast(t.hidden?'Caché aux joueurs':'Visible des joueurs'); }
     else if(b.dataset.a==='edit'){ entityDialog(t.type,t); }
@@ -3393,7 +3395,10 @@ function loadText(txt,handle,name){
   S=Object.assign(blankTable(),o.table); setFile(name||null);
   dirty=false; lastSaved=new Date(); closeCard(); renderAll(); if(S.view){ V={...S.view}; applyView(); } else fitBoard(); saveLocal(true); updateSaveState(); sync(); toast('Table chargée');
 }
-function newTable(){ confirmDialog('Nouvelle table','La table actuelle sera remplacée (pensez à l\'enregistrer). Le bestiaire est conservé.','Nouvelle table',()=>{ const best=S.bestiary; S=blankTable(); S.bestiary=best; setFile(null); dirty=false; lastSaved=null; closeCard(); renderAll(); fitBoard(); saveLocal(true); updateSaveState(); sync(); }); }
+function newTable(){ confirmDialog('Effacer la campagne en cours','Toute la table est remise à zéro : scènes, fonds de carte, tracés, jetons, initiative et notes. Le fichier déjà enregistré dans le dossier n\'est pas touché ; le bestiaire et le code de la table en ligne sont conservés. Cette action est définitive pour la table ouverte.','Tout effacer',()=>{
+    const best=S.bestiary, code=S.netCode, open=S.netOpen; S=blankTable(); S.bestiary=best; S.netCode=code; S.netOpen=open;
+    setFile(null); dirty=false; lastSaved=null; closeCard(); if(typeof sheetPid!=='undefined'&&sheetPid) closeSheet(); timers=[]; renderTimers();
+    renderAll(); fitBoard(); saveLocal(true); updateSaveState(); sync(); if(typeof renderPtabs==='function') renderPtabs(); toast('Campagne effacée : la table repart de zéro'); }); }
 let autoTimer=null;
 function setupAutosave(){ clearInterval(autoTimer); if(isPlayer||!+prefs.autosave) return;
   autoTimer=setInterval(async()=>{ if(!dirty) return; if(!saveLocal(true)) return; if(fileName&&dirHandle&&await dirOK(false)){ try{ await writeDir(fileName); }catch(e){} } dirty=false; lastSaved=new Date(); updateSaveState(); },prefs.autosave*1000); }
@@ -3408,7 +3413,6 @@ function settings(){
   openDialog(`<h3>Paramètres</h3>
     <div class="subttl">Sauvegarde</div>
     <div class="savegrid">
-      <button type="button" class="sv" id="p-new">${IB('newf')}<span>Nouvelle table</span></button>
       <button type="button" class="sv" id="p-open">${IB('open')}<span>Ouvrir une campagne…</span></button>
       <button type="button" class="sv" id="p-save">${IB('save')}<span>Enregistrer <kbd>Ctrl+S</kbd></span></button>
       <button type="button" class="sv" id="p-saveas">${IB('saveas')}<span>Enregistrer dans un dossier… <kbd>Ctrl+Maj+S</kbd></span></button>
@@ -3418,6 +3422,7 @@ function settings(){
     <p class="meta" style="text-align:left">La campagne s'enregistre dans le même dossier que les fiches des aventuriers, sous le nom <b>campagne.adb</b> (modifiable). La sauvegarde automatique la garde dans ce navigateur et la réécrit dans le dossier.</p>
     <div class="subttl">Plateau</div>
     <label class="switch"><input type="checkbox" id="p-grid" ${S.grid!==false?'checked':''}>Afficher la grille (1 case = 0,5 m)</label>
+    <div class="inst"><div><b>Effacer la campagne en cours</b><span>Remet la table à zéro (avec confirmation). Le fichier enregistré n'est pas touché.</span></div><button class="btn danger" type="button" id="p-new">${IB('bin')}Effacer</button></div>
     <div class="inst"><div><b>Application</b><span id="inst-msg">${installMsg()}</span></div><button class="btn" type="button" id="p-install" ${isStandalone()?'disabled':''}>${isStandalone()?'Installée':'Installer'}</button></div>
     <div class="actions" style="justify-content:space-between"><span class="meta">Aldebaran MJ · version ${APP_VER}</span><span style="display:flex;gap:8px">${window.__ADB?`<button class="btn ghost" type="button" id="p-home" title="Revenir au choix Aventurier / Maître du destin">${IB('home')}Accueil</button>`:''}<button class="btn ghost" type="button" id="p-guide">${IB('help')}Guide</button><button class="btn ghost" type="button" data-close>Fermer</button></span></div>`);
   $('p-new').onclick=newTable; $('p-open').onclick=()=>{ dlg.close(); openFile(); }; $('p-save').onclick=()=>{ dlg.close(); save(); }; $('p-saveas').onclick=()=>{ dlg.close(); saveAs(); };
@@ -3684,8 +3689,8 @@ function renderNetBody(){ const b=$('net-body'); if(!b||!dlg.open) return;
       <div class="subttl">Joueurs connectés</div>${NET.pending.size?`<p class="meta" style="text-align:left">${NET.pending.size} joueur${NET.pending.size>1?'s':''} en cours de connexion…</p>`:''}
       <div class="nplayers">${L.length?L.map(c=>{ const t=S.tokens.find(x=>x.owner===c.pid); return `<div class="np"><i></i><b>${esc(c.name)}</b><small>${t?`${t.hp} / ${t.hpMax} PV`:''}</small></div>`; }).join(''):'<p class="meta" style="text-align:left">Personne pour l\'instant.</p>'}</div>
       <div class="actions"><button class="btn ghost" type="button" id="net-new" style="margin-right:auto" title="Changer le code de la table">Nouveau code</button><button class="btn danger" type="button" id="net-close">Fermer la table</button><button class="btn" type="button" data-close>OK</button></div>`;
-    $('net-close').onclick=()=>{ closeTable(); toast('Table fermée'); };
-    $('net-new').onclick=()=>{ closeTable(); S.netCode=newCode(); markDirty(); openTable(); };
+    $('net-close').onclick=()=>{ const k=players().length; confirmDialog('Fermer la table',`La table en ligne sera fermée${k?` et ${k} joueur${k>1?'s':''} déconnecté${k>1?'s':''}`:''}. Vous pourrez la rouvrir avec le même code.`,'Fermer la table',()=>{ closeTable(); toast('Table fermée'); }); };
+    $('net-new').onclick=()=>{ confirmDialog('Nouveau code','La table est fermée puis rouverte sous un nouveau code : les joueurs connectés devront se reconnecter avec ce code.','Changer de code',()=>{ closeTable(); S.netCode=newCode(); markDirty(); openTable().then(netDialog); }); };
     if(link){ $('net-copy').onclick=()=>{ (navigator.clipboard?navigator.clipboard.writeText(link):Promise.reject()).then(()=>toast('Lien copié')).catch(()=>{ b.querySelector('.nlink input').select(); document.execCommand('copy'); toast('Lien copié'); }); };
       loadScript(['https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js']).then(()=>{ const q=$('net-qr'); if(q&&!q.firstChild&&window.QRCode) new QRCode(q,{text:link,width:300,height:300,colorDark:'#2f3340',colorLight:'#ffffff'}); }).catch(()=>{}); }
   }
