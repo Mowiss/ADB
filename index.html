@@ -33,58 +33,25 @@ button{font:inherit;color:inherit;cursor:pointer}
 #splash .skip{position:absolute;bottom:22px;left:0;right:0;text-align:center;color:#a3a8b6;font-size:12px;letter-spacing:.2em;text-transform:uppercase;transition:opacity .4s}
 .choosing #splash{cursor:default}
 .choosing #splash .skip{opacity:0}
-.choosing #logo{width:min(54vw,430px);transform:translate(-50%,calc(-50% - min(21vh,190px)))}
-.bands{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:0}
-.ribbon{position:absolute;left:-25%;width:150%;top:84%;transform:translateY(-50%) rotate(-14deg);display:flex;flex-direction:column;gap:12px}
-.band{height:46px;opacity:.26;clip-path:inset(0 100% 0 0);transition:clip-path .8s ease-in-out}
-.choosing .band{clip-path:inset(0 0 0 0)}
-#choice{position:fixed;left:0;right:0;top:calc(50% + min(4vh,40px));z-index:2;display:flex;justify-content:center;align-items:stretch;gap:0;padding:0 20px}
-.role{position:relative;flex:0 0 min(340px,42vw);width:min(340px,42vw);display:flex;flex-direction:column;align-items:center;gap:10px;background:transparent;border:0;border-radius:16px;padding:18px 18px 22px;text-align:center;opacity:0;transform:translateY(14px);transition:opacity .5s,transform .5s}
-.choosing .role{opacity:1;transform:none}
-.choosing .role[data-k="mj"]{transition-delay:.12s}
-.role .ic{width:76px;height:76px;color:var(--rc);transition:transform .25s}
-.role .ic svg{width:100%;height:100%;overflow:visible}
-.role .ic .dot{fill:var(--danger)}
-.role .ic .tr{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
-.role .t{display:block;width:100%;height:34px;overflow:visible}
-.role .t text{font-family:var(--f-title);font-weight:300;font-size:23px;letter-spacing:.24em;fill:var(--ink-strong);stroke:var(--ink-strong);stroke-width:.7;stroke-opacity:0}
-.role .bar{display:block;width:44px;height:6px;border-radius:3px;background:var(--rb);opacity:.9;transition:width .3s}
-.role .last{position:absolute;top:2px;left:50%;transform:translateX(-50%);font-size:9.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--rc);opacity:0;transition:opacity .4s .8s}
-.choosing .role.was .last{opacity:1}
-.role:hover .bar,.role:focus-visible .bar{width:150px}
-.role:hover .ic,.role:focus-visible .ic{transform:translateY(-4px)}
-.role:hover .t text,.role:focus-visible .t text{fill:var(--rc)}
+.bands{display:none}
+#choice{position:fixed;left:0;right:0;bottom:calc(9vh + env(safe-area-inset-bottom,0px));z-index:2;display:flex;justify-content:center;align-items:center;gap:min(48px,3.5vw);padding:0 12px;flex-wrap:nowrap}
+.role{position:relative;background:transparent;border:0;padding:10px 4px 12px;font-family:var(--f-title);font-weight:300;font-size:min(22px,2.6vw);letter-spacing:.55em;margin-right:-.55em;color:var(--ink-strong);white-space:nowrap;transition:color .25s}
+.role span{display:inline-block;opacity:0}
+.role::after{content:"";position:absolute;left:50%;right:50%;bottom:2px;height:1px;background:currentColor;transition:left .3s,right .3s}
+.role:hover,.role:focus-visible{color:var(--rc)}
+.role:hover::after,.role:focus-visible::after{left:0;right:.55em}
 .role:focus-visible{outline:none}
-.or{width:1px;background:var(--rule);margin:18px 6px;opacity:0;transition:opacity .6s .3s}
-.choosing .or{opacity:1}
-.leaving #choice,.leaving #logo,.leaving .bands{opacity:0;transition:opacity .35s}
-@media (max-width:640px){
-  .choosing #logo{width:min(72vw,360px);transform:translate(-50%,calc(-50% - 30vh))}
-  #choice{top:30vh;flex-direction:column;align-items:center}
-  .role{width:min(320px,86vw);padding:10px}
-  .role .ic{width:58px;height:58px}
-  .or{width:120px;height:1px;margin:4px 0}
-}
-@media (prefers-reduced-motion:reduce){#logo,.role,.band,.or{transition:none}}
+.or{flex:none;width:1px;height:1.6em;background:var(--ink-strong);font-size:min(22px,2.6vw);opacity:0;transition:opacity .6s .3s}
+.choosing .or{opacity:.5}
+.leaving #choice,.leaving #logo{opacity:0;transition:opacity .35s}
 </style>
 </head>
 <body>
-<div class="bands" aria-hidden="true"><div class="ribbon"><div class="band" style="background:var(--b-yel)"></div><div class="band" style="background:var(--b-blu)"></div><div class="band" style="background:var(--b-gre)"></div><div class="band" style="background:var(--b-red)"></div><div class="band" style="background:var(--b-pin)"></div><div class="band" style="background:var(--b-vio)"></div></div></div>
 <div id="splash"><div id="logo"><canvas id="cv" aria-label="Logo Aldebaran"></canvas></div><div class="skip">Cliquer pour passer</div></div>
 <div id="choice" hidden>
-  <button class="role" type="button" data-k="ply" style="--rc:var(--c-res);--rb:var(--b-blu)" title="Aventurier (1)">
-    <span class="last">Dernier choix</span>
-    <span class="ic"><svg viewBox="0 0 48 48" aria-hidden="true"><path class="dot" d="M26.97 32.08L27.05 32.38L27.12 32.68L27.17 32.98L27.21 33.28L27.23 33.59L27.24 33.9L27.23 34.2L27.21 34.51L27.17 34.81L27.12 35.11L27.05 35.41L26.97 35.71L26.87 36.0L26.76 36.29L26.64 36.57L26.5 36.84L26.35 37.11L26.18 37.37L26.01 37.62L25.82 37.86L25.62 38.09L25.41 38.31L25.19 38.52L24.95 38.72L24.71 38.91L24.46 39.09L24.2 39.25L23.94 39.4L23.66 39.54L23.38 39.67L23.1 39.78L22.81 39.87L22.51 39.95L22.21 40.02L21.91 40.07L21.6 40.11L21.3 40.13L20.99 40.14L20.69 40.13L20.38 40.11L20.08 40.07L19.77 40.02L19.47 39.95L19.18 39.87L18.89 39.78L18.6 39.67L18.32 39.54L18.05 39.4L17.78 39.25L17.52 39.09L17.27 38.91L17.03 38.72L16.8 38.52L16.58 38.31L16.36 38.09L16.16 37.86L15.98 37.62L15.8 37.37L15.64 37.11L15.48 36.84L15.35 36.57L15.22 36.29L15.11 36.0L15.02 35.71L14.93 35.41L14.87 35.11L14.81 34.81L14.78 34.51L14.75 34.2L14.75 33.9L14.75 33.59L14.78 33.28L14.81 32.98L14.87 32.68L14.93 32.38L15.02 32.08L15.11 31.79L15.22 31.51L15.35 31.23L15.48 30.95L15.64 30.69L15.8 30.43L15.98 30.18L16.16 29.93L16.36 29.7L16.58 29.48L16.8 29.27L17.03 29.07L17.27 28.88L17.52 28.7L17.78 28.54L18.05 28.39L18.32 28.25L18.6 28.13L18.89 28.02L19.18 27.92L19.47 27.84L19.77 27.77L20.08 27.72L20.38 27.68L20.69 27.66L20.91 27.65L21.3 27.66L21.6 27.68L21.91 27.72L22.21 27.77L22.51 27.84L22.81 27.92L23.1 28.02L23.38 28.13L23.66 28.25L23.94 28.39L24.2 28.54L24.46 28.7L24.71 28.88L24.95 29.07L25.19 29.27L25.41 29.48L25.62 29.7L25.82 29.93L26.01 30.18L26.18 30.43L26.35 30.69L26.5 30.95L26.64 31.23L26.76 31.51L26.87 31.79Z"/><path class="tr" d="M4.86 4.86L43.14 4.86L43.14 43.14L4.86 43.14Z"/><circle class="tr" cx="24.0" cy="24.0" r="23.08"/><circle class="tr" cx="20.99" cy="33.9" r="6.25"/><path class="tr" d="M17.56 24.52L17.55 24.52L17.55 24.48L17.55 24.44L17.56 24.41L17.57 24.37L17.59 24.33L17.61 24.29L17.63 24.25L17.66 24.21L17.7 24.17L17.74 24.14L17.78 24.1L17.83 24.06L17.88 24.03L17.94 23.99L18.0 23.96L18.06 23.93L18.13 23.9L18.19 23.88L18.26 23.85L18.34 23.83L18.41 23.8L18.48 23.79L18.56 23.77L18.64 23.75L18.71 23.74L18.79 23.73L18.87 23.73L18.95 23.72L19.02 23.72L19.1 23.72L19.17 23.72L19.24 23.73L19.31 23.74L19.38 23.75L19.44 23.76L19.5 23.77L19.56 23.79L19.61 23.81L19.66 23.83L19.71 23.86L19.75 23.88L19.79 23.91L19.82 23.94L19.85 23.97L19.87 24.01L19.89 24.04L19.9 24.08L19.91 24.11"/><path class="tr" d="M17.55 24.53L17.89 28.47"/><path class="tr" d="M19.9 24.06L19.91 24.11"/><path class="tr" d="M19.91 24.11L19.91 24.11"/><path class="tr" d="M19.91 24.11L20.91 27.65"/><path class="tr" d="M19.91 24.11A8.43 8.43 0 1 0 17.55 24.53"/><path class="tr" d="M29.79 26.28L25.05 29.15"/><path class="tr" d="M27.0 32.2L31.46 28.43"/><path class="tr" d="M29.75 26.32L29.79 26.28L29.84 26.25L29.89 26.22L29.94 26.19L30.0 26.18L30.06 26.16L30.12 26.15L30.18 26.15L30.25 26.15L30.32 26.16L30.39 26.17L30.46 26.19L30.53 26.21L30.6 26.24L30.67 26.27L30.74 26.31L30.81 26.35L30.88 26.39L30.95 26.44L31.02 26.5L31.08 26.55L31.15 26.61L31.21 26.68L31.27 26.74L31.32 26.81L31.38 26.89L31.43 26.96L31.47 27.03L31.52 27.11L31.56 27.19L31.59 27.27L31.62 27.35L31.65 27.42L31.67 27.5L31.69 27.58L31.7 27.66L31.71 27.73L31.72 27.81L31.72 27.88L31.71 27.95L31.7 28.02L31.69 28.08L31.67 28.14L31.64 28.2L31.61 28.26L31.58 28.31L31.55 28.35L31.51 28.4L31.46 28.43L31.42 28.47"/><path class="tr" d="M31.46 28.43A5.32 5.32 0 1 0 29.79 26.28"/></svg></span>
-    <svg class="t" viewBox="0 0 340 34" preserveAspectRatio="xMidYMid meet"><text x="35" y="27" textLength="270" lengthAdjust="spacing">AVENTURIER</text></svg>
-    <i class="bar"></i>
-  </button>
+  <button class="role" type="button" data-k="ply" style="--rc:var(--c-res)" title="Aventurier (1)">AVENTURIER</button>
   <span class="or" aria-hidden="true"></span>
-  <button class="role" type="button" data-k="mj" style="--rc:var(--c-per);--rb:var(--b-vio)" title="Maître du destin (2)">
-    <span class="last">Dernier choix</span>
-    <span class="ic"><svg viewBox="0 0 50 50" aria-hidden="true"><polygon class="tr" points="24.93,47.55 2.0,31.14 2.67,20.13 24.85,2.45 47.25,20.28 48.0,31.22"/><path class="tr" d="M24.93 47.55L24.93 37.96M43.78 31.04L48.0 31.22M6.05 31.07L2.0 31.14M6.05 31.07L24.85 2.45M24.85 2.45L43.78 31.04M43.78 31.04L24.93 37.96M24.93 37.96L6.05 31.07"/><circle class="dot" cx="24.9" cy="24" r="2.6"/></svg></span>
-    <svg class="t" viewBox="0 0 340 34" preserveAspectRatio="xMidYMid meet"><text x="35" y="27" textLength="270" lengthAdjust="spacing">MAÎTRE DU DESTIN</text></svg>
-    <i class="bar"></i>
-  </button>
+  <button class="role" type="button" data-k="mj" style="--rc:var(--c-per)" title="Maître du destin (2)">MAÎTRE DU DESTIN</button>
 </div>
 
 <script type="text/x-aldebaran" id="app-ply">
@@ -3380,12 +3347,12 @@ runOpening();
   /* Le choix apparaît sous le logo */
   function choose(){
     const h=document.documentElement; $('choice').hidden=false;
-    document.querySelectorAll('.role').forEach(b=>{ b.classList.toggle('was',b.dataset.k===last); b.onclick=()=>launch(b.dataset.k); });
+    document.querySelectorAll('.role').forEach(b=>{ b.onclick=()=>launch(b.dataset.k); });
     requestAnimationFrame(()=>requestAnimationFrame(()=>h.classList.add('choosing')));
-    document.querySelectorAll('.role .t text').forEach((t,k)=>{ const s=t.textContent; t.innerHTML=[...s].map(ch=>`<tspan>${ch===' '?'&#160;':ch}</tspan>`).join('');
-      if(t.animate&&!matchMedia('(prefers-reduced-motion: reduce)').matches) [...t.querySelectorAll('tspan')].forEach((sp,i)=>sp.animate([{strokeOpacity:1,strokeDasharray:'240 240',strokeDashoffset:240,fillOpacity:0},{strokeOpacity:1,strokeDasharray:'240 240',strokeDashoffset:0,fillOpacity:0,offset:.72},{strokeOpacity:0,strokeDasharray:'240 240',strokeDashoffset:0,fillOpacity:1}],{delay:700+k*250+i*55,duration:480,fill:'backwards',easing:'ease-out'})); });
-    document.querySelectorAll('.role .ic .tr').forEach((p,i)=>{ let L=120; try{ L=Math.ceil(p.getTotalLength())+2; }catch(e){}
-      if(p.animate&&!matchMedia('(prefers-reduced-motion: reduce)').matches) p.animate([{strokeDasharray:`${L} ${L}`,strokeDashoffset:L},{strokeDasharray:`${L} ${L}`,strokeDashoffset:0}],{delay:500+i*90,duration:700,fill:'backwards',easing:'ease-in-out'}); });
+    const still=matchMedia('(prefers-reduced-motion: reduce)').matches;
+    document.querySelectorAll('.role').forEach((b,k)=>{ const t=b.textContent; b.innerHTML=[...t].map(ch=>`<span>${ch===' '?'&#160;':ch}</span>`).join('');
+      [...b.children].forEach((sp,i)=>{ if(still||!sp.animate){ sp.style.opacity=1; return; }
+        sp.animate([{opacity:0,transform:'translateY(6px)'},{opacity:1,transform:'none'}],{delay:250+k*420+i*45,duration:420,fill:'forwards',easing:'ease-out'}); }); });
     window.addEventListener('keydown',onKey);
     setTimeout(()=>{ const f=document.querySelector(`.role[data-k="${last||'ply'}"]`); if(f) f.focus({preventScroll:true}); },900);
   }
