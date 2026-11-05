@@ -2281,7 +2281,7 @@ svg.i{width:18px;height:18px;flex:none}
 .tk.down .face{filter:grayscale(1);opacity:.45}
 .tk.down .dead{display:grid}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
-.tk .turn{position:absolute;left:50%;bottom:calc(100% + 10px);width:26px;height:26px;margin-left:-13px;color:var(--gold);display:none;pointer-events:none}
+.tk .turn{position:absolute;left:50%;bottom:calc(100% + 4px);width:38px;height:38px;margin-left:-19px;color:var(--gold);display:none;pointer-events:none;stroke-width:1.8;overflow:visible}
 .tk.current .turn{display:block;animation:bob 1s ease-in-out infinite}
 .tk.current .face{box-shadow:0 0 0 3px var(--paper),0 0 0 5px var(--gold)}
 @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
@@ -2350,7 +2350,8 @@ svg.i{width:18px;height:18px;flex:none}
 
 /* Barre du bas : initiative + sabliers */
 .bottom{position:fixed;left:0;right:var(--tabs);bottom:0;height:var(--bot);background:var(--paper);border-top:1px solid var(--rule);display:flex;align-items:center;gap:12px;padding:0 14px;z-index:10}
-.bottom .ttl{width:150px;flex:none}
+.bottom .ttl{width:112px;height:22px;flex:none}
+.bottom .ttl text{font-size:14px;letter-spacing:.3em}
 .bsec{display:flex;align-items:center;gap:8px;min-width:0}
 .bsec.ini{flex:1}
 .tracker{display:flex;align-items:center;gap:10px;overflow-x:auto;padding:6px 4px;min-width:0;flex:1}
@@ -2645,7 +2646,7 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 
 <footer class="bottom" id="bottom">
   <div class="bsec ini">
-    <svg class="ttl" data-title><text x="0" y="23">INITIATIVE</text></svg>
+    <svg class="ttl" data-title><text x="0" y="16">INITIATIVE</text></svg>
     <button class="mini ico" type="button" id="b-shuffle" title="Mélanger l'ordre"></button>
     <button class="mini solid ico" type="button" id="b-next" title="Tour suivant (Espace)"></button>
     <div class="tracker" id="tracker"></div>
@@ -2794,6 +2795,7 @@ const IC={
   book:'<path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H19v15H5.5A1.5 1.5 0 0 0 4 19.5z"/><path d="M4 19.5A1.5 1.5 0 0 0 5.5 21H19v-3"/><path d="M8 7h7M8 10.5h5"/>',
   dice:'<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 9h.01M15 15h.01M15 9h.01M9 15h.01M12 12h.01" stroke-width="2.6"/>',
   pause:'<path d="M8 5v14M16 5v14"/>', play:'<path d="M7 4.5l12 7.5-12 7.5z"/>',
+  hand:'<g transform="rotate(180 12 12)"><path d="M18 11a2 2 0 1 1 4 0v3a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15V4a2 2 0 0 1 4 0v6a2 2 0 0 1 4 0v1a2 2 0 0 1 3 0z" fill="var(--paper)"/><path d="M11 10V9M15 11v-.5M18 11v1"/></g>',
   chevd:'<path d="M5 8l7 9 7-9" stroke-width="2.4"/>',
   sword:'<path d="M2.5 7.5h16.5v3.2H11.4l-1 2.1c-.3.6-.9.9-1.5.9h-.4l-1 4.8H4.2l1.7-7H2.5z"/><path d="M19 8.6h2.2M9.6 10.7v1.8"/>'
 };
@@ -2870,7 +2872,7 @@ function tokenHTML(t){
   const p=hpRatio(t), C=2*Math.PI*46, alive=ALIVE(t);
   return `${alive?`<svg class="ring" viewBox="0 0 100 100"><circle class="bgc" cx="50" cy="50" r="46"/><circle class="hp ${hpCls(p)}" cx="50" cy="50" r="46" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C*(1-p)).toFixed(1)}"/></svg>`:''}
     <div class="face">${faceHTML(t)}</div>
-    ${alive?`<div class="dead">${SKULL}</div><svg class="turn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">${IC.chevd}</svg>`:''}
+    ${alive?`<div class="dead">${SKULL}</div><svg class="turn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">${IC.hand}</svg>`:''}
     ${t.type==='prop'&&t.note?'<i class="ndot"></i>':''}
     ${t.type==='light'?`<div class="halo" style="width:${t.r*2}px;height:${t.r*2}px"></div>`:''}
     ${t.name&&t.type!=='light'?`<div class="nm">${esc(t.name)}</div>`:''}`;
