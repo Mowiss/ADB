@@ -2467,7 +2467,7 @@ svg.i{width:18px;height:18px;flex:none}
 .ldrawer.open{box-shadow:inset -3px 0 0 var(--tc,transparent)!important}
 .rb.on-tool:not([aria-pressed="true"]){color:var(--c-sav)}
 .ldrawer .wxb{min-width:62px}
-#lbest .brow,#lbest .bhead{grid-template-columns:30px minmax(0,1fr) 22px 22px auto;gap:6px}#lbest .brow .del,#lbest .bhead>span:last-child{display:none}#lbest .bss i{width:16px;font-size:11.5px}#lbest .bhead .bss svg{width:13px;height:13px}#lbest .bface{width:30px;height:30px}
+#lbest .brow,#lbest .bhead{grid-template-columns:30px minmax(0,1fr) 22px 22px auto;gap:6px}#lbest .bhead>span:last-child{display:none}#lbest .brow{position:relative}#lbest .brow .del{position:absolute;right:4px;top:50%;transform:translateY(-50%);background:var(--paper);opacity:0;transition:opacity .15s}#lbest .brow:hover .del,#lbest .brow .del:focus-visible{opacity:1}@media (hover:none){#lbest .brow .del{opacity:1;position:static;transform:none}#lbest .brow{grid-template-columns:30px minmax(0,1fr) 22px 22px auto 26px}}#lbest .bss i{width:16px;font-size:11.5px}#lbest .bhead .bss svg{width:13px;height:13px}#lbest .bface{width:30px;height:30px}
 .mtgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:8px}.mtgrid .wxb svg,.ldrawer .wxb svg{width:22px;height:22px}
 .mcat{font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft);margin:4px 0 -4px}
 .stgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:6px}
@@ -4245,10 +4245,11 @@ function bindBestList(list,onPick,drag){ { const bh=list.querySelector('.bhead')
       document.addEventListener('pointermove',mv,{passive:false}); document.addEventListener('pointerup',up); document.addEventListener('pointercancel',up); }; }); }
 function renderBestPanel(){ const box=$('lbest-body'); if(!box) return; const todo=bookTodo(), q=$('lb-q')?$('lb-q').value:'';
   box.innerHTML=`<div class="bsearch"><input class="line-in" id="lb-q" placeholder="Rechercher un MOB…" autocomplete="off" value="${esc(q)}"></div>
-    <div class="wxrow"><button type="button" class="wxb" id="lb-new">${IB('plus')}<span>Nouveau MOB</span></button>${todo?`<button type="button" class="wxb" id="lb-imp" title="Ajouter les créatures du livre Aldebaran">${IB('book')}<span>Importer le livre (${todo})</span></button>`:''}</div>
+    <div class="wxrow"><button type="button" class="wxb" id="lb-new">${IB('plus')}<span>Nouveau MOB</span></button>${todo?`<button type="button" class="wxb" id="lb-imp" title="Ajouter les créatures du livre Aldebaran">${IB('book')}<span>Importer le livre (${todo})</span></button>`:''}${S.bestiary.some(m=>m.cat)?`<button type="button" class="wxb" id="lb-rmbook" title="Retirer du bestiaire toutes les créatures du livre (vos MOBs restent)">${IB('bin')}<span>Retirer le livre</span></button>`:''}</div>
     <p class="meta" style="text-align:left;margin:0">Glissez un MOB sur le plateau pour l'invoquer ; cliquez-le pour l'ouvrir.</p>
     <div class="blist" id="lb-list"></div>`;
   const draw=()=>{ const l=$('lb-list'); l.innerHTML=bestRows($('lb-q').value); bindBestList(l,m=>{ if(m) mobDialog(null,m); else draw(); },true); };
+  if($('lb-rmbook')) $('lb-rmbook').onclick=()=>{ const n=S.bestiary.filter(m=>m.cat).length; confirmDialog('Retirer le livre',`Les ${n} créatures du livre Aldebaran quittent le bestiaire. Vos propres MOBs restent ; les jetons déjà posés ne bougent pas.`,'Retirer',()=>{ S.bestiary=S.bestiary.filter(m=>!m.cat); markDirty(); toast(`${n} créature${n>1?'s':''} retirée${n>1?'s':''}`); renderBestPanel(); }); };
   $('lb-q').oninput=draw; $('lb-new').onclick=()=>mobDialog(); if($('lb-imp')) $('lb-imp').onclick=()=>{ const n=importBook(); toast(n?`Bestiaire du livre : ${n} créature${n>1?'s':''} ajoutée${n>1?'s':''}`:'Le bestiaire du livre est déjà complet'); renderBestPanel(); };
   draw(); }
 
