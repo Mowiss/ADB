@@ -1005,7 +1005,7 @@ async function openFile(){
   $('file-open').click();
 }
 async function folderDialog(){
-  const L=[]; try{ for await (const [n,h] of dirHandle.entries()){ if(h.kind==='file'&&n.toLowerCase().endsWith('.adb')){ try{ const d=JSON.parse(await (await h.getFile()).text()), c=d.character||d; L.push({n,name:c.name||n,race:RACE_LABEL[c.race]||'',lvl:c.level}); }catch(e){} } } }catch(e){}
+  const L=[]; try{ for await (const [n,h] of dirHandle.entries()){ if(h.kind==='file'&&n.toLowerCase().endsWith('.adb')){ try{ const d=JSON.parse(await (await h.getFile()).text()); if(d&&d.kind==='mj') continue; const c=d.character||d; L.push({n,name:c.name||n,race:RACE_LABEL[c.race]||'',lvl:c.level}); }catch(e){} } } }catch(e){}
   L.sort((a,b)=>a.name.localeCompare(b.name,'fr'));
   const nCat=CAT.filter(x=>!x.del).length;
   openDialog(`<h3>${esc(dirHandle.name)}</h3><p class="meta" style="text-align:left;margin:0">${L.length} fiche${L.length>1?'s':''} · catalogue de ${nCat} objet${nCat>1?'s':''}</p>
@@ -2823,7 +2823,7 @@ const nid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const clone=o=>JSON.parse(JSON.stringify(o));
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const tok=id=>S.tokens.find(t=>t.id===id);
-let dirty=false, lastSaved=null, fileHandle=null, fileName=null;
+let dirty=false, lastSaved=null, fileName=null;
 let V={x:0,y:0,z:1};          // vue : écran = monde*z + (x,y)
 
 function markDirty(){ dirty=true; updateSaveState(); }
@@ -3116,7 +3116,7 @@ function entityDialog(type,edit,preset){
       const prof={name:r.name,ico:r.ico,img:r.img,hpMax:r.hpMax,stats:{...r.stats},attacks:clone(r.attacks)}, i=S.bestiary.findIndex(m=>m.name===r.name);
       if(i>=0) S.bestiary[i]=prof; else S.bestiary.push(prof); S.bestiary.sort((a,b)=>a.name.localeCompare(b.name,'fr')); markDirty(); toast(`« ${r.name} » enregistré au bestiaire`); };
   }
-  if($('e-adb')) $('e-adb').onclick=()=>{ dlg.close(); openFile(); };
+  if($('e-adb')) $('e-adb').onclick=()=>{ dlg.close(); openPicker(); };
   const real=edit;
   $('e-ok').onclick=()=>{ const r=read(); dlg.close();
     if(real){ Object.assign(real,r); tokenEl(real); renderTracker(); if(cardId===real.id) renderCard(); markDirty(); sync(); }
@@ -3331,15 +3331,54 @@ function serialize(){ snapshot(); S.view={...V}; return JSON.stringify({format:'
 function fileBase(){ const sc=S.scenes[0]; return 'table_mj'+(sc&&sc.title?'_'+sc.title.trim().replace(/[^\p{L}\p{N}_-]+/gu,'_'):''); }
 function saveLocal(quiet){ const ok=ls.set(LS_TABLE,serialize()); if(!ok&&!quiet) toast('Mémoire du navigateur pleine : enregistrez la table dans un fichier',true); return ok; }
 function savePrefs(){ ls.set(LS_PREF,JSON.stringify(prefs)); }
-async function writeHandle(h){ const w=await h.createWritable(); await w.write(serialize()); await w.close(); }
-async function save(){ if(fileHandle){ try{ await writeHandle(fileHandle); afterSave(); return; }catch(e){} } await saveAs(); }
-async function saveAs(){
-  if(window.showSaveFilePicker){ try{ const h=await showSaveFilePicker({suggestedName:(fileName||fileBase()+'.adb'),types:[{description:'Table Aldebaran',accept:{'application/json':['.adb']}}]}); await writeHandle(h); fileHandle=h; fileName=h.name; afterSave(); }catch(e){ if(e.name!=='AbortError') toast('Enregistrement impossible',true); } return; }
-  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([serialize()],{type:'application/json'})); a.download=fileName||fileBase()+'.adb'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),4000); afterSave();
+/* Dossier partagé avec les fiches Aventurier : la campagne (campagne.adb) va à côté des personnages */
+const CAMP='campagne.adb', LS_FILE='aldebaran.mj.fichier';
+const kv={ op(mode,fn){ return new Promise((res,rej)=>{ let r; try{ r=indexedDB.open('aldebaran',1); }catch(e){ rej(e); return; }
+    r.onupgradeneeded=()=>r.result.createObjectStore('kv');
+    r.onsuccess=()=>{ try{ const tx=r.result.transaction('kv',mode), q=fn(tx.objectStore('kv')); tx.oncomplete=()=>res(q&&q.result); tx.onerror=()=>rej(tx.error); }catch(e){ rej(e); } };
+    r.onerror=()=>rej(r.error); }); },
+  get(k){ return this.op('readonly',st=>st.get(k)).catch(()=>null); },
+  set(k,v){ return this.op('readwrite',st=>st.put(v,k)).catch(()=>null); } };
+let dirHandle=null;
+const canDir=()=>!!window.showDirectoryPicker;
+async function dirOK(ask){ if(!dirHandle) return false; try{ const o={mode:'readwrite'}; if(await dirHandle.queryPermission(o)==='granted') return true; return ask?(await dirHandle.requestPermission(o))==='granted':false; }catch(e){ return false; } }
+async function writeDir(name){ const h=await dirHandle.getFileHandle(name,{create:true}), w=await h.createWritable(); await w.write(serialize()); await w.close(); }
+async function pickDir(){ try{ const h=await showDirectoryPicker({id:'aldebaran',mode:'readwrite'}); dirHandle=h; await kv.set('dir',h); updateSaveState(); return true; }catch(e){ if(e.name!=='AbortError') toast('Dossier inaccessible',true); return false; } }
+const setFile=n=>{ fileName=n; ls.set(LS_FILE,n||''); };
+async function save(){
+  if(!canDir()) return download();
+  if(!dirHandle) dirHandle=await kv.get('dir');
+  if(!dirHandle||!await dirOK(true)){ if(!await pickDir()) return; }
+  try{ setFile(fileName||CAMP); await writeDir(fileName); afterSave(); }catch(e){ toast('Impossible d\'écrire dans le dossier',true); }
 }
-function afterSave(){ saveLocal(true); dirty=false; lastSaved=new Date(); updateSaveState(); toast('Table enregistrée'); }
+async function saveAs(){
+  if(!canDir()) return download(); if(!await pickDir()) return;
+  openDialog(`<h3>Enregistrer la campagne</h3><p class="meta" style="text-align:left">Dossier : <b>${esc(dirHandle.name)}</b> — celui des fiches des aventuriers.</p>
+    <div class="field"><label class="cap" for="sv-name">Nom du fichier</label><input class="line-in" id="sv-name" style="font-weight:700;font-size:15px" value="${esc((fileName||CAMP).replace(/\.adb$/i,''))}"></div>
+    <div class="actions"><button class="btn ghost" type="button" data-close>Annuler</button><button class="btn" type="button" id="sv-ok">${IB('save')}Enregistrer</button></div>`);
+  const go=async()=>{ const n=($('sv-name').value.trim()||'campagne').replace(/[\\/:*?"<>|]+/g,'_')+'.adb'; dlg.close(); try{ setFile(n); await writeDir(n); afterSave(); }catch(e){ toast('Impossible d\'écrire dans le dossier',true); } };
+  $('sv-ok').onclick=go; $('sv-name').onkeydown=e=>{ if(e.key==='Enter') go(); };
+}
+function download(){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([serialize()],{type:'application/json'})); a.download=fileName||CAMP; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),4000); afterSave(); }
+function afterSave(){ saveLocal(true); dirty=false; lastSaved=new Date(); updateSaveState(); toast(`Campagne enregistrée${dirHandle?` dans « ${dirHandle.name} »`:''}`); }
+/* Ouvrir : les campagnes du dossier commun (ou un fichier ailleurs) */
 async function openFile(){
-  if(window.showOpenFilePicker){ try{ const [h]=await showOpenFilePicker({types:[{description:'Aldebaran',accept:{'application/json':['.adb','.json']}}]}); const f=await h.getFile(); loadText(await f.text(),h); }catch(e){ if(e.name!=='AbortError') toast('Ouverture impossible',true); } return; }
+  if(canDir()){ if(!dirHandle) dirHandle=await kv.get('dir'); if(dirHandle&&await dirOK(true)) return campDialog(); }
+  return openPicker();
+}
+async function campDialog(){
+  const L=[]; try{ for await (const [n,h] of dirHandle.entries()){ if(h.kind!=='file'||!/\.adb$/i.test(n)) continue;
+    try{ const d=JSON.parse(await (await h.getFile()).text()); if(d&&d.kind==='mj'&&d.table) L.push({n,h,at:d.savedAt,sc:(d.table.scenes||[]).length}); }catch(e){} } }catch(e){}
+  L.sort((a,b)=>(b.at||'').localeCompare(a.at||''));
+  openDialog(`<h3>Ouvrir une campagne</h3><p class="meta" style="text-align:left">Dossier : <b>${esc(dirHandle.name)}</b></p>
+    <div class="dscroll" style="max-height:44vh;gap:6px">${L.length?L.map((x,i)=>`<button type="button" class="sv" data-i="${i}">${IB('scroll')}<span style="flex:1;display:flex;flex-direction:column;gap:1px"><b>${esc(x.n.replace(/\.adb$/i,''))}</b><small style="color:var(--ink-soft);font-weight:600">${x.sc} scène${x.sc>1?'s':''}${x.at?' · '+new Date(x.at).toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'}):''}</small></span></button>`).join(''):'<div class="empty">Aucune campagne dans ce dossier.</div>'}</div>
+    <div class="actions"><button class="btn ghost" type="button" id="cp-dir" style="margin-right:auto">${IB('open')}Autre dossier…</button><button class="btn ghost" type="button" id="cp-file">Un fichier…</button><button class="btn" type="button" data-close>Fermer</button></div>`);
+  document.querySelectorAll('#dlg-body [data-i]').forEach(b=>b.onclick=async()=>{ const x=L[+b.dataset.i]; dlg.close(); loadText(await (await x.h.getFile()).text(),null,x.n); });
+  $('cp-dir').onclick=async()=>{ dlg.close(); if(await pickDir()) campDialog(); };
+  $('cp-file').onclick=()=>{ dlg.close(); openPicker(); };
+}
+async function openPicker(){
+  if(window.showOpenFilePicker){ try{ const [h]=await showOpenFilePicker({types:[{description:'Aldebaran',accept:{'application/json':['.adb','.json']}}]}); const f=await h.getFile(); loadText(await f.text(),null,h.name); }catch(e){ if(e.name!=='AbortError') toast('Ouverture impossible',true); } return; }
   $('file-open').click();
 }
 $('file-open').onchange=async e=>{ const f=e.target.files[0]; e.target.value=''; if(f) loadText(await f.text(),null,f.name); };
@@ -3347,16 +3386,16 @@ function loadText(txt,handle,name){
   let o; try{ o=JSON.parse(txt); }catch(e){ toast('Fichier illisible',true); return; }
   if(o&&o.kind==='joueur'&&o.character){ playerFromAdb(o); return; }
   if(!o||o.kind!=='mj'||!o.table){ toast('Ce fichier n\'est pas une table MJ Aldebaran',true); return; }
-  S=Object.assign(blankTable(),o.table); fileHandle=handle||null; fileName=handle?handle.name:(name||null);
+  S=Object.assign(blankTable(),o.table); setFile(name||null);
   dirty=false; lastSaved=new Date(); closeCard(); renderAll(); if(S.view){ V={...S.view}; applyView(); } else fitBoard(); saveLocal(true); updateSaveState(); sync(); toast('Table chargée');
 }
-function newTable(){ confirmDialog('Nouvelle table','La table actuelle sera remplacée (pensez à l\'enregistrer). Le bestiaire est conservé.','Nouvelle table',()=>{ const best=S.bestiary; S=blankTable(); S.bestiary=best; fileHandle=null; fileName=null; dirty=false; lastSaved=null; closeCard(); renderAll(); fitBoard(); saveLocal(true); updateSaveState(); sync(); }); }
+function newTable(){ confirmDialog('Nouvelle table','La table actuelle sera remplacée (pensez à l\'enregistrer). Le bestiaire est conservé.','Nouvelle table',()=>{ const best=S.bestiary; S=blankTable(); S.bestiary=best; setFile(null); dirty=false; lastSaved=null; closeCard(); renderAll(); fitBoard(); saveLocal(true); updateSaveState(); sync(); }); }
 let autoTimer=null;
 function setupAutosave(){ clearInterval(autoTimer); if(isPlayer||!+prefs.autosave) return;
-  autoTimer=setInterval(async()=>{ if(!dirty) return; if(!saveLocal(true)) return; if(fileHandle){ try{ await writeHandle(fileHandle); }catch(e){} } dirty=false; lastSaved=new Date(); updateSaveState(); },prefs.autosave*1000); }
+  autoTimer=setInterval(async()=>{ if(!dirty) return; if(!saveLocal(true)) return; if(fileName&&dirHandle&&await dirOK(false)){ try{ await writeDir(fileName); }catch(e){} } dirty=false; lastSaved=new Date(); updateSaveState(); },prefs.autosave*1000); }
 function updateSaveState(){ const d=$('sdot'); if(d) d.classList.toggle('dirty',dirty);
   const s=$('savestate'); if(s){ s.classList.toggle('dirty',dirty); s.querySelector('span').textContent=dirty?'Modifications non enregistrées':lastSaved?`Enregistré à ${lastSaved.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}`:'Rien à enregistrer'; }
-  const f=$('filestate'); if(f) f.textContent=fileName?`Fichier : ${fileName}`:'Pas encore de fichier'; }
+  const f=$('filestate'); if(f) f.textContent=(dirHandle?`Dossier « ${dirHandle.name} »`:canDir()?'Pas encore de dossier':'Téléchargement (ce navigateur ne gère pas les dossiers)')+(fileName?` · ${fileName}`:''); }
 setInterval(()=>{ if(!isPlayer&&dirty) saveLocal(true); },15000);
 window.addEventListener('beforeunload',()=>{ if(!isPlayer) saveLocal(true); });
 
@@ -3366,13 +3405,13 @@ function settings(){
     <div class="subttl">Sauvegarde</div>
     <div class="savegrid">
       <button type="button" class="sv" id="p-new">${IB('newf')}<span>Nouvelle table</span></button>
-      <button type="button" class="sv" id="p-open">${IB('open')}<span>Ouvrir…</span></button>
+      <button type="button" class="sv" id="p-open">${IB('open')}<span>Ouvrir une campagne…</span></button>
       <button type="button" class="sv" id="p-save">${IB('save')}<span>Enregistrer <kbd>Ctrl+S</kbd></span></button>
-      <button type="button" class="sv" id="p-saveas">${IB('saveas')}<span>Enregistrer sous… <kbd>Ctrl+Maj+S</kbd></span></button>
+      <button type="button" class="sv" id="p-saveas">${IB('saveas')}<span>Enregistrer dans un dossier… <kbd>Ctrl+Maj+S</kbd></span></button>
     </div>
     <div class="mstate" id="savestate"><i></i><span></span></div><div class="mstate" id="filestate" style="padding-left:14px"></div>
     <div class="kv"><label for="p-auto">Sauvegarde automatique</label><select class="line-in" id="p-auto">${[[0,'Désactivée'],[30,'Toutes les 30 s'],[60,'Toutes les minutes'],[120,'Toutes les 2 min'],[300,'Toutes les 5 min']].map(([v,l])=>`<option value="${v}" ${+prefs.autosave===v?'selected':''}>${l}</option>`).join('')}</select></div>
-    <p class="meta" style="text-align:left">La table est gardée dans ce navigateur et réécrite dans son fichier .adb quand le navigateur le permet. « Ouvrir… » accepte aussi une fiche de l'appli joueur : le personnage rejoint la table.</p>
+    <p class="meta" style="text-align:left">La campagne s'enregistre dans le même dossier que les fiches des aventuriers, sous le nom <b>campagne.adb</b> (modifiable). La sauvegarde automatique la garde dans ce navigateur et la réécrit dans le dossier.</p>
     <div class="subttl">Plateau</div>
     <label class="switch"><input type="checkbox" id="p-grid" ${S.grid!==false?'checked':''}>Afficher la grille (1 case = 0,5 m)</label>
     <div class="inst"><div><b>Application</b><span id="inst-msg">${installMsg()}</span></div><button class="btn" type="button" id="p-install" ${isStandalone()?'disabled':''}>${isStandalone()?'Installée':'Installer'}</button></div>
@@ -3392,7 +3431,7 @@ function showGuide(){
     <h4>Vue joueur</h4><p>Le bouton « Vue joueur » ouvre une seconde fenêtre à glisser sur la TV ou le second écran : elle suit la caméra, les jetons, les tracés, la mesure, les signaux et le brouillard, sans rien des outils ni des secrets du MJ.</p>
     <h4>Table en ligne</h4><p>« En ligne » ouvre la table sous un code de 5 lettres (le même d'une séance à l'autre). Chaque joueur, dans sa fiche Aventurier, ouvre l'onglet <b>Table</b> et saisit le code, ou suit le lien / le QR code : sa fiche est partagée. Il voit le plateau centré sur son jeton (de la neige « NO SIGNAL » tant que vous ne l'avez pas posé) et montre des choses avec un pointeur à sa couleur ; seul le MJ déplace les jetons. Il apparaît dans un onglet au-dessus du bandeau bas : glissez son jeton sur la table pour le placer (il n'apparaît pas tout seul), cliquez l'onglet pour consulter sa fiche (mise à jour en direct). Son jeton suit sa fiche ; ses jets de dés s'affichent ici ; les PV changés sur la fiche flottante du jeton reviennent sur sa fiche. Connexion directe entre appareils (WebRTC), sans compte ni stockage sur un serveur.</p>
     <h4>Dés</h4><p>Pool de D10 : chaque dé au seuil (8 par défaut, réglable dans Jet libre) est une réussite, un 10 est un critique, un 1 un échec.</p>
-    <h4>Sauvegarde</h4><p>Fichier <b>.adb</b> (table MJ) : Ctrl+S, Ctrl+Maj+S pour choisir un autre fichier, sauvegarde automatique réglable dans les Paramètres.</p>
+    <h4>Sauvegarde</h4><p>La campagne est un fichier <b>campagne.adb</b> rangé dans le même dossier que les fiches des aventuriers (le dossier choisi côté Aventurier est repris tel quel). Ctrl+S l'enregistre, Ctrl+Maj+S permet de choisir un autre dossier ou un autre nom ; « Ouvrir une campagne… » liste les campagnes du dossier. Sauvegarde automatique réglable dans les Paramètres. Sur un navigateur qui ne gère pas les dossiers (Firefox, Safari), le fichier se télécharge.</p>
   </div><div class="actions"><button class="btn" type="button" data-close>Fermer</button></div>`);
 }
 let installEvt=window.__adbInstall||null;
@@ -3720,7 +3759,8 @@ if(isPlayer){
 } else {
   try{ const o=JSON.parse(ls.get(LS_TABLE)||'null'); if(o&&o.table) S=Object.assign(blankTable(),o.table); }catch(e){}
   renderAll(); if(S.view){ V={...S.view}; applyView(); } else fitBoard();
-  setupAutosave(); updateSaveState();
+  setupAutosave(); updateSaveState(); fileName=ls.get(LS_FILE)||null;
+  kv.get('dir').then(h=>{ if(h&&h.kind==='directory'){ dirHandle=h; updateSaveState(); } });
   if(S.netOpen){ S.netOpen=false; setTimeout(openTable,1200); }   // la table se rouvre avec le même code
   if(window.__adbLaunch){ const L=window.__adbLaunch; window.__adbLaunch=null; setTimeout(()=>loadText(L.text,null,L.name),300); }
   window.addEventListener('storage',e=>{ if(e.key===LS_SYNC+'.hello') sync(); });
