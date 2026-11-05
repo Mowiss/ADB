@@ -5071,16 +5071,22 @@ if(isPlayer){
   document.title='Aldebaran — Vue joueur';
   renderAllBoard(); fitBoard();
   window.addEventListener('resize',()=>{ if(NETVIEW) followMe(); else if(lastView) setPlayerView(lastView); });
-  if(NETVIEW){ $('pwait').classList.add('gone'); followMe(); window.addEventListener('message',e=>{ if(e.data&&e.data.__adb) receive(e.data.m); }); up({t:'ready'});
+  if(NETVIEW){ $('pwait').classList.add('gone'); V.z=.32; followMe(); window.addEventListener('message',e=>{ if(e.data&&e.data.__adb) receive(e.data.m); }); up({t:'ready'});
     /* le joueur ne déplace pas son jeton : il montre avec son pointeur */
     let pd=false, raf=0, last=null;
     const ptr=(e,end)=>{ const [x,y]=toWorld(e.clientX,e.clientY); last={x:Math.round(x),y:Math.round(y)};
       showPtr({pid:ME||'moi',name:'Vous',color:pcol(ME||'moi'),x:last.x,y:last.y,end});
       if(end){ up({t:'ptr',x:last.x,y:last.y,end:1}); return; } if(!raf) raf=requestAnimationFrame(()=>{ raf=0; up({t:'ptr',x:last.x,y:last.y}); }); };
-    board.addEventListener('pointerdown',e=>{ pd=true; try{ board.setPointerCapture(e.pointerId); }catch(err){} ptr(e); });
-    board.addEventListener('pointermove',e=>{ if(pd) ptr(e); });
-    const endp=e=>{ if(!pd) return; pd=false; ptr(e,true); }; board.addEventListener('pointerup',endp); board.addEventListener('pointercancel',endp);
-    board.addEventListener('wheel',e=>{ e.preventDefault(); V.z=clamp(V.z*(e.deltaY>0?1/1.12:1.12),.3,3); followMe(); },{passive:false}); }
+    /* zoom : molette, ou pincer à deux doigts — la vue reste centrée sur son jeton */
+    const PZ=[.06,2.5], touches=new Map(); let pinch=null;
+    const pdist=()=>{ const a=[...touches.values()]; return Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)||1; };
+    board.addEventListener('pointerdown',e=>{ touches.set(e.pointerId,{x:e.clientX,y:e.clientY});
+      if(touches.size===2){ if(pd){ pd=false; ptr(e,true); } pinch={d:pdist(),z:V.z}; return; }
+      pd=true; try{ board.setPointerCapture(e.pointerId); }catch(err){} ptr(e); });
+    board.addEventListener('pointermove',e=>{ if(touches.has(e.pointerId)) touches.set(e.pointerId,{x:e.clientX,y:e.clientY});
+      if(pinch&&touches.size>=2){ V.z=clamp(pinch.z*pdist()/pinch.d,PZ[0],PZ[1]); followMe(); return; } if(pd) ptr(e); });
+    const endp=e=>{ touches.delete(e.pointerId); if(touches.size<2) pinch=null; if(!pd) return; pd=false; ptr(e,true); }; board.addEventListener('pointerup',endp); board.addEventListener('pointercancel',endp);
+    board.addEventListener('wheel',e=>{ e.preventDefault(); V.z=clamp(V.z*(e.deltaY>0?1/1.12:1.12),PZ[0],PZ[1]); followMe(); },{passive:false}); }
   else { try{ const m=JSON.parse(ls.get(LS_SYNC)||'null'); if(m&&m.t==='state') receive(m); }catch(e){}
     const hello={t:'hello',from:'player'}; if(bc) bc.postMessage(hello); try{ localStorage.setItem(LS_SYNC+'.hello',Date.now()+''); }catch(e){} }
 } else {
