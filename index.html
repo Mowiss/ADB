@@ -456,6 +456,15 @@ dialog::backdrop{background:rgba(47,51,64,.42)}
 .sv:hover{border-color:var(--ink)}.sv svg{width:20px;height:20px;flex:none}.sv kbd{font-size:10.5px;color:var(--ink-soft);font-family:inherit;margin-left:4px}
 .btn svg{width:16px;height:16px;vertical-align:-3px;margin-right:4px}
 @media (max-width:480px){.savegrid{grid-template-columns:minmax(0,1fr)}}
+.addgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.addgrid button{display:flex;flex-direction:column;align-items:flex-start;gap:8px;border:1px solid var(--rule);background:var(--paper);border-radius:12px;padding:18px 16px;text-align:left;min-height:120px}
+.addgrid button:hover{border-color:var(--ink)}
+.addgrid svg{width:28px;height:28px}
+.addgrid b{font-size:15px;color:var(--ink-strong)}
+.addgrid span{font-size:12px;color:var(--ink-soft);line-height:1.35}
+.addgrid .cat-tile{background:var(--ink-strong);border-color:var(--ink-strong)}
+.addgrid .cat-tile b{color:#fff}.addgrid .cat-tile span{color:rgba(255,255,255,.7)}
+@media (max-width:420px){.addgrid{grid-template-columns:1fr}.addgrid button{min-height:0}}
 .typegrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
 .typegrid button{display:flex;flex-direction:column;align-items:flex-start;gap:6px;border:1px solid var(--rule);background:var(--paper);border-radius:10px;padding:12px;text-align:left}
 .typegrid button:hover{border-color:var(--ink)}
@@ -812,7 +821,7 @@ function derive(c){
 /* =========================================================
    ÉTAT, SAUVEGARDE (.adb) — l'adaptateur Store sera branché sur Firebase plus tard
    ========================================================= */
-const APP_VER='44';
+const APP_VER='45';
 const LS_SHEET='aldebaran.joueur.fiche', LS_PREF='aldebaran.joueur.prefs';
 const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v);return true}catch(e){return false}}};
 let prefs={autosave:60};
@@ -1582,16 +1591,22 @@ function fxDialog(edit){
   };
 }
 document.addEventListener('click',e=>{ if(e.target.closest('#b-addfx')) fxDialog(); });
+/* Ajouter : deux choix seulement — le catalogue, ou créer un objet (puis choix du type) */
 $('b-additem').onclick=()=>{
-  const grid=(T)=>Object.entries(T).map(([k,t])=>`<button type="button" data-newtype="${k}">${svgI(t.ico,t.col)}<b>${t.label}</b><span>${t.hint}</span></button>`).join('');
   const nCat=catAll().length;
-  openDialog(`<h3>Ajouter</h3><div class="subttl">Équipement</div><div class="typegrid">${grid(ITEM_TYPES)}<button type="button" class="cat-tile" id="open-cat">${svgI('book','#fff')}<b>Catalogue</b><span>${nCat} objet${nCat>1?'s':''}</span></button></div><div class="subttl">Cybernétique &amp; mutations</div><div class="typegrid">${grid(CYB_TYPES)}</div><div class="actions"><button class="btn ghost" type="button" data-close>Annuler</button></div>`);
+  openDialog(`<h3>Ajouter</h3><div class="addgrid"><button type="button" class="cat-tile" id="open-cat">${svgI('book','#fff')}<b>Catalogue</b><span>${nCat} objet${nCat>1?'s':''} prêts à l'emploi</span></button><button type="button" id="open-new">${svgI('pen')}<b>Créer un objet</b><span>Arme, armure, soin, cybernétique…</span></button></div><div class="actions"><button class="btn ghost" type="button" data-close>Annuler</button></div>`);
+  $('open-cat').onclick=()=>catDialog();
+  $('open-new').onclick=()=>newItemDialog();
+};
+function newItemDialog(){
+  const grid=(T)=>Object.entries(T).map(([k,t])=>`<button type="button" data-newtype="${k}">${svgI(t.ico,t.col)}<b>${t.label}</b><span>${t.hint}</span></button>`).join('');
+  openDialog(`<h3>Créer un objet</h3><div class="subttl">Équipement</div><div class="typegrid">${grid(ITEM_TYPES)}</div><div class="subttl">Cybernétique &amp; mutations</div><div class="typegrid">${grid(CYB_TYPES)}</div><div class="actions"><button class="btn ghost" type="button" id="new-back">Retour</button><button class="btn ghost" type="button" data-close>Annuler</button></div>`);
+  $('new-back').onclick=()=>$('b-additem').onclick();
   $('dlg-body').querySelectorAll('[data-newtype]').forEach(b=>b.onclick=()=>{ const k=b.dataset.newtype; let id=Date.now();
     if(CYB_TYPES[k]) C.cybernetics.unshift({id,name:CYB_TYPES[k].label,bodyPart:'',type:k,ability:'',stat:'',diceBonus:0,successThreshold:8});
     else { const T=ITEM_TYPES[k], w=!!T.w; C.inventory.unshift({id,name:w?'Nouvelle arme':k==='backpack'?'Sac à dos':k==='armor'?'Nouvelle armure':k==='care'?'Nouveau soin':k==='drug'?'Nouvelle drogue':'Nouvel objet',itemType:w?'weapon':T.cat?'misc':k,hands:w?T.h:null,...(w?{cat:T.w}:T.cat?{cat:T.cat}:{}),equipped:false,zone:'',stat:w?'DEX':'',diceBonus:0,successThreshold:8,weight:0,armorPoints:0,bastosCost:'-',specialAbility:''}); }
     dlg.close(); renderCards(); renderDerived(); markDirty(); const n=document.querySelector(`.row[data-id="${id}"] .nm`); if(n){ n.focus(); n.select(); } });
-  $('open-cat').onclick=()=>catDialog();
-};
+}
 let catFilter='all', catQ='';
 function catTypeOf(x){ return x.col==='cyb'?(CYB_TYPES[x.data.type]||CYB_TYPES.particularity):(ITEM_TYPES[typeKey(x.data)]||ITEM_TYPES.misc); }
 function catMeta(x){ const d=x.data, m=[];
