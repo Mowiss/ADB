@@ -2609,15 +2609,17 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 .vrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(64px,1fr));gap:12px}.vin{display:flex;flex-direction:column;gap:2px}.vin input{font-size:22px;text-align:center;font-family:var(--f-title)}
 .bsearch{display:flex;gap:8px;align-items:center}.bsearch input{flex:1;min-width:0}
 .blist{display:flex;flex-direction:column;gap:1px;max-height:min(62vh,600px);overflow:auto;margin:0 -8px;padding:0 8px 4px}
-.bcat{font-family:var(--f-title);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-soft);padding:14px 4px 5px;position:sticky;top:0;background:var(--paper);z-index:1}
-.brow{display:grid;grid-template-columns:34px minmax(0,1fr) auto auto 28px;gap:10px;align-items:center;padding:4px 6px;border-radius:8px;cursor:pointer}.brow:hover{background:var(--wash)}
+.bhead{position:sticky;top:0;z-index:2;background:var(--paper);padding:8px 6px 7px;border-bottom:1px solid var(--rule);cursor:default}
+.bhead .bss svg{width:15px;height:15px;display:block;margin:auto}.bhead .bv{font-size:14px}
+.bv{text-align:center;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--ink-strong)}
+.bcat{font-family:var(--f-title);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-soft);padding:14px 4px 5px;position:sticky;top:var(--bh,34px);background:var(--paper);z-index:1}
+.brow,.bhead{display:grid;grid-template-columns:34px minmax(0,1fr) 30px 30px auto 28px;gap:10px;align-items:center;padding:4px 6px;border-radius:8px;cursor:pointer}.brow:hover{background:var(--wash)}
 .bface{width:34px;height:34px;border-radius:50%;border:1.5px solid var(--danger);display:grid;place-items:center;color:var(--danger);overflow:hidden;background:var(--paper)}.bface svg{width:60%;height:60%}.bface svg.emo{width:84%;height:84%}.bface img{width:100%;height:100%;object-fit:cover}
 .brow b{font-size:13.5px;font-weight:600;color:var(--ink-strong);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.bst{font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--ink)}
-.bss{display:flex;gap:2px}.bss i{font-style:normal;width:20px;text-align:center;font-size:12px;font-weight:700;color:var(--sc);font-variant-numeric:tabular-nums}
+.bss{display:flex;gap:2px;align-items:center}.bss i{font-style:normal;width:20px;text-align:center;font-size:12px;font-weight:700;color:var(--sc);font-variant-numeric:tabular-nums}
 .ppl{display:flex;gap:12px;font-size:12px;font-weight:600;color:var(--ink)}
 .tk .face svg.emo{width:80%;height:80%}.portrait svg.emo{width:80%;height:80%}.av svg.emo{width:84%;height:84%}
-@media (max-width:540px){.bss{display:none}}
+@media (max-width:540px){.brow,.bhead{grid-template-columns:26px minmax(0,1fr) 20px 20px auto 22px;gap:5px}.bface{width:26px;height:26px}.brow .ib.del{width:22px;height:22px}.brow b{font-size:12.5px}.bss i{width:16px;font-size:11px}.bhead .bss svg{width:13px;height:13px}}
 .mem{display:flex;gap:8px;align-items:center;border:1px solid var(--faint);border-radius:10px;padding:8px 10px}
 .mem svg{width:18px;height:18px;flex:none;color:var(--ink-soft)}
 .choice{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -3322,12 +3324,14 @@ function bestiaryDialog(edit){
   openDialog(`<div class="mobhead"><h3>Bestiaire</h3><button class="btn ghost" type="button" id="b-back">${IB('left')}Retour</button></div>
     <div class="bsearch"><input class="line-in" id="b-q" placeholder="Rechercher un MOB…" autocomplete="off">${todo?`<button class="mini" type="button" id="b-imp" title="Ajouter les créatures du livre Aldebaran">${IB('book')}Importer le livre (${todo})</button>`:''}</div>
     <div class="blist" id="b-list"></div>`,TYPES.mob.col);
-  const row=x=>{ const m=x.m; return `<div class="brow" data-i="${x.i}" title="Invoquer ${esc(m.name)}"><span class="bface">${faceHTML({...m,type:'mob'},'sm')}</span><b>${esc(m.name)}</b><span class="bst">❤️ ${m.hpMax}${m.pp?` · 💙 ${m.pp}`:''}</span><span class="bss">${STATS.map(s=>`<i style="--sc:${STAT_INFO[s].col}" title="${s}">${m.stats&&m.stats[s]!=null?m.stats[s]:0}</i>`).join('')}</span><button class="ib del" type="button" data-del="${x.i}" title="Retirer du bestiaire">${IB('bin')}</button></div>`; };
+  const row=x=>{ const m=x.m; return `<div class="brow" data-i="${x.i}" title="Invoquer ${esc(m.name)}"><span class="bface">${faceHTML({...m,type:'mob'},'sm')}</span><b>${esc(m.name)}</b><span class="bv">${m.hpMax}</span><span class="bv">${m.pp||0}</span><span class="bss">${STATS.map(s=>`<i style="--sc:${STAT_INFO[s].col}" title="${s}">${m.stats&&m.stats[s]!=null?m.stats[s]:0}</i>`).join('')}</span><button class="ib del" type="button" data-del="${x.i}" title="Retirer du bestiaire">${IB('bin')}</button></div>`; };
   const draw=()=>{ const q=normTxt($('b-q').value), L=S.bestiary.map((m,i)=>({m,i})).filter(x=>!q||normTxt(x.m.name).includes(q));
     const cats=[...BEST_CATS,...new Set(L.map(x=>x.m.cat).filter(c=>c&&!BEST_CATS.includes(c)))], mine=L.filter(x=>!x.m.cat);
     let h=mine.length?`<div class="bcat">Mes MOBs</div>${mine.map(row).join('')}`:'';
     cats.forEach(c=>{ const g=L.filter(x=>x.m.cat===c); if(g.length) h+=`<div class="bcat">${esc(c)}</div>${g.map(row).join('')}`; });
-    $('b-list').innerHTML=h||`<p class="meta" style="text-align:left;padding:10px 4px">${S.bestiary.length?'Aucun MOB ne correspond.':'Le bestiaire est vide : importez les créatures du livre, ou enregistrez vos propres MOBs depuis « Nouveau MOB ».'}</p>`;
+    const head=`<div class="bhead"><span></span><span></span><span class="bv" title="Points de vie">❤️</span><span class="bv" title="Points de protection (armure)">💙</span><span class="bss">${STATS.map(s=>`<i style="--sc:${STAT_INFO[s].col}" title="${STAT_INFO[s].name}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${STAT_INFO[s].ico}</svg></i>`).join('')}</span><span></span></div>`;
+    $('b-list').innerHTML=h?head+h:`<p class="meta" style="text-align:left;padding:10px 4px">${S.bestiary.length?'Aucun MOB ne correspond.':'Le bestiaire est vide : importez les créatures du livre, ou enregistrez vos propres MOBs depuis « Nouveau MOB ».'}</p>`;
+    { const bh=$('b-list').querySelector('.bhead'); if(bh) $('b-list').style.setProperty('--bh',bh.offsetHeight+'px'); }
     $('b-list').querySelectorAll('.brow').forEach(r=>r.onclick=e=>{ const d=e.target.closest('[data-del]');
       if(d){ e.stopPropagation(); const m=S.bestiary[+d.dataset.del]; S.bestiary.splice(+d.dataset.del,1); markDirty(); toast(`« ${m.name} » retiré du bestiaire`); draw(); return; }
       mobDialog(edit,S.bestiary[+r.dataset.i]); }); };
