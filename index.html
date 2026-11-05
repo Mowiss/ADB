@@ -2210,9 +2210,9 @@ svg.i{width:18px;height:18px;flex:none}
 #bg img.bgi{position:absolute;inset:0;width:100%;height:100%;display:block;user-select:none;pointer-events:none;-webkit-user-drag:none}
 /* bords de la carte fondus dans le noir */
 .fade{-webkit-mask-image:var(--mx),var(--my);mask-image:var(--mx),var(--my);-webkit-mask-composite:source-in;mask-composite:intersect}
-#ggrid{position:absolute;pointer-events:none;background-size:72px 72px;background-image:linear-gradient(to right,rgba(255,255,255,.22) 1px,transparent 1px),linear-gradient(to bottom,rgba(255,255,255,.22) 1px,transparent 1px)}
+#ggrid{position:absolute;pointer-events:none;background-size:72px 72px;background-image:linear-gradient(to right,rgba(255,255,255,.4) var(--gl,1px),transparent var(--gl,1px)),linear-gradient(to bottom,rgba(255,255,255,.4) var(--gl,1px),transparent var(--gl,1px))}
 .nogrid #ggrid{background-image:none}
-#geo{position:absolute;left:0;top:0;width:0;height:0;overflow:visible;z-index:0}
+#geo{position:absolute;left:0;top:0;width:0;height:0;overflow:visible;z-index:-1}
 .gt{position:absolute;max-width:none;user-select:none;pointer-events:none;-webkit-user-drag:none}
 #geo-attr{position:absolute;right:8px;bottom:6px;z-index:6;font-size:10px;color:#fff;background:rgba(0,0,0,.45);padding:1px 6px;border-radius:4px;pointer-events:none}
 #fond .drop{min-height:0;height:auto;padding:16px}
@@ -2235,7 +2235,7 @@ svg.i{width:18px;height:18px;flex:none}
 .fd .m video,.fd .m img{width:100%;height:100%;object-fit:cover;display:block}
 .fd .m i{position:absolute;right:5px;bottom:5px;font-style:normal;font-size:9.5px;font-weight:700;letter-spacing:.08em;background:rgba(47,51,64,.75);color:#fff;border-radius:999px;padding:1px 7px}
 .fd b{font-size:12px;color:var(--ink-strong);padding:0 3px 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#grid{position:absolute;left:0;top:0;pointer-events:none;background-size:72px 72px;background-image:linear-gradient(to right,rgba(47,51,64,.075) 1px,transparent 1px),linear-gradient(to bottom,rgba(47,51,64,.075) 1px,transparent 1px)}
+#grid{position:absolute;left:0;top:0;pointer-events:none;background-size:72px 72px;background-image:linear-gradient(to right,rgba(47,51,64,.075) var(--gl,1px),transparent var(--gl,1px)),linear-gradient(to bottom,rgba(47,51,64,.075) var(--gl,1px),transparent var(--gl,1px))}
 #grid::after{content:"";position:absolute;inset:0;border:1.5px solid var(--rule)}
 #grid.fade::after{display:none}
 .nogrid #grid{background-image:none}
@@ -2273,7 +2273,9 @@ svg.i{width:18px;height:18px;flex:none}
 /* Jetons */
 .tk{position:absolute;width:72px;height:72px;margin:-36px 0 0 -36px;pointer-events:auto;touch-action:none;user-select:none;transform:scale(var(--s,1));--c:var(--ink-strong);cursor:grab;transition:opacity .2s}
 .player .tk{cursor:default;pointer-events:none}
-.player .tk.mine .face{box-shadow:0 0 0 3px var(--paper),0 0 0 4.5px var(--c-res)}
+/* son propre jeton : un liseré au-delà de la barre de vie, qui reste visible */
+.mineo{display:none}
+.player .tk.mine .mineo{display:block;position:absolute;inset:-12px;border-radius:50%;border:2px solid var(--c-res);opacity:.75;pointer-events:none}
 .netb .nd{position:absolute;top:5px;right:5px;width:9px;height:9px;border-radius:50%;border:1.5px solid var(--paper);background:var(--rule);display:none}
 .netb.on .nd,.netb.wait .nd{display:block}
 .netb.on{color:var(--ok)}.netb.on .nd{background:var(--ok)}
@@ -2916,7 +2918,7 @@ function confirmDialog(title,text,okLbl,fn){ openDialog(`<h3>${title}</h3><p>${t
    Vue : déplacement et zoom
    ========================================================= */
 const board=$('board'), world=$('world');
-function applyView(){ world.style.transform=`translate(${V.x}px,${V.y}px) scale(${V.z})`; geoLater();
+function applyView(){ world.style.transform=`translate(${V.x}px,${V.y}px) scale(${V.z})`; world.style.setProperty('--gl',Math.max(1,1/V.z).toFixed(2)+'px'); geoLater();
   board.style.backgroundSize=`${CELL*V.z}px ${CELL*V.z}px`; board.style.backgroundPosition=`${V.x}px ${V.y}px`;
   placeCard(); placeMeasureLabel(); placePtrs(); if(!S.light) fowLater(); if(!isPlayer){ S.view={...V}; sendView(); } }
 function toWorld(cx,cy){ const r=board.getBoundingClientRect(); return [(cx-r.left-V.x)/V.z,(cy-r.top-V.y)/V.z]; }
@@ -2937,7 +2939,7 @@ const hpCls=p=>p<=.25?'crit':p<=.5?'low':'';
 function tokenHTML(t){
   const p=hpRatio(t), C=2*Math.PI*46, alive=ALIVE(t);
   return `${alive?`<svg class="ring" viewBox="0 0 100 100"><circle class="bgc" cx="50" cy="50" r="46"/><circle class="hp ${hpCls(p)}" cx="50" cy="50" r="46" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C*(1-p)).toFixed(1)}"/></svg>`:''}
-    <div class="face">${faceHTML(t)}</div>
+    <div class="face">${faceHTML(t)}</div>${t.type==='player'?'<i class="mineo"></i>':''}
     ${alive?`<div class="dead">${SKULL}</div><svg class="turn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">${IC.hand}</svg>`:''}
     ${t.type==='prop'&&t.note?'<i class="ndot"></i>':''}
     ${t.type==='light'?`<div class="halo" style="width:${t.r*2}px;height:${t.r*2}px"></div>`:''}
@@ -3657,7 +3659,7 @@ function renderGeo(){ const L=$('geo'); if(!L) return;
   const G=$('ggrid');
   if(!S.geo){ if(geoTiles.size){ L.innerHTML=''; geoTiles.clear(); } $('geo-attr').hidden=true; G.hidden=true; return; }
   $('geo-attr').hidden=false; const r=board.getBoundingClientRect(); if(!r.width) return;
-  { const gx=Math.floor(-V.x/V.z/CELL)*CELL, gy=Math.floor(-V.y/V.z/CELL)*CELL; G.hidden=V.z<.3; Object.assign(G.style,{left:gx+'px',top:gy+'px',width:(r.width/V.z+2*CELL)+'px',height:(r.height/V.z+2*CELL)+'px'}); }
+  { const gx=Math.floor(-V.x/V.z/CELL)*CELL, gy=Math.floor(-V.y/V.z/CELL)*CELL; G.hidden=V.z*CELL<7; G.style.opacity=clamp((V.z*CELL-7)/24,0,1).toFixed(2); Object.assign(G.style,{left:gx+'px',top:gy+'px',width:(r.width/V.z+2*CELL)+'px',height:(r.height/V.z+2*CELL)+'px'}); }
   const key=S.geo.lat+','+S.geo.lon; if(L.dataset.k!==key){ L.innerHTML=''; geoTiles.clear(); L.dataset.k=key; }
   const z=clamp(Math.round(Math.log2(156543.03392*Math.cos(S.geo.lat*Math.PI/180)*V.z/M0)),3,19), sc=geoScale(z), [ox,oy]=geoProj(S.geo.lat,S.geo.lon,z), N=Math.pow(2,z);
   const wx0=-V.x/V.z, wy0=-V.y/V.z, wx1=(r.width-V.x)/V.z, wy1=(r.height-V.y)/V.z;
