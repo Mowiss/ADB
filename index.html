@@ -664,6 +664,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}input[type=num
 .tb-code::placeholder{color:#c3c6cf}
 .tb-live{flex:1;min-height:0;border:1px solid var(--rule);border-radius:10px;overflow:hidden;background:#fff}
 .tb-frame{width:100%;height:100%;border:0;display:block}
+.sheetview .vtab[data-drawer="tabledrw"],.sheetview #b-settings{display:none!important}
 .tb-st{font-size:12px;font-weight:600;color:var(--ink-soft);display:flex;align-items:center;gap:6px;white-space:nowrap}
 .tb-st i{width:8px;height:8px;border-radius:50%;background:var(--ink-soft)}
 .tb-st.on i{background:var(--ok)}.tb-st.wait i{background:var(--gold)}
@@ -941,6 +942,8 @@ const Store={ // point d'entrée unique : Firebase prendra le relais ici
   saveCat(){ return ls.set(LS_CAT,catSerialize()); },
   loadCat(){ try{ const d=JSON.parse(ls.get(LS_CAT)||'null'); return d&&Array.isArray(d.items)?d.items:[]; }catch(e){ return []; } }
 };
+if(window.__ADB_SHEET_VIEW){ document.documentElement.classList.add('sheetview'); Store.saveLocal=()=>true; Store.saveCat=()=>true; Store.loadLocal=()=>{ try{ return window.__ADB_SHEET_DATA&&window.__ADB_SHEET_DATA.stats?normalize(JSON.parse(JSON.stringify(window.__ADB_SHEET_DATA))):null; }catch(e){ return null; } };
+  window.addEventListener('message',e=>{ if(e.source!==parent||!e.data||!e.data.__adbSheet) return; try{ const d=e.data.__adbSheet; if(d&&d.stats){ C=normalize(JSON.parse(JSON.stringify(d))); renderAll(); } }catch(err){} }); }
 function markDirty(){ dirty=true; syncCat(); updateSaveState(); }
 function updateSaveState(){
   $('sdot').classList.toggle('dirty',dirty); $('sdot').title=dirty?'Modifications non enregistrées':'À jour';
@@ -1965,14 +1968,15 @@ window.addEventListener('resize',placeRibbon); if(window.ResizeObserver) new Res
 buildStatic();
 const restored=Store.loadLocal(); if(restored) C=restored;
 CAT=Store.loadCat(); fileName=ls.get(LS_FILE)||null; syncCat();
-idb.get('dir').then(h=>{ if(h&&h.kind==='directory'){ dirHandle=h; updateSaveState(); } });
-renderAll(); updateSaveState(); setupAutosave(); placeRibbon();
+if(!window.__ADB_SHEET_VIEW) idb.get('dir').then(h=>{ if(h&&h.kind==='directory'){ dirHandle=h; updateSaveState(); } });
+renderAll(); updateSaveState(); if(!window.__ADB_SHEET_VIEW) setupAutosave(); placeRibbon();
 /* =========================================================
    TABLE EN LIGNE — côté Aventurier
    Le joueur saisit le code donné par le maître du destin : sa fiche
-   rejoint la table (nom, portrait, statistiques, PV), il voit le
-   plateau, déplace son jeton, et ses jets de dés sont partagés.
+   est partagée avec le MJ (qui pose son jeton et consulte sa fiche),
+   il voit le plateau, déplace son jeton, et ses jets de dés sont partagés.
    ========================================================= */
+if(!window.__ADB_SHEET_VIEW){
 const NET_PEERJS=['https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js','https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js','https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js'];
 function netLoad(urls){ return new Promise((res,rej)=>{ const go=i=>{ if(i>=urls.length){ rej(new Error('script')); return; } const s=document.createElement('script'); s.src=urls[i]; s.onload=res; s.onerror=()=>{ s.remove(); go(i+1); }; document.head.appendChild(s); }; go(0); }); }
 const netPeerOpts=()=>{ let o={debug:0}; try{ const x=JSON.parse(localStorage.getItem('aldebaran.peer')||'null'); if(x) o=Object.assign(o,x); }catch(e){} return o; };
@@ -1996,7 +2000,7 @@ function sheetImg(){ const key=(C.photo||'').length+'|'+(C.photo||'').slice(-64)
       if(pc&&pc.w) x.drawImage(im,-pc.l*128,-pc.t*128,pc.w*128,pc.h*128); else { const s=Math.min(im.width,im.height); x.drawImage(im,(im.width-s)/2,(im.height-s)/2,s,s,0,0,128,128); }
       netImgKey=key; netImg=cv.toDataURL('image/webp',.82); res(netImg); };
     im.onerror=()=>res(null); im.src=C.photo; }); }
-async function sheetData(){ const D=derive(C); return {name:(C.name||'').trim()||'Aventurier',stats:D.r,pvMax:D.pvMax,pv:C.pv,img:await sheetImg()}; }
+async function sheetData(){ const D=derive(C); return {name:(C.name||'').trim()||'Aventurier',stats:D.r,pvMax:D.pvMax,pv:C.pv,img:await sheetImg(),full:JSON.parse(JSON.stringify(C))}; }
 const netOpen=()=>NETP.conn&&NETP.conn.open;
 
 async function tbJoin(code){
@@ -2068,6 +2072,7 @@ $('tb-code').value=ls.get('aldebaran.joueur.table')||'';
 tbStatus('off','Hors ligne');
 if(window.__adbRelay){ try{ localStorage.setItem('aldebaran.turn',window.__adbRelay); }catch(e){} window.__adbRelay=null; }
 if(window.__adbJoin){ const code=window.__adbJoin; window.__adbJoin=null; setTimeout(()=>{ openDrawer('tabledrw'); tbJoin(code); },1200); }
+}
 
 if(window.__adbLaunch){ const L=window.__adbLaunch; window.__adbLaunch=null; setTimeout(()=>loadText(L.text,L.name),300); }
 runOpening();
@@ -2215,6 +2220,25 @@ svg.i{width:18px;height:18px;flex:none}
 .np i{width:8px;height:8px;border-radius:50%;background:var(--ok)}
 .np b{flex:1;color:var(--ink-strong)}
 .np small{font-size:11.5px;color:var(--ink-soft)}
+.ptabs{position:fixed;left:calc(var(--rail) + 16px);right:calc(var(--tabs) + 16px);bottom:calc(var(--bot) - 1px);z-index:11;display:flex;gap:6px;align-items:flex-end;pointer-events:none;overflow:hidden}
+.ptab{pointer-events:auto;display:flex;align-items:center;gap:8px;background:var(--paper);border:1px solid var(--rule);border-bottom:0;border-radius:12px 12px 0 0;padding:5px 12px 5px 6px;cursor:grab;touch-action:none;user-select:none;position:relative;flex:none}
+.ptab::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--paper)}
+.ptab b{font-size:12px;font-weight:700;color:var(--ink-strong);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pt-tok{width:32px;height:32px;border-radius:50%;border:1.6px dashed var(--c-res);display:grid;place-items:center;overflow:hidden;color:var(--c-res);flex:none;background:var(--paper)}
+.pt-tok.placed{border-style:solid}
+.pt-tok img{width:100%;height:100%;object-fit:cover;pointer-events:none}
+.pt-tok .ini,.pt-ghost .ini{font-family:var(--f-title);font-size:13px;padding-top:2px}
+.pt-dot{width:7px;height:7px;border-radius:50%;background:var(--ok)}
+.ptab.off{opacity:.55}.ptab.off .pt-dot{background:var(--rule)}
+.ptab.on{border-color:var(--c-res)}.ptab.on b{color:var(--c-res)}
+.pt-ghost{position:fixed;z-index:60;width:60px;height:60px;margin:-30px 0 0 -30px;border-radius:50%;border:1.6px solid var(--c-res);background:var(--paper);overflow:hidden;display:grid;place-items:center;pointer-events:none;opacity:.6;color:var(--c-res)}
+.pt-ghost.ok{opacity:1}
+.pt-ghost img{width:100%;height:100%;object-fit:cover}
+#sheetpanel{position:fixed;z-index:12;top:calc(var(--bar) + 10px);left:calc(var(--rail) + 10px);right:calc(var(--tabs) + 10px);bottom:calc(var(--bot) + 46px);background:var(--paper);border:1px solid var(--rule);border-radius:14px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 10px 30px rgba(47,51,64,.12)}
+#sheetpanel header{display:flex;align-items:center;gap:12px;padding:8px 10px 8px 16px;border-bottom:1px solid var(--rule)}
+#sheetpanel header b{font-family:var(--f-title);font-weight:300;font-size:20px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-strong)}
+#sp-body{flex:1;min-height:0}#sp-body iframe{width:100%;height:100%;border:0;display:block}
+.player .ptabs,.player #sheetpanel,.booting .ptabs{display:none!important}
 .nrelay{border-top:1px solid var(--rule);padding-top:10px}
 .nrelay summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--ink);list-style:none}
 .nrelay summary::-webkit-details-marker{display:none}
@@ -2604,6 +2628,9 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
     <div class="timers" id="timers"></div>
   </div>
 </footer>
+
+<div class="ptabs" id="ptabs"></div>
+<div id="sheetpanel" hidden><header><b id="sp-name"></b><span class="cap">Fiche partagée · lecture</span><span class="spacer"></span><button class="ib" type="button" id="sp-close" title="Fermer la fiche"></button></header><div id="sp-body"></div></div>
 
 <nav class="vtabs" id="vtabs" aria-label="Volets">
   <button type="button" class="vtab" data-drawer="scenario" style="--tc:var(--c-per)"><span>Scénario</span></button>
@@ -3316,7 +3343,7 @@ function showGuide(){
     <h4>Initiative et sabliers</h4><ul><li>Joueurs et monstres rejoignent l'initiative à leur création. Mélanger, puis Tour suivant (<kbd>Espace</kbd>) : le jeton actif est cerclé d'or. Glisser une pastille pour changer l'ordre ; un clic centre la carte sur le jeton.</li><li>Les sabliers comptent à rebours ; pause et suppression dans la pastille.</li></ul>
     <h4>Scénario</h4><p>Une scène garde le fond, le jour ou la nuit, les tracés, les monstres, décors et lumières. Les joueurs restent d'une scène à l'autre. On passe de scène en scène depuis la barre du haut ou le volet Scénario ; chaque changement inscrit le titre sur la vue joueur. Le scénario s'exporte en PDF.</p>
     <h4>Vue joueur</h4><p>Le bouton « Vue joueur » ouvre une seconde fenêtre à glisser sur la TV ou le second écran : elle suit la caméra, les jetons, les tracés, la mesure, les signaux et le brouillard, sans rien des outils ni des secrets du MJ.</p>
-    <h4>Table en ligne</h4><p>« En ligne » ouvre la table sous un code de 5 lettres (le même d'une séance à l'autre). Chaque joueur, dans sa fiche Aventurier, ouvre l'onglet <b>Table</b> et saisit le code, ou suit le lien / le QR code. Son personnage arrive sur le plateau et suit sa fiche ; il déplace lui-même son jeton ; ses jets de dés s'affichent ici ; les PV changés sur sa fiche flottante reviennent sur sa fiche. Connexion directe entre appareils (WebRTC), sans compte ni stockage sur un serveur.</p>
+    <h4>Table en ligne</h4><p>« En ligne » ouvre la table sous un code de 5 lettres (le même d'une séance à l'autre). Chaque joueur, dans sa fiche Aventurier, ouvre l'onglet <b>Table</b> et saisit le code, ou suit le lien / le QR code : sa fiche est partagée. Il voit le plateau et déplace son propre jeton. Il apparaît dans un onglet au-dessus du bandeau bas : glissez son jeton sur la table pour le placer (il n'apparaît pas tout seul), cliquez l'onglet pour consulter sa fiche (mise à jour en direct). Son jeton suit sa fiche ; ses jets de dés s'affichent ici ; les PV changés sur la fiche flottante du jeton reviennent sur sa fiche. Connexion directe entre appareils (WebRTC), sans compte ni stockage sur un serveur.</p>
     <h4>Dés</h4><p>Pool de D10 : chaque dé au seuil (8 par défaut, réglable dans Jet libre) est une réussite, un 10 est un critique, un 1 un échec.</p>
     <h4>Sauvegarde</h4><p>Fichier <b>.adb</b> (table MJ) : Ctrl+S, Ctrl+Maj+S pour choisir un autre fichier, sauvegarde automatique réglable dans les Paramètres.</p>
   </div><div class="actions"><button class="btn" type="button" data-close>Fermer</button></div>`);
@@ -3374,7 +3401,7 @@ function wire(){
   $('b-light').onclick=()=>{ S.light=!S.light; renderBoard(); renderTracker(); markDirty(); sync(); toast(S.light?'Jour : le brouillard se lève':'Nuit : brouillard de guerre'); };
   $('b-bg').onclick=bgDialog; $('b-center').onclick=fitBoard;
   // haut
-  $('b-player').onclick=openPlayerView; $('b-net').onclick=netDialog; netStatus('off'); $('b-settings').onclick=settings;
+  $('b-player').onclick=openPlayerView; $('b-net').onclick=netDialog; $('sp-close').innerHTML=IB('x'); $('sp-close').onclick=closeSheet; netStatus('off'); $('b-settings').onclick=settings;
   $('b-full').onclick=()=>{ if(!document.fullscreenElement) document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); else document.exitFullscreen(); };
   $('sc-prev').onclick=()=>gotoScene(S.scene-1); $('sc-next').onclick=()=>gotoScene(S.scene+1); $('sc-title').onclick=()=>openDrawer('scenario',true);
   // scénario
@@ -3400,7 +3427,7 @@ function wire(){
     if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){ e.preventDefault(); e.shiftKey?saveAs():save(); return; }
     if(e.target.closest('input,textarea,select')||dlg.open) return;
     const k=e.key.toLowerCase();
-    if(k==='escape'){ if(tool) setTool(tool); closeCard(); closePop(); }
+    if(k==='escape'){ if(tool) setTool(tool); closeCard(); closePop(); if(sheetPid) closeSheet(); }
     else if(k==='m') setTool('measure'); else if(k==='d') { if(tool==='draw') setTool('draw'); else inkPop(document.querySelector('[data-tool="draw"]')); }
     else if(k==='e') setTool('erase'); else if(k==='0') fitBoard();
     else if(e.code==='Space'){ e.preventDefault(); nextTurn(); } });
@@ -3422,8 +3449,11 @@ function bgDialog(){
 /* =========================================================
    TABLE EN LIGNE — connexion pair-à-pair (PeerJS / WebRTC)
    Le MJ ouvre la table sous un code ; chaque joueur s'y connecte
-   depuis sa fiche Aventurier (onglet Table). Rien n'est stocké sur
-   un serveur : le serveur PeerJS sert seulement à se trouver.
+   depuis sa fiche Aventurier (onglet Table) : il voit le plateau et
+   partage sa fiche. Chaque joueur connecté a un onglet au-dessus du
+   bandeau bas : on glisse son jeton sur la table (il n'apparaît pas
+   tout seul), un clic sur l'onglet ouvre sa fiche.
+   Rien n'est stocké sur un serveur : PeerJS sert seulement à se trouver.
    ========================================================= */
 const PEERJS=['https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js','https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js','https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js'];
 function loadScript(urls){ return new Promise((res,rej)=>{ const go=i=>{ if(i>=urls.length){ rej(new Error('script')); return; } const s=document.createElement('script'); s.src=urls[i]; s.onload=res; s.onerror=()=>{ s.remove(); go(i+1); }; document.head.appendChild(s); }; go(0); }); }
@@ -3447,6 +3477,7 @@ function netSendTo(c,m){ if(!c.open) return; try{
   if(m.t==='state'){ const id=bgId(m.bg); if(c.bgId!==id){ c.send({t:'bg',data:m.bg||''}); c.bgId=id; } const o=Object.assign({},m); delete o.bg; c.send(o); }
   else c.send(m); }catch(e){} }
 function netSend(m){ if(!NET.conns.size) return; NET.conns.forEach(c=>{ if(c.pid) netSendTo(c,m); }); }
+const PL=new Map();   // joueurs de la séance : pid → {pid,name,sheet,online}
 function netTo(pid,m){ NET.conns.forEach(c=>{ if(c.pid===pid) netSendTo(c,m); }); }
 
 function netStatus(st){ NET.status=st; const b=$('b-net'); if(!b) return;
@@ -3467,7 +3498,7 @@ async function openTable(){
     c.on('open',()=>{ NET.pending.delete(c); NET.conns.add(c); netStatus(NET.status); });
     c.on('iceStateChanged',st=>{ if(st==='failed'&&NET.pending.has(c)){ NET.pending.delete(c); netStatus(NET.status); toast('Un joueur n\'a pas pu se connecter (réseau bloquant) : activez le serveur relais',true); } });
     c.on('data',d=>netIn(c,d));
-    const gone=()=>{ if(NET.pending.delete(c)) netStatus(NET.status); if(NET.conns.delete(c)){ if(c.pid) toast(`${c.name||'Un joueur'} a quitté la table`); netStatus(NET.status); } };
+    const gone=()=>{ if(NET.pending.delete(c)) netStatus(NET.status); if(NET.conns.delete(c)){ if(c.pid){ toast(`${c.name||'Un joueur'} a quitté la table`); playerGone(c); } netStatus(NET.status); } };
     c.on('close',gone); c.on('error',gone); });
   p.on('disconnected',()=>{ if(NET.peer===p&&!p.destroyed){ netStatus('wait'); setTimeout(()=>{ try{ if(NET.peer===p&&!p.destroyed) p.reconnect(); }catch(e){} },1500); } });
   p.on('error',e=>{ if(NET.peer!==p) return;
@@ -3476,14 +3507,18 @@ async function openTable(){
     else if(e.type==='browser-incompatible'){ toast('Ce navigateur ne gère pas la connexion directe (WebRTC)',true); closeTable(); }
     else if(e.type!=='peer-unavailable') toast('Réseau : '+e.type,true); });
 }
-function closeTable(){ const p=NET.peer; NET.peer=null; NET.conns.forEach(c=>{ try{ c.send({t:'closed'}); c.close(); }catch(e){} }); NET.conns.clear(); if(p) try{ p.destroy(); }catch(e){} netStatus('off'); }
+function closeTable(){ const p=NET.peer; NET.peer=null; PL.forEach(P=>P.online=false); setTimeout(renderPtabs); NET.conns.forEach(c=>{ try{ c.send({t:'closed'}); c.close(); }catch(e){} }); NET.conns.clear(); if(p) try{ p.destroy(); }catch(e){} netStatus('off'); }
 
 /* messages reçus des joueurs */
 function netIn(c,d){ if(!d||typeof d!=='object') return;
-  if(d.t==='join'){ const first=!c.pid; c.pid=String(d.pid||c.peer); c.name=(d.sheet&&d.sheet.name)||'Aventurier';
-    claimToken(c,d.sheet,true); if(first) toast(`${c.name} rejoint la table`);
-    c.bgId=null; const st=publicState(); st.n=Date.now()*100+(seq++%100); st.from='mj'; netSendTo(c,st); netStatus(NET.status); }
-  else if(d.t==='sheet'&&c.pid){ c.name=(d.sheet&&d.sheet.name)||c.name; claimToken(c,d.sheet,false); netStatus(NET.status); }
+  if(d.t==='join'||d.t==='sheet'){ if(d.t==='join'){ c.pid=String(d.pid||c.peer); } if(!c.pid) return;
+    const sh=d.sheet||{}, first=!PL.has(c.pid)||!PL.get(c.pid).online;
+    const P=Object.assign(PL.get(c.pid)||{pid:c.pid},{name:String(sh.name||'Aventurier').slice(0,40),sheet:sh,online:true});
+    PL.set(c.pid,P); c.name=P.name;
+    const t=S.tokens.find(x=>x.owner===c.pid); if(t) claimToken(c.pid,sh,t);
+    if(first&&d.t==='join') toast(`${P.name} rejoint la table : glissez son jeton depuis son onglet`);
+    renderPtabs(); if(sheetPid===c.pid) sheetRefresh(); netStatus(NET.status);
+    if(d.t==='join'){ c.bgId=null; const st=publicState(); st.n=Date.now()*100+(seq++%100); st.from='mj'; netSendTo(c,st); } }
   else if(d.t==='mv'&&c.pid){ const t=tok(d.id); if(!t||t.owner!==c.pid) return;
     t.x=clamp(Math.round(+d.x||0),0,WORLD); t.y=clamp(Math.round(+d.y||0),0,WORLD); moveTokenEl(t); placeCard(); fowLater();
     send({t:'mv',id:t.id,x:t.x,y:t.y,s:t.s}); markDirty(); if(d.end) syncLater(); }
@@ -3491,24 +3526,62 @@ function netIn(c,d){ if(!d||typeof d!=='object') return;
     logRoll(`${c.name} · ${label}`,Array.isArray(d.rolls)?d.rolls.slice(0,60):[],+d.th||8,succ);
     toast(`${c.name} · ${label} : ${succ} réussite${succ>1?'s':''}`); send({t:'roll',who:c.name,label,succ}); }
 }
+function playerGone(c){ if(!c.pid) return; const P=PL.get(c.pid); if(P&&![...NET.conns].some(x=>x!==c&&x.pid===c.pid)){ P.online=false; renderPtabs(); } }
 /* le jeton du joueur suit sa fiche (nom, portrait, statistiques, PV) */
-function claimToken(c,sh,join){ sh=sh||{};
-  let t=S.tokens.find(x=>x.owner===c.pid);
-  if(!t&&join) t=S.tokens.find(x=>x.type==='player'&&!x.owner&&x.name&&x.name===sh.name);
-  const st={}; STATS.forEach(s=>st[s]=Math.max(0,+(sh.stats&&sh.stats[s])||0));
+function tokenData(sh){ sh=sh||{}; const st={}; STATS.forEach(s=>st[s]=Math.max(0,+(sh.stats&&sh.stats[s])||0));
   const data={name:String(sh.name||'Aventurier').slice(0,40),stats:st,hpMax:Math.max(1,+sh.pvMax||st.RES+5)};
   data.hp=Number.isFinite(+sh.pv)?clamp(+sh.pv,-1,data.hpMax):data.hpMax;
   if(typeof sh.img==='string'&&sh.img.startsWith('data:image/')&&sh.img.length<120000) data.img=sh.img;
-  if(t){ Object.assign(t,data,{owner:c.pid}); tokenEl(t); renderTracker(); if(cardId===t.id) renderCard(); markDirty(); sync(); }
-  else addToken(Object.assign({type:'player',ico:'person',img:null,attacks:[],r:250,owner:c.pid},data));
-}
+  return data; }
+function claimToken(pid,sh,t){ Object.assign(t,tokenData(sh),{owner:pid}); tokenEl(t); renderTracker(); if(cardId===t.id) renderCard(); markDirty(); sync(); }
+
+/* onglets des joueurs au-dessus du bandeau bas */
+let ptDrag=false, ptDirty=false;
+function renderPtabs(){ const box=$('ptabs'); if(!box) return; if(ptDrag){ ptDirty=true; return; }
+  box.innerHTML=[...PL.values()].map(P=>{ const placed=S.tokens.some(t=>t.owner===P.pid), img=P.sheet&&P.sheet.img;
+    const ini=esc((P.name||'?').trim().split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase());
+    return `<div class="ptab${P.online?'':' off'}${sheetPid===P.pid?' on':''}" data-pid="${esc(P.pid)}" title="${esc(P.name)} — glisser le jeton sur la table · clic : la fiche">
+      <span class="pt-tok${placed?' placed':''}">${img?`<img src="${img}" alt="" draggable="false">`:`<span class="ini">${ini}</span>`}</span><b>${esc(P.name)}</b><i class="pt-dot"></i></div>`; }).join('');
+  box.querySelectorAll('.ptab').forEach(bindPtab); }
+function bindPtab(el){ el.addEventListener('pointerdown',e=>{ if(e.button!==0) return; e.preventDefault();
+  const pid=el.dataset.pid, P=PL.get(pid); if(!P) return; const sx=e.clientX, sy=e.clientY; let ghost=null;
+  ptDrag=true;
+  const mv=ev=>{ if(!ghost){ if(Math.hypot(ev.clientX-sx,ev.clientY-sy)<6) return;
+      ghost=el.querySelector('.pt-tok').cloneNode(true); ghost.className='pt-ghost'; document.body.appendChild(ghost); }
+    ghost.style.left=ev.clientX+'px'; ghost.style.top=ev.clientY+'px';
+    const r=board.getBoundingClientRect(); ghost.classList.toggle('ok',ev.clientX>r.left&&ev.clientX<r.right&&ev.clientY>r.top&&ev.clientY<r.bottom); };
+  const upf=ev=>{ document.removeEventListener('pointermove',mv); document.removeEventListener('pointerup',upf); document.removeEventListener('pointercancel',upf);
+    ptDrag=false; if(ptDirty){ ptDirty=false; setTimeout(renderPtabs); }
+    if(!ghost){ toggleSheet(pid); return; } ghost.remove();
+    const r=board.getBoundingClientRect(); if(!(ev.clientX>r.left&&ev.clientX<r.right&&ev.clientY>r.top&&ev.clientY<r.bottom)) return;
+    const [x,y]=toWorld(ev.clientX,ev.clientY); placePlayer(pid,clamp(Math.round(x),0,WORLD),clamp(Math.round(y),0,WORLD)); };
+  document.addEventListener('pointermove',mv); document.addEventListener('pointerup',upf); document.addEventListener('pointercancel',upf); }); }
+function placePlayer(pid,x,y){ const P=PL.get(pid); if(!P) return; let t=S.tokens.find(z=>z.owner===pid);
+  if(!t) t=S.tokens.find(z=>z.type==='player'&&!z.owner&&z.name&&z.name===P.name);
+  if(t){ t.x=x; t.y=y; t.hidden=false; claimToken(pid,P.sheet,t); moveTokenEl(t); renderFoW(); }
+  else addToken(Object.assign({type:'player',ico:'person',img:null,attacks:[],r:250,owner:pid,x,y},tokenData(P.sheet)));
+  renderPtabs(); }
+
+/* fiche du joueur : l'appli Aventurier en lecture, mise à jour en direct */
+let sheetPid=null;
+function toggleSheet(pid){ if(sheetPid===pid){ closeSheet(); return; } sheetPid=pid; const P=PL.get(pid); if(!P) return;
+  const sp=$('sheetpanel'), html=window.__ADB_APPS&&window.__ADB_APPS.ply;
+  $('sp-name').textContent=P.name; sp.hidden=false;
+  if(!html){ $('sp-body').innerHTML='<p class="meta" style="padding:20px">La fiche n\'est pas disponible dans cette version.</p>'; renderPtabs(); return; }
+  const data=JSON.stringify((P.sheet&&P.sheet.full)||{}).replace(/</g,'\\u003c');
+  $('sp-body').innerHTML=''; const f=document.createElement('iframe'); f.title='Fiche de '+P.name;
+  f.srcdoc=html.replace('<head>','<head><script>window.__ADB_SHEET_VIEW=1;window.__ADB_SHEET_DATA='+data+'<'+'/script>'); $('sp-body').appendChild(f);
+  renderPtabs(); }
+function sheetRefresh(){ const P=PL.get(sheetPid), f=$('sp-body').querySelector('iframe'); if(!P||!f||!f.contentWindow) return;
+  $('sp-name').textContent=P.name; f.contentWindow.postMessage({__adbSheet:(P.sheet&&P.sheet.full)||{}},'*'); }
+function closeSheet(){ sheetPid=null; $('sheetpanel').hidden=true; $('sp-body').innerHTML=''; renderPtabs(); }
 
 /* fenêtre « Table en ligne » */
 function netLink(){ if(!location.protocol.startsWith('http')||!NET.code) return ''; const u=relayUrl(); return location.origin+location.pathname+'?table='+NET.code+(u?'&relay='+encodeURIComponent(u):''); }
 function netDialog(){ openDialog(`<h3>Table en ligne</h3><div id="net-body" style="display:flex;flex-direction:column;gap:14px"></div>`,'var(--ok)'); renderNetBody(); }
 function renderNetBody(){ const b=$('net-body'); if(!b||!dlg.open) return;
   if(NET.status==='off'){
-    b.innerHTML=`<p>Les joueurs rejoignent la table depuis leur fiche <b>Aventurier</b>, sur téléphone ou ordinateur : onglet <b>Table</b>, puis le code. Ils voient le plateau comme sur la vue joueur, déplacent leur propre jeton, et leurs jets de dés arrivent ici.</p>
+    b.innerHTML=`<p>Les joueurs rejoignent la table depuis leur fiche <b>Aventurier</b>, sur téléphone ou ordinateur : onglet <b>Table</b>, puis le code. Ils voient le plateau comme sur la vue joueur et déplacent leur propre jeton. Chacun apparaît dans un onglet au-dessus du bandeau bas : glissez son jeton sur la table pour le placer, cliquez l'onglet pour consulter sa fiche. Leurs jets de dés arrivent ici.</p>
       <p class="meta" style="text-align:left">Connexion directe d'appareil à appareil (WebRTC) : rien n'est stocké sur un serveur, mais il faut internet pour se trouver.${S.netCode?` Code de cette table : <b>${S.netCode}</b>.`:''}</p>
       <div class="actions"><button class="btn ghost" type="button" data-close>Fermer</button><button class="btn" type="button" id="net-open">${IB('wifi')}Ouvrir la table</button></div>`;
     $('net-open').onclick=openTable;
