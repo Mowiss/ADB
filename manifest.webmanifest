@@ -1,7 +1,7 @@
 {
-  "name": "Aldebaran Joueur",
+  "name": "Aldebaran",
   "short_name": "Aldebaran",
-  "description": "Feuille de personnage joueur du JDR Aldebaran.",
+  "description": "JDR Aldebaran : fiche Aventurier et table du Maître du destin.",
   "lang": "fr",
   "start_url": "./index.html",
   "scope": "./",
