@@ -2245,6 +2245,8 @@ svg.i{width:18px;height:18px;flex:none}
 #grid::after{content:"";position:absolute;inset:0;border:1.5px solid var(--rule)}
 #grid.fade::after{display:none}
 .nogrid #grid{background-image:none}
+#dmap{position:absolute;pointer-events:none;z-index:2}
+.map-text-input{position:absolute;z-index:9;background:#ece0c3;color:#241a12;border:1.5px dashed #241a12;border-radius:6px;font-family:monospace;line-height:1.22;resize:none;outline:none;padding:4px 8px;min-width:40px;overflow:hidden}
 #draw{position:absolute;left:0;top:0;width:1px;height:1px;overflow:visible;pointer-events:none;z-index:2}
 #draw path{fill:none;stroke-linecap:round;stroke-linejoin:round}
 #draw path.white{filter:drop-shadow(0 0 2px rgba(47,51,64,.6))}
@@ -2461,6 +2463,24 @@ svg.i{width:18px;height:18px;flex:none}
 .vtab:hover{color:var(--ink-strong);background:var(--wash)}
 .vtab.on{border-left-color:var(--tc);color:var(--tc)}
 .drawer{position:fixed;top:var(--bar);right:var(--tabs);bottom:0;width:min(440px,100vw - 40px);background:var(--paper);border-left:1px solid var(--rule);z-index:40;transform:translateX(calc(100% + 42px));transition:transform .3s ease;display:flex;flex-direction:column;padding:16px 18px 16px 18px}
+.ldrawer{left:var(--rail);right:auto;width:min(400px,calc(100vw - var(--rail) - 8px));border-left:0;border-right:1px solid var(--rule);transform:translateX(calc(-100% - var(--rail) - 6px));z-index:39}
+.ldrawer.open{box-shadow:inset -3px 0 0 var(--tc,transparent)!important}
+.rb.on-tool:not([aria-pressed="true"]){color:var(--c-sav)}
+.ldrawer .wxb{min-width:62px}
+#lbest .brow,#lbest .bhead{grid-template-columns:30px minmax(0,1fr) 22px 22px auto;gap:6px}#lbest .brow .del,#lbest .bhead>span:last-child{display:none}#lbest .bss i{width:16px;font-size:11.5px}#lbest .bhead .bss svg{width:13px;height:13px}#lbest .bface{width:30px;height:30px}
+.mtgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:8px}.mtgrid .wxb svg,.ldrawer .wxb svg{width:22px;height:22px}
+.mcat{font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft);margin:4px 0 -4px}
+.stgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:6px}
+.stb{aspect-ratio:1;border:1px solid var(--rule);border-radius:10px;background:#ece0c3;color:#241a12;padding:6px;display:grid;place-items:center}.stb svg{width:100%;height:100%}
+.stb:hover{border-color:var(--ink)}.stb.on{border-color:var(--tc);box-shadow:inset 0 0 0 2px var(--tc)}
+.emgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(38px,1fr));gap:2px}
+.emgrid button{border:1px solid transparent;background:none;font-size:22px;line-height:1.3;border-radius:8px;padding:2px 0}.emgrid button:hover{background:var(--wash)}.emgrid button.on{border-color:var(--tc);background:var(--wash)}
+.md-inks{display:flex;gap:6px;flex-wrap:wrap}
+.subttl small{font-family:var(--f-body);letter-spacing:0;text-transform:none;font-size:11px;color:var(--ink-soft);margin-left:6px}
+.ldrawer .blist{max-height:none;flex:1}
+.ldrawer .brow{touch-action:pan-y;user-select:none;cursor:grab}
+.bghost{position:fixed;z-index:200;width:64px;height:64px;margin:-32px 0 0 -32px;border-radius:50%;background:var(--paper);border:3px solid var(--danger);display:grid;place-items:center;color:var(--danger);pointer-events:none;opacity:.6;overflow:hidden;box-shadow:0 6px 18px rgba(47,51,64,.25)}
+.bghost.ok{opacity:1}.bghost svg{width:56%;height:56%}.bghost svg.emo{width:80%;height:80%}.bghost img{width:100%;height:100%;object-fit:cover}
 .drawer.open{transform:none;box-shadow:inset 3px 0 0 var(--tc,transparent)}
 .drawer header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .drawer h3{margin:0;font-family:var(--f-title);font-weight:300;letter-spacing:.24em;font-size:24px;text-transform:uppercase;color:var(--ink-strong)}
@@ -2699,8 +2719,8 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
   <nav class="rail" id="rail" aria-label="Outils">
     <span class="cap">Outils</span>
     <button class="rb" type="button" data-tool="measure" title="Mesurer (M)"></button>
-    <button class="rb" type="button" data-tool="draw" title="Dessiner (D) — clic droit : tout effacer"><i class="sw" id="draw-sw"></i></button>
-    <button class="rb" type="button" data-tool="erase" title="Gomme (E) — clic droit : tout effacer"></button>
+    <button class="rb" type="button" data-left="ldraw" id="rb-draw" title="Dessin (D)" aria-pressed="false"></button>
+    <button class="rb" type="button" data-left="lbest" id="rb-best" title="Bestiaire (B)" aria-pressed="false"></button>
     <div class="hr"></div>
     <span class="cap">Jetons</span>
     <button class="rb tk-add" type="button" data-add="mob" style="--c:var(--danger)" title="Nouveau monstre"></button>
@@ -2713,7 +2733,7 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
       <div id="geo"></div><div id="ggrid" hidden></div>
       <div id="bg"></div>
       <div id="grid"></div>
-      <svg id="draw"></svg>
+      <canvas id="dmap" hidden></canvas>
       <div id="tokens"></div>
       <svg id="over"></svg>
     </div>
@@ -2747,6 +2767,8 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
   <button type="button" class="vtab" data-drawer="fond" style="--tc:var(--c-dex)"><span>Fond</span></button>
 </nav>
 
+<aside class="drawer ldrawer" id="ldraw" style="--tc:var(--c-sav)" aria-label="Dessin"><header><h3>Dessin</h3></header><div class="dscroll" id="ldraw-body"></div></aside>
+<aside class="drawer ldrawer" id="lbest" style="--tc:var(--danger)" aria-label="Bestiaire"><header><h3>Bestiaire</h3></header><div class="dscroll" id="lbest-body"></div></aside>
 <aside class="drawer" id="scenario" style="--tc:var(--c-per)" aria-label="Scénario">
   <header><h3>Scénario</h3><span class="spacer"></span><button class="ib" type="button" id="sc-pdf" title="Exporter le scénario (PDF)"></button></header>
   <div class="dscroll" id="scenes"></div>
@@ -2858,6 +2880,8 @@ const IC={
   fine:'<circle cx="12" cy="12" r="4.6" fill="currentColor" fill-opacity=".25"/><path d="M12 1.8v3.2M12 19v3.2M1.8 12H5M19 12h3.2M4.8 4.8l2.2 2.2M17 17l2.2 2.2M4.8 19.2L7 17M17 7l2.2-2.2"/>',
   rain:'<path d="M7 15.5a4 4 0 0 1-.6-7.96 5.5 5.5 0 0 1 10.6 1.46 3.25 3.25 0 0 1 .5 6.5z"/><path d="M8.5 18l-1 2.5M12.5 18l-1 2.5M16.5 18l-1 2.5"/>',
   storm:'<path d="M7 14.5a4 4 0 0 1-.6-7.96 5.5 5.5 0 0 1 10.6 1.46 3.25 3.25 0 0 1 .5 6.5"/><path d="M12.8 12.5l-2.6 4.3h3.4l-2.4 4.7"/><path d="M7.8 17l-.9 2.2M17 17l-.9 2.2"/>',
+  grab:'<path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V12M11 11V4a1.5 1.5 0 0 1 3 0v7M14 11V5.5a1.5 1.5 0 0 1 3 0V12M17 10.5a1.5 1.5 0 0 1 3 0V15a7 7 0 0 1-7 7h-1.5a6.5 6.5 0 0 1-5.2-2.6L3.6 15.8a1.6 1.6 0 0 1 2.5-2L8 15.5"/>',
+  undo:'<path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
   planet:'<circle cx="12" cy="12" r="6.5"/><path d="M6.2 9.2C2.6 8.6.9 9.4 1.6 11.2c.9 2.4 6.3 5 11.7 6.4 5.4 1.4 9.6 1.2 9.7-.9.1-1.2-1.2-2.4-3.4-3.6"/>',
   image:'<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="9.5" r="2"/><path d="M21 16l-5-5-9 9"/>',
   target:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>',
@@ -2954,7 +2978,7 @@ function confirmDialog(title,text,okLbl,fn){ openDialog(`<h3>${title}</h3><p>${t
    Vue : déplacement et zoom
    ========================================================= */
 const board=$('board'), world=$('world');
-function applyView(){ world.style.transform=`translate(${V.x}px,${V.y}px) scale(${V.z})`; world.style.setProperty('--gl',Math.max(1,1/V.z).toFixed(2)+'px'); geoLater();
+function applyView(){ world.style.transform=`translate(${V.x}px,${V.y}px) scale(${V.z})`; drawMapLater(); world.style.setProperty('--gl',Math.max(1,1/V.z).toFixed(2)+'px'); geoLater();
   board.style.backgroundSize=`${CELL*V.z}px ${CELL*V.z}px`; board.style.backgroundPosition=`${V.x}px ${V.y}px`;
   placeCard(); placeMeasureLabel(); placePtrs(); if(!S.light) fowLater(); if(!isPlayer){ S.view={...V}; sendView(); } }
 function toWorld(cx,cy){ const r=board.getBoundingClientRect(); return [(cx-r.left-V.x)/V.z,(cy-r.top-V.y)/V.z]; }
@@ -2999,9 +3023,6 @@ function renderTokens(){
   S.tokens.forEach(tokenEl); markTurn();
 }
 function moveTokenEl(t){ const el=document.querySelector(`.tk[data-id="${t.id}"]`); if(el){ el.style.left=t.x+'px'; el.style.top=t.y+'px'; el.style.setProperty('--s',t.s||1); } }
-function renderDrawings(){
-  $('draw').innerHTML=S.drawings.map(d=>`<path data-id="${d.id}" d="${d.d}" stroke="${d.c}" stroke-width="${d.w}" class="${d.c==='#ffffff'?'white':''}"/>`).join('');
-}
 function renderBoard(){
   if(S.bg&&!S.bgW){ S.bgW=S.bgH=4000; }   // ancienne table : fond sur 4000 × 4000
   const bg=$('bg'), gr=$('grid');
@@ -3051,40 +3072,38 @@ function markTurn(){ const L=orderToks(), cur=L[S.turn]; document.querySelectorA
    ========================================================= */
 let tool=null;     // 'measure' | 'draw' | 'erase'
 function setTool(t){
-  tool=(tool===t)?null:t; closePop();
+  if(tool==='map'&&t!=='map') mapReset();
+  tool=(tool===t)?null:t; closePop(); if(tool!=='map') mapReset();
   document.querySelectorAll('.rb[data-tool]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.tool===tool?'true':'false'));
-  board.classList.toggle('cross',tool==='measure'||tool==='draw'||tool==='scale');
-  board.classList.toggle('erasing',tool==='erase');
+  board.classList.toggle('cross',tool==='measure'||tool==='scale'||(tool==='map'&&MT.tool!=='eraser'));
+  board.classList.toggle('erasing',tool==='map'&&MT.tool==='eraser');
+  if($('rb-draw')) $('rb-draw').classList.toggle('on-tool',tool==='map'); if($('ldraw')&&$('ldraw').classList.contains('open')) renderDrawPanel();
 }
 let gesture=null;
 function boardDown(e){
   if(isPlayer) return;
   if(e.target.closest('.tk')||e.target.closest('#card')) return;
   const [wx,wy]=toWorld(e.clientX,e.clientY);
-  if(e.button===2) return;
+  if(e.button===2){ if(tool==='map'&&wallDraft){ e.preventDefault(); finishWall(); } return; }
   closeCard();
   /* vue : clic molette (ou Alt + clic) à la souris ; au doigt, glisser dans le vide */
   if(e.button===1||(e.button===0&&e.altKey)||(e.button===0&&!tool&&e.pointerType!=='mouse')){ e.preventDefault(); gesture={k:'pan',sx:e.clientX,sy:e.clientY,vx:V.x,vy:V.y}; board.classList.add('panning'); board.setPointerCapture(e.pointerId); return; }
-  if(tool==='draw'){ const d={id:nid(),c:prefs.ink,w:prefs.width,pts:[[wx,wy]]}; d.el=document.createElementNS('http://www.w3.org/2000/svg','path');
-    d.el.setAttribute('stroke',d.c); d.el.setAttribute('stroke-width',d.w); if(d.c==='#ffffff') d.el.setAttribute('class','white'); $('draw').appendChild(d.el); gesture={k:'draw',d}; board.setPointerCapture(e.pointerId); }
-  else if(tool==='measure'||tool==='scale'){ gesture={k:'measure',scale:tool==='scale',x1:wx,y1:wy,x2:wx,y2:wy}; board.setPointerCapture(e.pointerId); drawMeasure(gesture); }
-  else if(tool==='erase'){ gesture={k:'erase'}; eraseAt(e); board.setPointerCapture(e.pointerId); }
+  if(tool==='map'){ mapDown(e,wx,wy); if(gesture) board.setPointerCapture(e.pointerId); return; }
+  if(tool==='measure'||tool==='scale'){ gesture={k:'measure',scale:tool==='scale',x1:wx,y1:wy,x2:wx,y2:wy}; board.setPointerCapture(e.pointerId); drawMeasure(gesture); }
 }
 const pathD=pts=>pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join('');
 function boardMove(e){
+  if(tool==='map'&&(!gesture||gesture.k==='map')){ mapMove(e); return; }
   if(!gesture) return;
   if(gesture.k==='pan'){ V.x=gesture.vx+e.clientX-gesture.sx; V.y=gesture.vy+e.clientY-gesture.sy; applyView(); }
-  else if(gesture.k==='draw'){ const [wx,wy]=toWorld(e.clientX,e.clientY), P=gesture.d.pts, l=P[P.length-1]; if(Math.hypot(wx-l[0],wy-l[1])<2.5/V.z) return; P.push([wx,wy]); gesture.d.el.setAttribute('d',pathD(P)); }
   else if(gesture.k==='measure'){ const [wx,wy]=toWorld(e.clientX,e.clientY); gesture.x2=wx; gesture.y2=wy; drawMeasure(gesture); }
-  else if(gesture.k==='erase') eraseAt(e);
 }
-function boardUp(){
+function boardUp(e){
   if(!gesture) return; const g=gesture; gesture=null; board.classList.remove('panning');
-  if(g.k==='draw'){ const P=g.d.pts; if(P.length===1) P.push([P[0][0]+.1,P[0][1]+.1]); S.drawings.push({id:g.d.id,c:g.d.c,w:g.d.w,d:pathD(P)}); g.d.el.dataset.id=g.d.id; g.d.el.setAttribute('d',pathD(P)); markDirty(); sync(); }
+  if(g.k==='map'){ mapUp(e,g); return; }
   if(g.k==='measure'){ measure=null; $('over').innerHTML=''; $('mlabel').hidden=true; send({t:'measure',on:false}); if(g.scale){ setTool('scale'); scaleAsk(g); } }
 }
-function eraseAt(e){ const el=document.elementFromPoint(e.clientX,e.clientY); if(el&&el.closest('#draw')&&el.dataset.id){ S.drawings=S.drawings.filter(d=>d.id!==el.dataset.id); el.remove(); markDirty(); sync(); } }
-function clearDrawings(){ if(!S.drawings.length){ toast('Aucun tracé à effacer'); return; } confirmDialog('Effacer les tracés','Tous les dessins du plateau seront retirés.','Tout effacer',()=>{ S.drawings=[]; renderDrawings(); markDirty(); sync(); }); }
+function clearDrawings(){ if(!S.drawings.length){ toast('Aucun tracé à effacer'); return; } confirmDialog('Effacer les tracés','Tous les dessins de cette scène seront retirés.','Tout effacer',()=>{ S.drawings=[]; mapReset(); renderDrawings(); markDirty(); sync(); }); }
 /* Mesure : un jeton = 72 px ≈ 1 m */
 let measure=null;
 function measureText(m){ const c=Math.hypot(m.x2-m.x1,m.y2-m.y1)/CELL; return `${(c*CELL_M).toFixed(1).replace('.',',')} m<small>${Math.round(c)} c</small>`; }
@@ -3116,7 +3135,7 @@ function paintInkSwatch(){ $('draw-sw').style.background=prefs.ink; }
    ========================================================= */
 function bindToken(el){
   el.addEventListener('pointerdown',e=>{
-    if(e.button!==0||tool==='draw'||tool==='erase') return;
+    if(e.button!==0||tool==='map') return;
     e.preventDefault(); e.stopPropagation();
     const t=tok(el.dataset.id); if(!t) return;
     const [wx,wy]=toWorld(e.clientX,e.clientY), d={t,el,dx:t.x-wx,dy:t.y-wy,sx:e.clientX,sy:e.clientY,moved:false};
@@ -3339,6 +3358,899 @@ function bestiaryDialog(edit){
   if($('b-imp')) $('b-imp').onclick=()=>{ const n=importBook(); toast(n?`Bestiaire du livre : ${n} créature${n>1?'s':''} ajoutée${n>1?'s':''} ou mise${n>1?'s':''} à jour`:'Le bestiaire du livre est déjà complet'); bestiaryDialog(edit); };
   draw(); setTimeout(()=>{ const q=$('b-q'); if(q&&matchMedia('(pointer:fine)').matches) q.focus(); },50);
 }
+
+/* =========================================================
+   DESSIN DE CARTE — moteur repris de l'Éditeur de Donjon (DongeonMapper)
+   Les objets sont en coordonnées du plateau ; S.drawings les contient.
+   ========================================================= */
+const MAP=(function(){
+  var SVG_STAMPS = {
+    /* Conventions : lumière venant du haut-gauche → faces droites / toits côté droit en « shade ».
+       Couches : fill (parchemin) · shade (parchemin ombré) · ink (encre) · fine:true (trait fin) · stroke:false */
+    maison: {
+      title:'Maison', cat:'Bâtiments',
+      layers:[
+        { d:'M15.4 6.2V2.8h2.4v5.2', fill:true },                                                     // cheminée
+        { d:'M16.6 2.8v4.4', fine:true },
+        { d:'M4.6 11.4h14.8v9.1H4.6z', fill:true },                                                   // murs
+        { d:'M16 11.4h3.4v9.1H16z', shade:true, stroke:false },                                       // mur à l'ombre
+        { d:'M4.6 11.4h14.8v9.1H4.6z' },
+        { d:'M4.6 14.2h3.2 M16.2 14.2h3.2 M4.6 17.3h4 M15.6 17.3h3.8', fine:true },                   // colombages
+        { d:'M2.4 12L7 4.6h10L21.6 12z', fill:true },                                                 // toit
+        { d:'M12 4.6h5L21.6 12H12z', shade:true, stroke:false },                                      // pan à l'ombre
+        { d:'M2.4 12L7 4.6h10L21.6 12z' },
+        { d:'M4.3 9h15.4 M5.8 6.8h12.4 M8 4.6l-1.6 2.2 M11 4.6l-.8 2.2 M14 4.6l.6 2.2 M7.4 6.8l-1.3 2.2 M11 6.8l-.4 2.2 M14.6 6.8l.7 2.2 M18 6.8l1.3 2.2 M6 9l-1.6 3 M9.6 9l-.8 3 M13.2 9l.2 3 M17 9l1 3', fine:true }, // tuiles
+        { d:'M10.4 20.5v-4.3a1.6 1.6 0 0 1 3.2 0v4.3z', shade:true },                                 // porte
+        { d:'M12 14.8v5.7 M13 18.3h0', fine:true },
+        { d:'M6.2 13.4h2.6v2.6H6.2z M15.2 13.4h2.6v2.6h-2.6z', ink:true },                            // fenêtres
+        { d:'M7.5 13.4v2.6 M6.2 14.7h2.6 M16.5 13.4v2.6 M15.2 14.7h2.6', fine:true, light:true },
+        { d:'M1.6 20.5h20.8' },
+        { d:'M2.4 20.5l.4-1 .4 1 M21 20.5l.4-1.1.4 1.1 M3.4 20.5l.3-.8', fine:true }                   // touffes
+      ]
+    },
+    chateau: {
+      title:'Château fort', cat:'Bâtiments',
+      layers:[
+        { d:'M8.6 14V4.6h1.3v1.2h1V4.6h1.3v1.2h1V4.6h1.3v1.2h1V4.6h1.1V14z', fill:true },             // donjon (arrière)
+        { d:'M13.2 4.6h2.2V14h-2.2z', shade:true, stroke:false },
+        { d:'M8.6 14V4.6h1.3v1.2h1V4.6h1.3v1.2h1V4.6h1.3v1.2h1V4.6h1.1V14' },
+        { d:'M11.3 8.6a.7.7 0 0 1 1.4 0v1.6h-1.4z', ink:true },
+        { d:'M12 4.6V1.4 M12 1.4l2.6.8L12 3', fine:false },                                          // bannière
+        { d:'M5.4 20.5V11.8h1.4v1.3h1.2v-1.3h1.4v1.3h1.2v-1.3H12v1.3h1.2v-1.3h1.4v1.3h1.2v-1.3h1.4v1.3h1.2v-1.3h1.4v8.7z', fill:true }, // courtine crénelée
+        { d:'M5.6 15.6h3.2 M10 15.6h4 M15.4 15.6h3.2 M5.6 18h2 M8.8 18h1.4 M15 18h3.6', fine:true },  // assises de pierre
+        { d:'M9.8 20.5v-3.4a2.2 2.2 0 0 1 4.4 0v3.4z', ink:true },                                    // porte
+        { d:'M2 20.5V9.4h4.4v11.1z', fill:true },                                                     // tour gauche (éclairée)
+        { d:'M17.6 20.5V9.4H22v11.1z', shade:true },                                                  // tour droite (ombre)
+        { d:'M2 12.6h4.4 M2 15.8h4.4 M17.6 12.6H22 M17.6 15.8H22 M3.6 9.4v3.2 M4.8 12.6v3.2 M19.2 9.4v3.2 M20.4 12.6v3.2', fine:true },
+        { d:'M3.8 17.2h.8v2h-.8z M19.4 17.2h.8v2h-.8z', ink:true },                                   // meurtrières
+        { d:'M1.2 9.6L4.2 3l3 6.6z', fill:true },                                                     // toits coniques
+        { d:'M4.2 3l3 6.6H4.2z', shade:true, stroke:false },
+        { d:'M1.2 9.6L4.2 3l3 6.6z' },
+        { d:'M16.8 9.6L19.8 3l3 6.6z', shade:true },
+        { d:'M4.2 3V1.6 M19.8 3V1.6', fine:true },
+        { d:'M1 20.5h22' }
+      ]
+    },
+    tour: {
+      title:'Tour', cat:'Bâtiments',
+      layers:[
+        { d:'M8 20.5V9.2h8v11.3z', fill:true, stroke:false },                                         // fût
+        { d:'M13.4 9.2H16v11.3h-2.6z', shade:true, stroke:false },                                    // côté ombre
+        { d:'M8 20.5V9.2h8v11.3' },
+        { d:'M8 11.8h8 M8 14.6h8 M8 17.4h8 M10.2 9.2v2.6 M13.4 11.8v2.8 M10.8 14.6v2.8 M14 17.4v3.1', fine:true }, // pierres
+        { d:'M11.3 12.6a.7.7 0 0 1 1.4 0v1.8h-1.4z', ink:true },                                      // fenêtre
+        { d:'M10.6 20.5v-2.6a1.4 1.4 0 0 1 2.8 0v2.6z', ink:true },                                   // porte
+        { d:'M6.4 9.6L12 1.8l5.6 7.8c-3.6 1-7.6 1-11.2 0z', fill:true, stroke:false },                // toit conique
+        { d:'M12 1.8l5.6 7.8c-1.8.5-3.7.8-5.6.8z', shade:true, stroke:false },
+        { d:'M6.4 9.6L12 1.8l5.6 7.8c-3.6 1-7.6 1-11.2 0z' },
+        { d:'M12 1.8L9.2 9.9 M12 1.8l2.8 8.1 M12 1.8v8.6', fine:true },                               // arêtes du toit
+        { d:'M12 1.8V.5 M12 .5l1.8.6-1.8.6', fine:true },                                             // fanion
+        { d:'M4 20.5h16' },
+        { d:'M5 20.5l.4-1 .4 1 M18.6 20.5l.4-1 .4 1', fine:true }
+      ]
+    },
+    grotte: {
+      title:'Grotte', cat:'Nature',
+      layers:[
+        { d:'M1.8 19.5L3.6 15l1.6-.6L6.4 11l2-1.2L9.6 7l2.4-.8 1.4 1.4 2-.4 1.8 2.6 1.4.4 1.6 3.4 1.2 1.2 1.4 4.7z', fill:true }, // massif rocheux escarpé
+        { d:'M7.2 19.5c.2-3.5 1.7-6.3 4-6.7 2.6-.4 4.7 2.4 5.1 6.7z', ink:true },                                // bouche sombre, décentrée
+        { d:'M9.4 14.4l.7 2 .8-2.7z M12.4 13.2l.6 1.7.7-1.6z', fill:true, stroke:false },                        // stalactites (roche sur le noir)
+        { d:'M4.8 15.6l2.2.4 M10.2 9.4l2.4.3 M15.6 10.8l1.6 1.2 M18.2 15l1.4.3 M13.4 8.6l-.6 1.2' },             // strates / fissures
+        { d:'M17.4 19.5c.1-1.4.9-2.2 2-2.2s1.9.8 2 2.2z', fill:true },                                           // rocher éboulé
+        { d:'M1 19.5h22' }                                                                                         // sol
+      ]
+    },
+    rochers: {
+      title:'Rochers', cat:'Nature',
+      layers:[
+        { d:'M2.2 20l1-4.4 2.8-3.2 4-1 3 1.8 1.2 3.6-.4 3.2z', fill:true, stroke:false },                 // gros bloc
+        { d:'M9.4 14.4l3.6-1.2 1.2 3.6-.4 3.2H10z', shade:true, stroke:false },                           // face à l'ombre
+        { d:'M2.2 20l1-4.4 2.8-3.2 4-1 3 1.8 1.2 3.6-.4 3.2' },
+        { d:'M6 12.4l3.4 2 3.6-1.2 M9.4 14.4L10 20', fine:true },                                         // arêtes
+        { d:'M11.2 15.8l1.4 1.3 M11 18l1.8 1.5 M5.2 16.4l1.2.9', fine:true },                              // hachures / fissure
+        { d:'M14.6 20l.6-3 2.2-2.2 2.8-.2 1.8 2 .4 3.4z', fill:true, stroke:false },                      // bloc moyen
+        { d:'M19 17.2l3-.6.4 3.4h-2.8z', shade:true, stroke:false },
+        { d:'M14.6 20l.6-3 2.2-2.2 2.8-.2 1.8 2 .4 3.4' },
+        { d:'M17.4 14.8l1.6 2.4 3-.6 M19 17.2l.6 2.8', fine:true },
+        { d:'M20.4 18.2l1 1.1', fine:true },
+        { d:'M12.6 20l.5-1.2 1.1-.2.6 1.4z', fill:true },                                                  // caillou
+        { d:'M1 20h22' }
+      ]
+    },
+    rocher: {
+      title:'Rocher', cat:'Nature',
+      layers:[
+        { d:'M3 20.2l1.2-5.4 3.2-4.4L12 8l4.6.6 3.2 3 1.4 4.4-.6 4.2z', fill:true, stroke:false },        // silhouette (éclairée)
+        { d:'M16.4 20.2l-1-7.2 4.4-1.4 1.4 4.4-.6 4.2z', shade:true, stroke:false },                       // face droite à l'ombre
+        { d:'M9.2 20.2l.8-7.6 5.4.4 1 7.2z', fill:true, stroke:false },                                    // face avant
+        { d:'M3 20.2l1.2-5.4 3.2-4.4L12 8l4.6.6 3.2 3 1.4 4.4-.6 4.2' },                                    // contour
+        { d:'M7.4 10.4l2.6 2.2 5.4.4 4.4-1.4 M10 12.6l-.8 7.6 M15.4 13l1 7.2', fine:true },                // arêtes des facettes
+        { d:'M17.4 14.4l1.4 1.3 M17.3 16.6l2.6 2.2 M17.6 18.8l1.4 1.2 M19.2 13.1l1.3 1.7', fine:true },    // hachures d'ombre
+        { d:'M12.2 14.6l.8 1.8-.6 1.6.5 1.2 M5.4 16.4l1.4.5 M12.6 9.6l1.6.4', fine:true },                // fissures
+        { d:'M20.8 20.2l.5-1.1 1.2-.3.7 1.4z M.9 20.2l.4-.9.9-.1.4 1z', fill:true },                      // cailloux
+        { d:'M.6 20.2h22.8' }
+      ]
+    },
+    buisson: {
+      title:'Buisson', cat:'Nature',
+      layers:[
+        { d:'M2.8 16.6a3.6 3.6 0 1 0 7.2 0a3.6 3.6 0 1 0 -7.2 0z M6.2 13.2a4.2 4.2 0 1 0 8.4 0a4.2 4.2 0 1 0 -8.4 0z M11 13.4a4 4 0 1 0 8 0a4 4 0 1 0 -8 0z M15 16.8a3.4 3.4 0 1 0 6.8 0a3.4 3.4 0 1 0 -6.8 0z M8.6 16.4a3.8 3.8 0 1 0 7.6 0a3.8 3.8 0 1 0 -7.6 0z M6.4 16.6V20.2H18.4V16.6z', bold:true },                                        // contour de l'union des touffes (moitié recouverte)
+        { d:'M2.8 16.6a3.6 3.6 0 1 0 7.2 0a3.6 3.6 0 1 0 -7.2 0z M6.2 13.2a4.2 4.2 0 1 0 8.4 0a4.2 4.2 0 1 0 -8.4 0z M11 13.4a4 4 0 1 0 8 0a4 4 0 1 0 -8 0z M15 16.8a3.4 3.4 0 1 0 6.8 0a3.4 3.4 0 1 0 -6.8 0z M8.6 16.4a3.8 3.8 0 1 0 7.6 0a3.8 3.8 0 1 0 -7.6 0z M6.4 16.6V20.2H18.4V16.6z', fill:true, stroke:false },                          // feuillage : masque les arcs internes
+        { d:'M8.4 14.4c.8-.7 1.9-.9 2.8-.6 M12.9 15.8c.6-.9 1.7-1.4 2.7-1.2 M7.4 18.6c.5-.8 1.3-1.2 2.1-1.2', fine:true }, // creux entre touffes
+        { d:'M9.4 10.6l.7.3 M13.4 10.8l.6.4 M5.4 15.2l.6.2 M11.4 17.8l.6.3 M14.4 18.8l.5.4', fine:true },      // feuilles (côté éclairé)
+        { d:'M16.6 11.4l1.3 1.2 M17.4 13.4l1.6 1.5 M19.2 15.2l1.5 1.4 M18.6 17.4l1.8 1.6 M16.4 17.6l1.6 1.6 M16 15.4l1.2 1.2', fine:true }, // hachures d'ombre
+        { d:'M1.2 20.2h21.6' },
+        { d:'M2.4 20.2l.4-1 .4 1 M21.4 20.2l.4-.9.4.9', fine:true }
+      ]
+    },
+    buissons: {
+      title:'Buissons', cat:'Nature',
+      layers:[
+        { d:'M2.6 17.8a2.4 2.4 0 1 0 4.8 0a2.4 2.4 0 1 0 -4.8 0z M4.8 16.2a3 3 0 1 0 6 0a3 3 0 1 0 -6 0z M8 18a2.2 2.2 0 1 0 4.4 0a2.2 2.2 0 1 0 -4.4 0z M5 17.8V20.4H10.2V17.8z M11.4 17a3.2 3.2 0 1 0 6.4 0a3.2 3.2 0 1 0 -6.4 0z M14.4 15.4a3.4 3.4 0 1 0 6.8 0a3.4 3.4 0 1 0 -6.8 0z M18.2 18a2.4 2.4 0 1 0 4.8 0a2.4 2.4 0 1 0 -4.8 0z M14.6 17V20.4H20.6V17z', bold:true },
+        { d:'M2.6 17.8a2.4 2.4 0 1 0 4.8 0a2.4 2.4 0 1 0 -4.8 0z M4.8 16.2a3 3 0 1 0 6 0a3 3 0 1 0 -6 0z M8 18a2.2 2.2 0 1 0 4.4 0a2.2 2.2 0 1 0 -4.4 0z M5 17.8V20.4H10.2V17.8z M11.4 17a3.2 3.2 0 1 0 6.4 0a3.2 3.2 0 1 0 -6.4 0z M14.4 15.4a3.4 3.4 0 1 0 6.8 0a3.4 3.4 0 1 0 -6.8 0z M18.2 18a2.4 2.4 0 1 0 4.8 0a2.4 2.4 0 1 0 -4.8 0z M14.6 17V20.4H20.6V17z', fill:true, stroke:false },
+        { d:'M6.2 17.4c.5-.5 1.2-.7 1.8-.6 M15.6 17.8c.6-.6 1.5-.9 2.3-.8', fine:true },
+        { d:'M7 13.8l.5.3 M16.8 12.8l.6.3 M3.8 16.8l.5.2 M13.4 15.2l.5.3', fine:true },
+        { d:'M9.2 16.2l1 1 M10.4 18.2l.9.9 M19.4 13.6l1.2 1.1 M20.2 15.8l1.3 1.2 M21.4 17.6l.9.9 M18.6 17.8l1.2 1.1', fine:true },
+        { d:'M1 20.4h22' },
+        { d:'M12 20.4l.3-.9.3.9 M12.8 20.4l.3-.7.3.7', fine:true }
+      ]
+    },
+    arbre_mort: {
+      title:'Arbre mort', cat:'Nature',
+      layers:[
+        { d:'M9.2 8C8.2 6.4 6.6 5.4 4.6 5 M8.9 7.2L8.1 4.2 M14.4 6.6c1-1.4 2.4-2.2 4-2.4 M14.7 6.1l.5-3.1 M16.6 4.6l1.7-1.9 M11.3 12.6c-1.4-.7-2.9-.7-4.3-.1 M12.6 13.4c1.2-.9 2.6-1.1 4-.8' }, // branches
+        { d:'M4.6 5l-1.7-.4 M4.6 5l-.6-1.5 M6.4 5.7l-1 1.2 M8.1 4.2l-.7-1.5 M8.1 4.2l.8-1.2 M18.4 4.2l1.6-.1 M18.4 4.2l.8 1.1 M15.2 3l-.5-1.4 M15.2 3l.9-1.1 M7 12.5l-1.3-.7 M7 12.5l-1 .9 M16.6 12.6l1.2-.8 M16.6 12.6l.8 1', fine:true }, // brindilles
+        { d:'M9.2 20.4c1.2-2.2 1.6-5 1.2-8.2-.2-1.6-.8-3-1.6-4.2h1.6c.6 1 1 2 1.3 3.2.4-1.6 1.2-3.2 2.4-4.6l1.2.6c-1.2 1.6-1.9 3.4-2 5.4-.1 2.8.6 5.4 1.9 7.8z', fill:true, stroke:false }, // tronc fourchu
+        { d:'M12.5 12c-.1 2.8.6 5.6 1.8 8.4h-1.9c-.5-2.6-.5-5.4.1-8.4z', shade:true, stroke:false },   // côté à l'ombre
+        { d:'M9.2 20.4c1.2-2.2 1.6-5 1.2-8.2-.2-1.6-.8-3-1.6-4.2h1.6c.6 1 1 2 1.3 3.2.4-1.6 1.2-3.2 2.4-4.6l1.2.6c-1.2 1.6-1.9 3.4-2 5.4-.1 2.8.6 5.4 1.9 7.8' },
+        { d:'M11.2 15.6a.45.65 0 1 0 .9 0a.45.65 0 1 0-.9 0z', ink:true },                            // nœud
+        { d:'M11.2 13l.1 1.3 M12.1 17.4l.2 1.7 M10.6 18.2l-.2 1.4 M10.6 10.4l.3 1', fine:true },        // écorce
+        { d:'M7.4 20.4c.8-.3 1.5-.8 2-1.6 M16.8 20.4c-.9-.3-1.6-.8-2-1.6', fine:true },                // racines
+        { d:'M2 20.4h20' },
+        { d:'M4 20.4l.3-.9.3.9 M19.4 20.4l.3-.8.3.8', fine:true }
+      ]
+    },
+    tombe: {
+      title:'Tombe', cat:'Architecture',
+      layers:[
+        { d:'M8 18.8V8.6a4 4 0 0 1 8 0v10.2z', fill:true, stroke:false },                           // stèle
+        { d:'M14 5.1A4 4 0 0 1 16 8.6v10.2h-2z', shade:true, stroke:false },                         // côté à l'ombre
+        { d:'M8 18.8V8.6a4 4 0 0 1 8 0v10.2' },
+        { d:'M12 8.6v5 M10.2 10.3h3.6', fine:false },                                                 // croix gravée
+        { d:'M10.3 15.6h3.4 M10.8 16.9h2.4 M9.1 11.6l.8.9-.4 1.2', fine:true },                       // épitaphe, fêlure
+        { d:'M4.6 20.4c1.8-2.2 4.6-3 7.4-3s5.6.8 7.4 3z', fill:true },                                // tertre
+        { d:'M8.2 19.4l.9-.3 M11.6 18.6l.8.2 M15 19.2l.8.3 M6.8 20l.6-.4', fine:true },               // mottes
+        { d:'M1.6 20.4h20.8' },
+        { d:'M3 20.4l.3-.9.3.9 M20.4 20.4l.3-.8.3.8', fine:true }
+      ]
+    },
+    colonne: {
+      title:'Colonne grecque', cat:'Architecture',
+      layers:[
+        { d:'M8.4 7.6h7.2V18H8.4z', fill:true },                                                                   // fût
+        { d:'M10.8 9v7.6 M13.2 9v7.6' },                                                                           // cannelures
+        { d:'M7 18h10v1.5H7z', fill:true },                                                                        // base
+        { d:'M5.5 19.5h13V21h-13z', fill:true },                                                                   // socle
+        { d:'M7.2 5.2h9.6c0 1.6-.9 2.4-2 2.4H9.2c-1.1 0-2-.8-2-2.4z', fill:true },                                 // échine
+        { d:'M6 6.6a1.2 1.2 0 1 0 2.4 0a1.2 1.2 0 1 0-2.4 0z M15.6 6.6a1.2 1.2 0 1 0 2.4 0a1.2 1.2 0 1 0-2.4 0z', fill:true }, // volutes
+        { d:'M5.5 3.6h13v1.6h-13z', fill:true }                                                                    // abaque
+      ]
+    },
+    colonne_brisee: {
+      title:'Colonne brisée', cat:'Architecture',
+      layers:[
+        { d:'M5.4 18V10.2l1.6-1.4 1.2 1.6 1.7-2 1.3 1.4 1.4-.6V18z', fill:true },                                  // fût brisé
+        { d:'M7.8 11.6v5 M10.2 11.2v5.4' },                                                                        // cannelures
+        { d:'M4 18h10v1.5H4z', fill:true },                                                                        // base
+        { d:'M2.5 19.5h13V21h-13z', fill:true },                                                                   // socle
+        { d:'M16.6 18.2h4.6a1.4 1.4 0 0 1 0 2.8h-4.6z', fill:true },                                              // tambour tombé
+        { d:'M16.6 18.2a1 1.4 0 1 0 0 2.8a1 1.4 0 1 0 0-2.8z', fill:true },                                       // sa face
+        { d:'M17.6 15.6l.6.5 M20.6 16l.5-.6' }                                                                     // éclats
+      ]
+    }
+  };
+  var svgPathCache = {};
+  function stampPaths(key){
+    if(svgPathCache[key]) return svgPathCache[key];
+    var st=SVG_STAMPS[key]; if(!st) return null;
+    svgPathCache[key]=st.layers.map(function(l){ return { p:new Path2D(l.d), fill:!!l.fill, shade:!!l.shade, ink:!!l.ink, stroke:l.stroke!==false, fine:!!l.fine, light:!!l.light, bold:!!l.bold }; });
+    return svgPathCache[key];
+  }
+  function stampMarkup(key){
+    var st=SVG_STAMPS[key]; if(!st) return '';
+    var h='<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">';
+    st.layers.forEach(function(l){
+      var f=l.ink ? 'currentColor' : l.shade ? '#d9c69a' : (l.fill ? '#ece0c3' : 'none');
+      var st2=l.stroke===false ? ' stroke="none"' : (l.fine ? ' stroke-width="0.9"'+(l.light?' stroke="#ece0c3"':'') : (l.bold ? ' stroke-width="3.6"' : ''));
+      h+='<path d="'+l.d+'" fill="'+f+'"'+st2+'/>';
+    });
+    return h+'</svg>';
+  }
+
+  
+  var PARCHMENT_COLOR = '#ece0c3';
+  var INK_COLOR = '#241a12';
+  var STAMP_SHADE = '#d9c69a';   /* faces à l'ombre des pictos */
+  /* ÉPAISSEURS DE TRAIT UNIFORMES (unités monde) — toute la carte s'aligne sur ces deux valeurs */
+  var LINE_W = 3;          // contours : couloirs, murs, berges, feuillage, portes, escaliers, flèches, pictos
+  var LINE_FINE = 1.5;     // détails : marches, briques, cadre de texte
+  var INK_THICKNESS = LINE_W;
+  var WATER_FILL = '#c7d7dd';   /* fond opaque (masque la hachure sous l'eau) */
+  var WAVE_COLOR = '#4f7286';   /* trait des vaguelettes */
+  var FOLIAGE_FILL = '#9cb37e'; /* vert sourd de la canopée */
+  var SAND_FILL = '#e7d29b';    /* désert : sable doré */
+  var SAND_GRAIN = '#b99a5c';   /* grains de sable */
+    var MEADOW_FILL = '#d3d3a0';  /* prairie : vert-paille clair */
+  var MEADOW_GRASS = '#6f7d45'; /* brins d'herbe */
+  var FOLIAGE_DARK = '#5f7346'; /* touffes/points plus foncés */
+  var BRICK_FILL = '#d6c08f';   /* briques : parchemin un ton plus soutenu */
+  var HATCH_BAND = 18;     // largeur de la bordure hachurée (unités monde)
+
+  
+  
+  
+  
+
+  
+  
+  
+
+  /* ---- motif de hachure uniforme (lignes diagonales régulières) ---- */
+  var hatchTile = document.createElement('canvas');
+  (function(){
+    var TS=7; hatchTile.width=TS; hatchTile.height=TS;
+    var tc=hatchTile.getContext('2d');
+    tc.strokeStyle=INK_COLOR; tc.lineWidth=1; tc.lineCap='square';
+    tc.beginPath(); tc.moveTo(-1,TS+1); tc.lineTo(TS+1,-1); tc.stroke();   // diagonale 45°, tuilée = lignes parallèles
+  })();
+  var waveTile = document.createElement('canvas');
+  (function(){
+    var W=16, H=8; waveTile.width=W; waveTile.height=H;
+    var wc=waveTile.getContext('2d');
+    wc.strokeStyle=WAVE_COLOR; wc.lineWidth=1.1; wc.lineCap='round';
+    wc.beginPath();
+    for(var x=0;x<=W;x++){ var y=H/2+Math.sin(x/W*Math.PI*2)*2; if(x===0) wc.moveTo(x,y); else wc.lineTo(x,y); }
+    wc.stroke();
+  })();
+
+  /* ---- géométrie ---- */
+  function roundRectPath(c,x,y,w,h,r){
+    r=Math.min(r, w/2, h/2);
+    c.beginPath();
+    c.moveTo(x+r,y);
+    c.arcTo(x+w,y,   x+w,y+h, r);
+    c.arcTo(x+w,y+h, x,  y+h, r);
+    c.arcTo(x,  y+h, x,  y,   r);
+    c.arcTo(x,  y,   x+w,y,   r);
+    c.closePath();
+  }
+
+  /* ---- COULOIR : passes séparées ---- */
+  function corridorPath(c,pts){
+    c.beginPath(); c.moveTo(pts[0].x,pts[0].y);
+    for(var i=1;i<pts.length;i++){ c.lineTo(pts[i].x,pts[i].y); }
+  }
+  function strokeHalo(c,o,pattern){    // bordure hachurée uniforme, sous les murs
+    if(!o.points||o.points.length<2) return;
+    c.lineCap='round'; c.lineJoin='round';
+    corridorPath(c,o.points);
+    c.lineWidth=o.width+INK_THICKNESS*2+HATCH_BAND*2; c.strokeStyle=pattern; c.stroke();
+  }
+  function strokeWalls(c,o){
+    if(!o.points||o.points.length<2) return;
+    c.lineCap='round'; c.lineJoin='round';
+    corridorPath(c,o.points);
+    c.lineWidth=o.width+INK_THICKNESS*2; c.strokeStyle=INK_COLOR; c.stroke();
+  }
+  function strokeFloor(c,o){
+    if(!o.points||o.points.length<2) return;
+    c.lineCap='round'; c.lineJoin='round';
+    corridorPath(c,o.points);
+    c.lineWidth=o.width; c.strokeStyle=PARCHMENT_COLOR; c.stroke();
+  }
+  // aperçu couloir (pendant le tracé)
+  function paintCorridorPreview(c,o){
+    var hp=c.createPattern(hatchTile,'repeat');
+    c.globalCompositeOperation='source-over';
+    if(hp) strokeHalo(c,o,hp);
+    strokeWalls(c,o);
+    strokeFloor(c,o);
+  }
+
+  /* ---- PORTE ---- */
+  function paintDoor(c,obj){
+    var a=obj.a, b=obj.b;
+    var dx=b.x-a.x, dy=b.y-a.y, len=Math.hypot(dx,dy);
+    if(len<6){ var cx=a.x, cy=a.y; a={x:cx-22,y:cy}; b={x:cx+22,y:cy}; dx=44; dy=0; len=44; }
+    var ang=Math.atan2(dy,dx), depth=16;
+    c.save();
+    c.translate((a.x+b.x)/2,(a.y+b.y)/2); c.rotate(ang);
+    c.globalCompositeOperation='source-over';
+    c.fillStyle=PARCHMENT_COLOR; c.fillRect(-len/2-3,-depth/2-3,len+6,depth+6);
+    c.strokeStyle=INK_COLOR; c.lineJoin='miter'; c.lineCap='butt'; c.lineWidth=LINE_W;
+    c.strokeRect(-len/2,-depth/2,len,depth);
+    c.beginPath();
+    c.moveTo(-len/2,-depth); c.lineTo(-len/2,depth);
+    c.moveTo( len/2,-depth); c.lineTo( len/2,depth);
+    c.stroke();
+    c.restore();
+  }
+
+  /* ---- PORTE SECRÈTE : comme une porte mais jambages pointillés + « S » ---- */
+  function paintSecret(c,obj){
+    var a=obj.a, b=obj.b;
+    var dx=b.x-a.x, dy=b.y-a.y, len=Math.hypot(dx,dy);
+    if(len<6){ var cx=a.x, cy=a.y; a={x:cx-22,y:cy}; b={x:cx+22,y:cy}; dx=44; dy=0; len=44; }
+    var ang=Math.atan2(dy,dx), depth=16;
+    c.save();
+    c.translate((a.x+b.x)/2,(a.y+b.y)/2); c.rotate(ang);
+    c.globalCompositeOperation='source-over';
+    c.fillStyle=PARCHMENT_COLOR; c.fillRect(-len/2-3,-depth/2-3,len+6,depth+6);
+    c.strokeStyle=INK_COLOR; c.lineJoin='miter'; c.lineCap='butt'; c.lineWidth=LINE_W;
+    c.setLineDash([5,4]);                      // contour du vantail en pointillés = secret
+    c.strokeRect(-len/2,-depth/2,len,depth);
+    c.setLineDash([]);
+    c.beginPath();                             // jambages pleins
+    c.moveTo(-len/2,-depth); c.lineTo(-len/2,depth);
+    c.moveTo( len/2,-depth); c.lineTo( len/2,depth);
+    c.stroke();
+    c.fillStyle=INK_COLOR; c.textAlign='center'; c.textBaseline='middle';
+    c.font='bold 13px "Cinzel", serif';
+    c.fillText('S', 0, 0);                     // marque « S » au centre
+    c.restore();
+  }
+
+  /* ---- ESCALIER : rectangle + marches perpendiculaires au sens du tracé ---- */
+  function paintStairs(c,obj){
+    var a=obj.a, b=obj.b;
+    var dx=b.x-a.x, dy=b.y-a.y, len=Math.hypot(dx,dy);
+    if(len<6){ len=48; a={x:obj.a.x-24,y:obj.a.y}; b={x:obj.a.x+24,y:obj.a.y}; dx=48; dy=0; }
+    var ang=Math.atan2(dy,dx);
+    var w=Math.max(16, (obj.width||40)*0.7);   // largeur de l'escalier (perpendiculaire)
+    c.save();
+    c.translate((a.x+b.x)/2,(a.y+b.y)/2); c.rotate(ang);
+    c.globalCompositeOperation='source-over';
+    c.fillStyle=PARCHMENT_COLOR; c.fillRect(-len/2,-w/2,len,w);   // sol
+    c.strokeStyle=INK_COLOR; c.lineJoin='miter'; c.lineCap='butt'; c.lineWidth=LINE_W;
+    c.strokeRect(-len/2,-w/2,len,w);                              // contour
+    // marches : traits transversaux régulièrement espacés, resserrés vers le "haut" (b)
+    var step=12;
+    c.lineWidth=LINE_FINE;
+    c.beginPath();
+    for(var x=-len/2+step; x<len/2-1; x+=step){
+      c.moveTo(x,-w/2); c.lineTo(x,w/2);
+    }
+    c.stroke();
+    // flèche de montée le long de l'axe (indique le sens vers b)
+    c.strokeStyle=INK_COLOR; c.lineWidth=LINE_FINE; c.lineCap='round'; c.lineJoin='round';
+    c.beginPath(); c.moveTo(-len/2+6,0); c.lineTo(len/2-8,0); c.stroke();
+    c.beginPath();
+    c.moveTo(len/2-8,0); c.lineTo(len/2-16,-5); c.moveTo(len/2-8,0); c.lineTo(len/2-16,5);
+    c.stroke();
+    c.restore();
+  }
+
+  /* ---- ICÔNE ---- */
+  function paintIcon(c,obj){
+    c.save(); c.globalCompositeOperation='source-over';
+    c.font='30px serif'; c.textAlign='center'; c.textBaseline='middle';
+    c.fillText(obj.emoji, obj.x, obj.y); c.restore();
+  }
+
+  /* ---- PICTOGRAMME SVG ---- */
+  function paintSvgStamp(c,obj){
+    var layers=stampPaths(obj.key); if(!layers) return;
+    var size=obj.size||40, k=size/24;
+    c.save(); c.globalCompositeOperation='source-over';
+    c.translate(obj.x-size/2, obj.y-size/2); c.scale(k,k);
+    var lw=Math.min(LINE_W, size*0.06)/k, lwf=Math.min(LINE_FINE, size*0.035)/k;   // contours = LINE_W, détails = LINE_FINE
+    c.lineCap='round'; c.lineJoin='round';
+    layers.forEach(function(l){
+      if(l.fill || l.ink || l.shade){ c.fillStyle = l.ink ? INK_COLOR : l.shade ? STAMP_SHADE : PARCHMENT_COLOR; c.fill(l.p); }
+      if(l.stroke){ c.lineWidth = l.fine ? lwf : l.bold ? lw*2 : lw; c.strokeStyle = l.light ? PARCHMENT_COLOR : INK_COLOR; c.stroke(l.p); }
+    });
+    c.restore();
+  }
+
+  /* ---- FLÈCHE ---- */
+  function paintArrow(c,obj){
+    var tip=obj.tip, tail=obj.tail;
+    c.save(); c.globalCompositeOperation='source-over';
+    c.strokeStyle=INK_COLOR; c.fillStyle=INK_COLOR; c.lineCap='round'; c.lineJoin='round'; c.lineWidth=LINE_W;
+    c.beginPath(); c.moveTo(tail.x,tail.y); c.lineTo(tip.x,tip.y); c.stroke();
+    var ang=Math.atan2(tip.y-tail.y, tip.x-tail.x), hl=16, ha=Math.PI/7;
+    c.beginPath();
+    c.moveTo(tip.x, tip.y);
+    c.lineTo(tip.x-hl*Math.cos(ang-ha), tip.y-hl*Math.sin(ang-ha));
+    c.lineTo(tip.x-hl*Math.cos(ang+ha), tip.y-hl*Math.sin(ang+ha));
+    c.closePath(); c.fill();
+    c.restore();
+  }
+
+  /* ---- TEXTE : toujours dans un cadre arrondi, au-dessus de tout ---- */
+  function paintText(c,obj){
+    c.save(); c.globalCompositeOperation='source-over';
+    c.font='18px "Special Elite", monospace';
+    c.textAlign='left'; c.textBaseline='top';
+    var padX=9, padY=6, r=9, lh=22;
+    var lines=String(obj.text).split('\n');
+    var tw=0;
+    for(var i=0;i<lines.length;i++){ var w=c.measureText(lines[i]).width; if(w>tw) tw=w; }
+    var bw=tw+padX*2, bh=lines.length*lh+padY*2;
+    roundRectPath(c, obj.x, obj.y, bw, bh, r);
+    c.fillStyle=PARCHMENT_COLOR; c.fill();
+    c.lineWidth=LINE_FINE; c.strokeStyle=INK_COLOR; c.stroke();
+    c.fillStyle=INK_COLOR;
+    for(var j=0;j<lines.length;j++){ c.fillText(lines[j], obj.x+padX, obj.y+padY+j*lh); }
+    c.restore();
+  }
+
+  /* ---- aperçu d'un objet actif ---- */
+  /* ---- FEUILLAGE : touffes rondes qui se chevauchent (forêt OSR) ---- */
+  function foliageClumps(pts, w){
+    // place des centres régulièrement le long de la polyligne, pas <= rayon*0.55
+    var r=w/2, step=Math.max(6, r*0.55), out=[], i, acc=0;
+    if(!pts.length) return out;
+    out.push({x:pts[0].x, y:pts[0].y});
+    for(i=1;i<pts.length;i++){
+      var a=pts[i-1], b=pts[i], dx=b.x-a.x, dy=b.y-a.y, seg=Math.hypot(dx,dy);
+      if(seg<1e-6) continue;
+      var d=step-acc;
+      while(d<seg){ out.push({x:a.x+dx*(d/seg), y:a.y+dy*(d/seg)}); d+=step; }
+      acc=(seg-(d-step));
+    }
+    var last=pts[pts.length-1];
+    if(Math.hypot(last.x-out[out.length-1].x, last.y-out[out.length-1].y) > step*0.5) out.push({x:last.x, y:last.y});
+    return out;
+  }
+  // pseudo-hasard DÉTERMINISTE à partir des coordonnées (stable entre rendus et après save/load)
+  function seeded(x,y){ var n=Math.sin(x*12.9898 + y*78.233)*43758.5453; return n-Math.floor(n); }
+  // touffe IRRÉGULIÈRE en lobes de feuilles : rayon modulé par angle (bosses pointues) + jitter déterministe
+  function leafBlobPath(c, cx, cy, base){
+    var phase = seeded(cx, cy)*Math.PI*2;
+    var lobes = 7 + Math.floor(seeded(cx*0.7, cy*1.3)*4);   // 7..10 lobes
+    var steps = lobes*5;                                     // assez de points pour des pointes nettes
+    for(var s=0;s<=steps;s++){
+      var t = s/steps * Math.PI*2;
+      // bosses principales (lobes) + harmonique + petit bruit positionnel = bord "feuillu"
+      var wob = 0.20*Math.sin(t*lobes + phase)
+              + 0.09*Math.sin(t*(lobes*2+1) - phase*1.7)
+              + (seeded(cx + Math.cos(t)*9.1, cy + Math.sin(t)*9.1) - 0.5)*0.16;
+      var rr = base*(1 + wob);
+      var x = cx + Math.cos(t)*rr, y = cy + Math.sin(t)*rr;
+      if(s===0) c.moveTo(x,y); else c.lineTo(x,y);
+    }
+    c.closePath();
+  }
+  /* Feuillage et eau sont peints en PASSES GLOBALES (comme les couloirs) :
+     tous les contours d'abord, puis tous les remplissages par-dessus → les tracés qui se croisent fusionnent. */
+  function foliageRadAt(r,x,y){ return r*(0.70 + seeded(x,y)*0.28); }
+  function foliageGeom(o){
+    if(!o.points||!o.points.length) return null;
+    var r=o.width/2; return { r:r, clumps:foliageClumps(o.points, o.width) };
+  }
+  function foliageStage(c,g,stage){
+    var i,a;
+    if(stage===1){        // 1) contour encre de toutes les touffes
+      c.strokeStyle=INK_COLOR; c.lineWidth=LINE_W*2;   // moitié recouverte par le vert → LINE_W visible
+      for(i=0;i<g.clumps.length;i++){ a=g.clumps[i]; c.beginPath(); leafBlobPath(c, a.x, a.y, foliageRadAt(g.r,a.x,a.y)); c.stroke(); }
+    } else if(stage===2){ // 2) remplissage vert : couvre tous les arcs internes, ne garde que le bord extérieur festonné
+      c.fillStyle=FOLIAGE_FILL;
+      for(i=0;i<g.clumps.length;i++){ a=g.clumps[i]; c.beginPath(); leafBlobPath(c, a.x, a.y, foliageRadAt(g.r,a.x,a.y)); c.fill(); }
+
+    }
+  }
+  function foliagePass(c,list){
+    var gs=[], i, st;
+    for(i=0;i<list.length;i++){ var g=foliageGeom(list[i]); if(g) gs.push(g); }
+    if(!gs.length) return;
+    c.save(); c.globalCompositeOperation='source-over'; c.lineJoin='round'; c.lineCap='round';
+    for(st=1;st<=2;st++){ for(i=0;i<gs.length;i++) foliageStage(c,gs[i],st); }
+    c.restore();
+  }
+  function paintFoliage(c,o){ foliagePass(c,[o]); }
+
+  /* ---- RIVIÈRE : berges encre + eau + reflet, sans hachures (fusion entre tracés) ---- */
+  function riverPass(c,list){
+    var rs=[], i; for(i=0;i<list.length;i++){ if(list[i].points && list[i].points.length>=2) rs.push(list[i]); }
+    if(!rs.length) return;
+    c.save(); c.lineCap='round'; c.lineJoin='round'; c.globalCompositeOperation='source-over';
+    for(i=0;i<rs.length;i++){ corridorPath(c,rs[i].points); c.lineWidth=rs[i].width+LINE_W*2; c.strokeStyle=INK_COLOR; c.stroke(); }   // toutes les berges
+    for(i=0;i<rs.length;i++){ corridorPath(c,rs[i].points); c.lineWidth=rs[i].width; c.strokeStyle=WATER_FILL; c.stroke(); }  // toute l'eau par-dessus
+    var wp=c.createPattern(waveTile,'repeat');
+    if(wp){                                                     // vaguelettes : un seul tracé par largeur → trame continue
+      var byW={}; for(i=0;i<rs.length;i++){ (byW[rs[i].width]=byW[rs[i].width]||[]).push(rs[i]); }
+      Object.keys(byW).forEach(function(w){
+        c.beginPath();
+        byW[w].forEach(function(o){ c.moveTo(o.points[0].x,o.points[0].y); for(var k=1;k<o.points.length;k++) c.lineTo(o.points[k].x,o.points[k].y); });
+        c.lineWidth=+w; c.strokeStyle=wp; c.stroke();
+      });
+    }
+    c.restore();
+  }
+  function paintRiver(c,o){ riverPass(c,[o]); }
+
+  /* ---- PRAIRIE : aplat vert-paille + touffes d'herbes hautes sur une GRILLE MONDE commune
+     → deux zones qui se chevauchent partagent les mêmes touffes : fusion parfaite, pas de double densité ---- */
+  var GRASS_STEP = 24;                         // pas de la grille des touffes
+  /* cellules d'une grille MONDE (pas « step ») couvertes par un tracé peint — partagées par tous les tracés du même type */
+  var gridCache = (typeof WeakMap!=='undefined') ? new WeakMap() : null;
+  function gridCells(o, step, margin, salt){
+    var pts=o.points, n=pts.length, ck=step+':'+salt, all=gridCache && gridCache.get(o);
+    if(all && all[ck] && all[ck].n===n && all[ck].w===o.width) return all[ck].cells;
+    var cells={}, r=o.width/2, lim=r-margin, i, gx, gy;
+    for(i=0;i<n;i++){
+      var a=pts[i], b=pts[i+1]||a;
+      var x0=Math.floor((Math.min(a.x,b.x)-r)/step), x1=Math.ceil((Math.max(a.x,b.x)+r)/step);
+      var y0=Math.floor((Math.min(a.y,b.y)-r)/step), y1=Math.ceil((Math.max(a.y,b.y)+r)/step);
+      for(gx=x0;gx<=x1;gx++) for(gy=y0;gy<=y1;gy++){
+        var key=gx+','+gy; if(cells[key]) continue;
+        var px=(gx+(seeded(gx*1.31+salt,gy*0.77)-0.5)*0.8)*step, py=(gy+(seeded(gy*1.13,gx*0.59+salt)-0.5)*0.8)*step;
+        if(distToSeg({x:px,y:py},a,b)<=lim) cells[key]={x:px,y:py};
+      }
+    }
+    if(gridCache){ if(!all){ all={}; gridCache.set(o,all); } all[ck]={n:n,w:o.width,cells:cells}; }
+    return cells;
+  }
+  function meadowTufts(o){ return gridCells(o, GRASS_STEP, 2, 0); }
+  function paintTuft(c,t){
+    var s1=seeded(t.x,t.y), blades=3+Math.floor(s1*3);
+    for(var k=0;k<blades;k++){
+      var sk=seeded(t.x+k*3.7, t.y-k*2.3);
+      var bx=t.x+(sk-0.5)*7, L=9+seeded(t.y+k, t.x-k)*8;                 // herbes HAUTES : 9 à 17
+      var lean=0.32+(seeded(t.x*0.5+k, t.y*0.5)-0.5)*0.6;                 // couchées par le vent, vers la droite
+      c.moveTo(bx,t.y);
+      c.quadraticCurveTo(bx+lean*L*0.15, t.y-L*0.65, bx+lean*L, t.y-L);
+    }
+  }
+  function meadowPass(c,list){
+    var ms=[], i, k; for(i=0;i<list.length;i++){ if(list[i].points && list[i].points.length) ms.push(list[i]); }
+    if(!ms.length) return;
+    c.save(); c.globalCompositeOperation='source-over'; c.lineCap='round'; c.lineJoin='round';
+    c.fillStyle=MEADOW_FILL; c.strokeStyle=MEADOW_FILL;                  // 1) aplat (sans contour : sol doux)
+    for(i=0;i<ms.length;i++){
+      var pts=ms[i].points;
+      if(pts.length===1){ c.beginPath(); c.arc(pts[0].x,pts[0].y,ms[i].width/2,0,Math.PI*2); c.fill(); }
+      else { corridorPath(c,pts); c.lineWidth=ms[i].width; c.stroke(); }
+    }
+    var all={};                                                           // 2) touffes : union des cellules
+    for(i=0;i<ms.length;i++){ var cl=meadowTufts(ms[i]); for(k in cl) all[k]=cl[k]; }
+    c.strokeStyle=MEADOW_GRASS; c.lineWidth=LINE_FINE;
+    c.beginPath(); for(k in all){ var tf=all[k]; if(seeded(tf.x*0.61,tf.y*0.83)<0.65) paintTuft(c,tf); } c.stroke();   // ~2 cases sur 3 : touffes éparses
+    c.restore();
+  }
+  function paintMeadow(c,o){ meadowPass(c,[o]); }
+
+  /* ---- DÉSERT : aplat de sable + grains fins (grille monde commune → fusion sans raccord) ---- */
+  var SAND_GRAIN_STEP = 9;
+  function desertPass(c,list){
+    var ds=[], i, k; for(i=0;i<list.length;i++){ if(list[i].points && list[i].points.length) ds.push(list[i]); }
+    if(!ds.length) return;
+    c.save(); c.globalCompositeOperation='source-over'; c.lineCap='round'; c.lineJoin='round';
+    c.fillStyle=SAND_FILL; c.strokeStyle=SAND_FILL;                     // 1) aplat de sable, sans contour
+    for(i=0;i<ds.length;i++){
+      var pts=ds[i].points;
+      if(pts.length===1){ c.beginPath(); c.arc(pts[0].x,pts[0].y,ds[i].width/2,0,Math.PI*2); c.fill(); }
+      else { corridorPath(c,pts); c.lineWidth=ds[i].width; c.stroke(); }
+    }
+    var grains={};
+    for(i=0;i<ds.length;i++){
+      var g=gridCells(ds[i], SAND_GRAIN_STEP, 1, 3); for(k in g) grains[k]=g[k];
+    }
+    c.fillStyle=SAND_GRAIN; c.beginPath();                               // 2) grains de sable épars
+    for(k in grains){ var p=grains[k]; if(seeded(p.x*2.1,p.y*1.7)<0.55){ var rr=0.6+seeded(p.y,p.x)*0.6; c.moveTo(p.x+rr,p.y); c.arc(p.x,p.y,rr,0,Math.PI*2); } }
+    c.fill();
+    c.restore();
+  }
+  function paintDesert(c,o){ desertPass(c,[o]); }
+
+  /* ---- PLANCHER : motif de lames de bois tuilé dans l'espace MONDE (fusion parfaite, pas de raccord) ---- */
+  /* style « encre » : fond parchemin à peine teinté, rainures et raccords à l'encre, quelques traits de veinage */
+  var WOOD_FILL='#e4d5b1';
+  var woodTile=null, WOOD_TS=2;                                       // tuile dessinée en x2 pour rester nette au zoom
+  function buildWoodTile(){
+    var TW=200, TH=80, BH=16, S=WOOD_TS;                              // 5 lames de 16 de haut, tuile 200 × 80
+    woodTile=document.createElement('canvas'); woodTile.width=TW*S; woodTile.height=TH*S;
+    var t=woodTile.getContext('2d'); t.scale(S,S);
+    t.fillStyle=WOOD_FILL; t.fillRect(0,0,TW,TH);
+    var offs=[0,120,52,160,86];                                       // raccords décalés d'une lame à l'autre
+    t.strokeStyle=INK_COLOR; t.lineCap='round';
+    for(var r=0;r<5;r++){
+      var y=r*BH;
+      t.lineWidth=LINE_FINE;                                          // rainure entre deux lames
+      t.beginPath(); t.moveTo(0,y); t.lineTo(TW,y); t.stroke();
+      t.lineWidth=LINE_FINE*0.9;                                      // raccord de bout de lame
+      var jx=offs[r]; t.beginPath(); t.moveTo(jx,y); t.lineTo(jx,y+BH); t.stroke();
+      t.lineWidth=0.7; t.globalAlpha=0.55;                            // 2 ou 3 traits de veinage, courts et sobres
+      for(var g=0; g<3; g++){
+        var gx=(offs[r]+18+g*58+seeded(r*2.3,g*1.9)*20)%TW, gy=y+5+seeded(g*3.1,r*1.3)*6, gl=14+seeded(r,g)*18;
+        if(gx+gl>TW) gx=TW-gl-2;
+        t.beginPath(); t.moveTo(gx,gy); t.quadraticCurveTo(gx+gl*0.5, gy-1, gx+gl, gy); t.stroke();
+      }
+      t.globalAlpha=1;
+    }
+  }
+  function woodPass(c,list){
+    var ws=[], i; for(i=0;i<list.length;i++){ if(list[i].points && list[i].points.length) ws.push(list[i]); }
+    if(!ws.length) return;
+    if(!woodTile) buildWoodTile();
+    var pat=c.createPattern(woodTile,'repeat'); if(!pat) return;
+    if(pat.setTransform && typeof DOMMatrix!=='undefined') pat.setTransform(new DOMMatrix().scale(1/WOOD_TS));
+    c.save(); c.globalCompositeOperation='source-over'; c.lineCap='round'; c.lineJoin='round';
+    c.strokeStyle=pat; c.fillStyle=pat;
+    var byW={};                                                       // un seul tracé par largeur → pas de liseré aux recouvrements
+    for(i=0;i<ws.length;i++){
+      var pts=ws[i].points;
+      if(pts.length===1){ c.beginPath(); c.arc(pts[0].x,pts[0].y,ws[i].width/2,0,Math.PI*2); c.fill(); }
+      else (byW[ws[i].width]=byW[ws[i].width]||[]).push(pts);
+    }
+    Object.keys(byW).forEach(function(w){
+      c.beginPath();
+      byW[w].forEach(function(pts){ c.moveTo(pts[0].x,pts[0].y); for(var k=1;k<pts.length;k++) c.lineTo(pts[k].x,pts[k].y); });
+      c.lineWidth=+w; c.stroke();
+    });
+    c.restore();
+  }
+  function paintWood(c,o){ woodPass(c,[o]); }
+
+  /* ---- CRAYON : trait d'encre libre, lissé (courbes par les milieux) ---- */
+  function pencilWidth(o){ return o.w ? o.w : Math.max(1, (o.width||40)*LINE_W/40); }
+  function paintPencil(c,o){
+    var pts=o.points; if(!pts||!pts.length) return;
+    c.save(); c.globalCompositeOperation='source-over';
+    c.lineCap='round'; c.lineJoin='round'; c.strokeStyle=o.c||INK_COLOR; c.fillStyle=o.c||INK_COLOR; c.lineWidth=pencilWidth(o);
+    if(pts.length===1){ c.beginPath(); c.arc(pts[0].x,pts[0].y,pencilWidth(o)/2,0,Math.PI*2); c.fill(); c.restore(); return; }
+    c.beginPath(); c.moveTo(pts[0].x,pts[0].y);
+    for(var i=1;i<pts.length-1;i++){ var mx=(pts[i].x+pts[i+1].x)/2, my=(pts[i].y+pts[i+1].y)/2; c.quadraticCurveTo(pts[i].x,pts[i].y,mx,my); }
+    c.lineTo(pts[pts.length-1].x,pts[pts.length-1].y); c.stroke();
+    c.restore();
+  }
+
+  /* ---- MUR : bande encre + remplissage + briques éparses (fusion entre murs) ---- */
+  function wallThick(o){ return Math.max(8, (o.width||40)*0.4); }
+  function wallPath(c,pts){ c.beginPath(); c.moveTo(pts[0].x,pts[0].y); for(var i=1;i<pts.length;i++) c.lineTo(pts[i].x,pts[i].y); }
+  function wallBricks(c,o){
+    var th=wallThick(o), pts=o.points, bh=th*0.30, bl=th*0.62, gap=th*0.08;
+    c.lineWidth=LINE_FINE; c.strokeStyle=INK_COLOR; c.fillStyle=BRICK_FILL;
+    for(var i=1;i<pts.length;i++){
+      var a=pts[i-1], b=pts[i], dx=b.x-a.x, dy=b.y-a.y, L=Math.hypot(dx,dy); if(L<1) continue;
+      var ang=Math.atan2(dy,dx), step=bl+gap, n=Math.floor((L-th*0.3)/step);
+      c.save(); c.translate(a.x,a.y); c.rotate(ang);
+      for(var row=0;row<2;row++){                          // deux assises, décalées d'une demi-brique
+        var yy=(row===0 ? -bh-gap/2 : gap/2), off=row ? step/2 : 0;
+        for(var k=0;k<=n;k++){
+          var x=th*0.15+off+k*step; if(x+bl>L-th*0.15) break;
+          var sx=a.x+Math.cos(ang)*x, sy=a.y+Math.sin(ang)*x;
+          if(seeded(sx*0.37+row*13.1, sy*0.53-row*7.7) > 0.42) continue;   // ÉPARSE : ~40 % des briques
+          var jx=(seeded(sx,sy+row)-0.5)*gap*1.5;
+          c.beginPath(); c.rect(x+jx, yy, bl, bh); c.fill(); c.stroke();
+        }
+      }
+      c.restore();
+    }
+  }
+  /* ombre portée : peinte opaque sur un calque, puis posée en transparence → les ombres qui se croisent ne s'additionnent pas */
+  var WALL_SHADOW_ALPHA = 0.26;
+  var shadowLayer = document.createElement('canvas'), shadowCtx = shadowLayer.getContext('2d');
+  function wallShadows(c,ws){
+    var W=c.canvas.width, H=c.canvas.height;
+    if(shadowLayer.width!==W || shadowLayer.height!==H){ shadowLayer.width=W; shadowLayer.height=H; }
+    shadowCtx.setTransform(1,0,0,1,0,0); shadowCtx.clearRect(0,0,W,H);
+    shadowCtx.setTransform(c.getTransform());
+    shadowCtx.lineJoin='miter'; shadowCtx.miterLimit=4; shadowCtx.lineCap='square'; shadowCtx.strokeStyle=INK_COLOR;
+    for(var i=0;i<ws.length;i++){
+      var th=wallThick(ws[i]), off=Math.max(3, th*0.35);              // lumière du haut-gauche → ombre vers le bas-droite
+      shadowCtx.save(); shadowCtx.translate(off,off);
+      wallPath(shadowCtx,ws[i].points); shadowCtx.lineWidth=th+LINE_W*2; shadowCtx.stroke();
+      shadowCtx.restore();
+    }
+    c.save(); c.setTransform(1,0,0,1,0,0); c.globalAlpha=WALL_SHADOW_ALPHA; c.globalCompositeOperation='source-over';
+    c.drawImage(shadowLayer,0,0); c.restore();
+  }
+  function wallPass(c,list){
+    var ws=[], i; for(i=0;i<list.length;i++){ if(list[i].points && list[i].points.length>=2) ws.push(list[i]); }
+    if(!ws.length) return;
+    wallShadows(c,ws);                                                 // 0) ombres portées, sous tous les murs
+    c.save(); c.globalCompositeOperation='source-over'; c.lineJoin='miter'; c.miterLimit=4; c.lineCap='square';
+    for(i=0;i<ws.length;i++){ wallPath(c,ws[i].points); c.lineWidth=wallThick(ws[i])+LINE_W*2; c.strokeStyle=INK_COLOR; c.stroke(); }   // tous les contours
+    for(i=0;i<ws.length;i++){ wallPath(c,ws[i].points); c.lineWidth=wallThick(ws[i]); c.strokeStyle=PARCHMENT_COLOR; c.stroke(); }        // tous les intérieurs
+    for(i=0;i<ws.length;i++){ wallBricks(c,ws[i]); }                                                                                    // briques
+    c.restore();
+  }
+  function paintActive(c,obj){
+    if(obj.type==='corridor') paintCorridorPreview(c,obj);
+    else if(obj.type==='river') paintRiver(c,obj);
+    else if(obj.type==='foliage') paintFoliage(c,obj);
+    else if(obj.type==='pencil') paintPencil(c,obj);
+    else if(obj.type==='meadow') paintMeadow(c,obj);
+    else if(obj.type==='desert') paintDesert(c,obj);
+    else if(obj.type==='wood') paintWood(c,obj);
+    else if(obj.type==='door') paintDoor(c,obj);
+    else if(obj.type==='secret') paintSecret(c,obj);
+    else if(obj.type==='stairs') paintStairs(c,obj);
+    else if(obj.type==='arrow') paintArrow(c,obj);
+  }
+
+  function distToSeg(p,a,b){
+    var vx=b.x-a.x, vy=b.y-a.y, wx=p.x-a.x, wy=p.y-a.y;
+    var c1=vx*wx+vy*wy; if(c1<=0) return Math.hypot(p.x-a.x,p.y-a.y);
+    var c2=vx*vx+vy*vy; if(c2<=c1) return Math.hypot(p.x-b.x,p.y-b.y);
+    var t=c1/c2; return Math.hypot(p.x-(a.x+vx*t), p.y-(a.y+vy*t));
+  }
+  function distToPolyline(p,pts){
+    var d=Infinity; for(var i=0;i<pts.length-1;i++){ d=Math.min(d, distToSeg(p,pts[i],pts[i+1])); }
+    if(pts.length===1) d=Math.hypot(p.x-pts[0].x,p.y-pts[0].y);
+    return d;
+  }
+  function hitObject(o,p){
+    if(o.type==='wood'){ return distToPolyline(p,o.points) <= o.width/2; }
+    if(o.type==='desert'){ return distToPolyline(p,o.points) <= o.width/2; }
+    if(o.type==='meadow'){ return distToPolyline(p,o.points) <= o.width/2; }
+    if(o.type==='pencil'){ return distToPolyline(p,o.points) <= pencilWidth(o)/2 + 6; }
+    if(o.type==='wall'){ return distToPolyline(p,o.points) <= wallThick(o)/2 + 6; }
+    if(o.type==='corridor' || o.type==='river' || o.type==='foliage'){ return distToPolyline(p,o.points) <= (o.width/2 + 8); }
+    if(o.type==='door' || o.type==='secret' || o.type==='stairs'){ return distToSeg(p,o.a,o.b) <= ((o.width? o.width/2:0) + 20); }
+    if(o.type==='arrow'){ return distToSeg(p,o.tip,o.tail) <= 12; }
+    if(o.type==='icon'){ return Math.hypot(p.x-o.x, p.y-o.y) <= 22; }
+    if(o.type==='svg'){ return Math.abs(p.x-o.x) <= (o.size||40)/2+4 && Math.abs(p.y-o.y) <= (o.size||40)/2+4; }
+    if(o.type==='text'){
+      var lines=String(o.text).split('\n'); var ml=0; for(var t=0;t<lines.length;t++){ if(lines[t].length>ml) ml=lines[t].length; }
+      var bw=ml*11+24, bh=lines.length*22+16;
+      return p.x>=o.x-4 && p.x<=o.x+bw+4 && p.y>=o.y-4 && p.y<=o.y+bh+4;
+    }
+    return false;
+  }
+  function renderAll(c, objects){
+    var i,o, by=function(t){ return objects.filter(function(q){ return q.type===t; }); };
+    desertPass(c, by('desert')); meadowPass(c, by('meadow')); woodPass(c, by('wood'));
+    var hp=c.createPattern(hatchTile,'repeat'); c.globalCompositeOperation='source-over';
+    if(hp) objects.forEach(function(q){ if(q.type==='corridor') strokeHalo(c,q,hp); });
+    riverPass(c, by('river'));
+    objects.forEach(function(q){ if(q.type==='corridor') strokeWalls(c,q); });
+    objects.forEach(function(q){ if(q.type==='corridor') strokeFloor(c,q); });
+    foliagePass(c, by('foliage')); wallPass(c, by('wall'));
+    ['stairs','door','secret','pencil','icon','svg','arrow','text'].forEach(function(t){ for(i=0;i<objects.length;i++){ o=objects[i]; if(o.type!==t) continue;
+      if(t==='stairs') paintStairs(c,o); else if(t==='door') paintDoor(c,o); else if(t==='secret') paintSecret(c,o); else if(t==='pencil') paintPencil(c,o);
+      else if(t==='icon') paintIcon(c,o); else if(t==='svg') paintSvgStamp(c,o); else if(t==='arrow') paintArrow(c,o); else paintText(c,o); } });
+  }
+  return { renderAll:renderAll, paintActive:paintActive, hitObject:hitObject, stampMarkup:stampMarkup, STAMPS:SVG_STAMPS, distToSeg:distToSeg, pencilWidth:pencilWidth };
+})();
+const MAP_EMOJI={"Mobilier": ["🗿", "⚰️", "🎁", "🪤", "🚪", "🕯️", "🛏️", "📺", "🛢️", "🪜", "🌳", "🏺"], "Items": ["🗡️", "🔫", "🛡️", "📚", "🗺️", "🔑", "🪖", "💽", "🏹", "🪙", "📜", "🔨"], "Nourriture": ["🍽️", "🍕", "🍎", "🥩", "🥦", "🥑", "🌸", "🧀", "🍷", "💊", "🍄", "💩"], "PNJ": ["👨‍💼", "👨‍🍳", "🦹🏼", "🧙‍♂️", "🧝‍♂️", "🕵️‍♂️", "🧞", "🧑🏼‍🎨", "🤹🏽", "👸", "👩🏻‍🔬", "👩🏽‍⚖️"], "Pin's": ["💥", "🔥", "📍", "⚠️", "☢️", "⚓", "💀", "🚨", "🔎", "❓", "⛔", "⚡"], "Animaux": ["🐀", "🦂", "🐍", "🐊", "🐎", "🦤", "🦍", "🐕", "🐆", "🦅", "🪳", "🕷️"], "Monstres": ["👻", "🦇", "🐉", "🧌", "🧟‍♀️", "🐦‍🔥", "🧚", "🦖", "🧜", "🦑", "👽", "🦄"]};
+
+/* =========================================================
+   Volet DESSIN (à gauche) : les outils de l'Éditeur de Donjon sur le plateau
+   ========================================================= */
+const MAP_TOOLS={"text": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 6V4h14v2M12 4v16M9 20h6\"/></svg>", "n": "Texte", "h": "cliquer pour écrire"}, "arrow": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M7 17L17 7M9 7h8v8\"/></svg>", "n": "Flèche", "h": "clic la pointe, puis clic la queue"}, "pencil": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 20l3.5-1L18 8.5 15.5 6 5 16.5 4 20z\"/><path d=\"M14 7.5l2.5 2.5\"/></svg>", "n": "Crayon", "h": "dessin libre à main levée"}, "corridor": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 5h11a5 5 0 0 1 5 5v11\"/><path d=\"M3 11h8a2 2 0 0 1 2 2v8\"/></svg>", "n": "Chemin", "h": "clic-glisser · couloir, salle"}, "river": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 8q3-3 6 0t6 0 3-1.2\"/><path d=\"M3 13q3-3 6 0t6 0 3-1.2\"/><path d=\"M3 18q3-3 6 0t6 0 3-1.2\"/></svg>", "n": "Eau", "h": "clic-glisser · rivière, lac"}, "foliage": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"8.5\" cy=\"9.5\" r=\"3.2\"/><circle cx=\"15\" cy=\"9\" r=\"3.2\"/><circle cx=\"11.5\" cy=\"13\" r=\"3.6\"/><path d=\"M11.5 16.5V21\"/></svg>", "n": "Feuillage", "h": "clic-glisser · bosquet, forêt"}, "meadow": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 20h18\"/><path d=\"M5.5 20c0-3.5-.8-6-2.3-8\"/><path d=\"M9 20c0-5 .9-8.5 3-11.5\"/><path d=\"M12.5 20c0-3.6-.9-6-2.6-7.8\"/><path d=\"M16 20c0-5 1-8.3 3.2-10.8\"/><path d=\"M19.5 20c0-2.6.6-4.4 1.7-5.6\"/></svg>", "n": "Prairie", "h": "peindre · herbes hautes"}, "desert": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M2 17c3-4.5 6-6 9-6 2.6 0 4.3 1.6 5.2 3.4\"/><path d=\"M11 20c2.6-3 5.2-4.3 7.5-4.3 1.3 0 2.5.4 3.5 1.2\"/><path d=\"M8.4 12.6l1 2.4M10.8 12.2l.7 2.2\"/><circle cx=\"17.5\" cy=\"6\" r=\"2\"/></svg>", "n": "Désert", "h": "peindre · étendue de sable"}, "wood": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"16\" rx=\"1\"/><path d=\"M3 9.3h18M3 14.7h18M9 4v5.3M15 9.3v5.4M7 14.7V20\"/></svg>", "n": "Plancher", "h": "peindre · lames de bois"}, "wall": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 6h18v12H3z\"/><path d=\"M3 12h18M9 6v6M15 12v6\"/></svg>", "n": "Mur", "h": "clic, clic… · double-clic = fin"}, "door": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M6 21V4a1 1 0 0 1 1.2-1l8 1.6A1 1 0 0 1 16 5.6V21\"/><path d=\"M4 21h16\"/><circle cx=\"13\" cy=\"12\" r=\"1\" fill=\"currentColor\" stroke=\"none\"/></svg>", "n": "Porte", "h": "glisser en travers du passage"}, "secret": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M6 3v18M18 3v18\"/><rect x=\"9\" y=\"6\" width=\"6\" height=\"12\" stroke-dasharray=\"2.2 2.2\"/><path d=\"M11 11.5a1 1 0 1 1 1.6.8c-.4.3-.6.5-.6 1.1\" stroke-width=\"1.6\"/><circle cx=\"12\" cy=\"15.3\" r=\".55\" fill=\"currentColor\" stroke=\"none\"/></svg>", "n": "Porte secrète", "h": "glisser en travers du passage"}, "stairs": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 20h4v-4h4v-4h4v-4h4\"/></svg>", "n": "Escalier", "h": "clic-glisser · volée de marches"}, "eraser": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 14.5l6.5-6.5 6 6-5.5 5.5H8z\"/><path d=\"M8.5 19.5H19\"/><path d=\"M9.5 9l6 6\"/></svg>", "n": "Gomme", "h": "cliquer ou glisser sur un élément"}};
+const MT=Object.assign({tool:'corridor',width:40,emoji:'💀',svg:'maison',ink:'#241a12'},(()=>{ try{ return JSON.parse(localStorage.getItem('aldebaran.mj.map')||'{}'); }catch(e){ return {}; } })());
+const saveMT=()=>{ try{ localStorage.setItem('aldebaran.mj.map',JSON.stringify(MT)); }catch(e){} };
+const MAP_INKS=[['#241a12','Encre'],['#ffffff','Blanc'],['#e3262b','Rouge'],['#2b79bd','Bleu'],['#33964d','Vert'],['#7556c2','Violet'],['#d19c00','Or']];
+let mapLive=null, mapPrev=null, wallDraft=null, wallHover=null, wallEnd=null, wallShift=false, arrowTip=null, mapRaf=0;
+const legacyPen=d=>{ const n=String(d.d).match(/-?[\d.]+/g)||[], pts=[]; for(let i=0;i+1<n.length;i+=2) pts.push({x:+n[i],y:+n[i+1]}); return {id:d.id,type:'pencil',points:pts,c:d.c,w:d.w}; };
+function renderDrawings(){ if((S.drawings||[]).some(d=>!d.type&&typeof d.d==='string')) S.drawings=S.drawings.map(d=>!d.type&&typeof d.d==='string'?legacyPen(d):d); drawMapLater(); }
+function drawMapLater(){ if(!mapRaf) mapRaf=requestAnimationFrame(()=>{ mapRaf=0; drawMap(); }); }
+function drawMap(){ const cv=$('dmap'); if(!cv) return; const r=board.getBoundingClientRect();
+  let objs=S.drawings||[]; if(mapLive) objs=objs.concat([mapLive]);
+  if(!r.width||(!objs.length&&!mapPrev)||V.z<.02){ cv.hidden=true; return; } cv.hidden=false;
+  const dpr=Math.min(2,devicePixelRatio||1), W=Math.round(r.width*dpr), H=Math.round(r.height*dpr);
+  if(cv.width!==W||cv.height!==H){ cv.width=W; cv.height=H; }
+  Object.assign(cv.style,{left:(-V.x/V.z)+'px',top:(-V.y/V.z)+'px',width:(r.width/V.z)+'px',height:(r.height/V.z)+'px'});
+  const c=cv.getContext('2d'); c.setTransform(1,0,0,1,0,0); c.clearRect(0,0,W,H);
+  c.setTransform(dpr*V.z,0,0,dpr*V.z,dpr*V.x,dpr*V.y);
+  try{ MAP.renderAll(c,objs); if(mapPrev) MAP.paintActive(c,mapPrev);
+    if(wallDraft){ const l=wallDraft.points[wallDraft.points.length-1]; c.beginPath(); c.arc(l.x,l.y,4/V.z,0,Math.PI*2); c.fillStyle='#e3262b'; c.fill(); } }catch(e){}
+  c.setTransform(1,0,0,1,0,0); }
+const r1=v=>Math.round(v*10)/10;
+function mapCommit(o){ o=JSON.parse(JSON.stringify(o,(k,v)=>typeof v==='number'?r1(v):v)); o.id=nid(); S.drawings.push(o); mapLive=null; mapPrev=null; drawMap(); markDirty(); sync(); }
+function mapErase(p){ for(let i=S.drawings.length-1;i>=0;i--){ let hit=false; try{ hit=MAP.hitObject(S.drawings[i],p); }catch(e){} if(hit){ S.drawings.splice(i,1); drawMap(); markDirty(); sync(); return true; } } return false; }
+function mapUndo(){ if(wallDraft){ wallDraft.points.pop(); if(!wallDraft.points.length){ wallDraft=null; mapLive=null; } else mapLive={type:'wall',width:wallDraft.width,points:wallDraft.points.slice()}; drawMapLater(); return; }
+  if(S.drawings.length){ S.drawings.pop(); drawMap(); markDirty(); sync(); } }
+function wallSnap(p){ if(!wallDraft||!wallShift) return p; const a=wallDraft.points[wallDraft.points.length-1], dx=p.x-a.x, dy=p.y-a.y, ang=Math.round(Math.atan2(dy,dx)/(Math.PI/4))*(Math.PI/4), L=Math.hypot(dx,dy); return {x:a.x+Math.cos(ang)*L,y:a.y+Math.sin(ang)*L}; }
+function finishWall(){ if(!wallDraft) return; const w=wallDraft; wallDraft=null; wallHover=null; mapLive=null; const lp=w.points[w.points.length-1]; wallEnd={x:lp.x,y:lp.y,t:performance.now()}; if(w.points.length>=2) mapCommit(w); else drawMapLater(); }
+function mapReset(){ if(wallDraft) finishWall(); arrowTip=null; mapPrev=null; mapLive=null; removeMapText(); drawMapLater(); }
+let mapTextEl=null;
+function removeMapText(){ if(mapTextEl){ const el=mapTextEl; mapTextEl=null; el.remove(); } }
+function openMapText(e,wp){ removeMapText(); const r=board.getBoundingClientRect(), inp=document.createElement('textarea'); inp.className='map-text-input'; inp.rows=1; inp.wrap='off';
+  inp.style.left=(e.clientX-r.left)+'px'; inp.style.top=(e.clientY-r.top)+'px'; inp.style.fontSize=Math.max(9,18*V.z)+'px'; board.appendChild(inp); mapTextEl=inp;
+  const grow=()=>{ inp.style.height='auto'; inp.style.height=inp.scrollHeight+'px'; inp.style.width='auto'; inp.style.width=(inp.scrollWidth+4)+'px'; };
+  setTimeout(()=>{ try{ inp.focus(); }catch(err){} grow(); },0); let done=false;
+  const commit=()=>{ if(done) return; done=true; const v=inp.value.trim(); removeMapText(); if(v) mapCommit({type:'text',x:wp.x,y:wp.y,text:v}); };
+  inp.addEventListener('input',grow); inp.addEventListener('pointerdown',ev=>ev.stopPropagation());
+  inp.addEventListener('keydown',ev=>{ ev.stopPropagation(); if(ev.key==='Enter'&&!ev.shiftKey){ ev.preventDefault(); commit(); } else if(ev.key==='Escape'){ done=true; removeMapText(); } });
+  inp.addEventListener('blur',commit); }
+function mapDown(e,wx,wy){ const wp={x:wx,y:wy}, T=MT.tool; e.preventDefault();
+  if(mapTextEl) return;
+  if(T==='eraser'){ gesture={k:'map'}; mapErase(wp); return; }
+  if(T==='text'){ openMapText(e,wp); return; }
+  if(T==='icon'){ mapCommit({type:'icon',x:wx,y:wy,emoji:MT.emoji}); return; }
+  if(T==='svg'){ mapCommit({type:'svg',x:wx,y:wy,key:MT.svg,size:MT.width}); return; }
+  if(T==='arrow'){ if(!arrowTip) arrowTip=wp; else { mapCommit({type:'arrow',tip:arrowTip,tail:wp}); arrowTip=null; } return; }
+  if(T==='wall'){ wallShift=!!e.shiftKey;
+    if(!wallDraft){ if(wallEnd&&performance.now()-wallEnd.t<450&&Math.hypot(wx-wallEnd.x,wy-wallEnd.y)<10/V.z) return;
+      wallDraft={type:'wall',width:MT.width,points:[wp]}; wallHover=null; mapLive={type:'wall',width:MT.width,points:[wp]}; drawMapLater(); return; }
+    const sp=wallSnap(wp), lp=wallDraft.points[wallDraft.points.length-1];
+    if(Math.hypot(sp.x-lp.x,sp.y-lp.y)<8/V.z){ finishWall(); return; }
+    wallDraft.points.push(sp); wallHover=null; mapLive={type:'wall',width:wallDraft.width,points:wallDraft.points.slice()}; drawMapLater(); return; }
+  if(T==='door'||T==='secret'||T==='stairs'){ gesture={k:'map',a:wp}; return; }
+  const st={type:T,points:[wp],width:MT.width}; if(T==='pencil') st.c=MT.ink;
+  gesture={k:'map',stroke:st}; mapLive=st; drawMapLater(); }
+function mapMove(e){ const [wx,wy]=toWorld(e.clientX,e.clientY), wp={x:wx,y:wy}, T=MT.tool;
+  if(T==='arrow'&&arrowTip){ mapPrev={type:'arrow',tip:arrowTip,tail:wp}; drawMapLater(); return; }
+  if(T==='wall'&&wallDraft){ wallShift=!!e.shiftKey; wallHover=wallSnap(wp); mapLive={type:'wall',width:wallDraft.width,points:wallDraft.points.concat([wallHover])}; drawMapLater(); return; }
+  if(!gesture||gesture.k!=='map') return;
+  if(T==='eraser'){ mapErase(wp); return; }
+  if(gesture.a){ mapPrev={type:T,a:gesture.a,b:wp,width:MT.width}; drawMapLater(); return; }
+  const st=gesture.stroke; if(!st) return; const l=st.points[st.points.length-1];
+  if(Math.hypot(wx-l.x,wy-l.y)>(st.type==='pencil'?1.5:5)/V.z){ st.points.push(wp); drawMapLater(); } }
+function mapUp(e,g){ const T=MT.tool; if(T==='eraser') return;
+  if(g.a){ const [wx,wy]=toWorld(e.clientX,e.clientY); mapPrev=null; mapCommit({type:T,a:g.a,b:{x:wx,y:wy},width:MT.width}); return; }
+  const st=g.stroke; if(!st) return;
+  if(st.points.length>=2||(['foliage','pencil','meadow','desert','wood'].includes(st.type)&&st.points.length)) mapCommit(st); else { mapLive=null; drawMapLater(); } }
+function scaleDrawing(o,fx,fy){ const P=p=>{ if(p){ p.x=r1(p.x*fx); p.y=r1(p.y*fy); } };
+  (o.points||[]).forEach(P); P(o.a); P(o.b); P(o.tip); P(o.tail); if(o.x!=null){ o.x=r1(o.x*fx); o.y=r1(o.y*fy); } }
+/* choisir un outil */
+function pickMapTool(k){ if(wallDraft&&k!=='wall') finishWall(); arrowTip=null; mapPrev=null; removeMapText();
+  if(k==='none'){ if(tool==='map') setTool('map'); } else { MT.tool=k; saveMT(); if(tool!=='map') setTool('map'); }
+  renderDrawPanel(); drawMapLater(); }
+function renderDrawPanel(){ const box=$('ldraw-body'); if(!box) return; const on=k=>tool==='map'&&MT.tool===k;
+  const tb=k=>{ const T=MAP_TOOLS[k]; return `<button type="button" class="wxb${on(k)?' on':''}" data-mt="${k}" title="${esc(T.n)} — ${esc(T.h)}">${T.svg}<span>${esc(T.n)}</span></button>`; };
+  const stamps=Object.keys(MAP.STAMPS), scat=[...new Set(stamps.map(k=>MAP.STAMPS[k].cat||'Divers'))];
+  box.innerHTML=`<div class="wxrow">
+      <button type="button" class="wxb${tool!=='map'?' on':''}" data-mt="none" title="Ne plus dessiner : déplacer les jetons et la vue">${IB('grab')}<span>Main</span></button>
+      ${tb('eraser')}
+      <button type="button" class="wxb" id="md-undo" title="Annuler le dernier tracé (Ctrl+Z)">${IB('undo')}<span>Annuler</span></button>
+      <button type="button" class="wxb" id="md-clear" title="Effacer tous les tracés de la scène">${IB('bin')}<span>Tout effacer</span></button></div>
+    <div class="subttl">Largeur</div><div class="bgscale"><input type="range" id="md-w" min="20" max="150" step="2" value="${MT.width}" aria-label="Largeur"><b id="md-wv" style="min-width:40px">${MT.width}</b></div>
+    <div class="subttl">Tracés</div><div class="mtgrid">${tb('pencil')}</div>
+    ${MT.tool==='pencil'?`<div class="swatches md-inks">${MAP_INKS.map(([c,n])=>`<button type="button" style="--c:${c}" data-ink="${c}" title="${n}" class="${MT.ink===c?'on':''}"></button>`).join('')}</div>`:''}
+    <div class="subttl">Terrain</div><div class="mtgrid">${['corridor','river','foliage','meadow','desert','wood','wall'].map(tb).join('')}</div>
+    <div class="subttl">Ouvertures</div><div class="mtgrid">${['door','secret','stairs'].map(tb).join('')}</div>
+    <div class="subttl">Annotations</div><div class="mtgrid">${['text','arrow'].map(tb).join('')}</div>
+    <div class="subttl">Pictogrammes <small>taille = largeur</small></div>${scat.map(c=>`<div class="mcat">${esc(c)}</div><div class="stgrid">${stamps.filter(k=>(MAP.STAMPS[k].cat||'Divers')===c).map(k=>`<button type="button" class="stb${tool==='map'&&MT.tool==='svg'&&MT.svg===k?' on':''}" data-st="${k}" title="${esc(MAP.STAMPS[k].title||k)}">${MAP.stampMarkup(k)}</button>`).join('')}</div>`).join('')}
+    <div class="subttl">Icônes</div>${Object.keys(MAP_EMOJI).map(c=>`<div class="mcat">${esc(c)}</div><div class="emgrid">${MAP_EMOJI[c].map(e=>`<button type="button" class="${tool==='map'&&MT.tool==='icon'&&MT.emoji===e?'on':''}" data-em="${e}">${e}</button>`).join('')}</div>`).join('')}
+    <p class="meta" style="text-align:left">Mur : clic, clic… double-clic (ou clic droit, Entrée) pour finir, Maj = angles de 45°. Flèche : clic la pointe, puis la queue. Clic molette : déplacer la vue.</p>`;
+  box.querySelectorAll('[data-mt]').forEach(b=>b.onclick=()=>pickMapTool(b.dataset.mt));
+  box.querySelectorAll('[data-st]').forEach(b=>b.onclick=()=>{ MT.svg=b.dataset.st; pickMapTool('svg'); });
+  box.querySelectorAll('[data-em]').forEach(b=>b.onclick=()=>{ MT.emoji=b.dataset.em; pickMapTool('icon'); });
+  box.querySelectorAll('[data-ink]').forEach(b=>b.onclick=()=>{ MT.ink=b.dataset.ink; saveMT(); renderDrawPanel(); });
+  $('md-w').oninput=e=>{ MT.width=+e.target.value; $('md-wv').textContent=MT.width; saveMT(); };
+  $('md-undo').onclick=mapUndo; $('md-clear').onclick=clearDrawings;
+  $('rb-draw').classList.toggle('on-tool',tool==='map'); }
+
+/* =========================================================
+   Volets de gauche : Dessin, Bestiaire
+   ========================================================= */
+function openLeft(id){ const was=$(id).classList.contains('open');
+  document.querySelectorAll('.ldrawer').forEach(d=>d.classList.remove('open')); document.querySelectorAll('.rb[data-left]').forEach(b=>b.setAttribute('aria-pressed','false'));
+  if(!was){ $(id).classList.add('open'); document.querySelector(`.rb[data-left="${id}"]`).setAttribute('aria-pressed','true');
+    if(id==='ldraw'){ if(tool!=='map') setTool('map'); renderDrawPanel(); } else renderBestPanel(); }
+  else if(id==='ldraw'&&tool==='map'){ setTool('map'); } }
+function bestRows(q){ q=normTxt(q); const L=S.bestiary.map((m,i)=>({m,i})).filter(x=>!q||normTxt(x.m.name).includes(q));
+  const row=x=>{ const m=x.m; return `<div class="brow" data-i="${x.i}" title="Glisser sur le plateau · cliquer pour ouvrir"><span class="bface">${faceHTML({...m,type:'mob'},'sm')}</span><b>${esc(m.name)}</b><span class="bv">${m.hpMax}</span><span class="bv">${m.pp||0}</span><span class="bss">${STATS.map(s=>`<i style="--sc:${STAT_INFO[s].col}" title="${s}">${m.stats&&m.stats[s]!=null?m.stats[s]:0}</i>`).join('')}</span><button class="ib del" type="button" data-del="${x.i}" title="Retirer du bestiaire">${IB('bin')}</button></div>`; };
+  const cats=[...BEST_CATS,...new Set(L.map(x=>x.m.cat).filter(c=>c&&!BEST_CATS.includes(c)))], mine=L.filter(x=>!x.m.cat);
+  let h=mine.length?`<div class="bcat">Mes MOBs</div>${mine.map(row).join('')}`:'';
+  cats.forEach(c=>{ const g=L.filter(x=>x.m.cat===c); if(g.length) h+=`<div class="bcat">${esc(c)}</div>${g.map(row).join('')}`; });
+  const head=`<div class="bhead"><span></span><span></span><span class="bv" title="Points de vie">❤️</span><span class="bv" title="Points de protection (armure)">💙</span><span class="bss">${STATS.map(s=>`<i style="--sc:${STAT_INFO[s].col}" title="${STAT_INFO[s].name}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${STAT_INFO[s].ico}</svg></i>`).join('')}</span><span></span></div>`;
+  return h?head+h:`<p class="meta" style="text-align:left;padding:10px 4px">${S.bestiary.length?'Aucun MOB ne correspond.':'Le bestiaire est vide : importez les créatures du livre, ou enregistrez vos propres MOBs depuis « Nouveau MOB ».'}</p>`; }
+function bindBestList(list,onPick,drag){ { const bh=list.querySelector('.bhead'); if(bh) list.style.setProperty('--bh',bh.offsetHeight+'px'); }
+  list.querySelectorAll('.brow').forEach(r=>{ const m=()=>S.bestiary[+r.dataset.i];
+    r.querySelector('[data-del]').onclick=e=>{ e.stopPropagation(); const x=m(); S.bestiary.splice(+r.dataset.i,1); markDirty(); toast(`« ${x.name} » retiré du bestiaire`); onPick(null); };
+    if(!drag){ r.onclick=e=>{ if(!e.target.closest('[data-del]')) onPick(m()); }; return; }
+    r.onpointerdown=e=>{ if(e.button!==0||e.target.closest('[data-del]')) return; const M=m(), sx=e.clientX, sy=e.clientY; let gh=null;
+      const mv=ev=>{ if(!gh){ if(Math.hypot(ev.clientX-sx,ev.clientY-sy)<6) return; gh=document.createElement('div'); gh.className='bghost'; gh.innerHTML=faceHTML({...M,type:'mob'}); document.body.appendChild(gh); }
+        ev.preventDefault(); gh.style.left=ev.clientX+'px'; gh.style.top=ev.clientY+'px'; const ob=document.elementFromPoint(ev.clientX,ev.clientY); gh.classList.toggle('ok',!!(ob&&ob.closest('#board'))); };
+      const up=ev=>{ document.removeEventListener('pointermove',mv); document.removeEventListener('pointerup',up); document.removeEventListener('pointercancel',up);
+        if(!gh){ if(ev.type==='pointerup') onPick(M); return; } gh.remove(); if(ev.type!=='pointerup') return;
+        const ob=document.elementFromPoint(ev.clientX,ev.clientY);
+        if(ob&&ob.closest('#board')){ const [wx,wy]=toWorld(ev.clientX,ev.clientY), t=Object.assign(clone(M),{type:'mob',hp:M.hpMax,x:Math.round(wx),y:Math.round(wy)}); delete t.cat; addToken(t); } };
+      document.addEventListener('pointermove',mv,{passive:false}); document.addEventListener('pointerup',up); document.addEventListener('pointercancel',up); }; }); }
+function renderBestPanel(){ const box=$('lbest-body'); if(!box) return; const todo=bookTodo(), q=$('lb-q')?$('lb-q').value:'';
+  box.innerHTML=`<div class="bsearch"><input class="line-in" id="lb-q" placeholder="Rechercher un MOB…" autocomplete="off" value="${esc(q)}"></div>
+    <div class="wxrow"><button type="button" class="wxb" id="lb-new">${IB('plus')}<span>Nouveau MOB</span></button>${todo?`<button type="button" class="wxb" id="lb-imp" title="Ajouter les créatures du livre Aldebaran">${IB('book')}<span>Importer le livre (${todo})</span></button>`:''}</div>
+    <p class="meta" style="text-align:left;margin:0">Glissez un MOB sur le plateau pour l'invoquer ; cliquez-le pour l'ouvrir.</p>
+    <div class="blist" id="lb-list"></div>`;
+  const draw=()=>{ const l=$('lb-list'); l.innerHTML=bestRows($('lb-q').value); bindBestList(l,m=>{ if(m) mobDialog(null,m); else draw(); },true); };
+  $('lb-q').oninput=draw; $('lb-new').onclick=()=>mobDialog(); if($('lb-imp')) $('lb-imp').onclick=()=>{ const n=importBook(); toast(n?`Bestiaire du livre : ${n} créature${n>1?'s':''} ajoutée${n>1?'s':''}`:'Le bestiaire du livre est déjà complet'); renderBestPanel(); };
+  draw(); }
 
 /* Fiche joueur .adb (appli joueur) → jeton */
 function playerFromAdb(o){
@@ -3691,15 +4603,14 @@ function wire(){
   $('sc-ico').innerHTML=IB('film'); $('sc-prev').innerHTML=IB('left',2); $('sc-next').innerHTML=IB('right',2); $('sc-up').innerHTML=IB('up',2); $('sc-down').innerHTML=IB('down',2);
   $('b-player').innerHTML=IB('screen'); $('b-player').classList.add('icon'); $('b-net').insertAdjacentHTML('afterbegin',IB('table')); $('b-full').innerHTML=IB('full'); $('b-settings').insertAdjacentHTML('afterbegin',IB('gear'));
   document.querySelector('[data-tool="measure"]').insertAdjacentHTML('afterbegin',IB('ruler'));
-  document.querySelector('[data-tool="draw"]').insertAdjacentHTML('afterbegin',IB('pen'));
-  document.querySelector('[data-tool="erase"]').insertAdjacentHTML('afterbegin',IB('eraser'));
+  $('rb-draw').innerHTML=IB('pen'); $('rb-best').innerHTML=IB('book');
+  document.querySelectorAll('.rb[data-left]').forEach(b=>b.onclick=()=>openLeft(b.dataset.left));
   document.querySelectorAll('[data-add]').forEach(b=>b.innerHTML=IB(TYPES[b.dataset.add].def,1.7));
   $('b-shuffle').innerHTML=IB('shuffle'); $('b-next').innerHTML=IB('next'); $('b-timer').innerHTML=IB('hourglass');
   $('bin').innerHTML=IB('bin'); $('sc-pdf').innerHTML=IB('print'); $('sc-new').innerHTML=IB('clap')+'Nouvelle scène'; $('sc-del').innerHTML=IB('bin')+'Supprimer';
   const VT={scenario:IB('scroll'),notes:IB('note'),roller:D10ICO,loot:IB('coins'),fond:IB('planet'),mapdrw:IB('map')};
   document.querySelectorAll('.vtab').forEach(b=>{ b.insertAdjacentHTML('afterbegin',VT[b.dataset.drawer]); b.title=b.textContent.trim(); b.onclick=()=>openDrawer(b.dataset.drawer); });
   document.querySelectorAll('svg.ttl text').forEach(t=>{ const s=t.textContent; t.innerHTML=[...s].map(ch=>`<tspan>${ch===' '?'&#160;':esc(ch)}</tspan>`).join(''); });
-  paintInkSwatch();
   if(isPlayer) return;
 
   // plateau
@@ -3716,8 +4627,7 @@ function wire(){
     if(isImgFile(f)) setBackground(f); });
   // rail
   document.querySelectorAll('.rb[data-tool]').forEach(b=>{
-    b.onclick=()=>{ if(b.dataset.tool==='draw'&&tool!=='draw') inkPop(b); else setTool(b.dataset.tool); };
-    if(b.dataset.tool!=='measure') b.oncontextmenu=e=>{ e.preventDefault(); clearDrawings(); }; });
+    b.onclick=()=>setTool(b.dataset.tool); });
   document.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>{ const k=b.dataset.add; if(k==='light') addToken({type:'light',name:'',ico:'bulb',r:200}); else entityDialog(k); });
   // haut
   $('b-player').onclick=openPlayerView; $('b-net').onclick=netDialog; $('sp-close').innerHTML=IB('x'); $('sp-close').onclick=closeSheet; netStatus('off'); $('b-settings').onclick=settings;
@@ -3746,9 +4656,11 @@ function wire(){
     if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){ e.preventDefault(); e.shiftKey?saveAs():save(); return; }
     if(e.target.closest('input,textarea,select')||dlg.open) return;
     const k=e.key.toLowerCase();
+    if((e.ctrlKey||e.metaKey)&&k==='z'&&tool==='map'){ e.preventDefault(); mapUndo(); return; }
+    if(tool==='map'&&wallDraft&&(k==='escape'||k==='enter')){ e.preventDefault(); finishWall(); return; }
+    if(k==='escape'&&tool==='map'&&arrowTip){ arrowTip=null; mapPrev=null; drawMapLater(); return; }
     if(k==='escape'){ if(tool) setTool(tool); closeCard(); closePop(); if(sheetPid) closeSheet(); }
-    else if(k==='m') setTool('measure'); else if(k==='d') { if(tool==='draw') setTool('draw'); else inkPop(document.querySelector('[data-tool="draw"]')); }
-    else if(k==='e') setTool('erase'); else if(k==='0') fitBoard();
+    else if(k==='m') setTool('measure'); else if(k==='d') openLeft('ldraw'); else if(k==='b') openLeft('lbest'); else if(k==='0') fitBoard();
     else if(e.code==='Space'){ e.preventDefault(); nextTurn(); } });
   document.addEventListener('pointerdown',e=>{ if(!e.target.closest('.pop')&&!e.target.closest('[data-tool="draw"]')) closePop(); });
 }
@@ -3762,7 +4674,7 @@ function setBgScale(k){ if(!S.bg) return; if(!S.bgNW){ S.bgNW=S.bgW; S.bgNH=S.bg
   S.bgScale=k; S.bgW=W; S.bgH=H;
   /* ce qui est posé sur la carte reste au même endroit de l'image */
   S.tokens.forEach(t=>{ t.x=bx(Math.round(t.x*fx),t); t.y=by(Math.round(t.y*fy),t); moveTokenEl(t); });
-  S.drawings.forEach(d=>{ d.d=d.d.replace(/([ML])(-?[\d.]+) (-?[\d.]+)/g,(m,c,x,y)=>c+(+x*fx).toFixed(1)+' '+(+y*fy).toFixed(1)); });
+  S.drawings.forEach(d=>scaleDrawing(d,fx,fy));
   renderBoard(); renderDrawings(); fowLater(); markDirty(); syncLater(); }
 function setBackground(f){ const r=new FileReader(); r.onload=()=>{ const im=new Image(); im.onload=()=>{ const M=4096, k=Math.min(1,M/Math.max(im.width,im.height)), c=document.createElement('canvas'); c.width=Math.round(im.width*k); c.height=Math.round(im.height*k);
   c.getContext('2d').drawImage(im,0,0,c.width,c.height); useImage(c.toDataURL('image/jpeg',.86),c.width,c.height,`Fond de carte appliqué : ${c.width} × ${c.height} px — taille réglable dans « Fond de carte »`); }; im.src=r.result; }; r.readAsDataURL(f); }
