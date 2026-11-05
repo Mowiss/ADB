@@ -2194,7 +2194,10 @@ svg.i{width:18px;height:18px;flex:none}
 .widths button i{display:block;width:60%;background:var(--ink-strong);border-radius:3px}
 .widths button.on{border-color:var(--ink-strong)}
 
-#board{position:relative;overflow:hidden;background-color:var(--paper);touch-action:none;cursor:default}
+#board{position:relative;overflow:hidden;background-color:var(--paper);touch-action:none;cursor:default;transition:background-color .9s ease}
+#board .bands{transition:opacity .9s ease}
+#board.img,#board.geo{background-color:#000}#board.img .bands,#board.geo .bands{opacity:0}
+#bg{transition:opacity .6s ease}
 #board.inf{background-image:linear-gradient(to right,rgba(47,51,64,.075) 1px,transparent 1px),linear-gradient(to bottom,rgba(47,51,64,.075) 1px,transparent 1px)}
 .nogrid #board.inf{background-image:none}
 #board.grab{cursor:grab}#board.panning{cursor:grabbing}
@@ -2204,9 +2207,8 @@ svg.i{width:18px;height:18px;flex:none}
 .band{height:60px;opacity:.26}
 #world{position:absolute;left:0;top:0;width:0;height:0;overflow:visible;transform-origin:0 0;z-index:1}
 #bg{position:absolute;left:0;top:0;background-size:100% 100%;background-repeat:no-repeat}
-#ggrid{position:absolute;pointer-events:none;background-size:40px 40px;background-image:linear-gradient(to right,rgba(255,255,255,.22) 1px,transparent 1px),linear-gradient(to bottom,rgba(255,255,255,.22) 1px,transparent 1px)}
+#ggrid{position:absolute;pointer-events:none;background-size:72px 72px;background-image:linear-gradient(to right,rgba(255,255,255,.22) 1px,transparent 1px),linear-gradient(to bottom,rgba(255,255,255,.22) 1px,transparent 1px)}
 .nogrid #ggrid{background-image:none}
-#board.geo{background:#2a2e36}#board.geo .bands{display:none}
 #geo{position:absolute;left:0;top:0;width:0;height:0;overflow:visible}
 .gt{position:absolute;max-width:none;user-select:none;pointer-events:none;-webkit-user-drag:none}
 #geo-attr{position:absolute;right:8px;bottom:6px;z-index:6;font-size:10px;color:#fff;background:rgba(0,0,0,.45);padding:1px 6px;border-radius:4px;pointer-events:none}
@@ -2222,7 +2224,7 @@ svg.i{width:18px;height:18px;flex:none}
 .fd .m video,.fd .m img{width:100%;height:100%;object-fit:cover;display:block}
 .fd .m i{position:absolute;right:5px;bottom:5px;font-style:normal;font-size:9.5px;font-weight:700;letter-spacing:.08em;background:rgba(47,51,64,.75);color:#fff;border-radius:999px;padding:1px 7px}
 .fd b{font-size:12px;color:var(--ink-strong);padding:0 3px 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#grid{position:absolute;left:0;top:0;pointer-events:none;background-size:40px 40px;background-image:linear-gradient(to right,rgba(47,51,64,.075) 1px,transparent 1px),linear-gradient(to bottom,rgba(47,51,64,.075) 1px,transparent 1px)}
+#grid{position:absolute;left:0;top:0;pointer-events:none;background-size:72px 72px;background-image:linear-gradient(to right,rgba(47,51,64,.075) 1px,transparent 1px),linear-gradient(to bottom,rgba(47,51,64,.075) 1px,transparent 1px)}
 #grid::after{content:"";position:absolute;inset:0;border:1.5px solid var(--rule)}
 .nogrid #grid{background-image:none}
 #draw{position:absolute;left:0;top:0;width:1px;height:1px;overflow:visible;pointer-events:none;z-index:2}
@@ -2680,7 +2682,7 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
     <canvas id="fow" hidden></canvas>
     <div id="bin" title="Lâcher ici pour retirer du plateau"></div>
     <div id="mlabel" class="mlabel" hidden></div>
-    <div id="geo-attr" hidden>Imagerie © Esri — Maxar, Earthstar Geographics</div>
+    <div id="geo-attr" hidden>Orthophotos © IGN — hors France © Esri, Maxar</div>
   </div>
 </div>
 
@@ -2856,11 +2858,13 @@ const LOOT=[{n:'Rien',t:0,c:'var(--ink-soft)'},{n:'Bastos ≈ 50',t:1,c:'var(--g
   {n:'Item convoité',t:8,c:'var(--c-per)'},{n:'Item légendaire',t:9,c:'var(--c-for)'},{n:'Item unique',t:10,c:'var(--danger)'}];
 const PROF=[['Désertique','var(--ink-soft)'],['Pauvre','var(--brown)'],['Moyen','#e07b1a'],['Cossu','var(--ok)'],['Riche','var(--c-res)'],['Blindé','var(--c-per)']];
 const INKS=[['#2f3340','Encre'],['#ffffff','Blanc'],['#e3262b','Rouge'],['#2b79bd','Bleu'],['#33964d','Vert'],['#7556c2','Violet'],['#d19c00','Or']];
-const CELL=40, CELL_M=0.5;
+const PX_M=72, CELL=72, CELL_M=CELL/PX_M;   // une case = un jeton (72 px) ≈ 1 m
 const ALIVE=t=>t&&(t.type==='player'||t.type==='mob'||t.type==='npc');
 /* plateau infini ; avec un fond de carte, il prend la taille de l'image */
 const bounded=()=>!!(S.bg&&S.bgW&&S.bgH);
-const bx=x=>bounded()?clamp(x,0,S.bgW):x, by=y=>bounded()?clamp(y,0,S.bgH):y;
+/* seuls les jetons des joueurs restent sur la carte ; PNJ, monstres, objets et lumières peuvent en sortir */
+const keepIn=t=>bounded()&&(!t||t.type==='player');
+const bx=(x,t)=>keepIn(t)?clamp(x,0,S.bgW):x, by=(y,t)=>keepIn(t)?clamp(y,0,S.bgH):y;
 
 /* =========================================================
    État de la table
@@ -2896,7 +2900,7 @@ function applyView(){ world.style.transform=`translate(${V.x}px,${V.y}px) scale(
 function toWorld(cx,cy){ const r=board.getBoundingClientRect(); return [(cx-r.left-V.x)/V.z,(cy-r.top-V.y)/V.z]; }
 function toScreen(wx,wy){ const r=board.getBoundingClientRect(); return [r.left+V.x+wx*V.z, r.top+V.y+wy*V.z]; }
 function centerOn(wx,wy,z){ const r=board.getBoundingClientRect(); if(z) V.z=z; V.x=r.width/2-wx*V.z; V.y=r.height/2-wy*V.z; applyView(); }
-function zoomAt(cx,cy,f){ const r=board.getBoundingClientRect(), z=clamp(V.z*f,S.geo?.0004:.15,3.5), k=z/V.z; V.x=cx-r.left-(cx-r.left-V.x)*k; V.y=cy-r.top-(cy-r.top-V.y)*k; V.z=z; applyView(); }
+function zoomAt(cx,cy,f){ const r=board.getBoundingClientRect(), z=clamp(V.z*f,S.geo?1e-6:.15,S.geo?8:3.5), k=z/V.z; V.x=cx-r.left-(cx-r.left-V.x)*k; V.y=cy-r.top-(cy-r.top-V.y)*k; V.z=z; applyView(); }
 
 /* =========================================================
    Rendu
@@ -2942,7 +2946,7 @@ function renderBoard(){
     if(!v||v.getAttribute('src')!==S.bg){ bg.innerHTML=`<video src="${esc(S.bg)}" muted loop autoplay playsinline disablepictureinpicture></video>`; v=bg.querySelector('video'); v.muted=true; const pl=v.play(); if(pl) pl.catch(()=>{}); } }
   else { if(bg.firstChild) bg.innerHTML=''; bg.style.backgroundImage=S.bg?`url("${S.bg}")`:''; }
   renderGeo();
-  bg.style.width=gr.style.width=(S.bg?S.bgW:0)+'px'; bg.style.height=gr.style.height=(S.bg?S.bgH:0)+'px'; gr.hidden=!S.bg; board.classList.toggle('inf',!S.bg&&!S.geo); board.classList.toggle('geo',!!S.geo);
+  bg.style.width=gr.style.width=(S.bg?S.bgW:0)+'px'; bg.style.height=gr.style.height=(S.bg?S.bgH:0)+'px'; gr.hidden=!S.bg; board.classList.toggle('inf',!S.bg&&!S.geo); board.classList.toggle('geo',!!S.geo); board.classList.toggle('img',!!S.bg);
   document.body.classList.toggle('nogrid',S.grid===false);
   $('fow').hidden=S.light; renderFoW();
   const bl=$('b-light'); if(bl){ bl.innerHTML=IB(S.light?'sun':'moon'); bl.setAttribute('aria-pressed',S.light?'false':'true'); bl.title=S.light?'Jour — cliquer pour passer en nuit (brouillard)':'Nuit — cliquer pour revenir au jour'; }
@@ -2981,7 +2985,7 @@ let tool=null;     // 'measure' | 'draw' | 'erase'
 function setTool(t){
   tool=(tool===t)?null:t; closePop();
   document.querySelectorAll('.rb[data-tool]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.tool===tool?'true':'false'));
-  board.classList.toggle('cross',tool==='measure'||tool==='draw');
+  board.classList.toggle('cross',tool==='measure'||tool==='draw'||tool==='scale');
   board.classList.toggle('erasing',tool==='erase');
 }
 let gesture=null;
@@ -2995,7 +2999,7 @@ function boardDown(e){
   if(e.button===1||(e.button===0&&e.altKey)||(e.button===0&&!tool&&e.pointerType!=='mouse')){ e.preventDefault(); gesture={k:'pan',sx:e.clientX,sy:e.clientY,vx:V.x,vy:V.y}; board.classList.add('panning'); board.setPointerCapture(e.pointerId); return; }
   if(tool==='draw'){ const d={id:nid(),c:prefs.ink,w:prefs.width,pts:[[wx,wy]]}; d.el=document.createElementNS('http://www.w3.org/2000/svg','path');
     d.el.setAttribute('stroke',d.c); d.el.setAttribute('stroke-width',d.w); if(d.c==='#ffffff') d.el.setAttribute('class','white'); $('draw').appendChild(d.el); gesture={k:'draw',d}; board.setPointerCapture(e.pointerId); }
-  else if(tool==='measure'){ gesture={k:'measure',x1:wx,y1:wy,x2:wx,y2:wy}; board.setPointerCapture(e.pointerId); drawMeasure(gesture); }
+  else if(tool==='measure'||tool==='scale'){ gesture={k:'measure',scale:tool==='scale',x1:wx,y1:wy,x2:wx,y2:wy}; board.setPointerCapture(e.pointerId); drawMeasure(gesture); }
   else if(tool==='erase'){ gesture={k:'erase'}; eraseAt(e); board.setPointerCapture(e.pointerId); }
 }
 const pathD=pts=>pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join('');
@@ -3009,17 +3013,17 @@ function boardMove(e){
 function boardUp(){
   if(!gesture) return; const g=gesture; gesture=null; board.classList.remove('panning');
   if(g.k==='draw'){ const P=g.d.pts; if(P.length===1) P.push([P[0][0]+.1,P[0][1]+.1]); S.drawings.push({id:g.d.id,c:g.d.c,w:g.d.w,d:pathD(P)}); g.d.el.dataset.id=g.d.id; g.d.el.setAttribute('d',pathD(P)); markDirty(); sync(); }
-  if(g.k==='measure'){ measure=null; $('over').innerHTML=''; $('mlabel').hidden=true; send({t:'measure',on:false}); }
+  if(g.k==='measure'){ measure=null; $('over').innerHTML=''; $('mlabel').hidden=true; send({t:'measure',on:false}); if(g.scale){ setTool('scale'); scaleAsk(g); } }
 }
 function eraseAt(e){ const el=document.elementFromPoint(e.clientX,e.clientY); if(el&&el.closest('#draw')&&el.dataset.id){ S.drawings=S.drawings.filter(d=>d.id!==el.dataset.id); el.remove(); markDirty(); sync(); } }
 function clearDrawings(){ if(!S.drawings.length){ toast('Aucun tracé à effacer'); return; } confirmDialog('Effacer les tracés','Tous les dessins du plateau seront retirés.','Tout effacer',()=>{ S.drawings=[]; renderDrawings(); markDirty(); sync(); }); }
-/* Mesure : 1 case = 40 px = 0,5 m */
+/* Mesure : un jeton = 72 px ≈ 1 m */
 let measure=null;
 function measureText(m){ const c=Math.hypot(m.x2-m.x1,m.y2-m.y1)/CELL; return `${(c*CELL_M).toFixed(1).replace('.',',')} m<small>${Math.round(c)} c</small>`; }
 function drawMeasure(m){ measure=m;
   $('over').innerHTML=`<line class="mline" x1="${m.x1}" y1="${m.y1}" x2="${m.x2}" y2="${m.y2}"/><circle class="mend" cx="${m.x1}" cy="${m.y1}" r="${5/V.z}"/><circle class="mend" cx="${m.x2}" cy="${m.y2}" r="${5/V.z}"/>`;
   const L=$('mlabel'); L.innerHTML=measureText(m); L.hidden=false; placeMeasureLabel();
-  if(!isPlayer) send({t:'measure',on:true,x1:m.x1,y1:m.y1,x2:m.x2,y2:m.y2});
+  if(!isPlayer&&!m.scale) send({t:'measure',on:true,x1:m.x1,y1:m.y1,x2:m.x2,y2:m.y2});
 }
 function placeMeasureLabel(){ if(!measure) return; const L=$('mlabel'); L.style.left=(V.x+measure.x2*V.z)+'px'; L.style.top=(V.y+measure.y2*V.z)+'px'; }
 function ping(wx,wy){ ['','b'].forEach(c=>{ const p=document.createElement('div'); p.className='ping '+c; p.style.left=wx+'px'; p.style.top=wy+'px'; world.appendChild(p); setTimeout(()=>p.remove(),2000); }); }
@@ -3052,7 +3056,7 @@ function bindToken(el){
     /* écoute sur la fenêtre : le jeton suit la souris même si elle va plus vite que lui */
     const mv=ev=>{ if(ev.pointerId!==e.pointerId) return; if(!d.moved&&Math.hypot(ev.clientX-d.sx,ev.clientY-d.sy)<5) return;
       if(!d.moved){ d.moved=true; el.classList.add('moving'); document.body.classList.add('dragging'); closeCard(); }
-      const [x,y]=toWorld(ev.clientX,ev.clientY); t.x=bx(Math.round(x+d.dx)); t.y=by(Math.round(y+d.dy)); moveTokenEl(t);
+      const [x,y]=toWorld(ev.clientX,ev.clientY); t.x=bx(Math.round(x+d.dx),t); t.y=by(Math.round(y+d.dy),t); moveTokenEl(t);
       const b=$('bin').getBoundingClientRect(); $('bin').classList.toggle('over',ev.clientX>=b.left-8&&ev.clientX<=b.right+8&&ev.clientY>=b.top-8&&ev.clientY<=b.bottom+8);
       fowLater(); if(!d.raf) d.raf=requestAnimationFrame(()=>{ d.raf=0; send({t:'mv',id:t.id,x:t.x,y:t.y,s:t.s}); }); };
     const up=ev=>{ if(ev&&ev.pointerId!==e.pointerId) return; window.removeEventListener('pointermove',mv); window.removeEventListener('pointerup',up); window.removeEventListener('pointercancel',up);
@@ -3072,7 +3076,7 @@ function removeToken(id){ const t=tok(id); if(!t) return; S.tokens=S.tokens.filt
 function addToken(t){
   const r=board.getBoundingClientRect(); const [cx,cy]=toWorld(r.left+r.width/2,r.top+r.height/2);
   const n=S.tokens.filter(x=>Math.hypot(x.x-cx,x.y-cy)<30).length;
-  Object.assign(t,{id:t.id||nid(),x:bx(t.x??Math.round(cx+n*24)),y:by(t.y??Math.round(cy+n*24)),s:t.s||1});
+  Object.assign(t,{id:t.id||nid(),x:bx(t.x??Math.round(cx+n*24),t),y:by(t.y??Math.round(cy+n*24),t),s:t.s||1});
   if(S.scene>=0) t.scene=true;   // chaque scène garde ses jetons, joueurs compris
   S.tokens.push(t); if(ALIVE(t)) S.order.push(t.id);
   renderTokens(); renderTracker(); renderFoW(); markDirty(); sync();
@@ -3478,7 +3482,7 @@ function settings(){
     <div class="kv"><label for="p-auto">Sauvegarde automatique</label><select class="line-in" id="p-auto">${[[0,'Désactivée'],[30,'Toutes les 30 s'],[60,'Toutes les minutes'],[120,'Toutes les 2 min'],[300,'Toutes les 5 min']].map(([v,l])=>`<option value="${v}" ${+prefs.autosave===v?'selected':''}>${l}</option>`).join('')}</select></div>
     <p class="meta" style="text-align:left">La campagne s'enregistre dans le même dossier que les fiches des aventuriers, sous le nom <b>campagne.adb</b> (modifiable). La sauvegarde automatique la garde dans ce navigateur et la réécrit dans le dossier.</p>
     <div class="subttl">Plateau</div>
-    <label class="switch"><input type="checkbox" id="p-grid" ${S.grid!==false?'checked':''}>Afficher la grille (1 case = 0,5 m)</label>
+    <label class="switch"><input type="checkbox" id="p-grid" ${S.grid!==false?'checked':''}>Afficher la grille (1 case = 1 jeton ≈ 1 m)</label>
     <label class="switch"><input type="checkbox" id="p-wake">Empêcher la mise en veille de l'écran</label>
     <div class="inst"><div><b>Effacer la campagne en cours</b><span>Remet la table à zéro (avec confirmation). Le fichier enregistré n'est pas touché.</span></div><button class="btn danger" type="button" id="p-new">${IB('bin')}Effacer</button></div>
     <div class="inst"><div><b>Application</b><span id="inst-msg">${installMsg()}</span></div><button class="btn" type="button" id="p-install" ${isStandalone()?'disabled':''}>${isStandalone()?'Installée':'Installer'}</button></div>
@@ -3490,7 +3494,7 @@ function settings(){
 }
 function showGuide(){
   openDialog(`<h3>Guide</h3><div class="guide">
-    <h4>Le plateau</h4><ul><li>Clic gauche sur un jeton et glisser : le déplacer. Clic molette et glisser (ou Alt + clic gauche ; au doigt, glisser dans le vide) : déplacer la vue. Molette : zoomer vers le curseur. <kbd>0</kbd> : recentrer.</li><li>Clic droit sur le plateau : un signal rouge attire l'attention des joueurs.</li><li>Le rail de gauche : Mesure <kbd>M</kbd>, Dessin <kbd>D</kbd> (couleur et épaisseur au premier clic), Gomme <kbd>E</kbd> (cliquer ou passer sur un tracé). Clic droit sur le crayon ou la gomme : tout effacer. <kbd>Échap</kbd> repose l'outil.</li><li>La mesure compte en cases de 0,5 m.</li></ul>
+    <h4>Le plateau</h4><ul><li>Clic gauche sur un jeton et glisser : le déplacer. Clic molette et glisser (ou Alt + clic gauche ; au doigt, glisser dans le vide) : déplacer la vue. Molette : zoomer vers le curseur. <kbd>0</kbd> : recentrer.</li><li>Clic droit sur le plateau : un signal rouge attire l'attention des joueurs.</li><li>Le rail de gauche : Mesure <kbd>M</kbd>, Dessin <kbd>D</kbd> (couleur et épaisseur au premier clic), Gomme <kbd>E</kbd> (cliquer ou passer sur un tracé). Clic droit sur le crayon ou la gomme : tout effacer. <kbd>Échap</kbd> repose l'outil.</li><li>La mesure compte en mètres et en cases : une case = un jeton ≈ 1 m. « Fond de carte » › « Mettre à l'échelle » ajuste une carte importée.</li></ul>
     <h4>Les jetons</h4><ul><li>PNJ, Monstre, Décor, Lumière : chacun avec un pictogramme, des initiales ou une image. Les joueurs, eux, arrivent par la table en ligne.</li><li>Un clic ouvre la fiche flottante : PV (−/+), statistiques (un clic lance les dés), attaques, note secrète d'un décor, halo d'une lumière ou vision d'un joueur. L'œil cache le jeton aux joueurs.</li><li>Glisser pour déplacer ; lâcher sur la corbeille (en bas à droite pendant le glisser) pour retirer. <kbd>Maj</kbd> + molette : agrandir ou réduire.</li><li>Le bestiaire garde vos monstres : « Au bestiaire » dans la fenêtre du monstre, puis la liste en haut pour le rappeler.</li><li>Dans « Nouveau joueur », la fiche Aventurier de ce navigateur (ou un fichier .adb) reprend le personnage : nom, portrait, statistiques et PV (RES + 5).</li></ul>
     <h4>Jour et nuit</h4><p>En nuit, le brouillard couvre la carte : seuls les halos des joueurs et des lumières l'éclairent. Le MJ voit à travers ; les joueurs non. Un monstre hors de la lumière devient « ? » dans l'initiative des joueurs.</p>
     <h4>Initiative et sabliers</h4><ul><li>Joueurs et monstres rejoignent l'initiative à leur création. Mélanger, puis Tour suivant (<kbd>Espace</kbd>) : le jeton actif est cerclé d'or. Glisser une pastille pour changer l'ordre ; un clic centre la carte sur le jeton.</li><li>Les sabliers comptent à rebours ; pause et suppression dans la pastille.</li></ul>
@@ -3594,9 +3598,14 @@ function nextTurn(){ const L=orderToks(); if(!L.length) return; S.turn=(S.turn+1
 function centerOnIfOut(t){ const r=board.getBoundingClientRect(), [sx,sy]=toScreen(t.x,t.y); if(sx<r.left+60||sx>r.right-60||sy<r.top+60||sy>r.bottom-60) centerOn(t.x,t.y); }
 /* Fond image : importé de l'ordinateur ou pris dans le catalogue ; sa taille est réglable */
 function useImage(url,nw,nh,msg){ S.geo=null; S.bg=url; S.bgKind='img'; S.bgNW=nw; S.bgNH=nh; S.bgScale=1; S.bgW=nw; S.bgH=nh;
-  S.tokens.forEach(t=>{ t.x=bx(t.x); t.y=by(t.y); }); renderAllBoard(); fitBoard(); markDirty(); sync(); toast(msg||`Fond appliqué : ${nw} × ${nh} px`); }
-function setBgScale(k){ if(!S.bg) return; if(!S.bgNW){ S.bgNW=S.bgW; S.bgNH=S.bgH; } S.bgScale=k; S.bgW=Math.max(40,Math.round(S.bgNW*k)); S.bgH=Math.max(40,Math.round(S.bgNH*k));
-  S.tokens.forEach(t=>{ t.x=bx(t.x); t.y=by(t.y); moveTokenEl(t); }); renderBoard(); markDirty(); syncLater(); }
+  S.tokens.forEach(t=>{ t.x=bx(t.x,t); t.y=by(t.y,t); }); renderAllBoard(); fitBoard(); markDirty(); sync(); toast(msg||`Fond appliqué : ${nw} × ${nh} px`); }
+function setBgScale(k){ if(!S.bg) return; if(!S.bgNW){ S.bgNW=S.bgW; S.bgNH=S.bgH; } k=clamp(k,.02,20);
+  const W=Math.max(40,Math.round(S.bgNW*k)), H=Math.max(40,Math.round(S.bgNH*k)), fx=W/S.bgW, fy=H/S.bgH; if(fx===1&&fy===1) return;
+  S.bgScale=k; S.bgW=W; S.bgH=H;
+  /* ce qui est posé sur la carte reste au même endroit de l'image */
+  S.tokens.forEach(t=>{ t.x=bx(Math.round(t.x*fx),t); t.y=by(Math.round(t.y*fy),t); moveTokenEl(t); });
+  S.drawings.forEach(d=>{ d.d=d.d.replace(/([ML])(-?[\d.]+) (-?[\d.]+)/g,(m,c,x,y)=>c+(+x*fx).toFixed(1)+' '+(+y*fy).toFixed(1)); });
+  renderBoard(); renderDrawings(); fowLater(); markDirty(); syncLater(); }
 function setBackground(f){ const r=new FileReader(); r.onload=()=>{ const im=new Image(); im.onload=()=>{ const M=4096, k=Math.min(1,M/Math.max(im.width,im.height)), c=document.createElement('canvas'); c.width=Math.round(im.width*k); c.height=Math.round(im.height*k);
   c.getContext('2d').drawImage(im,0,0,c.width,c.height); useImage(c.toDataURL('image/jpeg',.86),c.width,c.height,`Fond de carte appliqué : ${c.width} × ${c.height} px — taille réglable dans « Fond de carte »`); }; im.src=r.result; }; r.readAsDataURL(f); }
 /* Catalogue des fonds de carte : le dossier « fonds/ » à côté de l'appli (photos et images).
@@ -3611,10 +3620,11 @@ async function loadFonds(){ if(fondsCache) return fondsCache; const out=new Map(
   fondsCache=[...out.values()]; return fondsCache; }
 function setFond(f){ const url=FONDS+f, im=new Image(); im.onload=()=>useImage(url,im.naturalWidth,im.naturalHeight,`Fond « ${fondName(f)} » : ${im.naturalWidth} × ${im.naturalHeight} px`); im.onerror=()=>toast('Ce fond est introuvable ou illisible',true); im.src=url; }
 
-/* Vue satellite (Esri World Imagery, sur fond OpenStreetMap pour la recherche) à l'échelle 1 :
-   une case = 0,5 m, un jeton ≈ un humain vu de dessus. Le plateau reste infini. */
-const M0=CELL_M/CELL;   // mètres par pixel du plateau
-const GEO_TILE='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/';
+/* Orthophoto (IGN, repli Esri ; recherche OpenStreetMap) à l'échelle 1 : un jeton ≈ 1 m, un humain vu de dessus. Le plateau reste infini. */
+const M0=1/PX_M;   // mètres par pixel du plateau
+const GEO_ESRI=(z,y,x)=>`https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}`;
+/* Orthophotos IGN (Géoplateforme) : la meilleure qualité en France ; ailleurs, repli sur l'imagerie Esri */
+const GEO_IGN=(z,y,x)=>`https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&TILEMATRIXSET=PM&FORMAT=image/jpeg&TILEMATRIX=${z}&TILEROW=${y}&TILECOL=${x}`;
 const geoTiles=new Map();
 function geoProj(lat,lon,z){ const n=256*Math.pow(2,z), si=Math.sin(lat*Math.PI/180); return [(lon+180)/360*n,(0.5-Math.log((1+si)/(1-si))/(4*Math.PI))*n]; }
 const geoScale=z=>156543.03392*Math.cos(S.geo.lat*Math.PI/180)/Math.pow(2,z)/M0;   // pixels du plateau par pixel de tuile
@@ -3633,29 +3643,40 @@ function renderGeo(){ const L=$('geo'); if(!L) return;
   for(let ty=Math.max(0,ty0);ty<=Math.min(N-1,ty1);ty++) for(let tx=tx0;tx<=tx1;tx++){ const k=z+'/'+ty+'/'+tx; want.add(k); if(geoTiles.has(k)) continue;
     const im=document.createElement('img'); im.className='gt'; im.alt=''; im.draggable=false; im.dataset.z=z; im.style.zIndex=z;
     im.style.left=((tx*256-ox)*sc)+'px'; im.style.top=((ty*256-oy)*sc)+'px'; im.style.width=im.style.height=(256*sc+1)+'px';
-    im.onload=()=>{ im.dataset.ok=1; geoClean(); }; im.onerror=()=>{ im.dataset.ok=1; im.style.visibility='hidden'; geoClean(); };
-    im.src=GEO_TILE+z+'/'+ty+'/'+(((tx%N)+N)%N); L.appendChild(im); geoTiles.set(k,im); }
+    im.onload=()=>{ im.dataset.ok=1; geoClean(); }; const X=((tx%N)+N)%N; im.onerror=()=>{ if(!im.dataset.alt){ im.dataset.alt=1; im.src=GEO_ESRI(z,ty,X); return; } im.dataset.ok=1; im.style.visibility='hidden'; geoClean(); };
+    im.src=GEO_IGN(z,ty,X); L.appendChild(im); geoTiles.set(k,im); }
   geoTiles.forEach((im,k)=>{ if(!want.has(k)&&+im.dataset.z===z){ im.remove(); geoTiles.delete(k); } });
   renderGeo.want=want; geoClean(); }
 /* les tuiles d'un autre niveau de zoom restent en dessous tant que les nouvelles chargent */
 function geoClean(){ const w=renderGeo.want; if(!w) return; for(const k of w){ const im=geoTiles.get(k); if(im&&!im.dataset.ok) return; }
   geoTiles.forEach((im,k)=>{ if(!w.has(k)){ im.remove(); geoTiles.delete(k); } }); }
+const fmtM=m=>(m>=100?Math.round(m):m.toFixed(1).replace('.',','))+'';
+function scaleAsk(g){ const L=Math.hypot(g.x2-g.x1,g.y2-g.y1); if(L<8/V.z||!S.bg){ toast('Tracez une ligne plus longue sur la carte',true); return; }
+  const cur=L/PX_M;
+  openDialog(`<h3>Mettre à l'échelle</h3><p>La ligne tracée mesure actuellement <b>${fmtM(cur)} m</b> (un jeton ≈ 1 m). Quelle longueur doit-elle faire en vrai ?</p>
+    <div class="georow" style="align-items:center"><input class="line-in" id="ech-m" type="number" min="0.1" step="0.1" value="${cur.toFixed(1)}" style="text-align:right"><span>mètres</span></div>
+    <div class="actions"><button class="btn ghost" type="button" data-close>Annuler</button><button class="btn" type="button" id="ech-ok">Appliquer</button></div>`);
+  const i=$('ech-m'); setTimeout(()=>{ i.focus(); i.select(); },50);
+  const go=()=>{ const m=parseFloat(String(i.value).replace(',','.')); if(!(m>0)) { i.focus(); return; } dlg.close(); setBgScale((S.bgScale||1)*m/cur); toast(`Carte à l'échelle : ${fmtM(S.bgW/PX_M)} × ${fmtM(S.bgH/PX_M)} m`); };
+  $('ech-ok').onclick=go; i.onkeydown=e=>{ if(e.key==='Enter') go(); }; }
 function useGeo(lat,lon,label){ S.bg=''; S.bgKind=''; S.bgW=S.bgH=S.bgNW=S.bgNH=0; S.geo={lat:+(+lat).toFixed(6),lon:+(+lon).toFixed(6),label:label||''};
-  renderAllBoard(); centerOn(0,0,.3); markDirty(); sync(); toast(`Vue satellite : ${label||(lat.toFixed(4)+', '+lon.toFixed(4))} — échelle 1 (une case = 0,5 m)`); }
+  renderAllBoard(); centerOn(0,0,.3); markDirty(); sync(); toast(`Orthophoto : ${label||(lat.toFixed(4)+', '+lon.toFixed(4))} — échelle 1 (un jeton ≈ 1 m)`); }
 
 function bgDialog(){
-  const sc=Math.round((S.bgScale||1)*100);
+  const sc=Math.log10(S.bgScale||1);
   openDialog(`<h3>Fond de carte</h3>
-    ${S.bg&&S.bgKind!=='video'?`<div class="subttl">Taille de l'image</div><div class="bgscale"><input type="range" id="bg-sc" min="10" max="400" step="5" value="${sc}"><b id="bg-scv"></b></div>`:''}
+    ${S.bg&&S.bgKind!=='video'?`<div class="subttl">Taille de l'image</div><div class="bgscale"><input type="range" id="bg-sc" min="-1.7" max="1.3" step="0.005" value="${sc}"><b id="bg-scv"></b></div>
+    <div class="georow" style="align-items:center"><button class="mini" type="button" id="bg-ech">${IB('ruler')}Mettre à l'échelle</button><span class="meta" style="text-align:left">Tracez une distance connue sur la carte, puis indiquez sa vraie longueur : un jeton ≈ 1 m.</span></div>`:''}
     <div class="subttl">Catalogue</div><div class="fdgrid" id="fd-grid"><p class="meta" style="text-align:left">Chargement du catalogue…</p></div>
     <div class="subttl">Depuis l'ordinateur</div>
     <div class="drop" id="bg-drop">Cliquer ou déposer une image ici</div>
-    <div class="subttl">Vue satellite</div>
+    <div class="subttl">Orthophoto</div>
     <div class="georow"><input class="line-in" id="geo-q" placeholder="Un lieu, une adresse, ou « 44.559, 6.079 »" value="${esc(S.geo&&S.geo.label||'')}"><button class="mini" type="button" id="geo-go">Chercher</button><button class="mini" type="button" id="geo-me" title="Ma position">${IB('target')}</button></div>
     <div class="geores" id="geo-res"></div>
-    <p class="meta" style="text-align:left">Photos satellites à l'échelle 1 : une case = 0,5 m, un jeton a la taille d'un humain. Le plateau reste infini ; dézoomez largement pour voir les environs. Recherche © OpenStreetMap (Nominatim), imagerie © Esri.</p>
+    <p class="meta" style="text-align:left">Orthophotos à l'échelle 1 : un jeton ≈ 1 m, la taille d'un humain. Le plateau reste infini : zoomez à fond ou dézoomez jusqu'à voir la région. Recherche © OpenStreetMap (Nominatim), orthophotos © IGN (hors France © Esri).</p>
     <div class="actions"><button class="btn ghost" type="button" id="bg-rm" ${S.bg||S.geo?'':'disabled'} style="margin-right:auto">${IB('bin')}Retirer le fond</button><button class="btn" type="button" data-close>Fermer</button></div>`);
-  const sv=$('bg-sc'); if(sv){ const lab=()=>{ $('bg-scv').textContent=`${sv.value} % · ${S.bgW} × ${S.bgH} px · ${Math.round(S.bgW/CELL)} × ${Math.round(S.bgH/CELL)} cases`; }; lab(); sv.oninput=()=>{ setBgScale(+sv.value/100); lab(); }; }
+  const sv=$('bg-sc'); if(sv){ const lab=()=>{ $('bg-scv').textContent=`${Math.round((S.bgScale||1)*100)} % · ${fmtM(S.bgW/PX_M)} × ${fmtM(S.bgH/PX_M)} m`; }; lab(); sv.oninput=()=>{ setBgScale(Math.pow(10,+sv.value)); lab(); };
+    $('bg-ech').onclick=()=>{ dlg.close(); if(tool!=='scale') setTool('scale'); toast('Mise à l\'échelle : tracez sur la carte une distance dont vous connaissez la longueur'); }; }
   loadFonds().then(L=>{ const g=$('fd-grid'); if(!g) return;
     g.innerHTML=L.length?L.map(x=>{ const u=FONDS+x.f; return `<button type="button" class="fd${S.bg===u?' on':''}" data-f="${esc(x.f)}" title="${esc(x.nom)}"><span class="m"><img src="${esc(u)}" alt="" loading="lazy"></span><b>${esc(x.nom)}</b></button>`; }).join('')
       :`<p class="meta" style="text-align:left;grid-column:1/-1">${location.protocol.startsWith('http')?'Le catalogue est vide pour l\'instant : déposez des photos dans le dossier « fonds » du dépôt.':'Le catalogue s\'affiche sur la version en ligne de l\'appli.'}</p>`;
