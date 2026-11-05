@@ -1866,13 +1866,14 @@ $('b-settings').onclick=()=>{
     <div class="mstate" id="savestate"><i></i><span></span></div><div class="mstate sub" id="dirstate"></div><div class="mstate sub" id="autostate"></div>
     <div class="kv">
     <label for="p-auto">Sauvegarde automatique</label><select class="line-in" id="p-auto">${[[0,'Désactivée'],[30,'Toutes les 30 s'],[60,'Toutes les minutes'],[120,'Toutes les 2 min'],[300,'Toutes les 5 min']].map(([v,l])=>`<option value="${v}" ${+prefs.autosave===v?'selected':''}>${l}</option>`).join('')}</select>
+    <label for="p-wake">Empêcher la mise en veille de l'écran</label><input type="checkbox" id="p-wake" style="width:18px;height:18px;accent-color:var(--ink-strong);justify-self:end">
     </div><p class="meta" style="text-align:left">La sauvegarde automatique garde la fiche dans ce navigateur, et réécrit aussi la fiche et le catalogue dans le dossier choisi quand le navigateur le permet.</p>
     <div class="inst"><div><b>Fiche imprimable</b><span>Une page A4 avec le personnage, la silhouette, l'inventaire et les améliorations. Choisissez « Enregistrer au format PDF » dans la fenêtre d'impression.</span></div><button class="btn" type="button" id="p-print">${IB('<path d="M7 8V3h10v5M7 17H4v-7h16v7h-3"/><path d="M7 14h10v7H7z"/>')}Imprimer / PDF</button></div>
     <div class="inst"><div><b>Application</b><span id="inst-msg">${installMsg()}</span></div><button class="btn" type="button" id="p-install" ${isStandalone()?'disabled':''}>${isStandalone()?'Installée':'Installer'}</button></div>
     <div class="actions" style="justify-content:space-between;align-items:center"><span class="meta" style="margin:0">Version ${APP_VER}</span><span style="display:flex;gap:8px"><button class="btn ghost" type="button" id="p-home" title="Revenir au choix Aventurier / Maître du destin">${IB('<path d="M3 11l9-7 9 7"/><path d="M5.5 9.5V20h13V9.5M10 20v-5.5h4V20"/>')}Accueil</button><button class="btn ghost" type="button" id="p-guide">${IB('<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 0 1 5 0c0 1.8-2.5 2-2.5 4M12 17h.01"/>')}Guide</button><button class="btn ghost" type="button" data-close>Fermer</button></span></div>`);
   $('p-install').onclick=doInstall;
   $('b-new').onclick=newDialog; $('b-open').onclick=()=>{ dlg.close(); openFile(); }; $('b-save').onclick=()=>{ dlg.close(); save(); }; $('b-saveas').onclick=()=>{ dlg.close(); saveAs(); };
-  $('p-guide').onclick=showGuide; $('p-home').onclick=()=>{ Store.saveLocal(); location.href=location.pathname; }; $('p-print').onclick=()=>{ dlg.close(); setTimeout(printSheet,150); }; updateSaveState();
+  $('p-guide').onclick=showGuide; wakeBind(); $('p-home').onclick=()=>{ Store.saveLocal(); location.href=location.pathname; }; $('p-print').onclick=()=>{ dlg.close(); setTimeout(printSheet,150); }; updateSaveState();
   $('p-auto').onchange=e=>{ prefs.autosave=+e.target.value; ls.set(LS_PREF,JSON.stringify(prefs)); setupAutosave(); updateSaveState(); };
 };
 function showGuide(){
@@ -2082,6 +2083,17 @@ tbStatus('off','Hors ligne');
 if(window.__adbRelay){ try{ localStorage.setItem('aldebaran.turn',window.__adbRelay); }catch(e){} window.__adbRelay=null; }
 if(window.__adbJoin){ const code=window.__adbJoin; window.__adbJoin=null; setTimeout(()=>{ openDrawer('tabledrw'); tbJoin(code); },1200); }
 }
+
+/* Écran toujours allumé (Wake Lock) : réglage commun Aventurier / Maître du destin */
+const WAKE={lock:null};
+const wakeOn=()=>{ try{ return localStorage.getItem('aldebaran.veille')==='1'; }catch(e){ return false; } };
+const wakeOk=()=>'wakeLock' in navigator&&!window.__ADB_SHEET_VIEW&&!window.__ADB_NET_VIEW;
+async function wakeApply(){ if(!wakeOk()) return; try{
+  if(wakeOn()&&document.visibilityState==='visible'){ if(!WAKE.lock){ WAKE.lock=await navigator.wakeLock.request('screen'); WAKE.lock.addEventListener('release',()=>{ WAKE.lock=null; }); } }
+  else if(WAKE.lock){ await WAKE.lock.release(); WAKE.lock=null; } }catch(e){ WAKE.lock=null; } }
+document.addEventListener('visibilitychange',wakeApply); wakeApply();
+function wakeBind(){ const i=document.getElementById('p-wake'); if(!i) return; i.checked=wakeOn(); i.disabled=!('wakeLock' in navigator);
+  i.onchange=()=>{ try{ localStorage.setItem('aldebaran.veille',i.checked?'1':'0'); }catch(e){} wakeApply(); }; }
 
 if(window.__adbLaunch){ const L=window.__adbLaunch; window.__adbLaunch=null; setTimeout(()=>loadText(L.text,L.name),300); }
 runOpening();
@@ -2580,6 +2592,8 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 .pmark .dot{width:7px;height:7px;border-radius:50%;background:var(--danger);display:inline-block}
 .player .pmark{display:flex}
 .netview .pmark{display:none!important}
+.netview .tk.current:not(.mine) .turn{display:none!important}
+.netview .tk.current:not(.mine) .face{box-shadow:none}
 .netview #board{cursor:crosshair}
 .pwait{display:none}
 .player .pwait{display:grid;position:fixed;inset:0;z-index:11;place-items:center;pointer-events:none;color:var(--ink-soft);font-size:13px;letter-spacing:.2em;text-transform:uppercase}
@@ -3441,11 +3455,12 @@ function settings(){
     <p class="meta" style="text-align:left">La campagne s'enregistre dans le même dossier que les fiches des aventuriers, sous le nom <b>campagne.adb</b> (modifiable). La sauvegarde automatique la garde dans ce navigateur et la réécrit dans le dossier.</p>
     <div class="subttl">Plateau</div>
     <label class="switch"><input type="checkbox" id="p-grid" ${S.grid!==false?'checked':''}>Afficher la grille (1 case = 0,5 m)</label>
+    <label class="switch"><input type="checkbox" id="p-wake">Empêcher la mise en veille de l'écran</label>
     <div class="inst"><div><b>Effacer la campagne en cours</b><span>Remet la table à zéro (avec confirmation). Le fichier enregistré n'est pas touché.</span></div><button class="btn danger" type="button" id="p-new">${IB('bin')}Effacer</button></div>
     <div class="inst"><div><b>Application</b><span id="inst-msg">${installMsg()}</span></div><button class="btn" type="button" id="p-install" ${isStandalone()?'disabled':''}>${isStandalone()?'Installée':'Installer'}</button></div>
     <div class="actions" style="justify-content:space-between"><span class="meta">Aldebaran MJ · version ${APP_VER}</span><span style="display:flex;gap:8px">${window.__ADB?`<button class="btn ghost" type="button" id="p-home" title="Revenir au choix Aventurier / Maître du destin">${IB('home')}Accueil</button>`:''}<button class="btn ghost" type="button" id="p-guide">${IB('help')}Guide</button><button class="btn ghost" type="button" data-close>Fermer</button></span></div>`);
   $('p-new').onclick=newTable; $('p-open').onclick=()=>{ dlg.close(); openFile(); }; $('p-save').onclick=()=>{ dlg.close(); save(); }; $('p-saveas').onclick=()=>{ dlg.close(); saveAs(); };
-  $('p-auto').onchange=e=>{ prefs.autosave=+e.target.value; savePrefs(); setupAutosave(); };
+  $('p-auto').onchange=e=>{ prefs.autosave=+e.target.value; savePrefs(); setupAutosave(); }; wakeBind();
   $('p-grid').onchange=e=>{ S.grid=e.target.checked; renderBoard(); markDirty(); sync(); };
   $('p-install').onclick=doInstall; $('p-guide').onclick=showGuide; if($('p-home')) $('p-home').onclick=()=>{ saveLocal(true); location.href=location.pathname; }; updateSaveState();
 }
@@ -3767,6 +3782,17 @@ async function runOpening(){
   await Logo.play(); sp.classList.add('out'); setTimeout(()=>{ sp.hidden=true; },650);
   await playTrace();
 }
+
+/* Écran toujours allumé (Wake Lock) : réglage commun Aventurier / Maître du destin */
+const WAKE={lock:null};
+const wakeOn=()=>{ try{ return localStorage.getItem('aldebaran.veille')==='1'; }catch(e){ return false; } };
+const wakeOk=()=>'wakeLock' in navigator&&!window.__ADB_SHEET_VIEW&&!window.__ADB_NET_VIEW;
+async function wakeApply(){ if(!wakeOk()) return; try{
+  if(wakeOn()&&document.visibilityState==='visible'){ if(!WAKE.lock){ WAKE.lock=await navigator.wakeLock.request('screen'); WAKE.lock.addEventListener('release',()=>{ WAKE.lock=null; }); } }
+  else if(WAKE.lock){ await WAKE.lock.release(); WAKE.lock=null; } }catch(e){ WAKE.lock=null; } }
+document.addEventListener('visibilitychange',wakeApply); wakeApply();
+function wakeBind(){ const i=document.getElementById('p-wake'); if(!i) return; i.checked=wakeOn(); i.disabled=!('wakeLock' in navigator);
+  i.onchange=()=>{ try{ localStorage.setItem('aldebaran.veille',i.checked?'1':'0'); }catch(e){} wakeApply(); }; }
 
 /* Démarrage */
 try{ const p=JSON.parse(ls.get(LS_PREF)||'null'); if(p) prefs=Object.assign(prefs,p); }catch(e){}
