@@ -657,6 +657,17 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}input[type=num
   #fr-inv .frame-head .ttl{width:100%}
 }
 @media (prefers-reduced-motion:reduce){.drawer,.toast{transition:none}.die{animation:none}}
+.tb-join{display:flex;flex-direction:column;gap:14px;max-width:440px}
+.tb-join p{margin:0;line-height:1.55}
+.tb-code{border:0;border-bottom:1px solid var(--rule);background:transparent;font-family:var(--f-title);font-weight:300;font-size:40px;letter-spacing:.42em;text-transform:uppercase;color:var(--ink-strong);text-align:center;outline:none;padding:6px 0 4px .42em;width:100%}
+.tb-code:focus{border-bottom-color:var(--ink)}
+.tb-code::placeholder{color:#c3c6cf}
+.tb-live{flex:1;min-height:0;border:1px solid var(--rule);border-radius:10px;overflow:hidden;background:#fff}
+.tb-frame{width:100%;height:100%;border:0;display:block}
+.tb-st{font-size:12px;font-weight:600;color:var(--ink-soft);display:flex;align-items:center;gap:6px;white-space:nowrap}
+.tb-st i{width:8px;height:8px;border-radius:50%;background:var(--ink-soft)}
+.tb-st.on i{background:var(--ok)}.tb-st.wait i{background:var(--gold)}
+.vtab.net-on svg{color:var(--ok)}
 </style>
 <style>#splash canvas,#splash .skip{visibility:hidden}</style>
 </head>
@@ -680,6 +691,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}input[type=num
   <button type="button" class="vtab" data-drawer="journal" style="--tc:var(--c-per)" title="Journal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18H6z"/><path d="M9 3v18M12 8h4M12 12h4"/></svg><span>Journal</span></button>
   <button type="button" class="vtab" data-drawer="bank" style="--tc:var(--c-res)" title="Quantum Bank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="15" rx="2"/><circle cx="12" cy="11.5" r="3.6"/><path d="M12 7.9v1.4M12 13.7v1.4M8.4 11.5h1.4M14.2 11.5h1.4M6 19v2M18 19v2"/></svg><span>Quantum Bank</span></button>
   <button type="button" class="vtab" data-drawer="mapdrw" style="--tc:var(--c-cha)" title="Map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4L3 6.5v13.5l6-2.5 6 2.5 6-2.5V4l-6 2.5z"/><path d="M9 4v13.5M15 6.5V20"/></svg><span>Map</span></button>
+  <button type="button" class="vtab" data-drawer="tabledrw" style="--tc:var(--c-dex)" title="Table en ligne"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/></svg><span>Table</span></button>
 </nav>
 
 <div class="layout" id="layout">
@@ -764,6 +776,16 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}input[type=num
   </div>
 </aside>
 
+<aside class="drawer map-drawer" id="tabledrw" style="--tc:var(--c-dex)" aria-label="Table en ligne">
+  <header><h3>Table</h3><span class="spacer"></span><span class="tb-st" id="tb-st"></span><button class="btn ghost" type="button" id="tb-leave" hidden>Quitter</button></header>
+  <div class="tb-join" id="tb-join">
+    <p>Rejoignez la table du maître du destin avec le code qu'il vous donne. Votre personnage y apparaît, vous déplacez votre jeton et vos jets de dés sont partagés.</p>
+    <input id="tb-code" class="tb-code" maxlength="5" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="CODE" aria-label="Code de la table">
+    <button class="btn" type="button" id="tb-go">Rejoindre</button>
+    <p class="meta" id="tb-msg" style="text-align:left"></p>
+  </div>
+  <div class="tb-live" id="tb-live" hidden></div>
+</aside>
 <aside class="drawer map-drawer" id="mapdrw" style="--tc:var(--c-cha)" aria-label="Carte">
   <header><h3>Map</h3><span class="spacer"></span></header>
   <div class="mapwrap" id="mapwrap"></div>
@@ -1735,7 +1757,7 @@ $('b-bastos').onclick=()=>{
     C.bastos=(+C.bastos||0)-v; C.bankBastos=(+C.bankBastos||0)+v; renderDerived(); markDirty(); dlg.close(); toast(`${v.toLocaleString('fr-FR')} ₿ épargnés`); }; setTimeout(()=>$('bastos-amt').focus(),30);
 };
 /* Volets latéraux : un seul ouvert à la fois */
-const DRAWERS=['invpanel','roller','journal','bank','mapdrw'];
+const DRAWERS=['invpanel','roller','journal','bank','mapdrw','tabledrw'];
 function openDrawer(id){ const was=id&&$(id).classList.contains('open');
   DRAWERS.forEach(d=>$(d).classList.toggle('open',d===id&&!was));
   const cur=DRAWERS.find(d=>$(d).classList.contains('open'));
@@ -1945,6 +1967,97 @@ const restored=Store.loadLocal(); if(restored) C=restored;
 CAT=Store.loadCat(); fileName=ls.get(LS_FILE)||null; syncCat();
 idb.get('dir').then(h=>{ if(h&&h.kind==='directory'){ dirHandle=h; updateSaveState(); } });
 renderAll(); updateSaveState(); setupAutosave(); placeRibbon();
+/* =========================================================
+   TABLE EN LIGNE — côté Aventurier
+   Le joueur saisit le code donné par le maître du destin : sa fiche
+   rejoint la table (nom, portrait, statistiques, PV), il voit le
+   plateau, déplace son jeton, et ses jets de dés sont partagés.
+   ========================================================= */
+const NET_PEERJS=['https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js','https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js','https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js'];
+function netLoad(urls){ return new Promise((res,rej)=>{ const go=i=>{ if(i>=urls.length){ rej(new Error('script')); return; } const s=document.createElement('script'); s.src=urls[i]; s.onload=res; s.onerror=()=>{ s.remove(); go(i+1); }; document.head.appendChild(s); }; go(0); }); }
+const netPeerOpts=()=>{ let o={debug:0}; try{ const x=JSON.parse(localStorage.getItem('aldebaran.peer')||'null'); if(x) o=Object.assign(o,x); }catch(e){} return o; };
+const NETP={peer:null,conn:null,code:null,frame:null,ready:false,want:false,last:{state:null,bg:null},pid:null,retry:0};
+NETP.pid=ls.get('aldebaran.joueur.netid')||('p'+Date.now().toString(36)+Math.random().toString(36).slice(2,7)); ls.set('aldebaran.joueur.netid',NETP.pid);
+
+function tbStatus(st,txt){ const e=$('tb-st'); e.className='tb-st '+st; e.innerHTML=`<i></i>${esc(txt||'')}`;
+  const v=document.querySelector('.vtab[data-drawer="tabledrw"]'); if(v) v.classList.toggle('net-on',st==='on'); }
+function tbMsg(t){ $('tb-msg').textContent=t||''; }
+function tbShowJoin(){ $('tb-join').hidden=false; $('tb-live').hidden=true; $('tb-leave').hidden=true; }
+
+/* portrait recadré, comme sur la fiche */
+let netImgKey=null, netImg=null;
+function sheetImg(){ const key=(C.photo||'').length+'|'+(C.photo||'').slice(-64)+JSON.stringify(C.photoCrop||null);
+  if(!C.photo) return Promise.resolve(null); if(key===netImgKey) return Promise.resolve(netImg);
+  return new Promise(res=>{ const im=new Image(); im.onload=()=>{ const cv=document.createElement('canvas'); cv.width=cv.height=128; const x=cv.getContext('2d'), pc=C.photoCrop;
+      if(pc&&pc.w) x.drawImage(im,-pc.l*128,-pc.t*128,pc.w*128,pc.h*128); else { const s=Math.min(im.width,im.height); x.drawImage(im,(im.width-s)/2,(im.height-s)/2,s,s,0,0,128,128); }
+      netImgKey=key; netImg=cv.toDataURL('image/webp',.82); res(netImg); };
+    im.onerror=()=>res(null); im.src=C.photo; }); }
+async function sheetData(){ const D=derive(C); return {name:(C.name||'').trim()||'Aventurier',stats:D.r,pvMax:D.pvMax,pv:C.pv,img:await sheetImg()}; }
+const netOpen=()=>NETP.conn&&NETP.conn.open;
+
+async function tbJoin(code){
+  code=String(code||'').toUpperCase().replace(/[^A-Z0-9]/g,''); $('tb-code').value=code;
+  if(code.length<4){ tbMsg('Saisissez le code donné par le maître du destin.'); $('tb-code').focus(); return; }
+  NETP.code=code; NETP.want=true; ls.set('aldebaran.joueur.table',code); tbMsg(''); tbStatus('wait','Connexion…');
+  try{ if(!window.Peer) await netLoad(NET_PEERJS); }catch(e){ tbStatus('off','Hors ligne'); tbMsg('Module réseau introuvable : vérifiez la connexion internet.'); return; }
+  if(!NETP.peer||NETP.peer.destroyed){
+    const p=new Peer(netPeerOpts()); NETP.peer=p;
+    p.on('error',e=>{ if(NETP.peer!==p) return;
+      if(e.type==='peer-unavailable'){ tbStatus('off','Hors ligne'); tbMsg(`Aucune table ouverte sous le code ${NETP.code}. Vérifiez le code, ou demandez au maître du destin d'ouvrir sa table.`); NETP.want=false; tbShowJoin(); }
+      else if(['network','server-error','socket-error','socket-closed'].includes(e.type)){ tbStatus('wait','Réseau indisponible, nouvel essai…'); }
+      else if(e.type==='browser-incompatible'){ tbStatus('off','Hors ligne'); tbMsg('Ce navigateur ne gère pas la connexion directe (WebRTC).'); }
+      else tbMsg('Réseau : '+e.type); });
+    p.on('disconnected',()=>{ if(NETP.peer===p&&!p.destroyed) setTimeout(()=>{ try{ p.reconnect(); }catch(e){} },1500); });
+    await new Promise(res=>{ if(p.open) res(); else p.on('open',res); });
+  }
+  tbConnect();
+}
+function tbConnect(){
+  if(!NETP.peer||!NETP.want) return;
+  const c=NETP.peer.connect('aldebaran-'+NETP.code.toLowerCase(),{reliable:true}); NETP.conn=c;
+  c.on('open',async()=>{ NETP.retry=0; c.send({t:'join',pid:NETP.pid,sheet:await sheetData()}); tbStatus('on',`Table ${NETP.code}`); tbLive(); });
+  c.on('data',tbIn);
+  c.on('close',()=>{ if(NETP.conn!==c) return; NETP.conn=null;
+    if(NETP.want&&NETP.retry<20){ NETP.retry++; tbStatus('wait','Reconnexion…'); setTimeout(()=>{ if(NETP.want&&!NETP.conn) tbConnect(); },2500); }
+    else if(NETP.want){ tbStatus('off','Hors ligne'); } });
+}
+function tbIn(d){ if(!d||typeof d!=='object') return;
+  if(d.t==='pv'){ const v=Math.round(+d.v); if(Number.isFinite(v)&&v!==C.pv){ C.pv=v; renderAll(); markDirty(); toast(`PV : ${v} (maître du destin)`); } return; }
+  if(d.t==='closed'){ NETP.want=false; tbStatus('off','Table fermée'); tbMsg('Le maître du destin a fermé la table.'); }
+  if(d.t==='state') NETP.last.state=d; if(d.t==='bg') NETP.last.bg=d;
+  tbToFrame(d);
+}
+function tbToFrame(m){ if(NETP.ready&&NETP.frame&&NETP.frame.contentWindow) NETP.frame.contentWindow.postMessage({__adb:1,m},'*'); }
+/* le plateau : la vue joueur du VTT, dans un cadre */
+function tbLive(){ $('tb-join').hidden=true; $('tb-live').hidden=false; $('tb-leave').hidden=false;
+  if(NETP.frame) return; const html=window.__ADB_APPS&&window.__ADB_APPS.mj;
+  if(!html){ $('tb-live').innerHTML='<p class="meta" style="padding:20px">Le plateau n\'est pas disponible dans cette version de l\'appli.</p>'; return; }
+  const f=document.createElement('iframe'); f.className='tb-frame'; f.title='Plateau de la table'; f.setAttribute('allow','fullscreen');
+  f.srcdoc=html.replace('<head>','<head><script>window.__ADB_NET_VIEW=1<'+'/script>'); NETP.frame=f; NETP.ready=false; $('tb-live').appendChild(f); }
+window.addEventListener('message',e=>{ if(!NETP.frame||e.source!==NETP.frame.contentWindow) return; const d=e.data; if(!d||!d.__adbUp||!d.m) return; const m=d.m;
+  if(m.t==='ready'){ NETP.ready=true; tbToFrame({t:'me',id:NETP.pid}); if(NETP.last.bg) tbToFrame(NETP.last.bg); if(NETP.last.state) tbToFrame(NETP.last.state); }
+  else if(m.t==='mv'&&netOpen()) NETP.conn.send({t:'mv',id:m.id,x:m.x,y:m.y,end:m.end?1:0}); });
+function tbLeave(){ NETP.want=false; const c=NETP.conn, p=NETP.peer; NETP.conn=null; NETP.peer=null;
+  try{ if(c) c.close(); }catch(e){} try{ if(p) p.destroy(); }catch(e){}
+  if(NETP.frame){ NETP.frame.remove(); NETP.frame=null; } NETP.ready=false; NETP.last={state:null,bg:null};
+  tbStatus('off','Hors ligne'); tbShowJoin(); }
+
+/* la fiche suit : chaque modification part vers la table, chaque jet aussi */
+let netSheetT=0;
+const _netMarkDirty=markDirty;
+markDirty=function(){ _netMarkDirty.apply(this,arguments); if(!netOpen()) return; clearTimeout(netSheetT);
+  netSheetT=setTimeout(async()=>{ if(netOpen()) NETP.conn.send({t:'sheet',sheet:await sheetData()}); },700); };
+const _netLogRoll=logRoll;
+logRoll=function(label,rolls,th,succ){ _netLogRoll.apply(this,arguments); if(netOpen()) NETP.conn.send({t:'roll',label:String(label),rolls:[...(rolls||[])],th,succ}); };
+
+$('tb-go').onclick=()=>tbJoin($('tb-code').value);
+$('tb-code').addEventListener('keydown',e=>{ if(e.key==='Enter') tbJoin($('tb-code').value); });
+$('tb-code').addEventListener('input',e=>{ const v=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,5); if(v!==e.target.value) e.target.value=v; });
+$('tb-leave').onclick=tbLeave;
+$('tb-code').value=ls.get('aldebaran.joueur.table')||'';
+tbStatus('off','Hors ligne');
+if(window.__adbJoin){ const code=window.__adbJoin; window.__adbJoin=null; setTimeout(()=>{ openDrawer('tabledrw'); tbJoin(code); },1200); }
+
 if(window.__adbLaunch){ const L=window.__adbLaunch; window.__adbLaunch=null; setTimeout(()=>loadText(L.text,L.name),300); }
 runOpening();
 <\/script>
@@ -1967,7 +2080,7 @@ runOpening();
 <meta name="apple-mobile-web-app-title" content="Aldebaran MJ">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@300;400;600&family=Quicksand:wght@400;500;600;700&display=swap">
-<script>document.documentElement.classList.add("booting");if(new URLSearchParams(location.search).get('role')==='player')document.documentElement.classList.add('player')<\/script>
+<script>document.documentElement.classList.add("booting");if(new URLSearchParams(location.search).get('role')==='player'||window.__ADB_NET_VIEW)document.documentElement.classList.add('player');if(window.__ADB_NET_VIEW)document.documentElement.classList.add('netview')<\/script>
 <style>
 /* ALDEBARAN MJ — table du maître du jeu, habillée comme la fiche joueur :
    papier blanc, encre grise, bandes pastel, titres Josefin tracés, pictos dessinés. */
@@ -2074,6 +2187,23 @@ svg.i{width:18px;height:18px;flex:none}
 /* Jetons */
 .tk{position:absolute;width:72px;height:72px;margin:-36px 0 0 -36px;pointer-events:auto;touch-action:none;user-select:none;transform:scale(var(--s,1));--c:var(--ink-strong);cursor:grab;transition:opacity .2s}
 .player .tk{cursor:default;pointer-events:none}
+.player .tk.mine{pointer-events:auto;cursor:grab}
+.player .tk.mine.moving{cursor:grabbing}
+.player .tk.mine .face{box-shadow:0 0 0 3px var(--paper),0 0 0 4.5px var(--c-res)}
+.netb .nd{width:8px;height:8px;border-radius:50%;background:var(--ink-soft);display:inline-block}
+.netb.on .nd{background:var(--ok)}
+.netb.wait .nd{background:var(--gold)}
+.netb b{font-variant-numeric:tabular-nums;font-weight:700}
+.ncode{font-family:var(--f-title);font-weight:300;font-size:44px;letter-spacing:.42em;color:var(--ink-strong);text-align:center;padding:6px 0 0 .42em}
+.nlink{display:flex;gap:8px;align-items:center;border:1px solid var(--rule);border-radius:10px;padding:6px 6px 6px 12px}
+.nlink input{flex:1;min-width:0;border:0;outline:none;background:transparent;font-size:12.5px;color:var(--ink)}
+.nqr{display:grid;place-items:center}
+.nqr img,.nqr canvas{width:150px!important;height:150px!important}
+.nplayers{display:flex;flex-direction:column}
+.np{display:flex;align-items:center;gap:10px;padding:7px 2px;border-bottom:1px dashed var(--rule)}
+.np i{width:8px;height:8px;border-radius:50%;background:var(--ok)}
+.np b{flex:1;color:var(--ink-strong)}
+.np small{font-size:11.5px;color:var(--ink-soft)}
 .tk.moving{cursor:grabbing;z-index:5;transition:none}
 .tk .ring{position:absolute;inset:-6px;width:84px;height:84px;overflow:visible;pointer-events:none}
 .tk .ring .bgc{fill:none;stroke:var(--faint);stroke-width:4}
@@ -2376,6 +2506,7 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 .pmark{display:none;position:fixed;left:18px;top:14px;z-index:12;font-family:var(--f-title);letter-spacing:.32em;font-size:15px;color:var(--ink-strong);align-items:baseline;gap:8px;background:var(--wash);padding:4px 10px;border-radius:8px;pointer-events:none}
 .pmark .dot{width:7px;height:7px;border-radius:50%;background:var(--danger);display:inline-block}
 .player .pmark{display:flex}
+.netview .pmark{display:none!important}
 .pwait{display:none}
 .player .pwait{display:grid;position:fixed;inset:0;z-index:11;place-items:center;pointer-events:none;color:var(--ink-soft);font-size:13px;letter-spacing:.2em;text-transform:uppercase}
 .pwait.gone{display:none!important}
@@ -2395,7 +2526,7 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 <div id="splash"><canvas id="cv" aria-label="Logo Aldebaran"></canvas><div class="skip">Cliquer pour passer</div></div>
 
 <header class="appbar">
-  <div class="brand"><span class="dot"></span>ALDEBARAN<small>Maître du jeu</small></div>
+  <div class="brand"><span class="dot"></span>ALDEBARAN<small>Maître du destin</small></div>
   <div class="scenenav">
     <span class="cap">Scène</span>
     <button class="nb" type="button" id="sc-prev" title="Scène précédente"></button>
@@ -2404,6 +2535,7 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
   </div>
   <div class="spacer"></div>
   <div class="tools">
+    <button class="tool netb" type="button" id="b-net"><i class="nd"></i><span class="lbl">En ligne</span><b id="net-n"></b></button>
     <button class="tool" type="button" id="b-player" title="Ouvrir la vue joueur (second écran)"></button>
     <button class="tool icon" type="button" id="b-full" title="Plein écran"></button>
     <span class="sep"></span>
@@ -2504,7 +2636,7 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 
 <div id="card" hidden></div>
 <div class="pmark"><span class="dot"></span>ALDEBARAN</div>
-<div class="pwait" id="pwait">En attente du maître du jeu…</div>
+<div class="pwait" id="pwait">En attente du maître du destin…</div>
 <div id="stitle"><span class="cap">Scène</span><svg class="ttl" viewBox="0 0 1600 70" preserveAspectRatio="xMidYMid meet"><text x="800" y="56" text-anchor="middle"></text></svg></div>
 <dialog id="dlg"><div class="dlg" id="dlg-body"></div></dialog>
 <div class="toast" id="toast"></div>
@@ -2518,6 +2650,8 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
    ========================================================= */
 const APP_VER='1';
 const isPlayer=document.documentElement.classList.contains('player');
+const NETVIEW=!!window.__ADB_NET_VIEW;   // vue joueur à distance (dans la fiche Aventurier)
+let ME=null;                              // identifiant réseau du joueur de cette vue
 const STATS=['FOR','RES','CHA','SAV','DEX','PER'];
 const STAT_INFO={
   FOR:{name:'Force',col:'var(--c-for)',ico:'<path d="M4 10v4M7 7.5v9M17 7.5v9M20 10v4M7 12h10"/>'},
@@ -2583,6 +2717,8 @@ const IC={
   saveas:'<path d="M13 21H5V3h11l3 3v5"/><path d="M8 3v5h7V3"/><path d="M15 20l5-5 2 2-5 5h-2z"/>',
   open:'<path d="M3 7V5h6l2 2h8v3"/><path d="M3 7v12h15l3-9H6l-3 9"/>',
   home:'<path d="M3 11l9-7 9 7"/><path d="M5.5 9.5V20h13V9.5M10 20v-5.5h4V20"/>',
+  wifi:'<path d="M2.5 9a14 14 0 0 1 19 0M5.5 12.3a9.5 9.5 0 0 1 13 0M8.7 15.6a5 5 0 0 1 6.6 0"/><circle cx="12" cy="19" r="1.2" fill="currentColor"/>',
+  copy:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>',
   newf:'<path d="M14 3H6v18h12V7z"/><path d="M14 3v4h4M12 11v6M9 14h6"/>',
   help:'<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 0 1 5 0c0 1.8-2.5 2-2.5 4M12 17h.01"/>',
   book:'<path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H19v15H5.5A1.5 1.5 0 0 0 4 19.5z"/><path d="M4 19.5A1.5 1.5 0 0 0 5.5 21H19v-3"/><path d="M8 7h7M8 10.5h5"/>',
@@ -2665,7 +2801,8 @@ function tokenHTML(t){
 function tokenEl(t){
   let el=document.querySelector(`.tk[data-id="${t.id}"]`);
   if(!el){ el=document.createElement('div'); el.dataset.id=t.id; $('tokens').appendChild(el); if(!isPlayer) bindToken(el); }
-  el.className=`tk ${t.type}`+(t.hidden?' hid':'')+((t.type==='player'||t.type==='mob')&&t.hp<=0?' down':'')+(cardId===t.id?' open':'')+(curTurnId()===t.id?' current':'');
+  el.className=`tk ${t.type}`+(t.hidden?' hid':'')+((t.type==='player'||t.type==='mob')&&t.hp<=0?' down':'')+(cardId===t.id?' open':'')+(curTurnId()===t.id?' current':'')+(isPlayer&&ME&&t.owner===ME?' mine':'');
+  if(isPlayer&&ME&&t.owner===ME&&!el._mine){ el._mine=1; bindMine(el); }
   el.style.left=t.x+'px'; el.style.top=t.y+'px'; el.style.setProperty('--s',t.s||1);
   el.innerHTML=tokenHTML(t);
   return el;
@@ -2845,7 +2982,7 @@ function renderCard(){
     else if(b.dataset.a==='hide'){ t.hidden=!t.hidden; tokenEl(t); renderCard(); renderTracker(); renderFoW(); markDirty(); sync(); toast(t.hidden?'Caché aux joueurs':'Visible des joueurs'); }
     else if(b.dataset.a==='edit'){ entityDialog(t.type,t); }
     else if(b.dataset.a==='del') removeToken(t.id);
-    else if(b.dataset.hp){ t.hp=clamp(t.hp+(+b.dataset.hp),-1,t.hpMax); tokenEl(t); renderCard(); renderTracker(); markDirty(); sync(); }
+    else if(b.dataset.hp){ t.hp=clamp(t.hp+(+b.dataset.hp),-1,t.hpMax); tokenEl(t); renderCard(); renderTracker(); markDirty(); sync(); if(t.owner) netTo(t.owner,{t:'pv',v:t.hp}); }
     else if(b.dataset.roll){ const s=b.dataset.roll; showRoll(`${t.name||TYPES[t.type].label} · ${STAT_INFO[s].name}`,t.stats[s]||0); }
     else if(b.dataset.atk!=null){ const a=t.attacks[+b.dataset.atk]; showRoll(`${t.name||'Monstre'} · ${a.name||'Attaque'}`,(t.stats[a.stat]||0)+(+a.bonus||0)); }
   };
@@ -3054,12 +3191,13 @@ function bindSteppers(root){ root.querySelectorAll('[data-step]').forEach(b=>b.o
 /* =========================================================
    Vue joueur : synchronisation (BroadcastChannel + stockage local)
    ========================================================= */
-let bc=null; try{ bc=new BroadcastChannel('aldebaran-mj'); }catch(e){}
+let bc=null; try{ if(!NETVIEW) bc=new BroadcastChannel('aldebaran-mj'); }catch(e){}
 let seq=0, lastSeq=-1;
 function send(m){ if(isPlayer) return; m.n=Date.now()*100+(seq++%100); m.from='mj';
+  netSend(m);
   if(bc) try{ bc.postMessage(m); }catch(e){}
   try{ localStorage.setItem(LS_SYNC,JSON.stringify(m)); }catch(e){ if(m.t==='state'){ const lite={...m,bg:m.bg&&m.bg.length>1.5e6?'':m.bg}; try{ localStorage.setItem(LS_SYNC,JSON.stringify(lite)); }catch(e2){} } } }
-function publicState(){ const pub=t=>({id:t.id,type:t.type,name:t.name,hp:t.hp,hpMax:t.hpMax,img:t.img,ico:t.ico,x:t.x,y:t.y,s:t.s,r:t.r,note:t.type==='prop'&&t.note?' ':''});
+function publicState(){ const pub=t=>({id:t.id,type:t.type,name:t.name,hp:t.hp,hpMax:t.hpMax,img:t.img,ico:t.ico,x:t.x,y:t.y,s:t.s,r:t.r,owner:t.owner||null,note:t.type==='prop'&&t.note?' ':''});
   return {t:'state',bg:S.bg,light:S.light,grid:S.grid,drawings:S.drawings,tokens:S.tokens.filter(t=>!t.hidden).map(pub),order:S.order.filter(id=>{ const t=tok(id); return t&&!t.hidden; }),turn:turnIdForPlayers(),view:viewMsg()}; }
 function turnIdForPlayers(){ const L=orderToks(), c=L[S.turn]; return c&&!c.hidden?c.id:null; }
 let syncRaf=0; function sync(){ if(isPlayer||syncRaf) return; syncRaf=requestAnimationFrame(()=>{ syncRaf=0; send(publicState()); }); }
@@ -3071,12 +3209,18 @@ function openPlayerView(){ playerWin=window.open(location.href.split('?')[0].spl
   if(!playerWin){ toast('Fenêtre bloquée par le navigateur',true); return; } toast('Vue joueur ouverte : glissez-la sur le second écran'); setTimeout(sync,900); }
 function receive(m){ if(!m) return;
   if(!isPlayer){ if(m.t==='hello') sync(); return; }
+  if(m.t==='me'){ ME=m.id; renderTokens(); return; }
+  if(m.t==='bg'){ S.bg=m.data||''; renderBoard(); return; }
+  if(m.t==='closed'){ $('pwait').textContent='Le maître du destin a fermé la table'; $('pwait').classList.remove('gone'); return; }
   if(m.from!=='mj'||m.n<=lastSeq) return; lastSeq=m.n;
   if(m.t==='state'){ $('pwait').classList.add('gone');
-    Object.assign(S,{bg:m.bg,light:m.light,grid:m.grid,drawings:m.drawings,tokens:m.tokens,order:m.order}); const L=orderToks(); S.turn=L.findIndex(t=>t.id===m.turn);
+    if(m.bg!==undefined) S.bg=m.bg;
+    Object.assign(S,{light:m.light,grid:m.grid,drawings:m.drawings,tokens:m.tokens,order:m.order}); const L=orderToks(); S.turn=L.findIndex(t=>t.id===m.turn);
+    if(myDrag){ const t=tok(myDrag.id); if(t){ t.x=myDrag.x; t.y=myDrag.y; } }
     renderAllBoard(); if(m.view) setPlayerView(m.view); }
+  else if(m.t==='roll') toast(`${m.who} · ${m.label} : ${m.succ} réussite${m.succ>1?'s':''}`);
   else if(m.t==='view') setPlayerView(m);
-  else if(m.t==='mv'){ const t=tok(m.id); if(t){ t.x=m.x; t.y=m.y; t.s=m.s; moveTokenEl(t); fowLater(); } }
+  else if(m.t==='mv'){ const t=tok(m.id); if(t&&!(myDrag&&myDrag.id===m.id)){ t.x=m.x; t.y=m.y; t.s=m.s; moveTokenEl(t); fowLater(); } }
   else if(m.t==='ping') ping(m.x,m.y);
   else if(m.t==='measure'){ if(m.on) drawMeasure(m); else { measure=null; $('over').innerHTML=''; $('mlabel').hidden=true; } }
   else if(m.t==='scene') sceneTitle(m.title,m.idx);
@@ -3088,7 +3232,7 @@ function sceneTitle(title,n){ const st=$('stitle'), tx=st.querySelector('text');
   const sp=[...tx.querySelectorAll('tspan')]; sp.forEach((s,i)=>s.animate([{strokeOpacity:1,strokeDasharray:'300 300',strokeDashoffset:300,fillOpacity:0},{strokeOpacity:1,strokeDasharray:'300 300',strokeDashoffset:0,fillOpacity:0,offset:.7},{strokeOpacity:0,strokeDasharray:'300 300',strokeDashoffset:0,fillOpacity:1}],{delay:i*60,duration:600,fill:'backwards',easing:'ease-out'}));
   const a=st.animate([{opacity:1},{opacity:1,offset:.8},{opacity:0}],{duration:3600+sp.length*60}); a.onfinish=()=>st.classList.remove('on'); }
 if(bc) bc.onmessage=e=>receive(e.data);
-window.addEventListener('storage',e=>{ if(e.key===LS_SYNC&&e.newValue){ try{ receive(JSON.parse(e.newValue)); }catch(err){} } });
+window.addEventListener('storage',e=>{ if(!NETVIEW&&e.key===LS_SYNC&&e.newValue){ try{ receive(JSON.parse(e.newValue)); }catch(err){} } });
 
 /* =========================================================
    Sauvegarde : fichier .adb (table MJ), sauvegarde auto réglable
@@ -3156,6 +3300,7 @@ function showGuide(){
     <h4>Initiative et sabliers</h4><ul><li>Joueurs et monstres rejoignent l'initiative à leur création. Mélanger, puis Tour suivant (<kbd>Espace</kbd>) : le jeton actif est cerclé d'or. Glisser une pastille pour changer l'ordre ; un clic centre la carte sur le jeton.</li><li>Les sabliers comptent à rebours ; pause et suppression dans la pastille.</li></ul>
     <h4>Scénario</h4><p>Une scène garde le fond, le jour ou la nuit, les tracés, les monstres, décors et lumières. Les joueurs restent d'une scène à l'autre. On passe de scène en scène depuis la barre du haut ou le volet Scénario ; chaque changement inscrit le titre sur la vue joueur. Le scénario s'exporte en PDF.</p>
     <h4>Vue joueur</h4><p>Le bouton « Vue joueur » ouvre une seconde fenêtre à glisser sur la TV ou le second écran : elle suit la caméra, les jetons, les tracés, la mesure, les signaux et le brouillard, sans rien des outils ni des secrets du MJ.</p>
+    <h4>Table en ligne</h4><p>« En ligne » ouvre la table sous un code de 5 lettres (le même d'une séance à l'autre). Chaque joueur, dans sa fiche Aventurier, ouvre l'onglet <b>Table</b> et saisit le code, ou suit le lien / le QR code. Son personnage arrive sur le plateau et suit sa fiche ; il déplace lui-même son jeton ; ses jets de dés s'affichent ici ; les PV changés sur sa fiche flottante reviennent sur sa fiche. Connexion directe entre appareils (WebRTC), sans compte ni stockage sur un serveur.</p>
     <h4>Dés</h4><p>Pool de D10 : chaque dé au seuil (8 par défaut, réglable dans Jet libre) est une réussite, un 10 est un critique, un 1 un échec.</p>
     <h4>Sauvegarde</h4><p>Fichier <b>.adb</b> (table MJ) : Ctrl+S, Ctrl+Maj+S pour choisir un autre fichier, sauvegarde automatique réglable dans les Paramètres.</p>
   </div><div class="actions"><button class="btn" type="button" data-close>Fermer</button></div>`);
@@ -3213,7 +3358,7 @@ function wire(){
   $('b-light').onclick=()=>{ S.light=!S.light; renderBoard(); renderTracker(); markDirty(); sync(); toast(S.light?'Jour : le brouillard se lève':'Nuit : brouillard de guerre'); };
   $('b-bg').onclick=bgDialog; $('b-center').onclick=fitBoard;
   // haut
-  $('b-player').onclick=openPlayerView; $('b-settings').onclick=settings;
+  $('b-player').onclick=openPlayerView; $('b-net').onclick=netDialog; netStatus('off'); $('b-settings').onclick=settings;
   $('b-full').onclick=()=>{ if(!document.fullscreenElement) document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); else document.exitFullscreen(); };
   $('sc-prev').onclick=()=>gotoScene(S.scene-1); $('sc-next').onclick=()=>gotoScene(S.scene+1); $('sc-title').onclick=()=>openDrawer('scenario',true);
   // scénario
@@ -3259,6 +3404,123 @@ function bgDialog(){
 }
 
 /* =========================================================
+   TABLE EN LIGNE — connexion pair-à-pair (PeerJS / WebRTC)
+   Le MJ ouvre la table sous un code ; chaque joueur s'y connecte
+   depuis sa fiche Aventurier (onglet Table). Rien n'est stocké sur
+   un serveur : le serveur PeerJS sert seulement à se trouver.
+   ========================================================= */
+const PEERJS=['https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js','https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js','https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js'];
+function loadScript(urls){ return new Promise((res,rej)=>{ const go=i=>{ if(i>=urls.length){ rej(new Error('script')); return; } const s=document.createElement('script'); s.src=urls[i]; s.onload=res; s.onerror=()=>{ s.remove(); go(i+1); }; document.head.appendChild(s); }; go(0); }); }
+const loadPeer=()=>window.Peer?Promise.resolve():loadScript(PEERJS);
+/* serveur de rendez-vous : PeerJS public par défaut, réglable via localStorage « aldebaran.peer » (JSON) */
+function peerOpts(){ let o={debug:0}; try{ const x=JSON.parse(localStorage.getItem('aldebaran.peer')||'null'); if(x) o=Object.assign(o,x); }catch(e){} return o; }
+const CODE_CH='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+const newCode=()=>Array.from({length:5},()=>CODE_CH[Math.floor(Math.random()*CODE_CH.length)]).join('');
+const peerId=code=>'aldebaran-'+String(code).toLowerCase();
+const NET={peer:null,conns:new Set(),status:'off',code:null};
+const bgId=bg=>bg?bg.length+':'+bg.slice(-48):'';
+const players=()=>[...NET.conns].filter(c=>c.pid);
+
+/* envoi : le fond de carte ne part qu'une fois par joueur (et quand il change) */
+function netSendTo(c,m){ if(!c.open) return; try{
+  if(m.t==='state'){ const id=bgId(m.bg); if(c.bgId!==id){ c.send({t:'bg',data:m.bg||''}); c.bgId=id; } const o=Object.assign({},m); delete o.bg; c.send(o); }
+  else c.send(m); }catch(e){} }
+function netSend(m){ if(!NET.conns.size) return; NET.conns.forEach(c=>{ if(c.pid) netSendTo(c,m); }); }
+function netTo(pid,m){ NET.conns.forEach(c=>{ if(c.pid===pid) netSendTo(c,m); }); }
+
+function netStatus(st){ NET.status=st; const b=$('b-net'); if(!b) return;
+  b.classList.toggle('on',st==='on'); b.classList.toggle('wait',st==='wait');
+  const n=players().length; $('net-n').textContent=st!=='off'&&n?n:'';
+  b.title=st==='off'?'Table en ligne : les joueurs se connectent depuis leur fiche Aventurier':`Table en ligne · code ${NET.code} · ${n} joueur${n>1?'s':''}`;
+  renderNetBody(); }
+
+async function openTable(){
+  if(NET.peer) return; netStatus('wait');
+  try{ await loadPeer(); }catch(e){ netStatus('off'); toast('Module réseau introuvable : vérifiez la connexion internet',true); return; }
+  if(!S.netCode){ S.netCode=newCode(); } if(!S.netOpen){ S.netOpen=true; markDirty(); }
+  NET.code=S.netCode;
+  const p=new Peer(peerId(NET.code),peerOpts()); NET.peer=p;
+  p.on('open',()=>{ if(NET.peer!==p) return; netStatus('on'); toast(`Table ouverte · code ${NET.code}`); });
+  p.on('connection',c=>{
+    c.on('open',()=>{ NET.conns.add(c); netStatus(NET.status); });
+    c.on('data',d=>netIn(c,d));
+    const gone=()=>{ if(NET.conns.delete(c)){ if(c.pid) toast(`${c.name||'Un joueur'} a quitté la table`); netStatus(NET.status); } };
+    c.on('close',gone); c.on('error',gone); });
+  p.on('disconnected',()=>{ if(NET.peer===p&&!p.destroyed){ netStatus('wait'); setTimeout(()=>{ try{ if(NET.peer===p&&!p.destroyed) p.reconnect(); }catch(e){} },1500); } });
+  p.on('error',e=>{ if(NET.peer!==p) return;
+    if(e.type==='unavailable-id'){ toast('Ce code est déjà ouvert sur un autre appareil : fermez l\'autre table ou prenez un nouveau code',true); closeTable(); }
+    else if(['network','server-error','socket-error','socket-closed'].includes(e.type)) netStatus('wait');
+    else if(e.type==='browser-incompatible'){ toast('Ce navigateur ne gère pas la connexion directe (WebRTC)',true); closeTable(); }
+    else if(e.type!=='peer-unavailable') toast('Réseau : '+e.type,true); });
+}
+function closeTable(){ const p=NET.peer; NET.peer=null; if(S.netOpen){ S.netOpen=false; markDirty(); } NET.conns.forEach(c=>{ try{ c.send({t:'closed'}); c.close(); }catch(e){} }); NET.conns.clear(); if(p) try{ p.destroy(); }catch(e){} netStatus('off'); }
+
+/* messages reçus des joueurs */
+function netIn(c,d){ if(!d||typeof d!=='object') return;
+  if(d.t==='join'){ const first=!c.pid; c.pid=String(d.pid||c.peer); c.name=(d.sheet&&d.sheet.name)||'Aventurier';
+    claimToken(c,d.sheet,true); if(first) toast(`${c.name} rejoint la table`);
+    c.bgId=null; const st=publicState(); st.n=Date.now()*100+(seq++%100); st.from='mj'; netSendTo(c,st); netStatus(NET.status); }
+  else if(d.t==='sheet'&&c.pid){ c.name=(d.sheet&&d.sheet.name)||c.name; claimToken(c,d.sheet,false); netStatus(NET.status); }
+  else if(d.t==='mv'&&c.pid){ const t=tok(d.id); if(!t||t.owner!==c.pid) return;
+    t.x=clamp(Math.round(+d.x||0),0,WORLD); t.y=clamp(Math.round(+d.y||0),0,WORLD); moveTokenEl(t); placeCard(); fowLater();
+    send({t:'mv',id:t.id,x:t.x,y:t.y,s:t.s}); markDirty(); if(d.end) syncLater(); }
+  else if(d.t==='roll'&&c.pid){ const succ=+d.succ||0, label=String(d.label||'Jet').slice(0,60);
+    logRoll(`${c.name} · ${label}`,Array.isArray(d.rolls)?d.rolls.slice(0,60):[],+d.th||8,succ);
+    toast(`${c.name} · ${label} : ${succ} réussite${succ>1?'s':''}`); send({t:'roll',who:c.name,label,succ}); }
+}
+/* le jeton du joueur suit sa fiche (nom, portrait, statistiques, PV) */
+function claimToken(c,sh,join){ sh=sh||{};
+  let t=S.tokens.find(x=>x.owner===c.pid);
+  if(!t&&join) t=S.tokens.find(x=>x.type==='player'&&!x.owner&&x.name&&x.name===sh.name);
+  const st={}; STATS.forEach(s=>st[s]=Math.max(0,+(sh.stats&&sh.stats[s])||0));
+  const data={name:String(sh.name||'Aventurier').slice(0,40),stats:st,hpMax:Math.max(1,+sh.pvMax||st.RES+5)};
+  data.hp=Number.isFinite(+sh.pv)?clamp(+sh.pv,-1,data.hpMax):data.hpMax;
+  if(typeof sh.img==='string'&&sh.img.startsWith('data:image/')&&sh.img.length<120000) data.img=sh.img;
+  if(t){ Object.assign(t,data,{owner:c.pid}); tokenEl(t); renderTracker(); if(cardId===t.id) renderCard(); markDirty(); sync(); }
+  else addToken(Object.assign({type:'player',ico:'person',img:null,attacks:[],r:250,owner:c.pid},data));
+}
+
+/* fenêtre « Table en ligne » */
+function netLink(){ return location.protocol.startsWith('http')&&NET.code?location.origin+location.pathname+'?table='+NET.code:''; }
+function netDialog(){ openDialog(`<h3>Table en ligne</h3><div id="net-body" style="display:flex;flex-direction:column;gap:14px"></div>`,'var(--ok)'); renderNetBody(); }
+function renderNetBody(){ const b=$('net-body'); if(!b||!dlg.open) return;
+  if(NET.status==='off'){
+    b.innerHTML=`<p>Les joueurs rejoignent la table depuis leur fiche <b>Aventurier</b>, sur téléphone ou ordinateur : onglet <b>Table</b>, puis le code. Ils voient le plateau comme sur la vue joueur, déplacent leur propre jeton, et leurs jets de dés arrivent ici.</p>
+      <p class="meta" style="text-align:left">Connexion directe d'appareil à appareil (WebRTC) : rien n'est stocké sur un serveur, mais il faut internet pour se trouver.${S.netCode?` Code de cette table : <b>${S.netCode}</b>.`:''}</p>
+      <div class="actions"><button class="btn ghost" type="button" data-close>Fermer</button><button class="btn" type="button" id="net-open">${IB('wifi')}Ouvrir la table</button></div>`;
+    $('net-open').onclick=openTable;
+  } else {
+    const L=players(), link=netLink();
+    b.innerHTML=`${NET.status==='wait'?'<p class="meta">Connexion au réseau…</p>':''}<span class="cap" style="text-align:center">Code de la table</span><div class="ncode">${NET.code}</div>
+      ${link?`<div class="nlink"><input readonly value="${esc(link)}" aria-label="Lien d'invitation"><button class="mini" type="button" id="net-copy">${IB('copy')}Copier</button></div><div class="nqr" id="net-qr"></div>`
+        :'<p class="meta">Ouvrez l\'appli depuis son adresse en ligne (GitHub Pages) pour obtenir un lien et un QR code à partager.</p>'}
+      <div class="subttl">Joueurs connectés</div>
+      <div class="nplayers">${L.length?L.map(c=>{ const t=S.tokens.find(x=>x.owner===c.pid); return `<div class="np"><i></i><b>${esc(c.name)}</b><small>${t?`${t.hp} / ${t.hpMax} PV`:''}</small></div>`; }).join(''):'<p class="meta" style="text-align:left">Personne pour l\'instant.</p>'}</div>
+      <div class="actions"><button class="btn ghost" type="button" id="net-new" style="margin-right:auto" title="Changer le code de la table">Nouveau code</button><button class="btn danger" type="button" id="net-close">Fermer la table</button><button class="btn" type="button" data-close>OK</button></div>`;
+    $('net-close').onclick=()=>{ closeTable(); toast('Table fermée'); };
+    $('net-new').onclick=()=>{ closeTable(); S.netCode=newCode(); markDirty(); openTable(); };
+    if(link){ $('net-copy').onclick=()=>{ (navigator.clipboard?navigator.clipboard.writeText(link):Promise.reject()).then(()=>toast('Lien copié')).catch(()=>{ b.querySelector('.nlink input').select(); document.execCommand('copy'); toast('Lien copié'); }); };
+      loadScript(['https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js']).then(()=>{ const q=$('net-qr'); if(q&&!q.firstChild&&window.QRCode) new QRCode(q,{text:link,width:300,height:300,colorDark:'#2f3340',colorLight:'#ffffff'}); }).catch(()=>{}); }
+  }
+  b.querySelectorAll('[data-close]').forEach(x=>x.onclick=()=>dlg.close());
+}
+
+/* vue à distance (dans la fiche Aventurier) : le joueur déplace son propre jeton */
+let myDrag=null;
+function up(m){ try{ parent.postMessage({__adbUp:1,m},'*'); }catch(e){} }
+function bindMine(el){
+  el.addEventListener('pointerdown',e=>{ if(e.button!==0) return; e.preventDefault();
+    const t=tok(el.dataset.id); if(!t) return; const [wx,wy]=toWorld(e.clientX,e.clientY);
+    myDrag={id:t.id,dx:t.x-wx,dy:t.y-wy,x:t.x,y:t.y}; el.setPointerCapture(e.pointerId); el.classList.add('moving'); let raf=0;
+    const mv=ev=>{ const tt=tok(myDrag.id); if(!tt) return; const [x,y]=toWorld(ev.clientX,ev.clientY);
+      tt.x=myDrag.x=clamp(Math.round(x+myDrag.dx),0,WORLD); tt.y=myDrag.y=clamp(Math.round(y+myDrag.dy),0,WORLD); moveTokenEl(tt); fowLater();
+      if(!raf) raf=requestAnimationFrame(()=>{ raf=0; up({t:'mv',id:tt.id,x:tt.x,y:tt.y}); }); };
+    const end=()=>{ el.removeEventListener('pointermove',mv); el.removeEventListener('pointerup',end); el.removeEventListener('pointercancel',end);
+      el.classList.remove('moving'); const d=myDrag; up({t:'mv',id:d.id,x:d.x,y:d.y,end:1}); setTimeout(()=>{ if(myDrag===d) myDrag=null; },400); };
+    el.addEventListener('pointermove',mv); el.addEventListener('pointerup',end); el.addEventListener('pointercancel',end); });
+}
+
+/* =========================================================
    OUVERTURE : logo, puis l'interface se trace et les bandes ferment
    ========================================================= */
 let traceAnims=[];
@@ -3301,12 +3563,14 @@ if(isPlayer){
   document.title='Aldebaran — Vue joueur';
   renderAllBoard(); fitBoard();
   window.addEventListener('resize',()=>{ if(lastView) setPlayerView(lastView); });
-  try{ const m=JSON.parse(ls.get(LS_SYNC)||'null'); if(m&&m.t==='state') receive(m); }catch(e){}
-  const hello={t:'hello',from:'player'}; if(bc) bc.postMessage(hello); try{ localStorage.setItem(LS_SYNC+'.hello',Date.now()+''); }catch(e){}
+  if(NETVIEW){ $('pwait').textContent='Connexion à la table…'; window.addEventListener('message',e=>{ if(e.data&&e.data.__adb) receive(e.data.m); }); up({t:'ready'}); }
+  else { try{ const m=JSON.parse(ls.get(LS_SYNC)||'null'); if(m&&m.t==='state') receive(m); }catch(e){}
+    const hello={t:'hello',from:'player'}; if(bc) bc.postMessage(hello); try{ localStorage.setItem(LS_SYNC+'.hello',Date.now()+''); }catch(e){} }
 } else {
   try{ const o=JSON.parse(ls.get(LS_TABLE)||'null'); if(o&&o.table) S=Object.assign(blankTable(),o.table); }catch(e){}
   renderAll(); if(S.view){ V={...S.view}; applyView(); } else fitBoard();
   setupAutosave(); updateSaveState();
+  if(S.netOpen){ S.netOpen=false; setTimeout(openTable,1200); }   // la table se rouvre avec le même code
   if(window.__adbLaunch){ const L=window.__adbLaunch; window.__adbLaunch=null; setTimeout(()=>loadText(L.text,null,L.name),300); }
   window.addEventListener('storage',e=>{ if(e.key===LS_SYNC+'.hello') sync(); });
   window.addEventListener('resize',()=>{ placeCard(); sendView(); });
@@ -3558,6 +3822,7 @@ function render(t){
 
   const start=()=>{
     const role=q.get('role'), mode=(q.get('mode')||'').toLowerCase();
+    const table=(q.get('table')||'').trim(); if(table){ window.__adbJoin=table; $('splash').hidden=true; launch('ply'); return; }
     if(role==='player'||mode==='mj'||mode==='mdd'){ $('splash').hidden=true; launch('mj'); return; }
     if(mode==='aventurier'||mode==='joueur'){ $('splash').hidden=true; launch('ply'); return; }
     if(matchMedia('(prefers-reduced-motion: reduce)').matches){ Logo.play().then(choose); return; }
