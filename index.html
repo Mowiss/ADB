@@ -669,6 +669,8 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}input[type=num
 .tb-st i{width:8px;height:8px;border-radius:50%;background:var(--ink-soft)}
 .tb-st.on i{background:var(--ok)}.tb-st.wait i{background:var(--gold)}
 .vtab.net-on svg{color:var(--ok)}
+.sheetview input,.sheetview select,.sheetview textarea,.sheetview button:not(.vtab):not(.iic),.sheetview .zone,.sheetview .tagp,.sheetview .grip,.sheetview .tico,.sheetview .hand-t,.sheetview .portrait,.sheetview .bub.add{pointer-events:none!important}
+.sheetview .bub-tip .bt,.sheetview .iic-tip .bt,.sheetview .pm,.sheetview .rollb,.sheetview .sq-add,.sheetview #tb-leave{display:none!important}
 </style>
 <style>#splash canvas,#splash .skip{visibility:hidden}</style>
 </head>
@@ -780,7 +782,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}input[type=num
 <aside class="drawer map-drawer" id="tabledrw" style="--tc:var(--c-dex)" aria-label="Table en ligne">
   <header><h3>Table</h3><span class="spacer"></span><span class="tb-st" id="tb-st"></span><button class="btn ghost" type="button" id="tb-leave" hidden>Quitter</button></header>
   <div class="tb-join" id="tb-join">
-    <p>Rejoignez la table du maître du destin avec le code qu'il vous donne. Votre personnage y apparaît, vous déplacez votre jeton et vos jets de dés sont partagés.</p>
+    <p>Rejoignez la table du maître du destin avec le code qu'il vous donne. Votre fiche est partagée ; vous voyez le plateau centré sur votre jeton dès que le maître du destin l'a posé, et vous montrez des choses avec votre pointeur.</p>
     <input id="tb-code" class="tb-code" maxlength="5" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="CODE" aria-label="Code de la table">
     <button class="btn" type="button" id="tb-go">Rejoindre</button>
     <p class="meta" id="tb-msg" style="text-align:left"></p>
@@ -942,7 +944,7 @@ const Store={ // point d'entrée unique : Firebase prendra le relais ici
   saveCat(){ return ls.set(LS_CAT,catSerialize()); },
   loadCat(){ try{ const d=JSON.parse(ls.get(LS_CAT)||'null'); return d&&Array.isArray(d.items)?d.items:[]; }catch(e){ return []; } }
 };
-if(window.__ADB_SHEET_VIEW){ document.documentElement.classList.add('sheetview'); Store.saveLocal=()=>true; Store.saveCat=()=>true; Store.loadLocal=()=>{ try{ return window.__ADB_SHEET_DATA&&window.__ADB_SHEET_DATA.stats?normalize(JSON.parse(JSON.stringify(window.__ADB_SHEET_DATA))):null; }catch(e){ return null; } };
+if(window.__ADB_SHEET_VIEW){ document.documentElement.classList.add('sheetview'); ['keydown','beforeinput','paste','drop','dragstart','contextmenu'].forEach(t=>document.addEventListener(t,e=>{ if(t==='keydown'&&e.key==='Escape') return; e.preventDefault(); e.stopPropagation(); },true)); document.addEventListener('focusin',e=>{ if(e.target.matches&&e.target.matches('input,textarea,select')) e.target.blur(); },true); Store.saveLocal=()=>true; Store.saveCat=()=>true; Store.loadLocal=()=>{ try{ return window.__ADB_SHEET_DATA&&window.__ADB_SHEET_DATA.stats?normalize(JSON.parse(JSON.stringify(window.__ADB_SHEET_DATA))):null; }catch(e){ return null; } };
   window.addEventListener('message',e=>{ if(e.source!==parent||!e.data||!e.data.__adbSheet) return; try{ const d=e.data.__adbSheet; if(d&&d.stats){ C=normalize(JSON.parse(JSON.stringify(d))); renderAll(); } }catch(err){} }); }
 function markDirty(){ dirty=true; syncCat(); updateSaveState(); }
 function updateSaveState(){
@@ -1974,7 +1976,8 @@ renderAll(); updateSaveState(); if(!window.__ADB_SHEET_VIEW) setupAutosave(); pl
    TABLE EN LIGNE — côté Aventurier
    Le joueur saisit le code donné par le maître du destin : sa fiche
    est partagée avec le MJ (qui pose son jeton et consulte sa fiche),
-   il voit le plateau, déplace son jeton, et ses jets de dés sont partagés.
+   il voit le plateau centré sur son jeton, montre avec son pointeur,
+   et ses jets de dés sont partagés.
    ========================================================= */
 if(!window.__ADB_SHEET_VIEW){
 const NET_PEERJS=['https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js','https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js','https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js'];
@@ -2050,7 +2053,7 @@ function tbLive(){ $('tb-join').hidden=true; $('tb-live').hidden=false; $('tb-le
   f.srcdoc=html.replace('<head>','<head><script>window.__ADB_NET_VIEW=1<'+'/script>'); NETP.frame=f; NETP.ready=false; $('tb-live').appendChild(f); }
 window.addEventListener('message',e=>{ if(!NETP.frame||e.source!==NETP.frame.contentWindow) return; const d=e.data; if(!d||!d.__adbUp||!d.m) return; const m=d.m;
   if(m.t==='ready'){ NETP.ready=true; tbToFrame({t:'me',id:NETP.pid}); if(NETP.last.bg) tbToFrame(NETP.last.bg); if(NETP.last.state) tbToFrame(NETP.last.state); }
-  else if(m.t==='mv'&&netOpen()) NETP.conn.send({t:'mv',id:m.id,x:m.x,y:m.y,end:m.end?1:0}); });
+  else if(m.t==='ptr'&&netOpen()) NETP.conn.send({t:'ptr',x:m.x,y:m.y,end:m.end?1:0}); });
 function tbLeave(){ NETP.want=false; const c=NETP.conn, p=NETP.peer; NETP.conn=null; NETP.peer=null;
   try{ if(c) c.close(); }catch(e){} try{ if(p) p.destroy(); }catch(e){}
   if(NETP.frame){ NETP.frame.remove(); NETP.frame=null; } NETP.ready=false; NETP.last={state:null,bg:null};
@@ -2172,28 +2175,41 @@ svg.i{width:18px;height:18px;flex:none}
 .widths button i{display:block;width:60%;background:var(--ink-strong);border-radius:3px}
 .widths button.on{border-color:var(--ink-strong)}
 
-#board{position:relative;overflow:hidden;background:var(--paper);touch-action:none;cursor:default}
+#board{position:relative;overflow:hidden;background-color:var(--paper);touch-action:none;cursor:default}
+#board.inf{background-image:linear-gradient(to right,rgba(47,51,64,.075) 1px,transparent 1px),linear-gradient(to bottom,rgba(47,51,64,.075) 1px,transparent 1px)}
+.nogrid #board.inf{background-image:none}
 #board.grab{cursor:grab}#board.panning{cursor:grabbing}
 #board.cross{cursor:crosshair}
 .bands{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:0}
 .ribbon{position:absolute;left:-25%;width:150%;top:58%;transform:translateY(-50%) rotate(-14deg);display:flex;flex-direction:column;gap:12px}
 .band{height:60px;opacity:.26}
-#world{position:absolute;left:0;top:0;width:4000px;height:4000px;transform-origin:0 0;z-index:1}
-#bg{position:absolute;inset:0;background-size:contain;background-position:center;background-repeat:no-repeat}
-#grid{position:absolute;inset:0;pointer-events:none;background-size:40px 40px;background-image:linear-gradient(to right,rgba(47,51,64,.075) 1px,transparent 1px),linear-gradient(to bottom,rgba(47,51,64,.075) 1px,transparent 1px)}
+#world{position:absolute;left:0;top:0;width:0;height:0;overflow:visible;transform-origin:0 0;z-index:1}
+#bg{position:absolute;left:0;top:0;background-size:100% 100%;background-repeat:no-repeat}
+#grid{position:absolute;left:0;top:0;pointer-events:none;background-size:40px 40px;background-image:linear-gradient(to right,rgba(47,51,64,.075) 1px,transparent 1px),linear-gradient(to bottom,rgba(47,51,64,.075) 1px,transparent 1px)}
 #grid::after{content:"";position:absolute;inset:0;border:1.5px solid var(--rule)}
 .nogrid #grid{background-image:none}
-#draw{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;z-index:2}
+#draw{position:absolute;left:0;top:0;width:1px;height:1px;overflow:visible;pointer-events:none;z-index:2}
 #draw path{fill:none;stroke-linecap:round;stroke-linejoin:round}
 #draw path.white{filter:drop-shadow(0 0 2px rgba(47,51,64,.6))}
 .erasing #draw path{pointer-events:stroke;cursor:pointer}
 .erasing #draw path:hover{stroke:var(--danger)!important;opacity:.7}
-#tokens{position:absolute;inset:0;z-index:3;pointer-events:none}
-#fow{position:absolute;left:0;top:0;width:4000px;height:4000px;z-index:4;pointer-events:none;opacity:.62}
+#tokens{position:absolute;left:0;top:0;width:0;height:0;overflow:visible;z-index:3;pointer-events:none}
+#fow{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none;opacity:.62}
 .player #fow{opacity:1}
-#over{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;z-index:5}
+#over{position:absolute;left:0;top:0;width:1px;height:1px;overflow:visible;pointer-events:none;z-index:5}
 .mline{stroke:var(--gold);stroke-width:3;stroke-dasharray:9 7;stroke-linecap:round;fill:none;vector-effect:non-scaling-stroke}
 .mend{fill:var(--paper);stroke:var(--gold);stroke-width:2;vector-effect:non-scaling-stroke}
+.ptr{position:absolute;z-index:9;pointer-events:none;transition:opacity .5s}
+.ptr i{position:absolute;left:-9px;top:-9px;width:18px;height:18px;border-radius:50%;border:2.5px solid var(--pc);background:color-mix(in srgb,var(--pc) 25%,transparent);box-shadow:0 0 0 3px var(--paper)}
+.ptr b{position:absolute;left:14px;top:-26px;background:var(--pc);color:#fff;font-size:11.5px;font-weight:700;border-radius:999px;padding:2px 9px;white-space:nowrap}
+.ptr.fade{opacity:0}
+#nosig{position:fixed;inset:0;z-index:30;display:none;background:#111;cursor:default}
+#nosig canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated}
+#nosig span{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-family:var(--f-title);font-weight:400;font-size:clamp(22px,5vw,46px);letter-spacing:.4em;padding:10px 6px 6px 26px;color:#fff;background:rgba(0,0,0,.72);white-space:nowrap;animation:sigblink 1.6s steps(2,start) infinite}
+@keyframes sigblink{50%{opacity:.35}}
+.nosignal #nosig{display:block}
+.player .bottom{display:none!important}
+.player .stage{bottom:0}
 .mlabel{position:absolute;z-index:8;pointer-events:none;transform:translate(-50%,calc(-100% - 14px));background:var(--paper);border:1.5px solid var(--gold);color:var(--ink-strong);border-radius:999px;padding:3px 11px;font-family:var(--f-title);font-size:16px;letter-spacing:.06em;white-space:nowrap;font-variant-numeric:tabular-nums}
 .mlabel small{font-family:var(--f-body);font-size:11px;font-weight:700;color:var(--ink-soft);margin-left:4px;letter-spacing:.04em}
 .ping{position:absolute;width:90px;height:90px;margin:-45px 0 0 -45px;border-radius:50%;border:4px solid var(--danger);pointer-events:none;animation:ping 1.6s cubic-bezier(.1,.8,.3,1) forwards}
@@ -2203,8 +2219,6 @@ svg.i{width:18px;height:18px;flex:none}
 /* Jetons */
 .tk{position:absolute;width:72px;height:72px;margin:-36px 0 0 -36px;pointer-events:auto;touch-action:none;user-select:none;transform:scale(var(--s,1));--c:var(--ink-strong);cursor:grab;transition:opacity .2s}
 .player .tk{cursor:default;pointer-events:none}
-.player .tk.mine{pointer-events:auto;cursor:grab}
-.player .tk.mine.moving{cursor:grabbing}
 .player .tk.mine .face{box-shadow:0 0 0 3px var(--paper),0 0 0 4.5px var(--c-res)}
 .netb .nd{width:8px;height:8px;border-radius:50%;background:var(--ink-soft);display:inline-block}
 .netb.on .nd{background:var(--ok)}
@@ -2234,9 +2248,9 @@ svg.i{width:18px;height:18px;flex:none}
 .pt-ghost{position:fixed;z-index:60;width:60px;height:60px;margin:-30px 0 0 -30px;border-radius:50%;border:1.6px solid var(--c-res);background:var(--paper);overflow:hidden;display:grid;place-items:center;pointer-events:none;opacity:.6;color:var(--c-res)}
 .pt-ghost.ok{opacity:1}
 .pt-ghost img{width:100%;height:100%;object-fit:cover}
-#sheetpanel{position:fixed;z-index:12;top:calc(var(--bar) + 10px);left:calc(var(--rail) + 10px);right:calc(var(--tabs) + 10px);bottom:calc(var(--bot) + 46px);background:var(--paper);border:1px solid var(--rule);border-radius:14px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 10px 30px rgba(47,51,64,.12)}
+#sheetpanel{position:fixed;z-index:12;top:calc(var(--bar) + 10px);left:calc(var(--rail) + 10px);width:min(420px,calc(100vw - var(--rail) - var(--tabs) - 20px));bottom:calc(var(--bot) + 46px);background:var(--paper);border:1px solid var(--rule);border-radius:14px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 10px 30px rgba(47,51,64,.12)}
 #sheetpanel header{display:flex;align-items:center;gap:12px;padding:8px 10px 8px 16px;border-bottom:1px solid var(--rule)}
-#sheetpanel header b{font-family:var(--f-title);font-weight:300;font-size:20px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-strong)}
+#sheetpanel header b{font-family:var(--f-title);font-weight:300;font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-strong)}
 #sp-body{flex:1;min-height:0}#sp-body iframe{width:100%;height:100%;border:0;display:block}
 .player .ptabs,.player #sheetpanel,.booting .ptabs{display:none!important}
 .nrelay{border-top:1px solid var(--rule);padding-top:10px}
@@ -2264,7 +2278,7 @@ svg.i{width:18px;height:18px;flex:none}
 .tk.current .turn{display:block;animation:bob 1s ease-in-out infinite}
 .tk.current .face{box-shadow:0 0 0 3px var(--paper),0 0 0 5px var(--gold)}
 @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
-.tk.player{--c:var(--c-res)}.tk.mob{--c:var(--danger)}.tk.prop{--c:var(--brown)}.tk.light{--c:var(--gold)}
+.tk.player{--c:var(--c-res)}.tk.npc{--c:var(--c-cha)}.tk.mob{--c:var(--danger)}.tk.prop{--c:var(--brown)}.tk.light{--c:var(--gold)}
 .tk.prop{width:58px;height:58px;margin:-29px 0 0 -29px}
 .tk.prop .face{border-radius:14px}
 .tk.prop .ring,.tk.light .ring{display:none}
@@ -2336,7 +2350,7 @@ svg.i{width:18px;height:18px;flex:none}
 .tr{width:44px;height:44px;border-radius:50%;border:1.6px solid var(--c);background:var(--paper);flex:none;display:grid;place-items:center;overflow:hidden;color:var(--c);padding:0;position:relative;transition:transform .2s,box-shadow .2s}
 .tr svg{width:56%;height:56%}.tr img{width:100%;height:100%;object-fit:cover}
 .tr .ini{font-family:var(--f-title);font-size:17px;padding-top:3px}
-.tr.player{--c:var(--c-res)}.tr.mob{--c:var(--danger)}
+.tr.player{--c:var(--c-res)}.tr.npc{--c:var(--c-cha)}.tr.mob{--c:var(--danger)}
 .tr.on{box-shadow:0 0 0 3px var(--paper),0 0 0 5px var(--gold);transform:scale(1.08)}
 .tr.down{filter:grayscale(1);opacity:.5}
 .tr.unk{--c:var(--ink-soft);opacity:.5}
@@ -2547,6 +2561,7 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 .pmark .dot{width:7px;height:7px;border-radius:50%;background:var(--danger);display:inline-block}
 .player .pmark{display:flex}
 .netview .pmark{display:none!important}
+.netview #board{cursor:crosshair}
 .pwait{display:none}
 .player .pwait{display:grid;position:fixed;inset:0;z-index:11;place-items:center;pointer-events:none;color:var(--ink-soft);font-size:13px;letter-spacing:.2em;text-transform:uppercase}
 .pwait.gone{display:none!important}
@@ -2591,7 +2606,7 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
     <button class="rb" type="button" data-tool="erase" title="Gomme (E) — clic droit : tout effacer"></button>
     <div class="hr"></div>
     <span class="cap">Jetons</span>
-    <button class="rb tk-add" type="button" data-add="player" style="--c:var(--c-res)" title="Nouveau joueur"></button>
+    <button class="rb tk-add" type="button" data-add="npc" style="--c:var(--c-cha)" title="Nouveau PNJ"></button>
     <button class="rb tk-add" type="button" data-add="mob" style="--c:var(--danger)" title="Nouveau monstre"></button>
     <button class="rb tk-add" type="button" data-add="prop" style="--c:var(--brown)" title="Nouveau décor"></button>
     <button class="rb tk-add" type="button" data-add="light" style="--c:var(--gold)" title="Nouvelle lumière"></button>
@@ -2606,11 +2621,11 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
     <div id="world">
       <div id="bg"></div>
       <div id="grid"></div>
-      <svg id="draw" viewBox="0 0 4000 4000"></svg>
+      <svg id="draw"></svg>
       <div id="tokens"></div>
-      <canvas id="fow" width="1000" height="1000" hidden></canvas>
-      <svg id="over" viewBox="0 0 4000 4000"></svg>
+      <svg id="over"></svg>
     </div>
+    <canvas id="fow" hidden></canvas>
     <div id="bin" title="Lâcher ici pour retirer du plateau"></div>
     <div id="mlabel" class="mlabel" hidden></div>
   </div>
@@ -2630,7 +2645,7 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 </footer>
 
 <div class="ptabs" id="ptabs"></div>
-<div id="sheetpanel" hidden><header><b id="sp-name"></b><span class="cap">Fiche partagée · lecture</span><span class="spacer"></span><button class="ib" type="button" id="sp-close" title="Fermer la fiche"></button></header><div id="sp-body"></div></div>
+<div id="sheetpanel" hidden><header><b id="sp-name"></b><span class="cap">Lecture seule</span><span class="spacer"></span><button class="ib" type="button" id="sp-close" title="Fermer la fiche"></button></header><div id="sp-body"></div></div>
 
 <nav class="vtabs" id="vtabs" aria-label="Volets">
   <button type="button" class="vtab" data-drawer="scenario" style="--tc:var(--c-per)"><span>Scénario</span></button>
@@ -2678,6 +2693,7 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 </aside>
 
 <div id="card" hidden></div>
+<div id="nosig"><canvas id="nosig-cv" width="160" height="90"></canvas><span>NO SIGNAL</span></div>
 <div class="pmark"><span class="dot"></span>ALDEBARAN</div>
 <div class="pwait" id="pwait">En attente du maître du destin…</div>
 <div id="stitle"><span class="cap">Scène</span><svg class="ttl" viewBox="0 0 1600 70" preserveAspectRatio="xMidYMid meet"><text x="800" y="56" text-anchor="middle"></text></svg></div>
@@ -2777,6 +2793,7 @@ const SKULL=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-w
 
 const TYPES={
   player:{label:'Joueur',col:'var(--c-res)',icons:['person','hood','helmet','robot'],def:'person',hp:20,stat:2},
+  npc:{label:'PNJ',col:'var(--c-cha)',icons:['person','hood','helmet','robot','drone','mutant'],def:'hood',hp:10,stat:2},
   mob:{label:'Monstre',col:'var(--danger)',icons:['skull','claw','ghost','drone','mutant','robot','helmet','hood'],def:'skull',hp:10,stat:2},
   prop:{label:'Décor',col:'var(--brown)',icons:['box','barrel','chest','door','tree','rock','terminal','car','trap'],def:'box'},
   light:{label:'Lumière',col:'var(--gold)',icons:['bulb'],def:'bulb'}
@@ -2786,7 +2803,11 @@ const LOOT=[{n:'Rien',t:0,c:'var(--ink-soft)'},{n:'Bastos ≈ 50',t:1,c:'var(--g
   {n:'Item convoité',t:8,c:'var(--c-per)'},{n:'Item légendaire',t:9,c:'var(--c-for)'},{n:'Item unique',t:10,c:'var(--danger)'}];
 const PROF=[['Désertique','var(--ink-soft)'],['Pauvre','var(--brown)'],['Moyen','#e07b1a'],['Cossu','var(--ok)'],['Riche','var(--c-res)'],['Blindé','var(--c-per)']];
 const INKS=[['#2f3340','Encre'],['#ffffff','Blanc'],['#e3262b','Rouge'],['#2b79bd','Bleu'],['#33964d','Vert'],['#7556c2','Violet'],['#d19c00','Or']];
-const WORLD=4000, CELL=40, CELL_M=0.5;
+const CELL=40, CELL_M=0.5;
+const ALIVE=t=>t&&(t.type==='player'||t.type==='mob'||t.type==='npc');
+/* plateau infini ; avec un fond de carte, il prend la taille de l'image */
+const bounded=()=>!!(S.bg&&S.bgW&&S.bgH);
+const bx=x=>bounded()?clamp(x,0,S.bgW):x, by=y=>bounded()?clamp(y,0,S.bgH):y;
 
 /* =========================================================
    État de la table
@@ -2816,7 +2837,9 @@ function confirmDialog(title,text,okLbl,fn){ openDialog(`<h3>${title}</h3><p>${t
    Vue : déplacement et zoom
    ========================================================= */
 const board=$('board'), world=$('world');
-function applyView(){ world.style.transform=`translate(${V.x}px,${V.y}px) scale(${V.z})`; placeCard(); placeMeasureLabel(); if(!isPlayer){ S.view={...V}; sendView(); } }
+function applyView(){ world.style.transform=`translate(${V.x}px,${V.y}px) scale(${V.z})`;
+  board.style.backgroundSize=`${CELL*V.z}px ${CELL*V.z}px`; board.style.backgroundPosition=`${V.x}px ${V.y}px`;
+  placeCard(); placeMeasureLabel(); placePtrs(); if(!S.light) fowLater(); if(!isPlayer){ S.view={...V}; sendView(); } }
 function toWorld(cx,cy){ const r=board.getBoundingClientRect(); return [(cx-r.left-V.x)/V.z,(cy-r.top-V.y)/V.z]; }
 function toScreen(wx,wy){ const r=board.getBoundingClientRect(); return [r.left+V.x+wx*V.z, r.top+V.y+wy*V.z]; }
 function centerOn(wx,wy,z){ const r=board.getBoundingClientRect(); if(z) V.z=z; V.x=r.width/2-wx*V.z; V.y=r.height/2-wy*V.z; applyView(); }
@@ -2833,7 +2856,7 @@ function faceHTML(t,cls){
 const hpRatio=t=>t.hpMax?clamp(t.hp/t.hpMax,0,1):1;
 const hpCls=p=>p<=.25?'crit':p<=.5?'low':'';
 function tokenHTML(t){
-  const p=hpRatio(t), C=2*Math.PI*46, alive=t.type==='player'||t.type==='mob';
+  const p=hpRatio(t), C=2*Math.PI*46, alive=ALIVE(t);
   return `${alive?`<svg class="ring" viewBox="0 0 100 100"><circle class="bgc" cx="50" cy="50" r="46"/><circle class="hp ${hpCls(p)}" cx="50" cy="50" r="46" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C*(1-p)).toFixed(1)}"/></svg>`:''}
     <div class="face">${faceHTML(t)}</div>
     ${alive?`<div class="dead">${SKULL}</div><svg class="turn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">${IC.chevd}</svg>`:''}
@@ -2844,7 +2867,7 @@ function tokenHTML(t){
 function tokenEl(t){
   let el=document.querySelector(`.tk[data-id="${t.id}"]`);
   if(!el){ el=document.createElement('div'); el.dataset.id=t.id; $('tokens').appendChild(el); if(!isPlayer) bindToken(el); }
-  el.className=`tk ${t.type}`+(t.hidden?' hid':'')+((t.type==='player'||t.type==='mob')&&t.hp<=0?' down':'')+(cardId===t.id?' open':'')+(curTurnId()===t.id?' current':'')+(isPlayer&&ME&&t.owner===ME?' mine':'');
+  el.className=`tk ${t.type}`+(t.hidden?' hid':'')+(ALIVE(t)&&t.hp<=0?' down':'')+(cardId===t.id?' open':'')+(curTurnId()===t.id?' current':'')+(isPlayer&&ME&&t.owner===ME?' mine':'');
   if(isPlayer&&ME&&t.owner===ME&&!el._mine){ el._mine=1; bindMine(el); }
   el.style.left=t.x+'px'; el.style.top=t.y+'px'; el.style.setProperty('--s',t.s||1);
   el.innerHTML=tokenHTML(t);
@@ -2860,28 +2883,31 @@ function renderDrawings(){
   $('draw').innerHTML=S.drawings.map(d=>`<path data-id="${d.id}" d="${d.d}" stroke="${d.c}" stroke-width="${d.w}" class="${d.c==='#ffffff'?'white':''}"/>`).join('');
 }
 function renderBoard(){
-  $('bg').style.backgroundImage=S.bg?`url("${S.bg}")`:'';
+  if(S.bg&&!S.bgW){ S.bgW=S.bgH=4000; }   // ancienne table : fond sur 4000 × 4000
+  const bg=$('bg'), gr=$('grid'); bg.style.backgroundImage=S.bg?`url("${S.bg}")`:'';
+  bg.style.width=gr.style.width=(S.bg?S.bgW:0)+'px'; bg.style.height=gr.style.height=(S.bg?S.bgH:0)+'px'; gr.hidden=!S.bg; board.classList.toggle('inf',!S.bg);
   document.body.classList.toggle('nogrid',S.grid===false);
   $('fow').hidden=S.light; renderFoW();
   const bl=$('b-light'); if(bl){ bl.innerHTML=IB(S.light?'sun':'moon'); bl.setAttribute('aria-pressed',S.light?'false':'true'); bl.title=S.light?'Jour — cliquer pour passer en nuit (brouillard)':'Nuit — cliquer pour revenir au jour'; }
 }
 /* Brouillard : les joueurs et les lumières découpent l'obscurité */
 function renderFoW(){
-  const cv=$('fow'); if(S.light) return; const k=cv.width/WORLD, x=cv.getContext('2d');
-  x.globalCompositeOperation='source-over'; x.fillStyle='#262a35'; x.fillRect(0,0,cv.width,cv.height);
+  const cv=$('fow'); if(S.light) return; const r=board.getBoundingClientRect(), k=.5, W=Math.max(2,Math.round(r.width*k)), H=Math.max(2,Math.round(r.height*k));
+  if(cv.width!==W||cv.height!==H){ cv.width=W; cv.height=H; } const x=cv.getContext('2d');
+  x.globalCompositeOperation='source-over'; x.fillStyle='#262a35'; x.fillRect(0,0,W,H);
   x.globalCompositeOperation='destination-out';
-  S.tokens.forEach(t=>{ let R=0, r0=0; if(t.type==='player'){ R=t.r||250; r0=40; } else if(t.type==='light'){ R=t.r||150; r0=20; } else return;
-    if(isPlayer&&t.hidden) return;
-    const cx=t.x*k, cy=t.y*k, g=x.createRadialGradient(cx,cy,r0*k,cx,cy,R*k);
+  S.tokens.forEach(t=>{ let R=0, r0=0; if(t.type==='player'){ R=t.r??250; r0=40; } else if(t.type==='light'){ R=t.r||150; r0=20; } else return;
+    if(isPlayer&&t.hidden||!R) return; const z=V.z*k;
+    const cx=(V.x+t.x*V.z)*k, cy=(V.y+t.y*V.z)*k, g=x.createRadialGradient(cx,cy,Math.min(r0,R*.9)*z,cx,cy,R*z);
     g.addColorStop(0,'rgba(0,0,0,1)'); g.addColorStop(.3,'rgba(0,0,0,.85)'); g.addColorStop(1,'rgba(0,0,0,0)');
-    x.fillStyle=g; x.beginPath(); x.arc(cx,cy,R*k,0,Math.PI*2); x.fill(); });
+    x.fillStyle=g; x.beginPath(); x.arc(cx,cy,R*z,0,Math.PI*2); x.fill(); });
   x.globalCompositeOperation='source-over';
 }
 let fowRaf=0; const fowLater=()=>{ if(S.light||fowRaf) return; fowRaf=requestAnimationFrame(()=>{ fowRaf=0; renderFoW(); renderTracker(); }); };
 function inLight(t){ if(S.light) return true; return S.tokens.some(l=>(l.type==='player'||l.type==='light')&&!(isPlayer&&l.hidden)&&Math.hypot(l.x-t.x,l.y-t.y)<=(l.r||(l.type==='player'?250:150))); }
 
 /* Initiative */
-const orderToks=()=>S.order.map(tok).filter(t=>t&&(t.type==='player'||t.type==='mob')&&!(isPlayer&&t.hidden));
+const orderToks=()=>S.order.map(tok).filter(t=>ALIVE(t)&&!(isPlayer&&t.hidden));
 function renderTracker(){
   const L=orderToks(), box=$('tracker');
   if(!L.length){ box.innerHTML=`<span class="tr-empty">${isPlayer?'':'Les joueurs et monstres créés rejoignent l\'initiative.'}</span>`; return; }
@@ -2967,7 +2993,7 @@ function bindToken(el){
     el.parentNode.appendChild(el); el.setPointerCapture(e.pointerId);
     const mv=ev=>{ if(!d.moved&&Math.hypot(ev.clientX-d.sx,ev.clientY-d.sy)<5) return;
       if(!d.moved){ d.moved=true; el.classList.add('moving'); document.body.classList.add('dragging'); closeCard(); }
-      const [x,y]=toWorld(ev.clientX,ev.clientY); t.x=clamp(Math.round(x+d.dx),0,WORLD); t.y=clamp(Math.round(y+d.dy),0,WORLD); moveTokenEl(t);
+      const [x,y]=toWorld(ev.clientX,ev.clientY); t.x=bx(Math.round(x+d.dx)); t.y=by(Math.round(y+d.dy)); moveTokenEl(t);
       const b=$('bin').getBoundingClientRect(); $('bin').classList.toggle('over',ev.clientX>=b.left-8&&ev.clientX<=b.right+8&&ev.clientY>=b.top-8&&ev.clientY<=b.bottom+8);
       fowLater(); send({t:'mv',id:t.id,x:t.x,y:t.y,s:t.s}); };
     const up=()=>{ el.removeEventListener('pointermove',mv); el.removeEventListener('pointerup',up); el.removeEventListener('pointercancel',up);
@@ -2986,9 +3012,9 @@ function removeToken(id){ const t=tok(id); if(!t) return; S.tokens=S.tokens.filt
 function addToken(t){
   const r=board.getBoundingClientRect(); const [cx,cy]=toWorld(r.left+r.width/2,r.top+r.height/2);
   const n=S.tokens.filter(x=>Math.hypot(x.x-cx,x.y-cy)<30).length;
-  Object.assign(t,{id:t.id||nid(),x:t.x??Math.round(cx+n*24),y:t.y??Math.round(cy+n*24),s:t.s||1});
+  Object.assign(t,{id:t.id||nid(),x:bx(t.x??Math.round(cx+n*24)),y:by(t.y??Math.round(cy+n*24)),s:t.s||1});
   if(t.type!=='player'&&S.scene>=0) t.scene=true;
-  S.tokens.push(t); if(t.type==='player'||t.type==='mob') S.order.push(t.id);
+  S.tokens.push(t); if(ALIVE(t)) S.order.push(t.id);
   renderTokens(); renderTracker(); renderFoW(); markDirty(); sync();
   const el=document.querySelector(`.tk[data-id="${t.id}"]`); if(el&&el.animate) el.animate([{opacity:0,scale:.4},{opacity:1,scale:1}],{duration:420,easing:'cubic-bezier(.3,1.5,.5,1)'});
   return t;
@@ -3010,7 +3036,7 @@ function renderCard(){
     ${t.type!=='light'?`<button class="ib" type="button" data-a="edit" title="Modifier">${IB('edit')}</button>`:''}
     <button class="ib" type="button" data-a="close" title="Fermer">${IB('x')}</button></div>`;
   let body='';
-  if(t.type==='player'||t.type==='mob'){ const p=hpRatio(t);
+  if(ALIVE(t)){ const p=hpRatio(t);
     body+=`<div class="hpr"><button class="pmb" type="button" data-hp="-1" title="Retirer 1 PV">−</button><div class="hpbar" title="Points de vie"><i class="${hpCls(p)}" style="width:${p*100}%"></i><b>${t.hp} / ${t.hpMax} PV</b></div><button class="pmb" type="button" data-hp="1" title="Ajouter 1 PV">+</button></div>
       <div class="sts">${STATS.map(s=>{const I=STAT_INFO[s];return `<button class="st" type="button" data-roll="${s}" style="--sc:${I.col}" title="Lancer ${I.name} (${t.stats[s]||0} D10)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${I.ico}</svg><span>${s}</span><b>${t.stats[s]||0}</b></button>`;}).join('')}</div>`;
     if((t.attacks||[]).length) body+=`<div class="atks">${t.attacks.map((a,i)=>{ const n=(t.stats[a.stat]||0)+(+a.bonus||0); return `<div class="atk"><b>${esc(a.name||'Attaque')}</b><small>${a.stat}${+a.bonus?` ${+a.bonus>0?'+':''}${+a.bonus}`:''}</small><button class="useb" type="button" data-atk="${i}" title="Lancer ${n} D10">${IB('dice')}${n}</button></div>`; }).join('')}</div>`;
@@ -3066,8 +3092,8 @@ function entityDialog(type,edit,preset){
     <div class="who"><button class="portrait ${sq?'sq':''}" type="button" id="e-face" title="Image depuis l'ordinateur"></button>
       <div style="display:flex;flex-direction:column;gap:10px;min-width:0"><div class="field"><label class="cap" for="e-name">Nom</label><input id="e-name" class="line-in name-in" placeholder="${type==='prop'?'Caisse, porte…':'Sans nom'}" value="${esc(t.name)}" autocomplete="off"></div>
       <div class="picks ${sq?'sq':''}" id="e-icons">${icons}</div></div></div>
-    ${type==='player'||type==='mob'?`<div class="pvrow"><span class="cap">Points de vie</span><input class="line-in" id="e-hp" inputmode="numeric" value="${t.hpMax}">${edit?`<span class="cap">actuels</span><input class="line-in" id="e-hpc" inputmode="numeric" value="${t.hp}">`:''}</div>${statsBlock(t)}`:''}
-    ${type==='mob'?`<div class="subttl">Attaques</div><div class="arows" id="e-atks">${(t.attacks||[]).map(atkRow).join('')}</div><button class="mini" type="button" id="e-addatk" style="align-self:flex-start">${IB('plus')}Ajouter une attaque</button>`:''}
+    ${type==='player'||type==='mob'||type==='npc'?`<div class="pvrow"><span class="cap">Points de vie</span><input class="line-in" id="e-hp" inputmode="numeric" value="${t.hpMax}">${edit?`<span class="cap">actuels</span><input class="line-in" id="e-hpc" inputmode="numeric" value="${t.hp}">`:''}</div>${statsBlock(t)}`:''}
+    ${type==='mob'||type==='npc'?`<div class="subttl">Attaques</div><div class="arows" id="e-atks">${(t.attacks||[]).map(atkRow).join('')}</div><button class="mini" type="button" id="e-addatk" style="align-self:flex-start">${IB('plus')}Ajouter une attaque</button>`:''}
     ${type==='prop'?`<label class="field"><span class="cap">Note secrète (MJ)</span><textarea class="cnote" id="e-note" placeholder="Ce que cache ce décor…">${esc(t.note||'')}</textarea></label>`:''}
     <div class="actions">${type==='mob'?`<button class="btn ghost" type="button" id="e-mem-save" style="margin-right:auto">${IB('book')}Au bestiaire</button>`:''}<button class="btn ghost" type="button" data-close>Annuler</button><button class="btn" type="button" id="e-ok" style="background:${T.col};border-color:${T.col}">${edit?'Enregistrer':type==='mob'?'Invoquer':'Placer'}</button></div>`,T.col);
   const face=()=>{ $('e-face').innerHTML=faceHTML({...t,name:$('e-name').value||t.name}); };
@@ -3134,11 +3160,11 @@ function showRoll(label,n){ const th=threshold(), R=diceBlock(n,th); logRoll(lab
    Scénario : scènes (fond, nuit/jour, tracés, jetons de scène)
    ========================================================= */
 function snapshot(){ if(S.scene<0||!S.scenes[S.scene]) return; const sc=S.scenes[S.scene], ids=new Set(S.tokens.filter(t=>t.scene).map(t=>t.id));
-  Object.assign(sc,{bg:S.bg,light:S.light,drawings:clone(S.drawings),tokens:clone(S.tokens.filter(t=>t.scene)),order:S.order.filter(id=>ids.has(id))}); }
+  Object.assign(sc,{bg:S.bg,bgW:S.bgW||0,bgH:S.bgH||0,light:S.light,drawings:clone(S.drawings),tokens:clone(S.tokens.filter(t=>t.scene)),order:S.order.filter(id=>ids.has(id))}); }
 function loadScene(i){
   closeCard(); const keep=S.tokens.filter(t=>!t.scene); S.tokens=keep; S.order=S.order.filter(id=>keep.some(t=>t.id===id)); S.scene=i;
   const sc=S.scenes[i];
-  if(sc){ S.bg=sc.bg||''; S.light=sc.light!==false; S.drawings=clone(sc.drawings||[]); S.tokens.push(...clone(sc.tokens||[])); S.order.push(...(sc.order||[]).filter(id=>tok(id))); }
+  if(sc){ S.bg=sc.bg||''; S.bgW=sc.bgW||0; S.bgH=sc.bgH||0; S.light=sc.light!==false; S.drawings=clone(sc.drawings||[]); S.tokens.push(...clone(sc.tokens||[])); S.order.push(...(sc.order||[]).filter(id=>tok(id))); }
   S.turn=-1; renderAllBoard(); renderScenes(); markDirty(); sync();
   if(sc) send({t:'scene',title:sc.title||`Scène ${i+1}`,idx:i+1});
 }
@@ -3149,7 +3175,7 @@ function newSceneDialog(){
     <button type="button" id="ns-blank">${IB('page')}<b>Scène vierge</b><span>Un plateau vide ; seuls les joueurs restent.</span></button></div>
     <div class="actions"><button class="btn ghost" type="button" data-close>Annuler</button></div>`,'var(--c-per)');
   $('ns-cap').onclick=()=>{ dlg.close(); snapshot(); S.tokens.forEach(t=>{ if(t.type!=='player') t.scene=true; }); S.scenes.push({id:nid(),title:`Scène ${S.scenes.length+1}`,content:''}); S.scene=S.scenes.length-1; snapshot(); renderScenes(); markDirty(); openDrawer('scenario',true); focusScene(); };
-  $('ns-blank').onclick=()=>{ dlg.close(); snapshot(); S.scenes.push({id:nid(),title:`Scène ${S.scenes.length+1}`,content:'',bg:'',light:true,drawings:[],tokens:[],order:[]}); loadScene(S.scenes.length-1); openDrawer('scenario',true); focusScene(); };
+  $('ns-blank').onclick=()=>{ dlg.close(); snapshot(); S.scenes.push({id:nid(),title:`Scène ${S.scenes.length+1}`,content:'',bg:'',bgW:0,bgH:0,light:true,drawings:[],tokens:[],order:[]}); loadScene(S.scenes.length-1); openDrawer('scenario',true); focusScene(); };
 }
 function focusScene(){ setTimeout(()=>{ const i=document.querySelector('.scn.on .stt'); if(i){ i.focus({preventScroll:true}); i.select(); i.scrollLeft=0; $('scenes').scrollLeft=0; i.scrollIntoView({block:'nearest',inline:'nearest'}); $('scenes').scrollLeft=0; } },340); }
 function deleteScene(){ if(S.scene<0) return; const sc=S.scenes[S.scene];
@@ -3241,7 +3267,7 @@ function send(m){ if(isPlayer) return; m.n=Date.now()*100+(seq++%100); m.from='m
   if(bc) try{ bc.postMessage(m); }catch(e){}
   try{ localStorage.setItem(LS_SYNC,JSON.stringify(m)); }catch(e){ if(m.t==='state'){ const lite={...m,bg:m.bg&&m.bg.length>1.5e6?'':m.bg}; try{ localStorage.setItem(LS_SYNC,JSON.stringify(lite)); }catch(e2){} } } }
 function publicState(){ const pub=t=>({id:t.id,type:t.type,name:t.name,hp:t.hp,hpMax:t.hpMax,img:t.img,ico:t.ico,x:t.x,y:t.y,s:t.s,r:t.r,owner:t.owner||null,note:t.type==='prop'&&t.note?' ':''});
-  return {t:'state',bg:S.bg,light:S.light,grid:S.grid,drawings:S.drawings,tokens:S.tokens.filter(t=>!t.hidden).map(pub),order:S.order.filter(id=>{ const t=tok(id); return t&&!t.hidden; }),turn:turnIdForPlayers(),view:viewMsg()}; }
+  return {t:'state',bg:S.bg,bgW:S.bgW||0,bgH:S.bgH||0,light:S.light,grid:S.grid,drawings:S.drawings,tokens:S.tokens.filter(t=>!t.hidden).map(pub),order:S.order.filter(id=>{ const t=tok(id); return t&&!t.hidden; }),turn:turnIdForPlayers(),view:viewMsg()}; }
 function turnIdForPlayers(){ const L=orderToks(), c=L[S.turn]; return c&&!c.hidden?c.id:null; }
 let syncRaf=0; function sync(){ if(isPlayer||syncRaf) return; syncRaf=requestAnimationFrame(()=>{ syncRaf=0; send(publicState()); }); }
 let syncT=0; function syncLater(){ clearTimeout(syncT); syncT=setTimeout(sync,120); }
@@ -3252,23 +3278,44 @@ function openPlayerView(){ playerWin=window.open(location.href.split('?')[0].spl
   if(!playerWin){ toast('Fenêtre bloquée par le navigateur',true); return; } toast('Vue joueur ouverte : glissez-la sur le second écran'); setTimeout(sync,900); }
 function receive(m){ if(!m) return;
   if(!isPlayer){ if(m.t==='hello') sync(); return; }
-  if(m.t==='me'){ ME=m.id; renderTokens(); return; }
+  if(m.t==='me'){ ME=m.id; renderTokens(); followMe(); return; }
   if(m.t==='bg'){ S.bg=m.data||''; renderBoard(); return; }
   if(m.t==='closed'){ $('pwait').textContent='Le maître du destin a fermé la table'; $('pwait').classList.remove('gone'); return; }
   if(m.from!=='mj'||m.n<=lastSeq) return; lastSeq=m.n;
   if(m.t==='state'){ $('pwait').classList.add('gone');
     if(m.bg!==undefined) S.bg=m.bg;
-    Object.assign(S,{light:m.light,grid:m.grid,drawings:m.drawings,tokens:m.tokens,order:m.order}); const L=orderToks(); S.turn=L.findIndex(t=>t.id===m.turn);
+    Object.assign(S,{bgW:m.bgW||0,bgH:m.bgH||0,light:m.light,grid:m.grid,drawings:m.drawings,tokens:m.tokens,order:m.order}); const L=orderToks(); S.turn=L.findIndex(t=>t.id===m.turn);
     if(myDrag){ const t=tok(myDrag.id); if(t){ t.x=myDrag.x; t.y=myDrag.y; } }
-    renderAllBoard(); if(m.view) setPlayerView(m.view); }
+    renderAllBoard(); if(NETVIEW) followMe(); else if(m.view) setPlayerView(m.view); }
   else if(m.t==='roll') toast(`${m.who} · ${m.label} : ${m.succ} réussite${m.succ>1?'s':''}`);
-  else if(m.t==='view') setPlayerView(m);
-  else if(m.t==='mv'){ const t=tok(m.id); if(t&&!(myDrag&&myDrag.id===m.id)){ t.x=m.x; t.y=m.y; t.s=m.s; moveTokenEl(t); fowLater(); } }
+  else if(m.t==='view'){ if(!NETVIEW) setPlayerView(m); }
+  else if(m.t==='ptr'){ if(m.pid!==ME) showPtr(m); }
+  else if(m.t==='mv'){ const t=tok(m.id); if(t&&!(myDrag&&myDrag.id===m.id)){ t.x=m.x; t.y=m.y; t.s=m.s; moveTokenEl(t); fowLater(); if(NETVIEW&&t.owner===ME) followMe(); } }
   else if(m.t==='ping') ping(m.x,m.y);
   else if(m.t==='measure'){ if(m.on) drawMeasure(m); else { measure=null; $('over').innerHTML=''; $('mlabel').hidden=true; } }
   else if(m.t==='scene') sceneTitle(m.title,m.idx);
 }
 let lastView=null;
+/* pointeurs des joueurs : une couleur par joueur, visibles de tous */
+const PCOL=['#2b79bd','#33964d','#c74990','#7556c2','#d24c45','#c79600','#0e9aa7','#e07b1a'];
+const pcol=pid=>{ let h=0; for(const ch of String(pid)) h=(h*31+ch.charCodeAt(0))>>>0; return PCOL[h%PCOL.length]; };
+const PTRS=new Map();
+function showPtr(m){ let p=PTRS.get(m.pid); if(!p){ const el=document.createElement('div'); el.className='ptr'; el.innerHTML='<i></i><b></b>'; board.appendChild(el); p={el}; PTRS.set(m.pid,p); }
+  p.x=+m.x||0; p.y=+m.y||0; p.el.style.setProperty('--pc',m.color||pcol(m.pid)); p.el.querySelector('b').textContent=m.name||''; p.el.classList.remove('fade'); clearTimeout(p.t);
+  if(m.end) p.t=setTimeout(()=>{ p.el.classList.add('fade'); p.t=setTimeout(()=>{ p.el.remove(); PTRS.delete(m.pid); },600); },2200);
+  placePtr(p); }
+function placePtr(p){ p.el.style.left=(V.x+p.x*V.z)+'px'; p.el.style.top=(V.y+p.y*V.z)+'px'; }
+function placePtrs(){ if(typeof PTRS!=='undefined') PTRS.forEach(placePtr); }
+/* vue à distance : la caméra suit le jeton du joueur ; sans jeton posé, pas de signal */
+function followMe(){ if(!NETVIEW) return; const t=ME?S.tokens.find(x=>x.owner===ME):null;
+  document.documentElement.classList.toggle('nosignal',!t); noiseRun(!t); if(!t) return;
+  const r=board.getBoundingClientRect(); V.x=r.width/2-t.x*V.z; V.y=r.height/2-t.y*V.z; applyView(); }
+let noiseOn=false;
+function noiseRun(on){ if(on===noiseOn) return; noiseOn=on; if(on) noiseTick(); }
+function noiseTick(){ if(!noiseOn) return; const cv=$('nosig-cv'), x=cv.getContext('2d'), d=x.createImageData(cv.width,cv.height), a=d.data;
+  for(let i=0;i<a.length;i+=4){ const v=Math.random()*255|0; a[i]=a[i+1]=a[i+2]=v; a[i+3]=255; }
+  x.putImageData(d,0,0); const y=(performance.now()/9)%(cv.height+20)-10; x.fillStyle='rgba(255,255,255,.12)'; x.fillRect(0,y,cv.width,5); x.fillStyle='rgba(0,0,0,.18)'; x.fillRect(0,(y*2.3)%cv.height,cv.width,3);
+  setTimeout(()=>requestAnimationFrame(noiseTick),45); }
 function setPlayerView(v){ lastView=v; const r=board.getBoundingClientRect(), k=v.w?r.width/v.w:1; V.z=clamp(v.z*Math.max(.6,Math.min(1.6,k)),.1,4); V.x=r.width/2-v.cx*V.z; V.y=r.height/2-v.cy*V.z; applyView(); }
 function sceneTitle(title,n){ const st=$('stitle'), tx=st.querySelector('text'); tx.innerHTML=[...String(title).toUpperCase()].map(ch=>`<tspan>${ch===' '?'&#160;':esc(ch)}</tspan>`).join('');
   st.querySelector('.cap').textContent=`Scène ${n}`; st.classList.add('on');
@@ -3338,12 +3385,12 @@ function settings(){
 function showGuide(){
   openDialog(`<h3>Guide</h3><div class="guide">
     <h4>Le plateau</h4><ul><li>Glisser dans le vide (ou clic molette) : déplacer la carte. Molette : zoomer vers le curseur. <kbd>0</kbd> : recentrer.</li><li>Clic droit sur le plateau : un signal rouge attire l'attention des joueurs.</li><li>Le rail de gauche : Mesure <kbd>M</kbd>, Dessin <kbd>D</kbd> (couleur et épaisseur au premier clic), Gomme <kbd>E</kbd> (cliquer ou passer sur un tracé). Clic droit sur le crayon ou la gomme : tout effacer. <kbd>Échap</kbd> repose l'outil.</li><li>La mesure compte en cases de 0,5 m.</li></ul>
-    <h4>Les jetons</h4><ul><li>Joueur, Monstre, Décor, Lumière : chacun avec un pictogramme, des initiales ou une image.</li><li>Un clic ouvre la fiche flottante : PV (−/+), statistiques (un clic lance les dés), attaques, note secrète d'un décor, halo d'une lumière ou vision d'un joueur. L'œil cache le jeton aux joueurs.</li><li>Glisser pour déplacer ; lâcher sur la corbeille (en bas à droite pendant le glisser) pour retirer. <kbd>Maj</kbd> + molette : agrandir ou réduire.</li><li>Le bestiaire garde vos monstres : « Au bestiaire » dans la fenêtre du monstre, puis la liste en haut pour le rappeler.</li><li>Dans « Nouveau joueur », la fiche Aventurier de ce navigateur (ou un fichier .adb) reprend le personnage : nom, portrait, statistiques et PV (RES + 5).</li></ul>
+    <h4>Les jetons</h4><ul><li>PNJ, Monstre, Décor, Lumière : chacun avec un pictogramme, des initiales ou une image. Les joueurs, eux, arrivent par la table en ligne.</li><li>Un clic ouvre la fiche flottante : PV (−/+), statistiques (un clic lance les dés), attaques, note secrète d'un décor, halo d'une lumière ou vision d'un joueur. L'œil cache le jeton aux joueurs.</li><li>Glisser pour déplacer ; lâcher sur la corbeille (en bas à droite pendant le glisser) pour retirer. <kbd>Maj</kbd> + molette : agrandir ou réduire.</li><li>Le bestiaire garde vos monstres : « Au bestiaire » dans la fenêtre du monstre, puis la liste en haut pour le rappeler.</li><li>Dans « Nouveau joueur », la fiche Aventurier de ce navigateur (ou un fichier .adb) reprend le personnage : nom, portrait, statistiques et PV (RES + 5).</li></ul>
     <h4>Jour et nuit</h4><p>En nuit, le brouillard couvre la carte : seuls les halos des joueurs et des lumières l'éclairent. Le MJ voit à travers ; les joueurs non. Un monstre hors de la lumière devient « ? » dans l'initiative des joueurs.</p>
     <h4>Initiative et sabliers</h4><ul><li>Joueurs et monstres rejoignent l'initiative à leur création. Mélanger, puis Tour suivant (<kbd>Espace</kbd>) : le jeton actif est cerclé d'or. Glisser une pastille pour changer l'ordre ; un clic centre la carte sur le jeton.</li><li>Les sabliers comptent à rebours ; pause et suppression dans la pastille.</li></ul>
     <h4>Scénario</h4><p>Une scène garde le fond, le jour ou la nuit, les tracés, les monstres, décors et lumières. Les joueurs restent d'une scène à l'autre. On passe de scène en scène depuis la barre du haut ou le volet Scénario ; chaque changement inscrit le titre sur la vue joueur. Le scénario s'exporte en PDF.</p>
     <h4>Vue joueur</h4><p>Le bouton « Vue joueur » ouvre une seconde fenêtre à glisser sur la TV ou le second écran : elle suit la caméra, les jetons, les tracés, la mesure, les signaux et le brouillard, sans rien des outils ni des secrets du MJ.</p>
-    <h4>Table en ligne</h4><p>« En ligne » ouvre la table sous un code de 5 lettres (le même d'une séance à l'autre). Chaque joueur, dans sa fiche Aventurier, ouvre l'onglet <b>Table</b> et saisit le code, ou suit le lien / le QR code : sa fiche est partagée. Il voit le plateau et déplace son propre jeton. Il apparaît dans un onglet au-dessus du bandeau bas : glissez son jeton sur la table pour le placer (il n'apparaît pas tout seul), cliquez l'onglet pour consulter sa fiche (mise à jour en direct). Son jeton suit sa fiche ; ses jets de dés s'affichent ici ; les PV changés sur la fiche flottante du jeton reviennent sur sa fiche. Connexion directe entre appareils (WebRTC), sans compte ni stockage sur un serveur.</p>
+    <h4>Table en ligne</h4><p>« En ligne » ouvre la table sous un code de 5 lettres (le même d'une séance à l'autre). Chaque joueur, dans sa fiche Aventurier, ouvre l'onglet <b>Table</b> et saisit le code, ou suit le lien / le QR code : sa fiche est partagée. Il voit le plateau centré sur son jeton (de la neige « NO SIGNAL » tant que vous ne l'avez pas posé) et montre des choses avec un pointeur à sa couleur ; seul le MJ déplace les jetons. Il apparaît dans un onglet au-dessus du bandeau bas : glissez son jeton sur la table pour le placer (il n'apparaît pas tout seul), cliquez l'onglet pour consulter sa fiche (mise à jour en direct). Son jeton suit sa fiche ; ses jets de dés s'affichent ici ; les PV changés sur la fiche flottante du jeton reviennent sur sa fiche. Connexion directe entre appareils (WebRTC), sans compte ni stockage sur un serveur.</p>
     <h4>Dés</h4><p>Pool de D10 : chaque dé au seuil (8 par défaut, réglable dans Jet libre) est une réussite, un 10 est un critique, un 1 un échec.</p>
     <h4>Sauvegarde</h4><p>Fichier <b>.adb</b> (table MJ) : Ctrl+S, Ctrl+Maj+S pour choisir un autre fichier, sauvegarde automatique réglable dans les Paramètres.</p>
   </div><div class="actions"><button class="btn" type="button" data-close>Fermer</button></div>`);
@@ -3366,7 +3413,9 @@ async function doInstall(){ if(installEvt){ installEvt.prompt(); const r=await i
    ========================================================= */
 function renderAllBoard(){ renderBoard(); renderDrawings(); renderTokens(); renderTracker(); renderFoW(); if(cardId) renderCard(); }
 function renderAll(){ renderAllBoard(); renderScenes(); renderProf(); $('notes-in').value=S.notes||''; }
-function fitBoard(){ const r=board.getBoundingClientRect(); centerOn(WORLD/2,WORLD/2,clamp(Math.min(r.width,r.height)/800,.5,1)); }
+function fitBoard(){ const r=board.getBoundingClientRect();
+  if(bounded()){ centerOn(S.bgW/2,S.bgH/2,clamp(Math.min((r.width-40)/S.bgW,(r.height-40)/S.bgH),.15,1.5)); return; }
+  const L=S.tokens; if(L.length){ const cx=L.reduce((a,t)=>a+t.x,0)/L.length, cy=L.reduce((a,t)=>a+t.y,0)/L.length; centerOn(cx,cy,1); } else centerOn(0,0,1); }
 function wire(){
   // icônes de l'interface
   $('sc-prev').innerHTML=IB('left',2); $('sc-next').innerHTML=IB('right',2); $('sc-up').innerHTML=IB('up',2); $('sc-down').innerHTML=IB('down',2);
@@ -3435,15 +3484,16 @@ function wire(){
 }
 function nextTurn(){ const L=orderToks(); if(!L.length) return; S.turn=(S.turn+1)%L.length; renderTracker(); markTurn(); const on=$('tracker').querySelector('.tr.on'); if(on) on.scrollIntoView({block:'nearest',inline:'center',behavior:'smooth'}); const t=L[S.turn]; if(t) centerOnIfOut(t); markDirty(); sync(); }
 function centerOnIfOut(t){ const r=board.getBoundingClientRect(), [sx,sy]=toScreen(t.x,t.y); if(sx<r.left+60||sx>r.right-60||sy<r.top+60||sy>r.bottom-60) centerOn(t.x,t.y); }
-function setBackground(f){ const r=new FileReader(); r.onload=()=>{ const im=new Image(); im.onload=()=>{ const M=3000, k=Math.min(1,M/Math.max(im.width,im.height)), c=document.createElement('canvas'); c.width=Math.round(im.width*k); c.height=Math.round(im.height*k);
-  c.getContext('2d').drawImage(im,0,0,c.width,c.height); S.bg=c.toDataURL('image/jpeg',.86); renderBoard(); markDirty(); sync(); toast('Fond de carte appliqué'); }; im.src=r.result; }; r.readAsDataURL(f); }
+function setBackground(f){ const r=new FileReader(); r.onload=()=>{ const im=new Image(); im.onload=()=>{ const M=4096, k=Math.min(1,M/Math.max(im.width,im.height)), c=document.createElement('canvas'); c.width=Math.round(im.width*k); c.height=Math.round(im.height*k);
+  c.getContext('2d').drawImage(im,0,0,c.width,c.height); const first=!S.bg; S.bg=c.toDataURL('image/jpeg',.86); S.bgW=c.width; S.bgH=c.height;
+  S.tokens.forEach(t=>{ t.x=bx(t.x); t.y=by(t.y); }); renderAllBoard(); fitBoard(); markDirty(); sync(); toast(`Fond de carte appliqué : le plateau fait ${c.width} × ${c.height} px`); }; im.src=r.result; }; r.readAsDataURL(f); }
 function bgDialog(){
   openDialog(`<h3>Fond de carte</h3><div class="drop ${S.bg?'has':''}" id="bg-drop" style="${S.bg?`background-image:url('${S.bg}')`:''}">Cliquer ou déposer une image ici</div>
-    <p class="meta" style="text-align:left">L'image est centrée sur le plateau (4000 × 4000 px, 100 × 100 cases). Elle est enregistrée avec la scène active.</p>
+    <p class="meta" style="text-align:left">Sans fond, le plateau est infini. Avec un fond, il prend la taille de l'image (1 px = 1 px, une case = 40 px) et les jetons restent dedans. Le fond est enregistré avec la scène active.</p>
     <div class="actions"><button class="btn ghost" type="button" id="bg-rm" ${S.bg?'':'disabled'} style="margin-right:auto">${IB('bin')}Retirer</button><button class="btn" type="button" data-close>Fermer</button></div>`);
   const d=$('bg-drop'); d.onclick=()=>{ imgTarget=null; const i=document.createElement('input'); i.type='file'; i.accept='image/*'; i.onchange=()=>{ if(i.files[0]){ setBackground(i.files[0]); dlg.close(); } }; i.click(); };
   d.ondragover=e=>e.preventDefault(); d.ondrop=e=>{ e.preventDefault(); const f=e.dataTransfer.files[0]; if(f&&f.type.startsWith('image/')){ setBackground(f); dlg.close(); } };
-  $('bg-rm').onclick=()=>{ S.bg=''; renderBoard(); markDirty(); sync(); dlg.close(); };
+  $('bg-rm').onclick=()=>{ S.bg=''; S.bgW=S.bgH=0; renderAllBoard(); markDirty(); sync(); dlg.close(); };
 }
 
 /* =========================================================
@@ -3519,9 +3569,7 @@ function netIn(c,d){ if(!d||typeof d!=='object') return;
     if(first&&d.t==='join') toast(`${P.name} rejoint la table : glissez son jeton depuis son onglet`);
     renderPtabs(); if(sheetPid===c.pid) sheetRefresh(); netStatus(NET.status);
     if(d.t==='join'){ c.bgId=null; const st=publicState(); st.n=Date.now()*100+(seq++%100); st.from='mj'; netSendTo(c,st); } }
-  else if(d.t==='mv'&&c.pid){ const t=tok(d.id); if(!t||t.owner!==c.pid) return;
-    t.x=clamp(Math.round(+d.x||0),0,WORLD); t.y=clamp(Math.round(+d.y||0),0,WORLD); moveTokenEl(t); placeCard(); fowLater();
-    send({t:'mv',id:t.id,x:t.x,y:t.y,s:t.s}); markDirty(); if(d.end) syncLater(); }
+  else if(d.t==='ptr'&&c.pid){ const m={t:'ptr',pid:c.pid,name:c.name,color:pcol(c.pid),x:Math.round(+d.x||0),y:Math.round(+d.y||0),end:d.end?1:0}; showPtr(m); send(m); }
   else if(d.t==='roll'&&c.pid){ const succ=+d.succ||0, label=String(d.label||'Jet').slice(0,60);
     logRoll(`${c.name} · ${label}`,Array.isArray(d.rolls)?d.rolls.slice(0,60):[],+d.th||8,succ);
     toast(`${c.name} · ${label} : ${succ} réussite${succ>1?'s':''}`); send({t:'roll',who:c.name,label,succ}); }
@@ -3554,7 +3602,7 @@ function bindPtab(el){ el.addEventListener('pointerdown',e=>{ if(e.button!==0) r
     ptDrag=false; if(ptDirty){ ptDirty=false; setTimeout(renderPtabs); }
     if(!ghost){ toggleSheet(pid); return; } ghost.remove();
     const r=board.getBoundingClientRect(); if(!(ev.clientX>r.left&&ev.clientX<r.right&&ev.clientY>r.top&&ev.clientY<r.bottom)) return;
-    const [x,y]=toWorld(ev.clientX,ev.clientY); placePlayer(pid,clamp(Math.round(x),0,WORLD),clamp(Math.round(y),0,WORLD)); };
+    const [x,y]=toWorld(ev.clientX,ev.clientY); placePlayer(pid,bx(Math.round(x)),by(Math.round(y))); };
   document.addEventListener('pointermove',mv); document.addEventListener('pointerup',upf); document.addEventListener('pointercancel',upf); }); }
 function placePlayer(pid,x,y){ const P=PL.get(pid); if(!P) return; let t=S.tokens.find(z=>z.owner===pid);
   if(!t) t=S.tokens.find(z=>z.type==='player'&&!z.owner&&z.name&&z.name===P.name);
@@ -3581,7 +3629,7 @@ function netLink(){ if(!location.protocol.startsWith('http')||!NET.code) return 
 function netDialog(){ openDialog(`<h3>Table en ligne</h3><div id="net-body" style="display:flex;flex-direction:column;gap:14px"></div>`,'var(--ok)'); renderNetBody(); }
 function renderNetBody(){ const b=$('net-body'); if(!b||!dlg.open) return;
   if(NET.status==='off'){
-    b.innerHTML=`<p>Les joueurs rejoignent la table depuis leur fiche <b>Aventurier</b>, sur téléphone ou ordinateur : onglet <b>Table</b>, puis le code. Ils voient le plateau comme sur la vue joueur et déplacent leur propre jeton. Chacun apparaît dans un onglet au-dessus du bandeau bas : glissez son jeton sur la table pour le placer, cliquez l'onglet pour consulter sa fiche. Leurs jets de dés arrivent ici.</p>
+    b.innerHTML=`<p>Les joueurs rejoignent la table depuis leur fiche <b>Aventurier</b>, sur téléphone ou ordinateur : onglet <b>Table</b>, puis le code. Chacun voit le plateau centré sur son jeton (de la neige « NO SIGNAL » tant que vous ne l'avez pas posé) et montre des choses avec un pointeur à sa couleur ; seul vous déplacez les jetons. Chacun apparaît dans un onglet au-dessus du bandeau bas : glissez son jeton sur la table pour le placer, cliquez l'onglet pour consulter sa fiche. Leurs jets de dés arrivent ici.</p>
       <p class="meta" style="text-align:left">Connexion directe d'appareil à appareil (WebRTC) : rien n'est stocké sur un serveur, mais il faut internet pour se trouver.${S.netCode?` Code de cette table : <b>${S.netCode}</b>.`:''}</p>
       <div class="actions"><button class="btn ghost" type="button" data-close>Fermer</button><button class="btn" type="button" id="net-open">${IB('wifi')}Ouvrir la table</button></div>`;
     $('net-open').onclick=openTable;
@@ -3609,20 +3657,10 @@ function renderNetBody(){ const b=$('net-body'); if(!b||!dlg.open) return;
   b.querySelectorAll('[data-close]').forEach(x=>x.onclick=()=>dlg.close());
 }
 
-/* vue à distance (dans la fiche Aventurier) : le joueur déplace son propre jeton */
+/* vue à distance : seul le MJ déplace les jetons */
 let myDrag=null;
 function up(m){ try{ parent.postMessage({__adbUp:1,m},'*'); }catch(e){} }
-function bindMine(el){
-  el.addEventListener('pointerdown',e=>{ if(e.button!==0) return; e.preventDefault();
-    const t=tok(el.dataset.id); if(!t) return; const [wx,wy]=toWorld(e.clientX,e.clientY);
-    myDrag={id:t.id,dx:t.x-wx,dy:t.y-wy,x:t.x,y:t.y}; el.setPointerCapture(e.pointerId); el.classList.add('moving'); let raf=0;
-    const mv=ev=>{ const tt=tok(myDrag.id); if(!tt) return; const [x,y]=toWorld(ev.clientX,ev.clientY);
-      tt.x=myDrag.x=clamp(Math.round(x+myDrag.dx),0,WORLD); tt.y=myDrag.y=clamp(Math.round(y+myDrag.dy),0,WORLD); moveTokenEl(tt); fowLater();
-      if(!raf) raf=requestAnimationFrame(()=>{ raf=0; up({t:'mv',id:tt.id,x:tt.x,y:tt.y}); }); };
-    const end=()=>{ el.removeEventListener('pointermove',mv); el.removeEventListener('pointerup',end); el.removeEventListener('pointercancel',end);
-      el.classList.remove('moving'); const d=myDrag; up({t:'mv',id:d.id,x:d.x,y:d.y,end:1}); setTimeout(()=>{ if(myDrag===d) myDrag=null; },400); };
-    el.addEventListener('pointermove',mv); el.addEventListener('pointerup',end); el.addEventListener('pointercancel',end); });
-}
+function bindMine(){}
 
 /* =========================================================
    OUVERTURE : logo, puis l'interface se trace et les bandes ferment
@@ -3666,8 +3704,17 @@ wire();
 if(isPlayer){
   document.title='Aldebaran — Vue joueur';
   renderAllBoard(); fitBoard();
-  window.addEventListener('resize',()=>{ if(lastView) setPlayerView(lastView); });
-  if(NETVIEW){ $('pwait').textContent='Connexion à la table…'; window.addEventListener('message',e=>{ if(e.data&&e.data.__adb) receive(e.data.m); }); up({t:'ready'}); }
+  window.addEventListener('resize',()=>{ if(NETVIEW) followMe(); else if(lastView) setPlayerView(lastView); });
+  if(NETVIEW){ $('pwait').classList.add('gone'); followMe(); window.addEventListener('message',e=>{ if(e.data&&e.data.__adb) receive(e.data.m); }); up({t:'ready'});
+    /* le joueur ne déplace pas son jeton : il montre avec son pointeur */
+    let pd=false, raf=0, last=null;
+    const ptr=(e,end)=>{ const [x,y]=toWorld(e.clientX,e.clientY); last={x:Math.round(x),y:Math.round(y)};
+      showPtr({pid:ME||'moi',name:'Vous',color:pcol(ME||'moi'),x:last.x,y:last.y,end});
+      if(end){ up({t:'ptr',x:last.x,y:last.y,end:1}); return; } if(!raf) raf=requestAnimationFrame(()=>{ raf=0; up({t:'ptr',x:last.x,y:last.y}); }); };
+    board.addEventListener('pointerdown',e=>{ pd=true; try{ board.setPointerCapture(e.pointerId); }catch(err){} ptr(e); });
+    board.addEventListener('pointermove',e=>{ if(pd) ptr(e); });
+    const endp=e=>{ if(!pd) return; pd=false; ptr(e,true); }; board.addEventListener('pointerup',endp); board.addEventListener('pointercancel',endp);
+    board.addEventListener('wheel',e=>{ e.preventDefault(); V.z=clamp(V.z*(e.deltaY>0?1/1.12:1.12),.3,3); followMe(); },{passive:false}); }
   else { try{ const m=JSON.parse(ls.get(LS_SYNC)||'null'); if(m&&m.t==='state') receive(m); }catch(e){}
     const hello={t:'hello',from:'player'}; if(bc) bc.postMessage(hello); try{ localStorage.setItem(LS_SYNC+'.hello',Date.now()+''); }catch(e){} }
 } else {
