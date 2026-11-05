@@ -671,6 +671,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}input[type=num
 .vtab.net-on svg{color:var(--ok)}
 .sheetview input,.sheetview select,.sheetview textarea,.sheetview button:not(.vtab):not(.iic),.sheetview .zone,.sheetview .tagp,.sheetview .grip,.sheetview .tico,.sheetview .hand-t,.sheetview .portrait,.sheetview .bub.add{pointer-events:none!important}
 .sheetview .bub-tip .bt,.sheetview .iic-tip .bt,.sheetview .pm,.sheetview .rollb,.sheetview .sq-add,.sheetview #tb-leave{display:none!important}
+.sheetview .vtab[data-drawer="roller"],.sheetview .vtab[data-drawer="mapdrw"],.sheetview #b-addnote,.sheetview .bk-move,.sheetview .droptgt,.sheetview .ib.del,.sheetview .grip{display:none!important}
 </style>
 <style>#splash canvas,#splash .skip{visibility:hidden}</style>
 </head>
@@ -3018,7 +3019,7 @@ function addToken(t){
   const r=board.getBoundingClientRect(); const [cx,cy]=toWorld(r.left+r.width/2,r.top+r.height/2);
   const n=S.tokens.filter(x=>Math.hypot(x.x-cx,x.y-cy)<30).length;
   Object.assign(t,{id:t.id||nid(),x:bx(t.x??Math.round(cx+n*24)),y:by(t.y??Math.round(cy+n*24)),s:t.s||1});
-  if(t.type!=='player'&&S.scene>=0) t.scene=true;
+  if(S.scene>=0) t.scene=true;   // chaque scène garde ses jetons, joueurs compris
   S.tokens.push(t); if(ALIVE(t)) S.order.push(t.id);
   renderTokens(); renderTracker(); renderFoW(); markDirty(); sync();
   const el=document.querySelector(`.tk[data-id="${t.id}"]`); if(el&&el.animate) el.animate([{opacity:0,scale:.4},{opacity:1,scale:1}],{duration:420,easing:'cubic-bezier(.3,1.5,.5,1)'});
@@ -3165,22 +3166,23 @@ function showRoll(label,n){ const th=threshold(), R=diceBlock(n,th); logRoll(lab
 /* =========================================================
    Scénario : scènes (fond, nuit/jour, tracés, jetons de scène)
    ========================================================= */
-function snapshot(){ if(S.scene<0||!S.scenes[S.scene]) return; const sc=S.scenes[S.scene], ids=new Set(S.tokens.filter(t=>t.scene).map(t=>t.id));
+function snapshot(){ if(S.scene<0||!S.scenes[S.scene]) return; S.tokens.forEach(t=>t.scene=true); const sc=S.scenes[S.scene], ids=new Set(S.tokens.filter(t=>t.scene).map(t=>t.id));
   Object.assign(sc,{bg:S.bg,bgW:S.bgW||0,bgH:S.bgH||0,light:S.light,drawings:clone(S.drawings),tokens:clone(S.tokens.filter(t=>t.scene)),order:S.order.filter(id=>ids.has(id))}); }
 function loadScene(i){
   closeCard(); const keep=S.tokens.filter(t=>!t.scene); S.tokens=keep; S.order=S.order.filter(id=>keep.some(t=>t.id===id)); S.scene=i;
   const sc=S.scenes[i];
   if(sc){ S.bg=sc.bg||''; S.bgW=sc.bgW||0; S.bgH=sc.bgH||0; S.light=sc.light!==false; S.drawings=clone(sc.drawings||[]); S.tokens.push(...clone(sc.tokens||[])); S.order.push(...(sc.order||[]).filter(id=>tok(id))); }
-  S.turn=-1; renderAllBoard(); renderScenes(); markDirty(); sync();
+  if(typeof PL!=='undefined') S.tokens.forEach(t=>{ const P=t.owner&&PL.get(t.owner); if(P&&P.sheet) Object.assign(t,tokenData(P.sheet)); });
+  S.turn=-1; renderAllBoard(); renderScenes(); markDirty(); sync(); if(typeof renderPtabs==='function') renderPtabs();
   if(sc) send({t:'scene',title:sc.title||`Scène ${i+1}`,idx:i+1});
 }
 function gotoScene(i){ if(i<0||i>=S.scenes.length||i===S.scene) return; snapshot(); loadScene(i); }
 function newSceneDialog(){
   openDialog(`<h3>Nouvelle scène</h3><div class="choice">
     <button type="button" class="dark" id="ns-cap">${IB('camera')}<b>Capturer le plateau</b><span>La scène part du plateau actuel : fond, tracés, monstres, décors et lumières.</span></button>
-    <button type="button" id="ns-blank">${IB('page')}<b>Scène vierge</b><span>Un plateau vide ; seuls les joueurs restent.</span></button></div>
+    <button type="button" id="ns-blank">${IB('page')}<b>Scène vierge</b><span>Un plateau vide ; les jetons des joueurs retournent dans leurs onglets.</span></button></div>
     <div class="actions"><button class="btn ghost" type="button" data-close>Annuler</button></div>`,'var(--c-per)');
-  $('ns-cap').onclick=()=>{ dlg.close(); snapshot(); S.tokens.forEach(t=>{ if(t.type!=='player') t.scene=true; }); S.scenes.push({id:nid(),title:`Scène ${S.scenes.length+1}`,content:''}); S.scene=S.scenes.length-1; snapshot(); renderScenes(); markDirty(); openDrawer('scenario',true); focusScene(); };
+  $('ns-cap').onclick=()=>{ dlg.close(); snapshot(); S.tokens.forEach(t=>{ t.scene=true; }); S.scenes.push({id:nid(),title:`Scène ${S.scenes.length+1}`,content:''}); S.scene=S.scenes.length-1; snapshot(); renderScenes(); markDirty(); openDrawer('scenario',true); focusScene(); };
   $('ns-blank').onclick=()=>{ dlg.close(); snapshot(); S.scenes.push({id:nid(),title:`Scène ${S.scenes.length+1}`,content:'',bg:'',bgW:0,bgH:0,light:true,drawings:[],tokens:[],order:[]}); loadScene(S.scenes.length-1); openDrawer('scenario',true); focusScene(); };
 }
 function focusScene(){ setTimeout(()=>{ const i=document.querySelector('.scn.on .stt'); if(i){ i.focus({preventScroll:true}); i.select(); i.scrollLeft=0; $('scenes').scrollLeft=0; i.scrollIntoView({block:'nearest',inline:'nearest'}); $('scenes').scrollLeft=0; } },340); }
@@ -3436,7 +3438,7 @@ function showGuide(){
     <h4>Les jetons</h4><ul><li>PNJ, Monstre, Décor, Lumière : chacun avec un pictogramme, des initiales ou une image. Les joueurs, eux, arrivent par la table en ligne.</li><li>Un clic ouvre la fiche flottante : PV (−/+), statistiques (un clic lance les dés), attaques, note secrète d'un décor, halo d'une lumière ou vision d'un joueur. L'œil cache le jeton aux joueurs.</li><li>Glisser pour déplacer ; lâcher sur la corbeille (en bas à droite pendant le glisser) pour retirer. <kbd>Maj</kbd> + molette : agrandir ou réduire.</li><li>Le bestiaire garde vos monstres : « Au bestiaire » dans la fenêtre du monstre, puis la liste en haut pour le rappeler.</li><li>Dans « Nouveau joueur », la fiche Aventurier de ce navigateur (ou un fichier .adb) reprend le personnage : nom, portrait, statistiques et PV (RES + 5).</li></ul>
     <h4>Jour et nuit</h4><p>En nuit, le brouillard couvre la carte : seuls les halos des joueurs et des lumières l'éclairent. Le MJ voit à travers ; les joueurs non. Un monstre hors de la lumière devient « ? » dans l'initiative des joueurs.</p>
     <h4>Initiative et sabliers</h4><ul><li>Joueurs et monstres rejoignent l'initiative à leur création. Mélanger, puis Tour suivant (<kbd>Espace</kbd>) : le jeton actif est cerclé d'or. Glisser une pastille pour changer l'ordre ; un clic centre la carte sur le jeton.</li><li>Les sabliers comptent à rebours ; pause et suppression dans la pastille.</li></ul>
-    <h4>Scénario</h4><p>Une scène garde le fond, le jour ou la nuit, les tracés, les monstres, décors et lumières. Les joueurs restent d'une scène à l'autre. On passe de scène en scène depuis la barre du haut ou le volet Scénario ; chaque changement inscrit le titre sur la vue joueur. Le scénario s'exporte en PDF.</p>
+    <h4>Scénario</h4><p>Une scène garde le fond, le jour ou la nuit, les tracés, les monstres, décors et lumières. Les jetons des joueurs aussi : en changeant de scène, ceux de la scène quittée retournent dans leurs onglets et ceux de la scène suivante reprennent leur place (ou attendent dans leur onglet s'ils n'y ont pas encore été posés). On passe de scène en scène depuis la barre du haut ou le volet Scénario ; chaque changement inscrit le titre sur la vue joueur. Le scénario s'exporte en PDF.</p>
     <h4>Vue joueur</h4><p>Le bouton « Vue joueur » ouvre une seconde fenêtre à glisser sur la TV ou le second écran : elle suit la caméra, les jetons, les tracés, la mesure, les signaux et le brouillard, sans rien des outils ni des secrets du MJ.</p>
     <h4>Table en ligne</h4><p>« En ligne » ouvre la table sous un code de 5 lettres (le même d'une séance à l'autre). Chaque joueur, dans sa fiche Aventurier, ouvre l'onglet <b>Table</b> et saisit le code, ou suit le lien / le QR code : sa fiche est partagée. Il voit le plateau centré sur son jeton (de la neige « NO SIGNAL » tant que vous ne l'avez pas posé) et montre des choses avec un pointeur à sa couleur ; seul le MJ déplace les jetons. Il apparaît dans un onglet au-dessus du bandeau bas : glissez son jeton sur la table pour le placer (il n'apparaît pas tout seul), cliquez l'onglet pour consulter sa fiche (mise à jour en direct). Son jeton suit sa fiche ; ses jets de dés s'affichent ici ; les PV changés sur la fiche flottante du jeton reviennent sur sa fiche. Connexion directe entre appareils (WebRTC), sans compte ni stockage sur un serveur.</p>
     <h4>Dés</h4><p>Pool de D10 : chaque dé au seuil (8 par défaut, réglable dans Jet libre) est une réussite, un 10 est un critique, un 1 un échec.</p>
