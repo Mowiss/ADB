@@ -2250,10 +2250,14 @@ svg.i{width:18px;height:18px;flex:none}
 .pt-ghost{position:fixed;z-index:60;width:60px;height:60px;margin:-30px 0 0 -30px;border-radius:50%;border:1.6px solid var(--c-res);background:var(--paper);overflow:hidden;display:grid;place-items:center;pointer-events:none;opacity:.6;color:var(--c-res)}
 .pt-ghost.ok{opacity:1}
 .pt-ghost img{width:100%;height:100%;object-fit:cover}
-#sheetpanel{position:fixed;z-index:12;top:calc(var(--bar) + 10px);left:calc(var(--rail) + 10px);width:min(420px,calc(100vw - var(--rail) - var(--tabs) - 20px));bottom:calc(var(--bot) + var(--tim) - 1px);border-bottom-left-radius:0;border-bottom-right-radius:0;padding-bottom:42px;background:var(--paper);border:1px solid var(--rule);border-radius:14px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 10px 30px rgba(47,51,64,.12)}
-#sheetpanel header{display:flex;align-items:center;gap:12px;padding:8px 10px 8px 16px;border-bottom:1px solid var(--rule)}
-#sheetpanel header b{font-family:var(--f-title);font-weight:300;font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-strong)}
-#sp-body{flex:1;min-height:0;border-bottom:1px solid var(--rule)}#sp-body iframe{width:100%;height:100%;border:0;display:block}
+#sheetpanel{position:fixed;z-index:12;top:calc(var(--bar) + 54px);left:calc(var(--rail) + 10px);width:min(420px,calc(100vw - var(--rail) - var(--tabs) - 20px));bottom:0;background:var(--paper);border:1px solid var(--c-res);border-bottom:0;border-radius:0 14px 0 0;display:flex;flex-direction:column;box-shadow:0 10px 30px rgba(47,51,64,.12)}
+.sp-tab{position:absolute;left:-1px;bottom:100%;display:flex;align-items:center;gap:10px;background:var(--paper);border:1px solid var(--c-res);border-bottom:0;border-radius:12px 12px 0 0;padding:5px 6px 5px 6px;max-width:calc(100% + 2px)}
+.sp-tab::after{content:"";position:absolute;left:0;right:0;bottom:-2px;height:3px;background:var(--paper)}
+.sp-tab b{font-family:var(--f-title);font-weight:300;font-size:17px;letter-spacing:.18em;text-transform:uppercase;color:var(--c-res);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-top:2px}
+.sp-tab .cap{white-space:nowrap}
+.sp-tab .ib{width:24px;height:24px;border:0}
+#sp-body{flex:1;min-height:0;overflow:hidden;border-radius:0 13px 0 0}#sp-body iframe{width:100%;height:100%;border:0;display:block}
+.ptab.on{display:none}
 .player .ptabs,.player #sheetpanel,.booting .ptabs{display:none!important}
 .nrelay{border-top:1px solid var(--rule);padding-top:10px}
 .nrelay summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--ink);list-style:none}
@@ -2649,7 +2653,7 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 <div class="timbar" id="timbar"><button class="tb-add" type="button" id="b-timer" title="Nouveau sablier"></button><div class="timers" id="timers"><span class="tim-empty">Sabliers</span></div></div>
 
 <div class="ptabs" id="ptabs"></div>
-<div id="sheetpanel" hidden><header><b id="sp-name"></b><span class="cap">Lecture seule</span><span class="spacer"></span><button class="ib" type="button" id="sp-close" title="Fermer la fiche"></button></header><div id="sp-body"></div></div>
+<div id="sheetpanel" hidden><div class="sp-tab"><span class="pt-tok placed" id="sp-tok"></span><b id="sp-name"></b><span class="cap">Lecture seule</span><button class="ib" type="button" id="sp-close" title="Fermer la fiche"></button></div><div id="sp-body"></div></div>
 
 <nav class="vtabs" id="vtabs" aria-label="Volets">
   <button type="button" class="vtab" data-drawer="scenario" style="--tc:var(--c-per)"><span>Scénario</span></button>
@@ -3664,14 +3668,15 @@ function placePlayer(pid,x,y){ const P=PL.get(pid); if(!P) return; let t=S.token
 let sheetPid=null;
 function toggleSheet(pid){ if(sheetPid===pid){ closeSheet(); return; } sheetPid=pid; const P=PL.get(pid); if(!P) return;
   const sp=$('sheetpanel'), html=window.__ADB_APPS&&window.__ADB_APPS.ply;
-  $('sp-name').textContent=P.name; sp.hidden=false;
+  $('sp-name').textContent=P.name; spTok(P); sp.hidden=false;
   if(!html){ $('sp-body').innerHTML='<p class="meta" style="padding:20px">La fiche n\'est pas disponible dans cette version.</p>'; renderPtabs(); return; }
   const data=JSON.stringify((P.sheet&&P.sheet.full)||{}).replace(/</g,'\\u003c');
   $('sp-body').innerHTML=''; const f=document.createElement('iframe'); f.title='Fiche de '+P.name;
   f.srcdoc=html.replace('<head>','<head><script>window.__ADB_SHEET_VIEW=1;window.__ADB_SHEET_DATA='+data+'<'+'/script>'); $('sp-body').appendChild(f);
   renderPtabs(); }
 function sheetRefresh(){ const P=PL.get(sheetPid), f=$('sp-body').querySelector('iframe'); if(!P||!f||!f.contentWindow) return;
-  $('sp-name').textContent=P.name; f.contentWindow.postMessage({__adbSheet:(P.sheet&&P.sheet.full)||{}},'*'); }
+  $('sp-name').textContent=P.name; spTok(P); f.contentWindow.postMessage({__adbSheet:(P.sheet&&P.sheet.full)||{}},'*'); }
+function spTok(P){ const img=P.sheet&&P.sheet.img; $('sp-tok').innerHTML=img?`<img src="${img}" alt="">`:`<span class="ini">${esc((P.name||'?').trim().split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase())}</span>`; }
 function closeSheet(){ sheetPid=null; $('sheetpanel').hidden=true; $('sp-body').innerHTML=''; renderPtabs(); }
 
 /* fenêtre « Table en ligne » */
