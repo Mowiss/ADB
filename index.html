@@ -821,7 +821,7 @@ function derive(c){
 /* =========================================================
    ÉTAT, SAUVEGARDE (.adb) — l'adaptateur Store sera branché sur Firebase plus tard
    ========================================================= */
-const APP_VER='45';
+const APP_VER='46';
 const LS_SHEET='aldebaran.joueur.fiche', LS_PREF='aldebaran.joueur.prefs';
 const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v);return true}catch(e){return false}}};
 let prefs={autosave:60};
@@ -1015,6 +1015,15 @@ const IC={
   gun:'<path d="M1.6 10.6l3.4-1.9h17.5v2.2H14l-1.3 1.6H9.6l-.9 2.3H6.6l.6-2.3H5.3L2 14.6z"/><path d="M11 12.5l.5 3.2h1.6l-.4-3.2M8.5 8.7V7h5.5v1.7M20.5 8.7V7.6"/>',
   armor:'<path d="M8 3l4 2 4-2 4 3-2 4v10H6V10L4 6z"/><path d="M12 5v15"/>',
   bag:'<path d="M6 8h12l1 12H5z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>',
+  /* icônes dessinées par Momo (DZDQ.dxf) */
+  x_energy1:'<g stroke-width="1.15"><path d="M7.64 6.72L7.57 6.54L20.41 1.52M20.85 1.35L21.16 1.23L21.89 3.1L14.52 5.98M8.26 15.1L6.76 15.69L3.84 8.2L13.86 4.29L16.78 11.78L11.91 13.68M6.8 7.95L12.42 5.76L14.23 10.41L8.62 12.6ZM4.67 10.33L4.05 11.95L3.2 12.63L3.56 17.64L5.55 21.66L8.19 22.72L12.37 19.9L9.79 17.3M10.86 13.13L10.41 15.24L11.22 16.25L9.88 15.49L9.63 13.23M20.85 1.35L20.17 0.93L20.41 1.52M4.23 8.05L3.93 7.28L4.71 6.97L5.32 7.31L5.42 7.58M4.63 10.22L2.99 9.65L1.07 10.4L1.23 10.8L2.58 10.28L4.07 11.93M20.22 9.63L16.44 16.48L19.94 16.56L17.93 22.67L22.72 15.43L19.5 14.95Z"/><circle cx="10.41" cy="15.24" r="2.16"/></g>',
+  x_energy2:'<g stroke-width="1.15"><path d="M9.31 10.23L16 4.78L18.61 7.98L11.92 13.44ZM7.68 13.3L4.17 9L14.5 0.57L18.87 5.93L17.71 6.88M11.02 12.33L8.95 14.03M14.99 1.18L15.51 0.76L17.36 3.02L16.84 3.45M17.4 4.13L17.75 3.84L18.69 4.99L18.33 5.28M5.36 10.46L3.78 13.31L1.56 15.12L2.26 17.44L6.44 16.14M2.89 17.25L3.15 18.15L3.97 19.94L5.19 21.65L6.62 22.92L7.2 23.22L10.58 19L8.85 18.19L7.44 17.15L7.26 16.57M3.6 11.95L1.84 13M1.84 13L1.89 13.6M1.89 13.6L3.33 13.02M3.33 13.02L3.5 13.54M4.46 12.08L3.6 11.95M6.54 13.67L6.97 15.15L7.98 15.71L7.58 14.95L7.87 13.33M19.69 10.09L15.9 16.93L19.4 17.01L17.39 23.12L22.18 15.88L18.96 15.4Z"/><circle cx="7.58" cy="14.95" r="1.65"/></g>',
+  x_fire1:'<g stroke-width="1.15"><path d="M7.87 6.64L7.8 6.45L20.64 1.44M21.08 1.27L21.38 1.15L22.11 3.02L14.75 5.9M8.49 15.02L6.99 15.61L4.07 8.12L14.09 4.21L17.01 11.69L12.13 13.6M7.03 7.87L12.64 5.68L14.46 10.32L8.84 12.52ZM4.9 10.25L4.28 11.87L3.43 12.54L3.78 17.55L5.77 21.58L8.41 22.63L12.6 19.82L10.01 17.22M11.09 13.05L10.64 15.16L11.45 16.17L10.1 15.41L9.85 13.15M21.08 1.27L20.39 0.84L20.64 1.44M4.45 7.97L4.15 7.2L4.94 6.89L5.54 7.23L5.65 7.5M4.85 10.14L3.22 9.57L1.3 10.32L1.45 10.72L2.8 10.2L4.29 11.85M18.16 16.08L21.62 16.08L21.62 21.08L18.16 21.08ZM18.16 21.3L21.63 21.3L21.63 21.88L18.16 21.88ZM21.62 16.08L21.57 15.69L21.45 15.33L21.24 15L20.97 14.73L20.64 14.52L20.28 14.39L19.89 14.35L19.51 14.39L19.14 14.52L18.81 14.73L18.54 15L18.34 15.33L18.21 15.69L18.16 16.08M21.46 21.08L21.46 21.3M18.29 21.3L18.29 21.08"/><circle cx="10.64" cy="15.16" r="2.16"/></g>',
+  x_fire2:'<g stroke-width="1.15"><path d="M7.77 13.3L4.26 9L14.59 0.57L18.96 5.93L17.8 6.88M9.4 10.23L16.09 4.78L18.7 7.98L12.02 13.43ZM11.12 12.33L9.04 14.02M15.09 1.18L15.61 0.75L17.46 3.02L16.93 3.45M17.49 4.13L17.84 3.84L18.78 4.99L18.43 5.28M5.45 10.46L3.88 13.3L1.65 15.12L2.35 17.44L6.53 16.14M2.98 17.24L3.25 18.15L4.06 19.93L5.28 21.64L6.71 22.92L7.3 23.22L10.68 19L8.94 18.18L7.53 17.14L7.35 16.57M3.69 11.95L1.94 13M1.94 13L1.99 13.6M1.99 13.6L3.42 13.02M3.42 13.02L3.59 13.54M4.55 12.08L3.69 11.95M6.63 13.67L7.06 15.15L8.07 15.7L7.67 14.95L7.97 13.32M18.4 15.95L21.85 15.95L21.85 20.95L18.4 20.95ZM18.4 21.17L21.86 21.17L21.86 21.75L18.4 21.75ZM21.85 15.95L21.81 15.57L21.68 15.2L21.47 14.87L21.2 14.6L20.87 14.39L20.51 14.27L20.12 14.22L19.74 14.27L19.37 14.39L19.05 14.6L18.77 14.87L18.57 15.2L18.44 15.57L18.4 15.95M21.69 20.95L21.69 21.17M18.52 21.17L18.52 20.95"/><circle cx="7.67" cy="14.95" r="1.65"/></g>',
+  x_melee1:'<g stroke-width="1.15"><path d="M5.82 11.62L13 18.17L12.44 18.78L5.26 12.23ZM20.2 2.94L11.17 16.51M9.23 15.85L5.67 19.76M20.2 2.94L7.5 13.16M8.33 15.03L4.79 18.91M20.2 2.94L11.24 12.75"/><circle cx="4.64" cy="19.94" r="1.04"/></g>',
+  x_melee2:'<g stroke-width="1.15"><path d="M12.82 0.92L22.98 10.63L16.13 17.79L5.97 8.08ZM16.86 4.78L17.47 4.14L19.74 6.3L19.12 6.95M12.27 14.11L3.28 23.51L1.01 21.34L10.01 11.94M10.24 16.23L7.11 14.97M6.16 15.96L8.8 17.74M7.52 19.07L5.12 17.04M3.91 18.31L5.52 21.17M4.66 22.07L1.94 20.37M1.61 20.72L3.8 22.97"/><circle cx="16.65" cy="7.26" r="0.76"/><circle cx="12.39" cy="11.71" r="0.82"/></g>',
+  x_drug:'<g stroke-width="1.15"><path d="M19.88 9.77L15.61 15.23L8.21 9.44L12.49 3.98L12.63 3.8L12.79 3.63L12.95 3.47L13.12 3.31L13.3 3.17L13.49 3.03L13.68 2.9L13.88 2.78L14.08 2.68L14.29 2.58L14.5 2.49L14.72 2.41L14.94 2.35L15.16 2.29L15.39 2.25L15.62 2.21L15.85 2.19L16.08 2.18L16.31 2.18L16.54 2.19L16.77 2.22L17 2.25L17.22 2.29L17.45 2.35L17.67 2.42L17.88 2.5L18.1 2.59L18.3 2.68L18.51 2.79L18.71 2.91L18.9 3.04L19.08 3.18L19.26 3.33L19.43 3.48L19.59 3.64L19.75 3.81L19.89 3.99L20.03 4.18L20.16 4.37L20.28 4.57L20.39 4.77L20.48 4.98L20.57 5.19L20.65 5.41L20.71 5.63L20.77 5.86L20.82 6.08L20.85 6.31L20.87 6.54L20.88 6.77L20.88 7L20.87 7.23L20.85 7.46L20.81 7.69L20.77 7.92L20.71 8.14L20.64 8.36L20.56 8.58L20.48 8.79L20.38 9L20.27 9.2L20.15 9.4L20.02 9.59Z" fill="currentColor" stroke="none" opacity=".45"/><path d="M3.93 14.9L12.49 3.98M19.88 9.77L11.33 20.69M19.88 9.77L20.26 9.22L20.55 8.62L20.75 7.98L20.86 7.32L20.88 6.65L20.8 5.98L20.62 5.33L20.36 4.72L20.01 4.14L19.58 3.63L19.08 3.18L18.53 2.8L17.92 2.51L17.28 2.31L16.62 2.2L15.95 2.18L15.29 2.27L14.64 2.44L14.02 2.71L13.45 3.06L12.94 3.48L12.49 3.98M3.93 14.9L3.56 15.45L3.27 16.06L3.06 16.7L2.95 17.36L2.94 18.03L3.02 18.69L3.19 19.34L3.46 19.96L3.81 20.53L4.24 21.04L4.73 21.49L5.29 21.87L5.89 22.16L6.53 22.36L7.19 22.47L7.86 22.49L8.53 22.41L9.18 22.23L9.79 21.97L10.36 21.62L10.88 21.19L11.33 20.69M8.21 9.44L15.61 15.23"/></g>',
+  x_armor:'<g stroke-width="1.15"><path d="M14.97 4.37L17.42 4.37M17.42 10.12L17.42 20.05L6.83 20.05L6.83 10.12M6.83 4.37L9.28 4.37M6.83 10.12L4.47 11.78L1.76 7.94L6.83 4.37M12.12 7.22L12.62 7.17L13.1 7.04L13.55 6.83L13.95 6.55L14.3 6.2L14.59 5.79L14.8 5.34L14.92 4.86L14.97 4.37M9.28 4.37L9.32 4.86L9.45 5.34L9.66 5.79L9.94 6.2L10.3 6.55L10.7 6.83L11.15 7.04L11.63 7.17L12.12 7.22M12.12 7.22L12.12 20.05M17.42 10.12L19.77 11.78L22.48 7.94L17.42 4.37"/></g>',
   knife:'<path d="M20 4c-3.5.3-7.5 3-10 6.5l3.5 3.5C17 11.5 19.7 7.5 20 4z"/><path d="M8.7 11.8l3.5 3.5M10.4 13.6l-6.4 6.4"/>',
   greatsword:'<path d="M20.5 3.5l-.6 3.4-9.6 9.6-2.8-2.8 9.6-9.6z"/><path d="M5.6 11.8l6.6 6.6M8.9 15.1l-5.4 5.4"/>',
   ray1:'<path d="M2.5 8.8h9.3v4.4H9l-1 5.3H5.3l1-5.3H2.5z"/><circle cx="14.6" cy="11" r="2.7"/><path d="M19.6 9.4l1.9-1M20 11h2.2M19.6 12.6l1.9 1"/>',
@@ -1026,17 +1035,17 @@ const IC={
   dna:'<path d="M7 3c0 6 10 6 10 12s-10 6-10 6M17 3c0 6-10 6-10 12"/><path d="M8.5 7h7M8.5 17h7M10 12h4"/>',
   star:'<path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z"/>'
 };
-const svgI=(k,col,sw=1.7)=>`<svg viewBox="0 0 24 24" fill="none" stroke="${col||'currentColor'}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">${IC[k]}</svg>`;
+const svgI=(k,col,sw=1.7)=>`<svg viewBox="0 0 24 24" fill="none" stroke="${col||'currentColor'}" style="color:${col||'currentColor'}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">${IC[k]}</svg>`;
 const ITEM_TYPES={
-  melee1:{label:'Corps à corps 1 main',hint:'Couteau, matraque, lame…',ico:'knife',col:'var(--danger)',w:'melee',h:1},
-  melee2:{label:'Corps à corps 2 mains',hint:'Batte, grande lame… occupe les deux mains.',ico:'greatsword',col:'var(--danger)',w:'melee',h:2},
-  fire1:{label:'Arme à feu 1 main',hint:'Pistolet, revolver…',ico:'sword',col:'var(--danger)',w:'fire',h:1},
-  fire2:{label:'Arme à feu 2 mains',hint:'Fusil, mitrailleuse… occupe les deux mains.',ico:'gun',col:'var(--danger)',w:'fire',h:2},
-  energy1:{label:'Arme à énergie 1 main',hint:'Pistolet laser, plasma…',ico:'ray1',col:'#2b84c9',w:'energy',h:1},
-  energy2:{label:'Arme à énergie 2 mains',hint:'Fusil à énergie… occupe les deux mains.',ico:'ray2',col:'#2b84c9',w:'energy',h:2},
-  armor:{label:'Armure',hint:'Ajoute des PP, se porte sur une zone.',ico:'armor',col:'var(--c-res)'},
+  melee1:{label:'Corps à corps 1 main',hint:'Couteau, matraque, lame…',ico:'x_melee1',col:'var(--danger)',w:'melee',h:1},
+  melee2:{label:'Corps à corps 2 mains',hint:'Batte, grande lame… occupe les deux mains.',ico:'x_melee2',col:'var(--danger)',w:'melee',h:2},
+  fire1:{label:'Arme à feu 1 main',hint:'Pistolet, revolver…',ico:'x_fire1',col:'var(--danger)',w:'fire',h:1},
+  fire2:{label:'Arme à feu 2 mains',hint:'Fusil, mitrailleuse… occupe les deux mains.',ico:'x_fire2',col:'var(--danger)',w:'fire',h:2},
+  energy1:{label:'Arme à énergie 1 main',hint:'Pistolet laser, plasma…',ico:'x_energy1',col:'#2b84c9',w:'energy',h:1},
+  energy2:{label:'Arme à énergie 2 mains',hint:'Fusil à énergie… occupe les deux mains.',ico:'x_energy2',col:'#2b84c9',w:'energy',h:2},
+  armor:{label:'Armure',hint:'Ajoute des PP, se porte sur une zone.',ico:'x_armor',col:'var(--c-res)'},
   care:{label:'Soin',hint:'Bandage, sérum, attelle…',ico:'medkit',col:'#2f9a68',cat:'care'},
-  drug:{label:'Drogue / stimulant',hint:'Effet ponctuel, pèse sur la charge.',ico:'pill',col:'#8b55c9',cat:'drug'},
+  drug:{label:'Drogue / stimulant',hint:'Effet ponctuel, pèse sur la charge.',ico:'x_drug',col:'#8b55c9',cat:'drug'},
   misc:{label:'Divers',hint:'Objet transporté, pèse sur la charge.',ico:'misc',col:'#a0642b'},
   backpack:{label:'Sac',hint:'Ajoute de la capacité de charge (PC+).',ico:'bag',col:'var(--c-cha)'}
 };
