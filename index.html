@@ -3339,11 +3339,11 @@ function mobDialog(edit,preset){
 }
 const bookTodo=()=>BOOK_BEST.filter(b=>{ const m=S.bestiary.find(x=>x.name.toLowerCase()===b.name.toLowerCase()); return !m||(m.cat&&m.pp==null); }).length;
 function bestiaryDialog(edit){
-  const todo=bookTodo();
+  importBook(); const todo=bookTodo();
   openDialog(`<div class="mobhead"><h3>Bestiaire</h3><button class="btn ghost" type="button" id="b-back">${IB('left')}Retour</button></div>
     <div class="bsearch"><input class="line-in" id="b-q" placeholder="Rechercher un MOB…" autocomplete="off">${todo?`<button class="mini" type="button" id="b-imp" title="Ajouter les créatures du livre Aldebaran">${IB('book')}Importer le livre (${todo})</button>`:''}</div>
     <div class="blist" id="b-list"></div>`,TYPES.mob.col);
-  const row=x=>{ const m=x.m; return `<div class="brow" data-i="${x.i}" title="Invoquer ${esc(m.name)}"><span class="bface">${faceHTML({...m,type:'mob'},'sm')}</span><b>${esc(m.name)}</b><span class="bv">${m.hpMax}</span><span class="bv">${m.pp||0}</span><span class="bss">${STATS.map(s=>`<i style="--sc:${STAT_INFO[s].col}" title="${s}">${m.stats&&m.stats[s]!=null?m.stats[s]:0}</i>`).join('')}</span><button class="ib del" type="button" data-del="${x.i}" title="Retirer du bestiaire">${IB('bin')}</button></div>`; };
+  const row=x=>{ const m=x.m; return `<div class="brow" data-i="${x.i}" title="Invoquer ${esc(m.name)}"><span class="bface">${faceHTML({...m,type:'mob'},'sm')}</span><b>${esc(m.name)}</b><span class="bv">${m.hpMax}</span><span class="bv">${m.pp||0}</span><span class="bss">${STATS.map(s=>`<i style="--sc:${STAT_INFO[s].col}" title="${s}">${m.stats&&m.stats[s]!=null?m.stats[s]:0}</i>`).join('')}</span>${m.cat?'<span class="nodel"></span>':`<button class="ib del" type="button" data-del="${x.i}" title="Retirer du bestiaire">${IB('bin')}</button>`}</div>`; };
   const draw=()=>{ const q=normTxt($('b-q').value), L=S.bestiary.map((m,i)=>({m,i})).filter(x=>!q||normTxt(x.m.name).includes(q));
     const cats=[...BEST_CATS,...new Set(L.map(x=>x.m.cat).filter(c=>c&&!BEST_CATS.includes(c)))], mine=L.filter(x=>!x.m.cat);
     let h=mine.length?`<div class="bcat">Mes MOBs</div>${mine.map(row).join('')}`:'';
@@ -4225,7 +4225,7 @@ function openLeft(id){ const was=$(id).classList.contains('open');
     if(id==='ldraw'){ if(tool!=='map') setTool('map'); renderDrawPanel(); } else renderBestPanel(); }
   else if(id==='ldraw'&&tool==='map'){ setTool('map'); } }
 function bestRows(q){ q=normTxt(q); const L=S.bestiary.map((m,i)=>({m,i})).filter(x=>!q||normTxt(x.m.name).includes(q));
-  const row=x=>{ const m=x.m; return `<div class="brow" data-i="${x.i}" title="Glisser sur le plateau · cliquer pour ouvrir"><span class="bface">${faceHTML({...m,type:'mob'},'sm')}</span><b>${esc(m.name)}</b><span class="bv">${m.hpMax}</span><span class="bv">${m.pp||0}</span><span class="bss">${STATS.map(s=>`<i style="--sc:${STAT_INFO[s].col}" title="${s}">${m.stats&&m.stats[s]!=null?m.stats[s]:0}</i>`).join('')}</span><button class="ib del" type="button" data-del="${x.i}" title="Retirer du bestiaire">${IB('bin')}</button></div>`; };
+  const row=x=>{ const m=x.m; return `<div class="brow" data-i="${x.i}" title="Glisser sur le plateau · cliquer pour ouvrir"><span class="bface">${faceHTML({...m,type:'mob'},'sm')}</span><b>${esc(m.name)}</b><span class="bv">${m.hpMax}</span><span class="bv">${m.pp||0}</span><span class="bss">${STATS.map(s=>`<i style="--sc:${STAT_INFO[s].col}" title="${s}">${m.stats&&m.stats[s]!=null?m.stats[s]:0}</i>`).join('')}</span>${m.cat?'<span class="nodel"></span>':`<button class="ib del" type="button" data-del="${x.i}" title="Retirer du bestiaire">${IB('bin')}</button>`}</div>`; };
   const cats=[...BEST_CATS,...new Set(L.map(x=>x.m.cat).filter(c=>c&&!BEST_CATS.includes(c)))], mine=L.filter(x=>!x.m.cat);
   let h=mine.length?`<div class="bcat">Mes MOBs</div>${mine.map(row).join('')}`:'';
   cats.forEach(c=>{ const g=L.filter(x=>x.m.cat===c); if(g.length) h+=`<div class="bcat">${esc(c)}</div>${g.map(row).join('')}`; });
@@ -4233,7 +4233,7 @@ function bestRows(q){ q=normTxt(q); const L=S.bestiary.map((m,i)=>({m,i})).filte
   return h?head+h:`<p class="meta" style="text-align:left;padding:10px 4px">${S.bestiary.length?'Aucun MOB ne correspond.':'Le bestiaire est vide : importez les créatures du livre, ou enregistrez vos propres MOBs depuis « Nouveau MOB ».'}</p>`; }
 function bindBestList(list,onPick,drag){ { const bh=list.querySelector('.bhead'); if(bh) list.style.setProperty('--bh',bh.offsetHeight+'px'); }
   list.querySelectorAll('.brow').forEach(r=>{ const m=()=>S.bestiary[+r.dataset.i];
-    r.querySelector('[data-del]').onclick=e=>{ e.stopPropagation(); const x=m(); S.bestiary.splice(+r.dataset.i,1); markDirty(); toast(`« ${x.name} » retiré du bestiaire`); onPick(null); };
+    const dl=r.querySelector('[data-del]'); if(dl) dl.onclick=e=>{ e.stopPropagation(); const x=m(); S.bestiary.splice(+r.dataset.i,1); markDirty(); toast(`« ${x.name} » retiré du bestiaire`); onPick(null); };
     if(!drag){ r.onclick=e=>{ if(!e.target.closest('[data-del]')) onPick(m()); }; return; }
     r.onpointerdown=e=>{ if(e.button!==0||e.target.closest('[data-del]')) return; const M=m(), sx=e.clientX, sy=e.clientY; let gh=null;
       const mv=ev=>{ if(!gh){ if(Math.hypot(ev.clientX-sx,ev.clientY-sy)<6) return; gh=document.createElement('div'); gh.className='bghost'; gh.innerHTML=faceHTML({...M,type:'mob'}); document.body.appendChild(gh); }
@@ -4243,13 +4243,12 @@ function bindBestList(list,onPick,drag){ { const bh=list.querySelector('.bhead')
         const ob=document.elementFromPoint(ev.clientX,ev.clientY);
         if(ob&&ob.closest('#board')){ const [wx,wy]=toWorld(ev.clientX,ev.clientY), t=Object.assign(clone(M),{type:'mob',hp:M.hpMax,x:Math.round(wx),y:Math.round(wy)}); delete t.cat; addToken(t); } };
       document.addEventListener('pointermove',mv,{passive:false}); document.addEventListener('pointerup',up); document.addEventListener('pointercancel',up); }; }); }
-function renderBestPanel(){ const box=$('lbest-body'); if(!box) return; const todo=bookTodo(), q=$('lb-q')?$('lb-q').value:'';
+function renderBestPanel(){ const box=$('lbest-body'); if(!box) return; importBook(); const todo=bookTodo(), q=$('lb-q')?$('lb-q').value:'';
   box.innerHTML=`<div class="bsearch"><input class="line-in" id="lb-q" placeholder="Rechercher un MOB…" autocomplete="off" value="${esc(q)}"></div>
-    <div class="wxrow"><button type="button" class="wxb" id="lb-new">${IB('plus')}<span>Nouveau MOB</span></button>${todo?`<button type="button" class="wxb" id="lb-imp" title="Ajouter les créatures du livre Aldebaran">${IB('book')}<span>Importer le livre (${todo})</span></button>`:''}${S.bestiary.some(m=>m.cat)?`<button type="button" class="wxb" id="lb-rmbook" title="Retirer du bestiaire toutes les créatures du livre (vos MOBs restent)">${IB('bin')}<span>Retirer le livre</span></button>`:''}</div>
+    <div class="wxrow"><button type="button" class="wxb" id="lb-new">${IB('plus')}<span>Nouveau MOB</span></button>${todo?`<button type="button" class="wxb" id="lb-imp" title="Ajouter les créatures du livre Aldebaran">${IB('book')}<span>Importer le livre (${todo})</span></button>`:''}</div>
     <p class="meta" style="text-align:left;margin:0">Glissez un MOB sur le plateau pour l'invoquer ; cliquez-le pour l'ouvrir.</p>
     <div class="blist" id="lb-list"></div>`;
   const draw=()=>{ const l=$('lb-list'); l.innerHTML=bestRows($('lb-q').value); bindBestList(l,m=>{ if(m) mobDialog(null,m); else draw(); },true); };
-  if($('lb-rmbook')) $('lb-rmbook').onclick=()=>{ const n=S.bestiary.filter(m=>m.cat).length; confirmDialog('Retirer le livre',`Les ${n} créatures du livre Aldebaran quittent le bestiaire. Vos propres MOBs restent ; les jetons déjà posés ne bougent pas.`,'Retirer',()=>{ S.bestiary=S.bestiary.filter(m=>!m.cat); markDirty(); toast(`${n} créature${n>1?'s':''} retirée${n>1?'s':''}`); renderBestPanel(); }); };
   $('lb-q').oninput=draw; $('lb-new').onclick=()=>mobDialog(); if($('lb-imp')) $('lb-imp').onclick=()=>{ const n=importBook(); toast(n?`Bestiaire du livre : ${n} créature${n>1?'s':''} ajoutée${n>1?'s':''}`:'Le bestiaire du livre est déjà complet'); renderBestPanel(); };
   draw(); }
 
