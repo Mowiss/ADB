@@ -1976,6 +1976,10 @@ renderAll(); updateSaveState(); setupAutosave(); placeRibbon();
 const NET_PEERJS=['https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js','https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js','https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js'];
 function netLoad(urls){ return new Promise((res,rej)=>{ const go=i=>{ if(i>=urls.length){ rej(new Error('script')); return; } const s=document.createElement('script'); s.src=urls[i]; s.onload=res; s.onerror=()=>{ s.remove(); go(i+1); }; document.head.appendChild(s); }; go(0); }); }
 const netPeerOpts=()=>{ let o={debug:0}; try{ const x=JSON.parse(localStorage.getItem('aldebaran.peer')||'null'); if(x) o=Object.assign(o,x); }catch(e){} return o; };
+const ICE_BASE=[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun.cloudflare.com:3478'},{urls:['turn:eu-0.turn.peerjs.com:3478','turn:us-0.turn.peerjs.com:3478'],username:'peerjs',credential:'peerjsp'}];
+async function netIce(){ const o=netPeerOpts(); if(o.config) return o; let ice=ICE_BASE.slice(); const u=(localStorage.getItem('aldebaran.turn')||'').trim();
+  if(/^https:\/\//.test(u)){ try{ const r=await fetch(u,{cache:'no-store'}); const j=await r.json(); if(Array.isArray(j)&&j.length) ice=ice.concat(j); }catch(e){} }
+  o.config={iceServers:ice}; return o; }
 const NETP={peer:null,conn:null,code:null,frame:null,ready:false,want:false,last:{state:null,bg:null},pid:null,retry:0};
 NETP.pid=ls.get('aldebaran.joueur.netid')||('p'+Date.now().toString(36)+Math.random().toString(36).slice(2,7)); ls.set('aldebaran.joueur.netid',NETP.pid);
 
@@ -1999,9 +2003,11 @@ async function tbJoin(code){
   code=String(code||'').toUpperCase().replace(/[^A-Z0-9]/g,''); $('tb-code').value=code;
   if(code.length<4){ tbMsg('Saisissez le code donné par le maître du destin.'); $('tb-code').focus(); return; }
   NETP.code=code; NETP.want=true; ls.set('aldebaran.joueur.table',code); tbMsg(''); tbStatus('wait','Connexion…');
+  tbStatus('wait','Chargement…');
   try{ if(!window.Peer) await netLoad(NET_PEERJS); }catch(e){ tbStatus('off','Hors ligne'); tbMsg('Module réseau introuvable : vérifiez la connexion internet.'); return; }
   if(!NETP.peer||NETP.peer.destroyed){
-    const p=new Peer(netPeerOpts()); NETP.peer=p;
+    tbStatus('wait','Recherche de la table…');
+    const p=new Peer(await netIce()); NETP.peer=p;
     p.on('error',e=>{ if(NETP.peer!==p) return;
       if(e.type==='peer-unavailable'){ tbStatus('off','Hors ligne'); tbMsg(`Aucune table ouverte sous le code ${NETP.code}. Vérifiez le code, ou demandez au maître du destin d'ouvrir sa table.`); NETP.want=false; tbShowJoin(); }
       else if(['network','server-error','socket-error','socket-closed'].includes(e.type)){ tbStatus('wait','Réseau indisponible, nouvel essai…'); }
@@ -2015,7 +2021,11 @@ async function tbJoin(code){
 function tbConnect(){
   if(!NETP.peer||!NETP.want) return;
   const c=NETP.peer.connect('aldebaran-'+NETP.code.toLowerCase(),{reliable:true}); NETP.conn=c;
-  c.on('open',async()=>{ NETP.retry=0; c.send({t:'join',pid:NETP.pid,sheet:await sheetData()}); tbStatus('on',`Table ${NETP.code}`); tbLive(); });
+  tbStatus('wait','Connexion directe…');
+  const late=setTimeout(()=>{ if(NETP.conn!==c||c.open) return; NETP.want=false; NETP.conn=null; try{ c.close(); }catch(e){}
+    tbStatus('off','Hors ligne'); tbShowJoin();
+    tbMsg('La table est trouvée, mais la connexion directe n\'aboutit pas : votre réseau la bloque (fréquent en 4G/5G). Essayez sur le même Wi-Fi que le maître du destin, ou demandez-lui d\'activer le serveur relais puis de vous renvoyer le lien ou le QR code.'); },20000);
+  c.on('open',async()=>{ clearTimeout(late); NETP.retry=0; c.send({t:'join',pid:NETP.pid,sheet:await sheetData()}); tbStatus('on',`Table ${NETP.code}`); tbLive(); });
   c.on('data',tbIn);
   c.on('close',()=>{ if(NETP.conn!==c) return; NETP.conn=null;
     if(NETP.want&&NETP.retry<20){ NETP.retry++; tbStatus('wait','Reconnexion…'); setTimeout(()=>{ if(NETP.want&&!NETP.conn) tbConnect(); },2500); }
@@ -2056,6 +2066,7 @@ $('tb-code').addEventListener('input',e=>{ const v=e.target.value.toUpperCase().
 $('tb-leave').onclick=tbLeave;
 $('tb-code').value=ls.get('aldebaran.joueur.table')||'';
 tbStatus('off','Hors ligne');
+if(window.__adbRelay){ try{ localStorage.setItem('aldebaran.turn',window.__adbRelay); }catch(e){} window.__adbRelay=null; }
 if(window.__adbJoin){ const code=window.__adbJoin; window.__adbJoin=null; setTimeout(()=>{ openDrawer('tabledrw'); tbJoin(code); },1200); }
 
 if(window.__adbLaunch){ const L=window.__adbLaunch; window.__adbLaunch=null; setTimeout(()=>loadText(L.text,L.name),300); }
@@ -2204,6 +2215,11 @@ svg.i{width:18px;height:18px;flex:none}
 .np i{width:8px;height:8px;border-radius:50%;background:var(--ok)}
 .np b{flex:1;color:var(--ink-strong)}
 .np small{font-size:11.5px;color:var(--ink-soft)}
+.nrelay{border-top:1px solid var(--rule);padding-top:10px}
+.nrelay summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--ink);list-style:none}
+.nrelay summary::-webkit-details-marker{display:none}
+.nrelay[open] summary{margin-bottom:8px}
+.nrelay .nlink{margin-top:8px}
 .tk.moving{cursor:grabbing;z-index:5;transition:none}
 .tk .ring{position:absolute;inset:-6px;width:84px;height:84px;overflow:visible;pointer-events:none}
 .tk .ring .bgc{fill:none;stroke:var(--faint);stroke-width:4}
@@ -3414,10 +3430,15 @@ function loadScript(urls){ return new Promise((res,rej)=>{ const go=i=>{ if(i>=u
 const loadPeer=()=>window.Peer?Promise.resolve():loadScript(PEERJS);
 /* serveur de rendez-vous : PeerJS public par défaut, réglable via localStorage « aldebaran.peer » (JSON) */
 function peerOpts(){ let o={debug:0}; try{ const x=JSON.parse(localStorage.getItem('aldebaran.peer')||'null'); if(x) o=Object.assign(o,x); }catch(e){} return o; }
+/* serveurs STUN/TURN : ceux de PeerJS + un relais personnel facultatif (URL d'identifiants Metered, réglée par le MJ) */
+const ICE_BASE=[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun.cloudflare.com:3478'},{urls:['turn:eu-0.turn.peerjs.com:3478','turn:us-0.turn.peerjs.com:3478'],username:'peerjs',credential:'peerjsp'}];
+const relayUrl=()=>{ const u=(localStorage.getItem('aldebaran.turn')||'').trim(); return /^https:\/\//.test(u)?u:''; };
+async function relayIce(u){ const r=await fetch(u,{cache:'no-store'}); const j=await r.json(); if(!Array.isArray(j)||!j.length) throw new Error('vide'); return j; }
+async function iceOpts(){ const o=peerOpts(); if(o.config) return o; let ice=ICE_BASE.slice(); const u=relayUrl(); if(u){ try{ ice=ice.concat(await relayIce(u)); }catch(e){ toast('Serveur relais injoignable : connexion sans relais',true); } } o.config={iceServers:ice}; return o; }
 const CODE_CH='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const newCode=()=>Array.from({length:5},()=>CODE_CH[Math.floor(Math.random()*CODE_CH.length)]).join('');
 const peerId=code=>'aldebaran-'+String(code).toLowerCase();
-const NET={peer:null,conns:new Set(),status:'off',code:null};
+const NET={peer:null,conns:new Set(),pending:new Set(),status:'off',code:null};
 const bgId=bg=>bg?bg.length+':'+bg.slice(-48):'';
 const players=()=>[...NET.conns].filter(c=>c.pid);
 
@@ -3437,14 +3458,16 @@ function netStatus(st){ NET.status=st; const b=$('b-net'); if(!b) return;
 async function openTable(){
   if(NET.peer) return; netStatus('wait');
   try{ await loadPeer(); }catch(e){ netStatus('off'); toast('Module réseau introuvable : vérifiez la connexion internet',true); return; }
-  if(!S.netCode){ S.netCode=newCode(); } if(!S.netOpen){ S.netOpen=true; markDirty(); }
+  if(!S.netCode){ S.netCode=newCode(); markDirty(); }
   NET.code=S.netCode;
-  const p=new Peer(peerId(NET.code),peerOpts()); NET.peer=p;
+  const p=new Peer(peerId(NET.code),await iceOpts()); NET.peer=p;
   p.on('open',()=>{ if(NET.peer!==p) return; netStatus('on'); toast(`Table ouverte · code ${NET.code}`); });
   p.on('connection',c=>{
-    c.on('open',()=>{ NET.conns.add(c); netStatus(NET.status); });
+    NET.pending.add(c); netStatus(NET.status);
+    c.on('open',()=>{ NET.pending.delete(c); NET.conns.add(c); netStatus(NET.status); });
+    c.on('iceStateChanged',st=>{ if(st==='failed'&&NET.pending.has(c)){ NET.pending.delete(c); netStatus(NET.status); toast('Un joueur n\'a pas pu se connecter (réseau bloquant) : activez le serveur relais',true); } });
     c.on('data',d=>netIn(c,d));
-    const gone=()=>{ if(NET.conns.delete(c)){ if(c.pid) toast(`${c.name||'Un joueur'} a quitté la table`); netStatus(NET.status); } };
+    const gone=()=>{ if(NET.pending.delete(c)) netStatus(NET.status); if(NET.conns.delete(c)){ if(c.pid) toast(`${c.name||'Un joueur'} a quitté la table`); netStatus(NET.status); } };
     c.on('close',gone); c.on('error',gone); });
   p.on('disconnected',()=>{ if(NET.peer===p&&!p.destroyed){ netStatus('wait'); setTimeout(()=>{ try{ if(NET.peer===p&&!p.destroyed) p.reconnect(); }catch(e){} },1500); } });
   p.on('error',e=>{ if(NET.peer!==p) return;
@@ -3453,7 +3476,7 @@ async function openTable(){
     else if(e.type==='browser-incompatible'){ toast('Ce navigateur ne gère pas la connexion directe (WebRTC)',true); closeTable(); }
     else if(e.type!=='peer-unavailable') toast('Réseau : '+e.type,true); });
 }
-function closeTable(){ const p=NET.peer; NET.peer=null; if(S.netOpen){ S.netOpen=false; markDirty(); } NET.conns.forEach(c=>{ try{ c.send({t:'closed'}); c.close(); }catch(e){} }); NET.conns.clear(); if(p) try{ p.destroy(); }catch(e){} netStatus('off'); }
+function closeTable(){ const p=NET.peer; NET.peer=null; NET.conns.forEach(c=>{ try{ c.send({t:'closed'}); c.close(); }catch(e){} }); NET.conns.clear(); if(p) try{ p.destroy(); }catch(e){} netStatus('off'); }
 
 /* messages reçus des joueurs */
 function netIn(c,d){ if(!d||typeof d!=='object') return;
@@ -3481,7 +3504,7 @@ function claimToken(c,sh,join){ sh=sh||{};
 }
 
 /* fenêtre « Table en ligne » */
-function netLink(){ return location.protocol.startsWith('http')&&NET.code?location.origin+location.pathname+'?table='+NET.code:''; }
+function netLink(){ if(!location.protocol.startsWith('http')||!NET.code) return ''; const u=relayUrl(); return location.origin+location.pathname+'?table='+NET.code+(u?'&relay='+encodeURIComponent(u):''); }
 function netDialog(){ openDialog(`<h3>Table en ligne</h3><div id="net-body" style="display:flex;flex-direction:column;gap:14px"></div>`,'var(--ok)'); renderNetBody(); }
 function renderNetBody(){ const b=$('net-body'); if(!b||!dlg.open) return;
   if(NET.status==='off'){
@@ -3494,7 +3517,7 @@ function renderNetBody(){ const b=$('net-body'); if(!b||!dlg.open) return;
     b.innerHTML=`${NET.status==='wait'?'<p class="meta">Connexion au réseau…</p>':''}<span class="cap" style="text-align:center">Code de la table</span><div class="ncode">${NET.code}</div>
       ${link?`<div class="nlink"><input readonly value="${esc(link)}" aria-label="Lien d'invitation"><button class="mini" type="button" id="net-copy">${IB('copy')}Copier</button></div><div class="nqr" id="net-qr"></div>`
         :'<p class="meta">Ouvrez l\'appli depuis son adresse en ligne (GitHub Pages) pour obtenir un lien et un QR code à partager.</p>'}
-      <div class="subttl">Joueurs connectés</div>
+      <div class="subttl">Joueurs connectés</div>${NET.pending.size?`<p class="meta" style="text-align:left">${NET.pending.size} joueur${NET.pending.size>1?'s':''} en cours de connexion…</p>`:''}
       <div class="nplayers">${L.length?L.map(c=>{ const t=S.tokens.find(x=>x.owner===c.pid); return `<div class="np"><i></i><b>${esc(c.name)}</b><small>${t?`${t.hp} / ${t.hpMax} PV`:''}</small></div>`; }).join(''):'<p class="meta" style="text-align:left">Personne pour l\'instant.</p>'}</div>
       <div class="actions"><button class="btn ghost" type="button" id="net-new" style="margin-right:auto" title="Changer le code de la table">Nouveau code</button><button class="btn danger" type="button" id="net-close">Fermer la table</button><button class="btn" type="button" data-close>OK</button></div>`;
     $('net-close').onclick=()=>{ closeTable(); toast('Table fermée'); };
@@ -3502,6 +3525,14 @@ function renderNetBody(){ const b=$('net-body'); if(!b||!dlg.open) return;
     if(link){ $('net-copy').onclick=()=>{ (navigator.clipboard?navigator.clipboard.writeText(link):Promise.reject()).then(()=>toast('Lien copié')).catch(()=>{ b.querySelector('.nlink input').select(); document.execCommand('copy'); toast('Lien copié'); }); };
       loadScript(['https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js']).then(()=>{ const q=$('net-qr'); if(q&&!q.firstChild&&window.QRCode) new QRCode(q,{text:link,width:300,height:300,colorDark:'#2f3340',colorLight:'#ffffff'}); }).catch(()=>{}); }
   }
+  b.insertAdjacentHTML('beforeend',`<details class="nrelay"${relayUrl()?'':''}><summary>Serveur relais${relayUrl()?' · activé':''}</summary>
+    <p class="meta" style="text-align:left">Si un joueur reste bloqué sur « Connexion directe… » (téléphone en 4G/5G, réseau d'entreprise), la connexion doit passer par un relais. Créez un compte gratuit sur metered.ca (Open Relay, 20 Go/mois), puis collez ici l'adresse « TURN credentials » (https://…metered.live/api/v1/turn/credentials?apiKey=…). Elle est transmise aux joueurs par le lien et le QR code.</p>
+    <div class="nlink"><input id="relay-in" placeholder="https://votre-appli.metered.live/api/v1/turn/credentials?apiKey=…" value="${esc(relayUrl())}"><button class="mini" type="button" id="relay-ok">Tester et garder</button></div></details>`);
+  $('relay-ok').onclick=async()=>{ const v=$('relay-in').value.trim();
+    if(!v){ localStorage.removeItem('aldebaran.turn'); toast('Relais retiré'); if(NET.peer){ closeTable(); openTable(); } else renderNetBody(); return; }
+    if(!/^https:\/\//.test(v)){ toast('L\'adresse doit commencer par https://',true); return; }
+    try{ const L=await relayIce(v); localStorage.setItem('aldebaran.turn',v); toast(`Relais actif : ${L.length} serveurs`); if(NET.peer){ closeTable(); openTable(); } else renderNetBody(); }
+    catch(e){ toast('Relais injoignable : vérifiez l\'adresse et la clé',true); } };
   b.querySelectorAll('[data-close]').forEach(x=>x.onclick=()=>dlg.close());
 }
 
@@ -3822,7 +3853,7 @@ function render(t){
 
   const start=()=>{
     const role=q.get('role'), mode=(q.get('mode')||'').toLowerCase();
-    const table=(q.get('table')||'').trim(); if(table){ window.__adbJoin=table; $('splash').hidden=true; launch('ply'); return; }
+    const table=(q.get('table')||'').trim(); if(table){ window.__adbJoin=table; window.__adbRelay=(q.get('relay')||'').trim()||null; $('splash').hidden=true; launch('ply'); return; }
     if(role==='player'||mode==='mj'||mode==='mdd'){ $('splash').hidden=true; launch('mj'); return; }
     if(mode==='aventurier'||mode==='joueur'){ $('splash').hidden=true; launch('ply'); return; }
     if(matchMedia('(prefers-reduced-motion: reduce)').matches){ Logo.play().then(choose); return; }
