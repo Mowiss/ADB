@@ -2272,7 +2272,8 @@ svg.i{width:18px;height:18px;flex:none}
 .tk .ring .hp.low{stroke:var(--gold)}.tk .ring .hp.crit{stroke:var(--danger)}
 .tk .face{position:absolute;inset:0;border-radius:50%;background:var(--paper);border:1.6px solid var(--c);display:grid;place-items:center;overflow:hidden;color:var(--c)}
 .tk .face svg{width:56%;height:56%}
-.tk .face img{width:100%;height:100%;object-fit:cover;display:block}
+.tk .face img{width:100%;height:100%;object-fit:cover;display:block;-webkit-user-drag:none;user-select:none;pointer-events:none}
+.tk,.tk *{-webkit-user-drag:none}
 .tk .face .ini{font-family:var(--f-title);font-size:26px;letter-spacing:.06em;color:var(--c);padding-top:4px}
 .tk .nm{position:absolute;left:50%;top:calc(100% + 9px);transform:translateX(-50%);font-size:11.5px;font-weight:700;color:var(--ink-strong);white-space:nowrap;background:var(--wash);border-radius:999px;padding:1px 8px;pointer-events:none;max-width:180px;overflow:hidden;text-overflow:ellipsis}
 .player .tk.mob .nm,.player .tk.prop .nm{display:none}
@@ -2947,7 +2948,8 @@ function boardDown(e){
   const [wx,wy]=toWorld(e.clientX,e.clientY);
   if(e.button===2) return;
   closeCard();
-  if(e.button===1||(e.button===0&&!tool)||(e.button===0&&e.altKey)){ e.preventDefault(); gesture={k:'pan',sx:e.clientX,sy:e.clientY,vx:V.x,vy:V.y}; board.classList.add('panning'); board.setPointerCapture(e.pointerId); return; }
+  /* vue : clic molette (ou Alt + clic) à la souris ; au doigt, glisser dans le vide */
+  if(e.button===1||(e.button===0&&e.altKey)||(e.button===0&&!tool&&e.pointerType!=='mouse')){ e.preventDefault(); gesture={k:'pan',sx:e.clientX,sy:e.clientY,vx:V.x,vy:V.y}; board.classList.add('panning'); board.setPointerCapture(e.pointerId); return; }
   if(tool==='draw'){ const d={id:nid(),c:prefs.ink,w:prefs.width,pts:[[wx,wy]]}; d.el=document.createElementNS('http://www.w3.org/2000/svg','path');
     d.el.setAttribute('stroke',d.c); d.el.setAttribute('stroke-width',d.w); if(d.c==='#ffffff') d.el.setAttribute('class','white'); $('draw').appendChild(d.el); gesture={k:'draw',d}; board.setPointerCapture(e.pointerId); }
   else if(tool==='measure'){ gesture={k:'measure',x1:wx,y1:wy,x2:wx,y2:wy}; board.setPointerCapture(e.pointerId); drawMeasure(gesture); }
@@ -3008,7 +3010,7 @@ function bindToken(el){
       if(!d.moved){ d.moved=true; el.classList.add('moving'); document.body.classList.add('dragging'); closeCard(); }
       const [x,y]=toWorld(ev.clientX,ev.clientY); t.x=bx(Math.round(x+d.dx)); t.y=by(Math.round(y+d.dy)); moveTokenEl(t);
       const b=$('bin').getBoundingClientRect(); $('bin').classList.toggle('over',ev.clientX>=b.left-8&&ev.clientX<=b.right+8&&ev.clientY>=b.top-8&&ev.clientY<=b.bottom+8);
-      fowLater(); send({t:'mv',id:t.id,x:t.x,y:t.y,s:t.s}); };
+      fowLater(); if(!d.raf) d.raf=requestAnimationFrame(()=>{ d.raf=0; send({t:'mv',id:t.id,x:t.x,y:t.y,s:t.s}); }); };
     const up=()=>{ el.removeEventListener('pointermove',mv); el.removeEventListener('pointerup',up); el.removeEventListener('pointercancel',up);
       el.classList.remove('moving'); document.body.classList.remove('dragging');
       if(d.moved){ if($('bin').classList.contains('over')){ $('bin').classList.remove('over'); removeToken(t.id); return; } markDirty(); sync(); }
@@ -3281,6 +3283,7 @@ let seq=0, lastSeq=-1;
 function send(m){ if(isPlayer) return; m.n=Date.now()*100+(seq++%100); m.from='mj';
   netSend(m);
   if(bc) try{ bc.postMessage(m); }catch(e){}
+  if(bc&&m.t!=='state') return;   // le canal direct suffit ; le stockage local ne garde que l'état complet
   try{ localStorage.setItem(LS_SYNC,JSON.stringify(m)); }catch(e){ if(m.t==='state'){ const lite={...m,bg:m.bg&&m.bg.length>1.5e6?'':m.bg}; try{ localStorage.setItem(LS_SYNC,JSON.stringify(lite)); }catch(e2){} } } }
 function publicState(){ const pub=t=>({id:t.id,type:t.type,name:t.name,hp:t.hp,hpMax:t.hpMax,img:t.img,ico:t.ico,x:t.x,y:t.y,s:t.s,r:t.r,owner:t.owner||null,note:t.type==='prop'&&t.note?' ':''});
   return {t:'state',bg:S.bg,bgW:S.bgW||0,bgH:S.bgH||0,light:S.light,grid:S.grid,drawings:S.drawings,tokens:S.tokens.filter(t=>!t.hidden).map(pub),order:S.order.filter(id=>{ const t=tok(id); return t&&!t.hidden; }),turn:turnIdForPlayers(),view:viewMsg()}; }
@@ -3442,7 +3445,7 @@ function settings(){
 }
 function showGuide(){
   openDialog(`<h3>Guide</h3><div class="guide">
-    <h4>Le plateau</h4><ul><li>Glisser dans le vide (ou clic molette) : déplacer la carte. Molette : zoomer vers le curseur. <kbd>0</kbd> : recentrer.</li><li>Clic droit sur le plateau : un signal rouge attire l'attention des joueurs.</li><li>Le rail de gauche : Mesure <kbd>M</kbd>, Dessin <kbd>D</kbd> (couleur et épaisseur au premier clic), Gomme <kbd>E</kbd> (cliquer ou passer sur un tracé). Clic droit sur le crayon ou la gomme : tout effacer. <kbd>Échap</kbd> repose l'outil.</li><li>La mesure compte en cases de 0,5 m.</li></ul>
+    <h4>Le plateau</h4><ul><li>Clic gauche sur un jeton et glisser : le déplacer. Clic molette et glisser (ou Alt + clic gauche ; au doigt, glisser dans le vide) : déplacer la vue. Molette : zoomer vers le curseur. <kbd>0</kbd> : recentrer.</li><li>Clic droit sur le plateau : un signal rouge attire l'attention des joueurs.</li><li>Le rail de gauche : Mesure <kbd>M</kbd>, Dessin <kbd>D</kbd> (couleur et épaisseur au premier clic), Gomme <kbd>E</kbd> (cliquer ou passer sur un tracé). Clic droit sur le crayon ou la gomme : tout effacer. <kbd>Échap</kbd> repose l'outil.</li><li>La mesure compte en cases de 0,5 m.</li></ul>
     <h4>Les jetons</h4><ul><li>PNJ, Monstre, Décor, Lumière : chacun avec un pictogramme, des initiales ou une image. Les joueurs, eux, arrivent par la table en ligne.</li><li>Un clic ouvre la fiche flottante : PV (−/+), statistiques (un clic lance les dés), attaques, note secrète d'un décor, halo d'une lumière ou vision d'un joueur. L'œil cache le jeton aux joueurs.</li><li>Glisser pour déplacer ; lâcher sur la corbeille (en bas à droite pendant le glisser) pour retirer. <kbd>Maj</kbd> + molette : agrandir ou réduire.</li><li>Le bestiaire garde vos monstres : « Au bestiaire » dans la fenêtre du monstre, puis la liste en haut pour le rappeler.</li><li>Dans « Nouveau joueur », la fiche Aventurier de ce navigateur (ou un fichier .adb) reprend le personnage : nom, portrait, statistiques et PV (RES + 5).</li></ul>
     <h4>Jour et nuit</h4><p>En nuit, le brouillard couvre la carte : seuls les halos des joueurs et des lumières l'éclairent. Le MJ voit à travers ; les joueurs non. Un monstre hors de la lumière devient « ? » dans l'initiative des joueurs.</p>
     <h4>Initiative et sabliers</h4><ul><li>Joueurs et monstres rejoignent l'initiative à leur création. Mélanger, puis Tour suivant (<kbd>Espace</kbd>) : le jeton actif est cerclé d'or. Glisser une pastille pour changer l'ordre ; un clic centre la carte sur le jeton.</li><li>Les sabliers comptent à rebours ; pause et suppression dans la pastille.</li></ul>
@@ -3492,7 +3495,9 @@ function wire(){
   if(isPlayer) return;
 
   // plateau
-  board.addEventListener('pointerdown',boardDown); board.addEventListener('pointermove',boardMove);
+  board.addEventListener('pointerdown',boardDown);
+  board.addEventListener('mousedown',e=>{ if(e.button===1) e.preventDefault(); });   // pas de défilement automatique au clic molette
+  board.addEventListener('dragstart',e=>e.preventDefault()); board.addEventListener('pointermove',boardMove);
   board.addEventListener('pointerup',boardUp); board.addEventListener('pointercancel',boardUp);
   board.addEventListener('wheel',e=>{ if(e.shiftKey) return; e.preventDefault(); zoomAt(e.clientX,e.clientY,e.deltaY>0?1/1.12:1.12); },{passive:false});
   board.addEventListener('contextmenu',e=>{ e.preventDefault(); if(e.target.closest('.tk')||e.target.closest('#card')) return; const [x,y]=toWorld(e.clientX,e.clientY); ping(x,y); send({t:'ping',x,y}); });
