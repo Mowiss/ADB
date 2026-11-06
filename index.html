@@ -2492,6 +2492,7 @@ svg.i{width:18px;height:18px;flex:none}
 .ldrawer .brow{touch-action:pan-y;user-select:none;cursor:grab}
 .jnew svg{color:var(--tc)}.jnew{cursor:grab;touch-action:pan-y;user-select:none}
 .jlist{display:flex;flex-direction:column;gap:1px}
+.jlist .bcat{position:static;padding:12px 4px 4px}.bcat small{font-family:var(--f-body);letter-spacing:0;margin-left:4px;color:var(--ink-soft)}
 .jrow{display:grid;grid-template-columns:30px minmax(0,1fr) auto 28px 28px;gap:8px;align-items:center;padding:4px 6px;border-radius:8px;cursor:pointer}.jrow:hover{background:var(--wash)}
 .jrow .bface{width:30px;height:30px;border-color:var(--c);color:var(--c)}.jrow b{font-size:13px;font-weight:600;color:var(--ink-strong);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .jrow.hid{opacity:.5}.jhp{font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap}
@@ -4286,9 +4287,11 @@ function renderJetPanel(){ const box=$('ljet-body'); if(!box) return; const q=$(
   box.querySelectorAll('[data-new]').forEach(b=>{ const k=b.dataset.new; dragOut(b,()=>faceHTML({type:k,ico:TYPES[k].def}),(x,y)=>newTokenAt(k,x,y),()=>newTokenAt(k)); });
   const draw=()=>{ const qq=normTxt($('lj-q').value), order=['player','npc','mob','prop','light'];
     const L=S.tokens.filter(t=>!qq||normTxt(t.name||TYPES[t.type].label).includes(qq)).sort((a,b)=>order.indexOf(a.type)-order.indexOf(b.type)||(a.name||'').localeCompare(b.name||'','fr'));
-    $('lj-list').innerHTML=L.length?L.map(t=>`<div class="jrow${t.hidden?' hid':''}" data-id="${t.id}" style="--c:${TYPES[t.type].col}" title="Centrer la vue sur ce jeton">
+    const row=t=>`<div class="jrow${t.hidden?' hid':''}" data-id="${t.id}" style="--c:${TYPES[t.type].col}" title="Centrer la vue sur ce jeton">
         <span class="bface">${faceHTML(t,'sm')}</span><b>${esc(t.name||TYPES[t.type].label)}</b><span class="jhp">${t.type==='player'||t.type==='mob'||t.type==='npc'?`❤️ ${t.hp}/${t.hpMax}`:''}</span>
-        ${t.type!=='player'?`<button class="ib" type="button" data-hide title="${t.hidden?'Montrer aux joueurs':'Cacher aux joueurs'}">${IB(t.hidden?'eyeoff':'eye')}</button><button class="ib del" type="button" data-rm title="Retirer du plateau">${IB('bin')}</button>`:'<span></span><span></span>'}</div>`).join('')
+        ${t.type!=='player'?`<button class="ib" type="button" data-hide title="${t.hidden?'Montrer aux joueurs':'Cacher aux joueurs'}">${IB(t.hidden?'eyeoff':'eye')}</button><button class="ib del" type="button" data-rm title="Retirer du plateau">${IB('bin')}</button>`:'<span></span><span></span>'}</div>`;
+    const GL={player:'Joueurs',npc:'PNJ',mob:'MOBs',prop:'Décors',light:'Lumières'};
+    $('lj-list').innerHTML=L.length?order.map(k=>{ const g=L.filter(t=>t.type===k); return g.length?`<div class="bcat">${GL[k]} <small>${g.length}</small></div>${g.map(row).join('')}`:''; }).join('')
       :`<p class="meta" style="text-align:left;padding:6px 2px">${S.tokens.length?'Aucun jeton ne correspond.':'Aucun jeton dans cette scène.'}</p>`;
     $('lj-list').querySelectorAll('.jrow').forEach(r=>{ const t=tok(r.dataset.id); if(!t) return;
       r.onclick=e=>{ const h=e.target.closest('[data-hide]'), d=e.target.closest('[data-rm]');
