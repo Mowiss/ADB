@@ -4954,6 +4954,17 @@ function wire(){
 
   // plateau
   board.addEventListener('pointerdown',boardDown);
+  /* au doigt : pincer à deux doigts pour zoomer (et glisser pour déplacer la vue en même temps) */
+  const TP=new Map(); let pinch=null;
+  const tpMid=()=>{ const a=[...TP.values()]; return {x:(a[0].x+a[1].x)/2,y:(a[0].y+a[1].y)/2,d:Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)||1}; };
+  board.addEventListener('pointerdown',e=>{ if(isPlayer||e.pointerType!=='touch'||e.target.closest('#card')) return; TP.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(TP.size===2){ if(gesture&&gesture.k==='map'){ mapLive=null; drawMapLater(); } if(gesture&&gesture.k==='measure'){ measure=null; $('over').innerHTML=''; $('mlabel').hidden=true; }
+      gesture=null; board.classList.remove('panning'); const m=tpMid(), r=board.getBoundingClientRect(); pinch={m,z:V.z,wx:(m.x-r.left-V.x)/V.z,wy:(m.y-r.top-V.y)/V.z}; e.stopImmediatePropagation(); e.preventDefault(); } },true);
+  window.addEventListener('pointermove',e=>{ if(!TP.has(e.pointerId)) return; TP.set(e.pointerId,{x:e.clientX,y:e.clientY}); if(!pinch||TP.size<2) return;
+    e.stopImmediatePropagation(); const m=tpMid(), r=board.getBoundingClientRect(), z=clamp(pinch.z*m.d/pinch.m.d,S.geo?1e-6:.15,S.geo?8:3.5);
+    V.z=z; V.x=m.x-r.left-pinch.wx*z; V.y=m.y-r.top-pinch.wy*z; applyView(); },true);
+  const tpEnd=e=>{ if(!TP.delete(e.pointerId)) return; if(TP.size<2&&pinch){ pinch=null; gesture=null; e.stopImmediatePropagation(); } };
+  window.addEventListener('pointerup',tpEnd,true); window.addEventListener('pointercancel',tpEnd,true);
   board.addEventListener('mousedown',e=>{ if(e.button===1) e.preventDefault(); });   // pas de défilement automatique au clic molette
   board.addEventListener('dragstart',e=>e.preventDefault()); window.addEventListener('pointermove',boardMove);
   window.addEventListener('pointerup',boardUp); window.addEventListener('pointercancel',boardUp);
