@@ -2028,10 +2028,10 @@ async function tbJoin(code){
   code=String(code||'').toUpperCase().replace(/[^A-Z0-9]/g,''); $('tb-code').value=code;
   if(code.length<4){ tbMsg('Saisissez le code donné par le maître du destin.'); $('tb-code').focus(); return; }
   NETP.code=code; NETP.want=true; ls.set('aldebaran.joueur.table',code); tbMsg(''); tbStatus('wait','Connexion…');
-  tbStatus('wait','Chargement…');
+  tbStatus('wait','1/3 · Chargement…');
   try{ if(!window.Peer) await netLoad(NET_PEERJS); }catch(e){ tbStatus('off','Hors ligne'); tbMsg('Module réseau introuvable : vérifiez la connexion internet.'); return; }
   if(!NETP.peer||NETP.peer.destroyed){
-    tbStatus('wait','Recherche de la table…');
+    tbStatus('wait','2/3 · Serveur de rendez-vous…');
     const p=new Peer(await netIce()); NETP.peer=p;
     p.on('error',e=>{ if(NETP.peer!==p) return;
       if(e.type==='peer-unavailable'){ tbStatus('off','Hors ligne'); tbMsg(`Aucune table ouverte sous le code ${NETP.code}. Vérifiez le code, ou demandez au maître du destin d'ouvrir sa table.`); NETP.want=false; tbShowJoin(); }
@@ -2039,17 +2039,25 @@ async function tbJoin(code){
       else if(e.type==='browser-incompatible'){ tbStatus('off','Hors ligne'); tbMsg('Ce navigateur ne gère pas la connexion directe (WebRTC).'); }
       else tbMsg('Réseau : '+e.type); });
     p.on('disconnected',()=>{ if(NETP.peer===p&&!p.destroyed) setTimeout(()=>{ try{ p.reconnect(); }catch(e){} },1500); });
-    await new Promise(res=>{ if(p.open) res(); else p.on('open',res); });
+    const ok=await new Promise(res=>{ if(p.open) return res(true); p.on('open',()=>res(true)); setTimeout(()=>res(p.open),15000); });
+    if(!ok){ if(NETP.peer===p){ try{ p.destroy(); }catch(e){} NETP.peer=null; NETP.want=false; tbStatus('off','Hors ligne'); tbShowJoin();
+      tbMsg('Le serveur de rendez-vous ne répond pas (étape 2/3). Vérifiez la connexion internet puis réessayez dans un instant.'); } return; }
   }
   tbConnect();
 }
 function tbConnect(){
   if(!NETP.peer||!NETP.want) return;
   const c=NETP.peer.connect('aldebaran-'+NETP.code.toLowerCase(),{reliable:true}); NETP.conn=c;
-  tbStatus('wait','Connexion directe…');
+  tbStatus('wait','3/3 · Connexion à la table…');
+  const watch=()=>{ const pc=c.peerConnection; if(!pc){ if(NETP.conn===c&&!c.open) setTimeout(watch,300); return; }
+    const LBL={new:'préparation',checking:'négociation réseau',connected:'connecté',completed:'connecté',disconnected:'coupure',failed:'échec réseau',closed:'fermé'};
+    pc.addEventListener('iceconnectionstatechange',()=>{ if(NETP.conn!==c||c.open) return; const st=pc.iceConnectionState; tbStatus('wait','3/3 · '+(LBL[st]||st)+'…');
+      if(st==='failed'){ clearTimeout(late); NETP.want=false; NETP.conn=null; try{ c.close(); }catch(e){} tbStatus('off','Hors ligne'); tbShowJoin();
+        tbMsg('La table est trouvée mais le réseau bloque la connexion, même par le relais (étape 3/3). Essayez un autre réseau (Wi-Fi ↔ 4G/5G), ou demandez au maître du destin d\'activer son propre serveur relais et de vous envoyer le lien.'); } }); };
+  watch();
   const late=setTimeout(()=>{ if(NETP.conn!==c||c.open) return; NETP.want=false; NETP.conn=null; try{ c.close(); }catch(e){}
     tbStatus('off','Hors ligne'); tbShowJoin();
-    tbMsg('La table est trouvée, mais la connexion directe n\'aboutit pas : votre réseau la bloque (fréquent en 4G/5G). Rechargez l\'appli et réessayez ; sinon, demandez au maître du destin d\'activer son serveur relais puis de vous renvoyer le lien ou le QR code.'); },20000);
+    tbMsg('La table est trouvée, mais la connexion n\'aboutit pas (étape 3/3) : votre réseau la bloque (fréquent en 4G/5G). Rechargez l\'appli et réessayez ; sinon, demandez au maître du destin d\'activer son serveur relais puis de vous renvoyer le lien ou le QR code.'); },35000);
   c.on('open',async()=>{ clearTimeout(late); NETP.retry=0; c.send({t:'join',pid:NETP.pid,sheet:await sheetData()}); tbStatus('on',NETP.code); tbLive(); });
   c.on('data',tbIn);
   c.on('close',()=>{ if(NETP.conn!==c) return; NETP.conn=null;
