@@ -2540,6 +2540,11 @@ html.pland:not(.player){--bar:0px;--bot:0px;--rail:56px;--tabs:60px}
 .g-cool{background:radial-gradient(circle,rgba(220,236,255,.8) 0,rgba(170,205,255,.36) 28%,rgba(150,190,255,0) 70%)}
 .g-neon{background:radial-gradient(circle,rgba(255,120,220,.8) 0,rgba(240,70,200,.36) 30%,rgba(220,60,200,0) 70%)}
 .g-red{background:radial-gradient(circle,rgba(255,110,90,.85) 0,rgba(255,60,50,.4) 30%,rgba(255,40,40,0) 70%)}
+.lseg{margin-bottom:8px}.lseg button{padding:8px 4px;font-size:12.5px}.lseg button.on{background:var(--ink-strong);color:#fff;box-shadow:none}
+input.hue{-webkit-appearance:none;appearance:none;height:12px;border-radius:6px;background:linear-gradient(90deg,hsl(0,100%,60%),hsl(60,100%,55%),hsl(120,100%,45%),hsl(180,100%,50%),hsl(240,100%,65%),hsl(300,100%,60%),hsl(360,100%,60%))}
+.fx-broken{animation:lBroken 3.1s steps(1) infinite}
+.tk .beam.fx-broken{animation:lBeam 8s linear infinite,lBroken 3.1s steps(1) infinite}
+@keyframes lBroken{0%{filter:brightness(1)}6%{filter:brightness(.05)}9%{filter:brightness(1)}11%{filter:brightness(.05)}14%{filter:brightness(.9)}38%{filter:brightness(1)}41%{filter:brightness(.1)}55%{filter:brightness(.1)}57%{filter:brightness(1)}79%{filter:brightness(.6)}81%{filter:brightness(.05)}83%{filter:brightness(1)}}
 .fx-flick{animation:lFlick 1.9s linear infinite,lWav 3.3s ease-in-out infinite}.fx-blink{animation:lBlink 1.4s steps(1) infinite}.fx-neon{animation:lNeon 6s linear infinite}.fx-traffic{animation:lTraffic 12s steps(1) infinite}
 @keyframes lFlick{0%{transform:translate(-50%,-50%) scale(1)}8%{transform:translate(-50.6%,-50%) scale(.93)}17%{transform:translate(-49.5%,-50.4%) scale(1.05)}26%{transform:translate(-50.2%,-49.6%) scale(.97)}38%{transform:translate(-49.4%,-50.2%) scale(1.07)}47%{transform:translate(-50.5%,-50%) scale(.9)}58%{transform:translate(-50%,-50.5%) scale(1.03)}71%{transform:translate(-49.6%,-49.7%) scale(.95)}83%{transform:translate(-50.4%,-50.2%) scale(1.06)}100%{transform:translate(-50%,-50%) scale(1)}}
 @keyframes lWav{0%,100%{filter:brightness(1)}13%{filter:brightness(.7)}29%{filter:brightness(.95)}41%{filter:brightness(.55)}55%{filter:brightness(1.05)}68%{filter:brightness(.75)}86%{filter:brightness(.92)}}
@@ -3292,7 +3297,7 @@ function tokenHTML(t){
     ${alive?`<div class="dead">${SKULL}</div><svg class="turn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">${IC.hand}</svg>`:''}
     ${t.type==='prop'&&t.note?'<i class="ndot"></i>':''}
     ${t.type==='light'?`<div class="halo" style="width:${t.r*2}px;height:${t.r*2}px"></div>`:''}
-    ${(L=>!L?'':L.fx==='beam'?`<div class="beam" style="width:${L.r*2}px;height:${L.r*2}px;animation-delay:-${((performance.now()%BEAM_MS)/1000).toFixed(2)}s"></div>`:`<div class="glow g-${L.c} fx-${L.fx||'n'}" style="width:${L.r*2}px;height:${L.r*2}px"></div>`)(lightOf(t))}
+    ${lightHTML(t)}
     ${t.name&&t.type!=='light'?`<div class="nm">${esc(t.name)}</div>`:''}`;
 }
 function tokenEl(t){
@@ -3309,7 +3314,7 @@ function renderTokens(){
   document.querySelectorAll('.tk').forEach(el=>{ if(!keep.has(el.dataset.id)) el.remove(); });
   S.tokens.forEach(tokenEl); markTurn();
 }
-function moveTokenEl(t){ const el=document.querySelector(`.tk[data-id="${t.id}"]`); if(el){ el.style.left=t.x+'px'; el.style.top=t.y+'px'; el.style.setProperty('--s',t.s||1); if(t.stamp&&el.dataset.ss!==String(t.s||1)){ el.dataset.ss=String(t.s||1); const f=el.querySelector('.face'); if(f) f.innerHTML=faceHTML(t); } } }
+function moveTokenEl(t){ const el=document.querySelector(`.tk[data-id="${t.id}"]`); if(el){ el.style.left=t.x+'px'; el.style.top=t.y+'px'; el.style.setProperty('--s',t.s||1); if(t.stamp&&el.dataset.ss!==String(t.s||1)){ el.dataset.ss=String(t.s||1); const f=el.querySelector('.face'); if(f) f.innerHTML=faceHTML(t); const g=el.querySelector('.glow,.beam'); if(g){ const d=lightHTML(t); if(d) g.outerHTML=d; } } } }
 function renderBoard(){
   if(S.bg&&!S.bgW){ S.bgW=S.bgH=4000; }   // ancienne table : fond sur 4000 × 4000
   const bg=$('bg'), gr=$('grid');
@@ -3486,10 +3491,17 @@ let sendQ=null; function sendLater(m){ const first=!sendQ; sendQ=m; if(first) re
 function renderCard(){
   const t=tok(cardId), c=$('card'); if(!t){ closeCard(); return; } const T=TYPES[t.type]; c.style.setProperty('--c',T.col);
   if(t.kind==='deco'){ c.innerHTML=`<div class="ch"><div class="av deco">${faceHTML(t,'sm')}</div><div class="t"><b>Pictogramme</b><span>${esc((MAP.STAMPS[t.stamp]||{}).title||'')}</span></div><button class="ib" type="button" data-a="close" title="Fermer">${IB('x')}</button></div>
-    ${LIGHTS[t.stamp]?`<label class="boxchk${t.lit!==false?' on':''}" style="margin:2px 0 8px"><input type="checkbox" id="c-lit" ${t.lit!==false?'checked':''}>${IB('bulb',1.7)}<span>Allumé</span></label>`:''}
+    ${LIGHTS[t.stamp]?(()=>{ const st=lightState(t), L=LIGHTS[t.stamp], r=t.lr||Math.round(L.r*(t.s||1));
+      return `<span class="cap">Lumière</span><div class="seg lseg">${[['on','Allumé'],['off','Éteint'],['broken','Cassé']].map(([k,l])=>`<button type="button" data-ls="${k}" class="${st===k?'on':''}">${l}</button>`).join('')}</div>
+      <span class="cap">Spectre de couleur</span><div class="crange"><input type="range" class="hue" min="0" max="360" step="1" value="${t.lh??(L.c==='cool'?210:L.c==='neon'?315:L.c==='red'?4:38)}" id="c-h"><button class="mini" type="button" id="c-h0" title="Couleur d'origine"${t.lh==null?' disabled':''}>Origine</button></div>
+      <span class="cap">Taille du halo</span><div class="crange"><input type="range" min="40" max="1400" step="10" value="${r}" id="c-lr"><b id="c-lrv">${fmtMm(r/PX_M)}</b></div>`; })():''}
     <span class="cap">Taille</span><div class="crange"><input type="range" min="0.5" max="5" step="0.1" value="${t.s||1}" id="c-s"><b id="c-sv">${fmtMm(t.s||1)}</b></div>
     <div class="cfoot"><span></span><button class="mini" type="button" data-a="del">${IB('bin')}Retirer</button></div>`; c.onclick=e=>{ const b=e.target.closest('button'); if(!b||performance.now()-cardAt<450) return; if(b.dataset.a==='close') closeCard(); else if(b.dataset.a==='del') removeToken(t.id); };
-    if($('c-lit')) $('c-lit').onchange=e=>{ t.lit=e.target.checked?undefined:false; if(t.lit===undefined) delete t.lit; tokenEl(t); renderFoW(); renderCard(); markDirty(); sync(); };
+    if(LIGHTS[t.stamp]){ const up=()=>{ tokenEl(t); fowLater(); markDirty(); }, done=()=>{ sync(); };
+      c.querySelectorAll('[data-ls]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); t.ls=b.dataset.ls; delete t.lit; up(); done(); renderCard(); });
+      $('c-h').oninput=e=>{ t.lh=+e.target.value; $('c-h0').disabled=false; up(); }; $('c-h').onchange=done;
+      $('c-h0').onclick=e=>{ e.stopPropagation(); delete t.lh; up(); done(); renderCard(); };
+      $('c-lr').oninput=e=>{ t.lr=+e.target.value; $('c-lrv').textContent=fmtMm(t.lr/PX_M); up(); }; $('c-lr').onchange=done; }
     const cs=$('c-s'); cs.oninput=()=>{ t.s=+cs.value; $('c-sv').textContent=fmtMm(t.s); moveTokenEl(t); markDirty(); sendLater({t:'mv',id:t.id,x:t.x,y:t.y,s:t.s}); }; cs.onchange=()=>placeCard(); return; }
   const head=`<div class="ch"><div class="av">${faceHTML(t,'sm')}</div><div class="t"><b>${esc(t.name||T.label)}</b><span>${T.label}${t.scene?' · scène':''}</span></div>
     <button class="ib ${t.hidden?'on':''}" type="button" data-a="hide" title="${t.hidden?'Caché aux joueurs — cliquer pour montrer':'Visible des joueurs — cliquer pour cacher'}">${IB(t.hidden?'eyeoff':'eye')}</button>
@@ -5246,8 +5258,15 @@ const LIGHTS={candelabre:{r:180,c:'warm',fx:'flick'},bougies:{r:120,c:'warm',fx:
   lanterne:{r:200,c:'warm',fx:'flick'},lustre:{r:280,c:'warm',fx:'flick'},lampadaire:{r:240,c:'warm'},reverbere:{r:300,c:'cool'},projecteur:{r:440,c:'cool'},enseigne:{r:170,c:'neon',fx:'neon'},
   feu_tricolore:{r:90,c:'red',fx:'traffic'},balise:{r:150,c:'red',fx:'blink'},phare:{r:560,c:'warm',fx:'beam'}};
 const BEAM_MS=8000;
-const lightOf=t=>t&&t.stamp&&LIGHTS[t.stamp]&&t.lit!==false?LIGHTS[t.stamp]:null;
-const lightR=t=>{ const L=lightOf(t); return L?Math.round(L.r*(t.s||1)):0; };
+const lightState=t=>t.ls||(t.lit===false?'off':'on');
+const lightOf=t=>t&&t.stamp&&LIGHTS[t.stamp]&&lightState(t)!=='off'?LIGHTS[t.stamp]:null;
+const lightR=t=>{ const L=lightOf(t); if(!L) return 0; const r=t.lr||Math.round(L.r*(t.s||1)); return lightState(t)==='broken'?Math.round(r*.6):r; };
+/* halo / faisceau d'un picto lumineux (dans le jeton, donc à diviser par sa taille) */
+function lightHTML(t){ const L=lightOf(t); if(!L) return ''; const s=t.s||1, d=Math.round((t.lr||L.r*s)/s*2), br=lightState(t)==='broken';
+  const h=t.lh, col=h==null?null:[`hsla(${h},100%,76%,.85)`,`hsla(${h},100%,62%,.4)`,`hsla(${h},100%,55%,0)`];
+  if(L.fx==='beam'){ const c=h==null?'rgba(255,238,170,.8)':`hsla(${h},100%,78%,.8)`, z=h==null?'rgba(255,238,170,0)':`hsla(${h},100%,78%,0)`;
+    return `<div class="beam${br?' fx-broken':''}" style="width:${d}px;height:${d}px;animation-delay:-${((performance.now()%BEAM_MS)/1000).toFixed(2)}s;background:conic-gradient(from 0deg,${c} 0deg,${z} 24deg,transparent 180deg,${c} 180deg,${z} 204deg,transparent 360deg)"></div>`; }
+  return `<div class="glow g-${L.c} fx-${br?'broken':(L.fx||'n')}" style="width:${d}px;height:${d}px${col?`;background:radial-gradient(circle,${col[0]} 0,${col[1]} 28%,${col[2]} 70%)`:''}"></div>`; }
 const decoTok=(key,x,y,size)=>({type:'prop',kind:'deco',stamp:key,name:'',ico:'box',img:null,note:'',x:Math.round(x),y:Math.round(y),s:clamp(Math.round((size||72)/72*10)/10,.5,5)});
 /* anciens pictos dessinés sur la carte : ils deviennent des jetons */
 function decoMigrate(){ if(isPlayer||!Array.isArray(S.drawings)) return; const L=S.drawings.filter(d=>d&&d.type==='svg'); if(!L.length) return;
@@ -5658,7 +5677,7 @@ function send(m){ if(isPlayer) return; m.n=Date.now()*100+(seq++%100); m.from='m
   if(bc) try{ bc.postMessage(m); }catch(e){}
   if(bc&&m.t!=='state') return;   // le canal direct suffit ; le stockage local ne garde que l'état complet
   try{ localStorage.setItem(LS_SYNC,JSON.stringify(m)); }catch(e){ if(m.t==='state'){ const lite={...m,bg:m.bg&&m.bg.length>1.5e6?'':m.bg}; try{ localStorage.setItem(LS_SYNC,JSON.stringify(lite)); }catch(e2){} } } }
-function publicState(){ const pub=t=>({id:t.id,type:t.type,name:t.name,hp:t.hp,hpMax:t.hpMax,img:t.img,ico:t.ico,emo:t.emo,x:t.x,y:t.y,s:t.s,r:t.r,owner:t.owner||null,note:t.type==='prop'&&t.note?' ':'',kind:t.kind==='deco'?'deco':undefined,stamp:t.stamp||undefined,lit:t.lit===false?false:undefined});
+function publicState(){ const pub=t=>({id:t.id,type:t.type,name:t.name,hp:t.hp,hpMax:t.hpMax,img:t.img,ico:t.ico,emo:t.emo,x:t.x,y:t.y,s:t.s,r:t.r,owner:t.owner||null,note:t.type==='prop'&&t.note?' ':'',kind:t.kind==='deco'?'deco':undefined,stamp:t.stamp||undefined,lit:t.lit===false?false:undefined,ls:t.ls,lh:t.lh,lr:t.lr});
   return {t:'state',bg:S.bg,bgKind:S.bgKind||'',bgW:S.bgW||0,bgH:S.bgH||0,geo:S.geo||null,light:S.light,weather:S.weather||'',ground:S.ground||null,grid:S.grid,drawings:S.drawings,tokens:S.tokens.filter(t=>!t.hidden).map(t=>t.kind==='item'&&!t.inbox?Object.assign(pub(t),{item:1,g:t.g||'misc',data:itemData(t)}):t.inbox?{id:t.id,type:'prop',name:'',ico:'chest',img:null,x:t.x,y:t.y,s:Math.max(1,t.s||1),box:1,note:''}:pub(t)),order:S.order.filter(id=>{ const t=tok(id); return t&&!t.hidden; }),turn:turnIdForPlayers(),view:viewMsg()}; }
 function turnIdForPlayers(){ const L=orderToks(), c=L[S.turn]; return c&&!c.hidden?c.id:null; }
 let syncRaf=0; function sync(){ if(isPlayer||syncRaf) return; syncRaf=requestAnimationFrame(()=>{ syncRaf=0; send(publicState()); }); }
