@@ -2507,9 +2507,12 @@ svg.i{width:18px;height:18px;flex:none}
 .ldrawer .blist{max-height:none;flex:1}
 .ldrawer .brow{touch-action:pan-y;user-select:none;cursor:grab}
 .jtabs{display:flex;gap:8px;position:sticky;top:-18px;z-index:3;background:var(--paper);padding:4px 0 10px;margin-top:-4px}.jtabs .wxb{flex:1}
-.jsec{border-top:1px solid var(--faint)}.jsec>summary{list-style:none;cursor:pointer;font-family:var(--f-title);font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-strong);padding:12px 2px 10px;display:flex;align-items:center;gap:8px}
-.jsec>summary::-webkit-details-marker{display:none}.jsec>summary::before{content:'';width:7px;height:7px;border-right:1.6px solid currentColor;border-bottom:1.6px solid currentColor;transform:rotate(-45deg);transition:transform .2s}
-.jsec[open]>summary::before{transform:rotate(45deg)}.jsec-in{display:flex;flex-direction:column;gap:12px;padding-bottom:14px}
+.jsec{border-bottom:1px solid var(--rule)}.jsec>summary{list-style:none;cursor:pointer;font-family:var(--f-title);font-size:14px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-strong);padding:14px 2px;display:flex;align-items:center;gap:10px}.jsec>summary svg{width:20px;height:20px;color:var(--sc)}.jsec>summary span{flex:1}.jsec>summary:hover{color:var(--sc)}
+.jsec.sub{border:1px solid var(--faint);border-radius:10px;padding:0 10px;margin-top:4px}.jsec.sub>summary{font-size:12.5px;padding:11px 0}
+.subttl.sadd{display:flex;align-items:center;gap:10px}.subttl.sadd .ib{width:26px;height:26px}.subttl.sadd .ib svg{width:15px;height:15px}.arows:empty{display:none}
+.mform{display:flex;flex-direction:column;gap:14px}.mform .subttl{margin:6px 0 -4px}.sgrid.vit{grid-template-columns:repeat(4,minmax(0,1fr))}.sgrid.vit.five{grid-template-columns:repeat(5,minmax(0,1fr))}.sin .vb{position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-style:normal;font-size:13px;line-height:1;background:var(--paper);padding:1px 2px}
+.jsec>summary::-webkit-details-marker{display:none}.jsec>summary::after{content:'';width:7px;height:7px;border-right:1.6px solid currentColor;border-bottom:1.6px solid currentColor;transform:rotate(-45deg);transition:transform .2s}
+.jsec[open]>summary::after{transform:rotate(45deg)}.jsec-in{display:flex;flex-direction:column;gap:12px;padding-bottom:14px}
 .jback{display:flex;align-items:center;gap:12px}.jback b{font-family:var(--f-title);font-weight:400;letter-spacing:.1em;color:var(--ink-strong);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .jstamp{justify-content:space-between;align-items:center}.jstamp .meta{display:flex;align-items:center;gap:6px;margin:0;text-align:left}.jstamp .meta svg{width:16px;height:16px;color:var(--tc)}
 #ljet .who{grid-template-columns:76px minmax(0,1fr)}#ljet .portrait{width:76px;height:76px}#ljet .actions:not(.jstamp){position:sticky;bottom:-18px;background:var(--paper);padding:10px 0 6px;border-top:1px solid var(--faint)}#ljet .actions .btn{flex:1}
@@ -3276,7 +3279,7 @@ function atkRow(a={}){ return `<div class="arow"><label class="field"><span clas
   <button class="ib del" type="button" data-arm title="Retirer">${IB('x')}</button></div>`; }
 function entityDialog(type,edit,preset){
   if(type==='mob') return mobDialog(edit,preset);
-  if(type==='prop'||type==='light') return openJet({tab:type,view:'config',edit:edit||null,cfg:preset?Object.assign({type,name:'',ico:TYPES[type].def,img:null,note:'',r:200},clone(preset)):null});
+  if(type==='prop'||type==='light') return edit?openJet({view:'config',edit}):openJet({secProp:true,secLight:type==='light',secCreate:false,secBest:false});
   const T=TYPES[type], t=Object.assign(edit?clone(edit):{type,name:'',ico:T.def,img:null,stats:{},hp:T.hp,hpMax:T.hp,attacks:[],note:'',r:type==='light'?150:250},preset?Object.assign(clone(preset),preset.hpMax!=null?{hp:preset.hpMax}:{}):{});
   if(type!=='prop'&&type!=='light') STATS.forEach(s=>{ if(t.stats[s]==null) t.stats[s]=T.stat; });
   const sq=type==='prop';
@@ -3342,19 +3345,21 @@ function mobForm(box,t,o){
   const mode=()=>t.img?'img':t.ico==='emoji'?'emoji':'logo';
   const V=[['hp','❤️','PV',t.hpMax],['pp','💙','PP',t.pp],['pa','🦶🏻','PA',t.pa],['pt','🌀','PT',t.pt]];
   const back=()=>{ document.onpaste=null; box.ondragover=box.ondrop=null; o.onBack&&o.onBack(); };
-  box.innerHTML=(`${o.top||''}
+  box.innerHTML=(`<div class="mform">${o.top||''}
     <div class="who"><button class="portrait" type="button" id="m-face" title="Importer une image (ou coller / déposer une image dans ce volet)"></button>
       <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
         <div class="field"><label class="cap" for="e-name">Nom</label><input id="e-name" class="line-in name-in" placeholder="Sans nom" value="${esc(t.name)}" autocomplete="off"></div>
         <div class="mopts"><button type="button" class="mopt" data-m="logo">${IB('skull',1.8)}<span>Logo MOB</span></button><button type="button" class="mopt" data-m="emoji"><span class="me" id="m-emo"></span><span>Émoji</span></button><button type="button" class="mopt" data-m="img">${IB('upload',1.8)}<span>Image</span></button></div>
       </div></div>
     <div class="emogrid" id="m-emos" hidden>${EMOJIS.map(e=>`<button type="button" data-e="${e}">${e}</button>`).join('')}<input class="line-in" id="m-emoin" maxlength="12" placeholder="Autre…" aria-label="Autre émoji"></div>
-    <div class="vrow">${V.map(([k,e,l,v])=>`<label class="vin"><span class="cap">${e} ${l}</span><input class="line-in" id="m-${k}" inputmode="numeric" value="${v??0}"></label>`).join('')}${edit?`<label class="vin"><span class="cap">PV actuels</span><input class="line-in" id="m-hpc" inputmode="numeric" value="${t.hp}"></label>`:''}</div>
+    <div class="subttl">Vitalité</div>
+    <div class="sgrid vit${edit?' five':''}">${V.map(([k,e,l,v])=>`<label class="sin"><div class="cir"><i class="vb">${e}</i><input inputmode="numeric" maxlength="3" id="m-${k}" value="${v??0}"></div><span>${l}</span></label>`).join('')}${edit?`<label class="sin"><div class="cir"><i class="vb">❤️</i><input inputmode="numeric" maxlength="3" id="m-hpc" value="${t.hp}"></div><span>PV ACTUELS</span></label>`:''}</div>
+    <div class="subttl">Caractéristiques</div>
     ${statsBlock(t)}
-    <div class="subttl">Attaques</div><div class="arows" id="e-atks">${(t.attacks||[]).map(atkRow).join('')}</div><button class="mini" type="button" id="e-addatk" style="align-self:flex-start">${IB('plus')}Ajouter une attaque</button>
-    <label class="field"><span class="cap">Notes & remarques</span><textarea class="cnote" id="e-note" placeholder="Capacités, résistances, faiblesses, butin…">${esc(t.note||'')}</textarea></label>
+    <div class="subttl sadd">Attaques<button class="ib" type="button" id="e-addatk" title="Ajouter une attaque" aria-label="Ajouter une attaque">${IB('plus')}</button></div><div class="arows" id="e-atks">${(t.attacks||[]).map(atkRow).join('')}</div>
+    <div class="subttl">Notes & remarques</div><textarea class="cnote" id="e-note" placeholder="Capacités, résistances, faiblesses, butin…" aria-label="Notes et remarques">${esc(t.note||'')}</textarea>
     ${edit?`<div class="actions"><button class="btn ghost" type="button" id="m-cancel">Annuler</button><button class="btn" type="button" id="e-ok" style="background:${T.col};border-color:${T.col}">Valider</button><button class="btn ghost" type="button" id="m-save" title="Enregistrer ce MOB dans le bestiaire">${IB('book')}Enregistrer</button></div>`
-      :`<div class="actions jstamp"><span class="meta">${IB('target')}Cliquez sur le plateau pour poser ce MOB</span><button class="btn ghost" type="button" id="m-save" title="Enregistrer ce MOB dans le bestiaire">${IB('book')}Enregistrer au bestiaire</button></div>`}`);
+      :`<div class="actions jstamp"><span class="meta">${IB('target')}Cliquez sur le plateau pour poser ce MOB</span><button class="btn ghost" type="button" id="m-save" title="Enregistrer ce MOB dans le bestiaire">${IB('book')}Enregistrer au bestiaire</button></div>`}</div>`);
   if($('m-cancel')) $('m-cancel').onclick=back;
   const face=()=>{ $('m-face').innerHTML=faceHTML({...t,name:$('e-name').value||t.name}); $('m-emo').textContent=t.emo||'💀'; document.querySelectorAll('.mopt').forEach(b=>b.classList.toggle('on',b.dataset.m===mode())); };
   const setImg=img=>{ t.img=img; face(); };
@@ -3384,7 +3389,7 @@ function mobForm(box,t,o){
   box.oninput=()=>{ read(); o.onChange&&o.onChange(); }; box.onclick=e=>{ if(e.target.closest('button')) setTimeout(()=>{ if($('e-name')){ read(); o.onChange&&o.onChange(); } }); };
   return read;
 }
-function mobDialog(edit,preset){ openJet(edit?{tab:'mob',view:'config',edit}:preset?{tab:'mob',view:'config',cfg:Object.assign(mobBase(),clone(preset),{type:'mob'},preset.hpMax!=null?{hp:preset.hpMax}:{})}:{tab:'mob',view:'home',secCreate:true}); }
+function mobDialog(edit,preset){ openJet(edit?{view:'config',edit}:preset?{secBest:true,secCreate:false,secProp:false,cfg:Object.assign(mobBase(),clone(preset),{type:'mob'},preset.hpMax!=null?{hp:preset.hpMax}:{})}:{secCreate:true,secBest:false,secProp:false}); }
 const bookTodo=()=>BOOK_BEST.filter(b=>{ const m=S.bestiary.find(x=>x.name.toLowerCase()===b.name.toLowerCase()); return !m||(m.cat&&m.pp==null); }).length;
 function bestiaryDialog(edit){
   importBook(); const todo=bookTodo();
@@ -4304,9 +4309,9 @@ function bindBestList(list,onPick,drag){ { const bh=list.querySelector('.bhead')
    Le jeton configuré agit comme un TAMPON : chaque clic sur le plateau en pose un.
    ========================================================= */
 const JET_NEW=[['mob','MOB'],['prop','Mobilier'],['light','Lumière']];
-const JP={tab:'mob',view:'home',edit:null,cfg:null,secCreate:true,secInvoke:true,secBoard:false,newMob:null,prop:null,light:null};
+const JP={view:'home',edit:null,cfg:null,secBoard:false,secCreate:false,secBest:false,secProp:false,secLight:false,newMob:null,prop:null,light:null};
 let jetRead=null, jetStampOn=false;
-function openJet(o){ Object.assign(JP,{view:'home',edit:null,cfg:null},o||{}); const P=$('ljet');
+function openJet(o){ Object.assign(JP,{view:'home',edit:null},o||{}); const P=$('ljet');
   if(!P.classList.contains('open')){ closeLeft(); P.classList.add('open'); document.querySelector('.rb[data-left="ljet"]').setAttribute('aria-pressed','true'); }
   renderJetPanel(); $('ljet-body').scrollTop=0; }
 function newTokenAt(k,x,y){ const pos=x!=null?{x:Math.round(x),y:Math.round(y)}:{};
@@ -4329,48 +4334,54 @@ function jetStampAt(wx,wy){ const r=jetRead&&jetRead(); if(!r) return; const t=c
   if(t.name){ const same=S.tokens.filter(x=>x.name===t.name||(x.name||'').startsWith(t.name+' ')).length; if(same) t.name=t.name+' '+(same+1); }
   addToken(t); }
 function jetSection(key,title,inner){ return `<details class="jsec" data-sec="${key}" ${JP[key]?'open':''}><summary>${title}</summary><div class="jsec-in">${inner}</div></details>`; }
-function propForm(box,t,o){ const T=TYPES[t.type], light=t.type==='light';
-  box.innerHTML=`${o.top||''}
-    <div class="who"><button class="portrait ${light?'':'sq'}" type="button" id="p-face" title="${light?'':'Image depuis l\'ordinateur'}"></button>
-      <div style="display:flex;flex-direction:column;gap:10px;min-width:0"><div class="field"><label class="cap" for="p-name">Nom</label><input id="p-name" class="line-in name-in" placeholder="${light?'Torche, lampe…':'Caisse, porte…'}" value="${esc(t.name||'')}" autocomplete="off"></div>
-      ${light?'':`<div class="picks sq" id="p-icons">${T.icons.map(k=>`<button type="button" data-ico="${k}" class="${!t.img&&t.ico===k?'on':''}" title="${k}">${IB(k,1.8)}</button>`).join('')}<button type="button" class="up" data-ico="upload" title="Image depuis l'ordinateur">${IB('upload',1.8)}</button></div>`}</div></div>
-    ${light?`<div class="subttl">Portée de la lumière</div><div class="bgscale"><input type="range" id="p-r" min="40" max="900" step="10" value="${t.r||200}" aria-label="Portée"><b id="p-rv" style="min-width:64px"></b></div>`
-      :`<label class="field"><span class="cap">Note secrète (MJ)</span><textarea class="cnote" id="p-note" placeholder="Ce que cache ce mobilier…">${esc(t.note||'')}</textarea></label>`}
-    ${o.edit?`<div class="actions"><button class="btn ghost" type="button" id="p-cancel">Annuler</button><button class="btn" type="button" id="p-ok" style="background:${T.col};border-color:${T.col}">Valider</button></div>`
-      :`<div class="actions jstamp"><span class="meta">${IB('target')}Cliquez sur le plateau pour poser ${light?'cette lumière':'ce mobilier'}</span></div>`}`;
-  const face=()=>{ $('p-face').innerHTML=faceHTML({...t,name:$('p-name').value||t.name}); };
-  const rv=()=>{ if($('p-r')) $('p-rv').textContent=`${(t.r/PX_M).toFixed(1).replace('.',',')} m`; };
-  const read=()=>{ t.name=$('p-name').value.trim(); if($('p-note')) t.note=$('p-note').value; if($('p-r')) t.r=+$('p-r').value; return t; };
-  const upl=()=>{ imgTarget=img=>{ t.img=img; box.querySelectorAll('#p-icons [data-ico]').forEach(b=>b.classList.remove('on')); face(); o.onChange&&o.onChange(); }; $('file-img').click(); };
-  if(!light){ $('p-face').onclick=upl; box.querySelectorAll('#p-icons [data-ico]').forEach(b=>b.onclick=()=>{ if(b.dataset.ico==='upload'){ upl(); return; } t.img=null; t.ico=b.dataset.ico; box.querySelectorAll('#p-icons [data-ico]').forEach(x=>x.classList.toggle('on',x===b)); face(); o.onChange&&o.onChange(); }); }
+function propForm(box,t,o){ const T=TYPES[t.type], light=t.type==='light', P=o.pid||'p', $p=id=>$(P+'-'+id);
+  box.innerHTML=`<div class="mform">${o.top||''}
+    <div class="who"><button class="portrait ${light?'':'sq'}" type="button" id="${P}-face" title="${light?'':'Image depuis l\'ordinateur'}"></button>
+      <div style="display:flex;flex-direction:column;gap:10px;min-width:0"><div class="field"><label class="cap" for="${P}-name">Nom</label><input id="${P}-name" class="line-in name-in" placeholder="${light?'Torche, lampe…':'Caisse, porte…'}" value="${esc(t.name||'')}" autocomplete="off"></div>
+      ${light?'':`<div class="picks sq" id="${P}-icons">${T.icons.map(k=>`<button type="button" data-ico="${k}" class="${!t.img&&t.ico===k?'on':''}" title="${k}">${IB(k,1.8)}</button>`).join('')}<button type="button" class="up" data-ico="upload" title="Image depuis l'ordinateur">${IB('upload',1.8)}</button></div>`}</div></div>
+    ${light?`<div class="subttl">Portée de la lumière</div><div class="bgscale"><input type="range" id="${P}-r" min="40" max="900" step="10" value="${t.r||200}" aria-label="Portée"><b id="${P}-rv" style="min-width:64px"></b></div>`
+      :`<label class="field"><span class="cap">Note secrète (MJ)</span><textarea class="cnote" id="${P}-note" placeholder="Ce que cache ce mobilier…">${esc(t.note||'')}</textarea></label>`}
+    ${o.edit?`<div class="actions"><button class="btn ghost" type="button" id="${P}-cancel">Annuler</button><button class="btn" type="button" id="${P}-ok" style="background:${T.col};border-color:${T.col}">Valider</button></div>`
+      :`<div class="actions jstamp"><span class="meta">${IB('target')}Cliquez sur le plateau pour poser ${light?'cette lumière':'ce mobilier'}</span></div>`}</div>`;
+  const face=()=>{ $p('face').innerHTML=faceHTML({...t,name:$p('name').value||t.name}); };
+  const rv=()=>{ if($p('r')) $p('rv').textContent=`${(t.r/PX_M).toFixed(1).replace('.',',')} m`; };
+  const read=()=>{ t.name=$p('name').value.trim(); if($p('note')) t.note=$p('note').value; if($p('r')) t.r=+$p('r').value; return t; };
+  const upl=()=>{ imgTarget=img=>{ t.img=img; box.querySelectorAll('#'+P+'-icons [data-ico]').forEach(b=>b.classList.remove('on')); face(); o.onChange&&o.onChange(); }; $('file-img').click(); };
+  if(!light){ $p('face').onclick=upl; box.querySelectorAll('#'+P+'-icons [data-ico]').forEach(b=>b.onclick=()=>{ if(b.dataset.ico==='upload'){ upl(); return; } t.img=null; t.ico=b.dataset.ico; box.querySelectorAll('#'+P+'-icons [data-ico]').forEach(x=>x.classList.toggle('on',x===b)); face(); o.onChange&&o.onChange(); }); }
   box.oninput=()=>{ read(); rv(); face(); o.onChange&&o.onChange(); };
-  if($('p-cancel')) $('p-cancel').onclick=()=>o.onBack();
-  if($('p-ok')) $('p-ok').onclick=()=>{ Object.assign(o.edit,read()); tokenEl(o.edit); renderTracker(); renderFoW(); if(cardId===o.edit.id) renderCard(); markDirty(); sync(); o.onBack(); };
+  if($p('cancel')) $p('cancel').onclick=()=>o.onBack();
+  if($p('ok')) $p('ok').onclick=()=>{ Object.assign(o.edit,read()); tokenEl(o.edit); renderTracker(); renderFoW(); if(cardId===o.edit.id) renderCard(); markDirty(); sync(); o.onBack(); };
   face(); rv(); return read; }
-function renderJetPanel(){ const box=$('ljet-body'); if(!box) return; jetRead=null; document.onpaste=null;
-  const tab=JP.tab, T=TYPES[tab];
-  box.innerHTML=`<div class="jtabs">${JET_NEW.map(([k,l])=>`<button type="button" class="wxb jnew${tab===k?' on':''}" data-tab="${k}" style="--tc:${TYPES[k].col}" title="${l} — glisser sur le plateau pour en poser un">${IB(TYPES[k].def,1.7)}<span>${l}</span></button>`).join('')}</div>
-    <div id="jt-main"></div>
-    ${jetSection('secBoard','Sur le plateau',`<div class="bsearch"><input class="line-in" id="lj-q" placeholder="Rechercher un jeton…" autocomplete="off"></div><div class="jlist" id="lj-list"></div>`)}`;
-  $('ljet').style.setProperty('--tc',T.col);
-  box.querySelectorAll('[data-tab]').forEach(b=>{ const k=b.dataset.tab; dragOut(b,()=>faceHTML({type:k,ico:TYPES[k].def}),(x,y)=>newTokenAt(k,x,y),()=>{ JP.tab=k; JP.view='home'; JP.edit=null; JP.cfg=null; renderJetPanel(); }); });
-  box.querySelectorAll('details.jsec').forEach(d=>d.addEventListener('toggle',()=>{ JP[d.dataset.sec]=d.open; if(d.dataset.sec==='secCreate') jetStamp(stampWanted()); }));
-  const main=$('jt-main'), back=()=>{ JP.view='home'; JP.edit=null; JP.cfg=null; renderJetPanel(); };
-  const onChange=()=>stampGhost();
+function renderJetPanel(){ const box=$('ljet-body'); if(!box) return; jetRead=null; document.onpaste=null; $('ljet').style.setProperty('--tc','var(--danger)');
+  const back=()=>{ JP.view='home'; JP.edit=null; JP.cfg=null; renderJetPanel(); }, onChange=()=>stampGhost();
   const top=title=>`<div class="jback"><button class="btn ghost" type="button" id="jt-back">${IB('left')}Retour</button><b>${title}</b></div>`;
-  if(JP.view==='config'){
-    const t=JP.edit?clone(JP.edit):(JP.cfg||(JP.cfg=tab==='mob'?mobBase():{type:tab,name:'',ico:T.def,img:null,note:'',r:200}));
-    if(tab==='mob'){ STATS.forEach(s=>{ if(!t.stats) t.stats={}; if(t.stats[s]==null) t.stats[s]=T.stat; }); jetRead=mobForm(main,t,{edit:JP.edit,top:top(JP.edit?'Modifier ce MOB':esc(t.name||'MOB')),onBack:back,onChange}); }
-    else jetRead=propForm(main,t,{edit:JP.edit,top:top(JP.edit?'Modifier':''),onBack:back,onChange});
-    $('jt-back').onclick=back; }
-  else if(tab==='mob'){
-    main.innerHTML=jetSection('secCreate','Créer un MOB','<div id="jt-create"></div>')+jetSection('secInvoke','Invoquer un MOB',`<div class="bsearch"><input class="line-in" id="lb-q" placeholder="Rechercher un MOB…" autocomplete="off"></div><p class="meta" style="text-align:left;margin:0">Cliquez un MOB pour le régler puis le poser, ou glissez-le directement sur le plateau.</p><div class="blist" id="lb-list"></div>`);
-    if(!JP.newMob) JP.newMob=mobBase();
-    jetRead=mobForm($('jt-create'),JP.newMob,{onChange}); const rd=jetRead; jetRead=()=>JP.secCreate?rd():null;
-    importBook();
-    const draw=()=>{ const l=$('lb-list'); l.innerHTML=bestRows($('lb-q').value); bindBestList(l,m=>{ if(m){ JP.view='config'; JP.cfg=Object.assign(mobBase(),clone(m),{type:'mob',hp:m.hpMax}); delete JP.cfg.cat; renderJetPanel(); $('ljet-body').scrollTop=0; } else draw(); },true); };
-    $('lb-q').oninput=draw; draw(); }
-  else { if(!JP[tab]) JP[tab]={type:tab,name:'',ico:T.def,img:null,note:'',r:200}; jetRead=propForm(main,JP[tab],{onChange}); }
+  /* modification d'un jeton posé : le volet entier lui est consacré */
+  if(JP.view==='config'&&JP.edit){ const t=clone(JP.edit), tab=t.type;
+    box.innerHTML='<div id="jt-main"></div>'; $('ljet').style.setProperty('--tc',TYPES[tab].col);
+    if(tab==='mob'){ STATS.forEach(s=>{ if(!t.stats) t.stats={}; if(t.stats[s]==null) t.stats[s]=TYPES.mob.stat; }); mobForm($('jt-main'),t,{edit:JP.edit,top:top('Modifier ce MOB'),onBack:back}); }
+    else propForm($('jt-main'),t,{edit:JP.edit,top:top('Modifier'),onBack:back});
+    $('jt-back').onclick=back; jetStamp(false); return; }
+  /* sections repliables (fermées au départ) ; une seule section de réglage ouverte à la fois */
+  const sec=(key,title,ico,col,inner,cls)=>`<details class="jsec ${cls||''}" data-sec="${key}" ${JP[key]?'open':''} style="--sc:${col}"><summary>${IB(ico,1.7)}<span>${title}</span></summary><div class="jsec-in">${inner}</div></details>`;
+  box.innerHTML=sec('secBoard','Sur le plateau','target','var(--ink-strong)',`<div class="bsearch"><input class="line-in" id="lj-q" placeholder="Rechercher un jeton…" autocomplete="off"></div><div class="jlist" id="lj-list"></div>`)
+    +sec('secCreate','Créer un MOB','plus','var(--danger)','<div id="jt-create"></div>')
+    +sec('secBest','Bestiaire','book','var(--danger)','<div id="jt-best"></div>')
+    +sec('secProp','Mobilier','box','var(--brown)',`<div id="jt-prop"></div>${sec('secLight','Lumière','bulb','var(--gold)','<div id="jt-light"></div>','sub')}`);
+  const FORMS=['secCreate','secBest','secProp'], readers={};
+  if(JP.secCreate){ if(!JP.newMob) JP.newMob=mobBase(); readers.secCreate=mobForm($('jt-create'),JP.newMob,{onChange}); }
+  if(JP.secBest){ const host=$('jt-best');
+    if(JP.cfg){ readers.secBest=mobForm(host,JP.cfg,{top:top(esc(JP.cfg.name||'MOB')),onChange}); $('jt-back').onclick=()=>{ JP.cfg=null; renderJetPanel(); }; }
+    else { importBook(); host.innerHTML=`<div class="bsearch"><input class="line-in" id="lb-q" placeholder="Rechercher un MOB…" autocomplete="off"></div><p class="meta" style="text-align:left;margin:0">Cliquez un MOB pour le régler puis le poser, ou glissez-le directement sur le plateau.</p><div class="blist" id="lb-list"></div>`;
+      const draw=()=>{ const l=$('lb-list'); l.innerHTML=bestRows($('lb-q').value); bindBestList(l,m=>{ if(m){ JP.cfg=Object.assign(mobBase(),clone(m),{type:'mob',hp:m.hpMax}); delete JP.cfg.cat; renderJetPanel(); } else draw(); },true); };
+      $('lb-q').oninput=draw; draw(); } }
+  if(JP.secProp){ if(!JP.prop) JP.prop={type:'prop',name:'',ico:'box',img:null,note:''}; readers.secProp=propForm($('jt-prop'),JP.prop,{pid:'pp',onChange});
+    if(JP.secLight){ if(!JP.light) JP.light={type:'light',name:'',ico:'bulb',img:null,r:200}; readers.secLight=propForm($('jt-light'),JP.light,{pid:'pl',onChange}); } }
+  /* le tampon suit la section de réglage ouverte (la lumière prime sur le mobilier) */
+  const act=JP.secLight&&JP.secProp?'secLight':FORMS.find(k=>JP[k]&&readers[k]);
+  jetRead=act?readers[act]:null;
+  box.querySelectorAll('details.jsec').forEach(d=>d.addEventListener('toggle',()=>{ const k=d.dataset.sec; if(JP[k]===d.open) return; JP[k]=d.open;
+    if(d.open&&FORMS.includes(k)) FORMS.forEach(o=>{ if(o!==k) JP[o]=false; });
+    renderJetPanel(); }));
   const drawB=()=>{ const qq=normTxt($('lj-q').value), order=['player','npc','mob','prop','light'], GL={player:'Joueurs',npc:'PNJ',mob:'MOBs',prop:'Mobilier',light:'Lumières'};
     const L=S.tokens.filter(t=>!qq||normTxt(t.name||TYPES[t.type].label).includes(qq)).sort((a,b)=>(a.name||'').localeCompare(b.name||'','fr'));
     const row=t=>`<div class="jrow${t.hidden?' hid':''}" data-id="${t.id}" style="--c:${TYPES[t.type].col}" title="Centrer la vue sur ce jeton"><span class="bface">${faceHTML(t,'sm')}</span><b>${esc(t.name||TYPES[t.type].label)}</b><span class="jhp">${t.type==='player'||t.type==='mob'||t.type==='npc'?`❤️ ${t.hp}/${t.hpMax}`:''}</span>
@@ -4384,7 +4395,7 @@ function renderJetPanel(){ const box=$('ljet-body'); if(!box) return; jetRead=nu
         centerOn(t.x,t.y); const el=document.querySelector(`.tk[data-id="${t.id}"]`); if(el){ el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); } }; }); };
   $('lj-q').oninput=drawB; drawB(); JP.drawB=drawB;
   jetStamp(stampWanted()); }
-function stampWanted(){ return $('ljet').classList.contains('open')&&!JP.edit&&(JP.tab!=='mob'||JP.view==='config'||JP.secCreate); }
+function stampWanted(){ return $('ljet').classList.contains('open')&&!JP.edit&&!!jetRead; }
 function jetRefresh(){ const j=$('ljet'); if(j&&j.classList.contains('open')&&JP.drawB&&document.activeElement!==$('lj-q')) JP.drawB(); }
 function renderBestPanel(){ const box=$('lbest-body'); if(!box) return; $('lbest').querySelector('header h3').textContent='Bestiaire'; importBook(); const todo=bookTodo(), q=$('lb-q')?$('lb-q').value:'';
   box.innerHTML=`<div class="bsearch"><input class="line-in" id="lb-q" placeholder="Rechercher un MOB…" autocomplete="off" value="${esc(q)}"></div>
@@ -4803,7 +4814,7 @@ function wire(){
     if(k==='escape'&&tool==='map'&&arrowTip){ arrowTip=null; mapPrev=null; drawMapLater(); return; }
     if(k==='escape'&&jetStampOn){ closeLeft(); return; }
     if(k==='escape'){ if(tool) setTool(tool); closeCard(); closePop(); if(sheetPid) closeSheet(); }
-    else if(k==='m'){ if(!$('ldraw').classList.contains('open')) openLeft('ldraw'); pickMapTool('measure'); } else if(k==='d') openLeft('ldraw'); else if(k==='b') openJet({tab:'mob',secInvoke:true}); else if(k==='j') openLeft('ljet'); else if(k==='f'&&!e.ctrlKey&&!e.metaKey) openLeft('fond'); else if(k==='0') fitBoard();
+    else if(k==='m'){ if(!$('ldraw').classList.contains('open')) openLeft('ldraw'); pickMapTool('measure'); } else if(k==='d') openLeft('ldraw'); else if(k==='b') openJet({secBest:true,secCreate:false,secProp:false}); else if(k==='j') openLeft('ljet'); else if(k==='f'&&!e.ctrlKey&&!e.metaKey) openLeft('fond'); else if(k==='0') fitBoard();
     else if(e.code==='Space'){ e.preventDefault(); nextTurn(); } });
   document.addEventListener('pointerdown',e=>{ if(!e.target.closest('.pop')&&!e.target.closest('[data-tool="draw"]')) closePop(); });
 }
