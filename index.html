@@ -2388,6 +2388,10 @@ svg.i{width:18px;height:18px;flex:none}
 .tk .halo{position:absolute;left:50%;top:50%;border:1.5px dashed var(--gold);border-radius:50%;pointer-events:none;display:none;transform:translate(-50%,-50%)}
 .tk.light.open .halo{display:block}
 .tk.hid{opacity:.45}
+.tk.inbox{opacity:.6}.tk.inbox .face{border-style:dashed}.tk.inbox::after{content:'';position:absolute;right:-4px;top:-4px;width:18px;height:18px;border-radius:6px;background:var(--brown) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='6' width='18' height='14' rx='2'/%3E%3Cpath d='M3 11h18M10 11v3h4v-3'/%3E%3C/svg%3E") center/13px no-repeat;box-shadow:0 0 0 2px var(--paper)}
+.boxchk{display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;font-weight:700;color:var(--ink-soft,#7a7f8c);user-select:none}.boxchk input{width:16px;height:16px;margin:0;accent-color:var(--brown);cursor:pointer}.boxchk svg{width:17px;height:17px}.boxchk.on{color:var(--brown)}
+#litem .jrow .boxchk span{display:none}#litem .jrow .boxchk{padding:4px 6px;border-radius:8px}#litem .jrow .boxchk:hover{background:var(--wash)}
+#card .boxchk{margin:2px 0 6px}
 .tk.hid .face{border-style:dashed}
 
 
@@ -3063,7 +3067,7 @@ function tokenHTML(t){
 function tokenEl(t){
   let el=document.querySelector(`.tk[data-id="${t.id}"]`);
   if(!el){ el=document.createElement('div'); el.dataset.id=t.id; $('tokens').appendChild(el); if(!isPlayer) bindToken(el); }
-  el.className=`tk ${t.type}`+(t.hidden?' hid':'')+(ALIVE(t)&&t.hp<=0?' down':'')+(cardId===t.id?' open':'')+(curTurnId()===t.id?' current':'')+(isPlayer&&ME&&t.owner===ME?' mine':'');
+  el.className=`tk ${t.type}`+(t.hidden?' hid':'')+(t.inbox?' inbox':'')+(ALIVE(t)&&t.hp<=0?' down':'')+(cardId===t.id?' open':'')+(curTurnId()===t.id?' current':'')+(isPlayer&&ME&&t.owner===ME?' mine':'');
   if(isPlayer&&ME&&t.owner===ME&&!el._mine){ el._mine=1; bindMine(el); }
   el.style.left=t.x+'px'; el.style.top=t.y+'px'; el.style.setProperty('--s',t.s||1);
   el.innerHTML=tokenHTML(t);
@@ -3236,6 +3240,8 @@ function openCard(id){
   const el=document.querySelector(`.tk[data-id="${id}"]`); if(el) el.classList.add('open');
   renderCard(); $('card').hidden=false; placeCard();
 }
+const boxChk=(t,id)=>`<label class="boxchk${t.inbox?' on':''}" title="Dans un contenant (caisse, coffre…) : invisible des joueurs"><input type="checkbox" ${id?`id="${id}"`:'data-box'} ${t.inbox?'checked':''}>${IB('chest',1.7)}<span>Dans un contenant</span></label>`;
+function setInbox(t,v){ t.inbox=!!v; tokenEl(t); renderTracker(); renderFoW(); if(cardId===t.id) renderCard(); if(typeof IP!=='undefined'&&IP.drawB) IP.drawB(); markDirty(); sync(); }
 function renderCard(){
   const t=tok(cardId), c=$('card'); if(!t){ closeCard(); return; } const T=TYPES[t.type]; c.style.setProperty('--c',T.col);
   const head=`<div class="ch"><div class="av">${faceHTML(t,'sm')}</div><div class="t"><b>${esc(t.name||T.label)}</b><span>${T.label}${t.scene?' · scène':''}</span></div>
@@ -3249,13 +3255,14 @@ function renderCard(){
     if(t.type==='mob'&&t.pp!=null) body+=`<div class="ppl"><span>💙 ${t.pp} PP</span><span>🦶🏻 ${t.pa} PA</span><span>🌀 ${t.pt} PT</span></div>`;
     if((t.attacks||[]).length) body+=`<div class="atks">${t.attacks.map((a,i)=>{ const n=(t.stats[a.stat]||0)+(+a.bonus||0); return `<div class="atk"><b>${esc(a.name||'Attaque')}</b><small>${a.stat}${+a.bonus?` ${+a.bonus>0?'+':''}${+a.bonus}`:''}</small><button class="useb" type="button" data-atk="${i}" title="Lancer ${n} D10">${IB('dice')}${n}</button></div>`; }).join('')}</div>`;
   }
-  if(t.type==='prop') body+=`<span class="cap">Note secrète (MJ)</span><textarea class="cnote" id="c-note" placeholder="Ce que cache ce décor…">${esc(t.note||'')}</textarea>`;
+  if(t.kind==='item') body+=boxChk(t,'c-box');
+  if(t.type==='prop') body+=`<span class="cap">${t.kind==='item'?'Description':'Note secrète (MJ)'}</span><textarea class="cnote" id="c-note" placeholder="Ce que cache ce décor…">${esc(t.note||'')}</textarea>`;
   if((t.type==='mob'||t.type==='npc')&&t.note) body+=`<span class="cap">${t.type==='mob'?'Notes & remarques':'Capacités (MJ)'}</span><textarea class="cnote" id="c-note">${esc(t.note)}</textarea>`;
   if(t.type==='light') body+=`<span class="cap">Halo de lumière</span><div class="crange"><input type="range" min="50" max="1000" step="10" value="${t.r||150}" id="c-r"><b id="c-rv">${(((t.r||150)/CELL)*CELL_M).toFixed(1).replace('.',',')} m</b></div>`;
   if(t.type==='player') body+=`<span class="cap">Vision dans le noir</span><div class="crange"><input type="range" min="0" max="1000" step="10" value="${t.r??250}" id="c-r"><b id="c-rv">${((t.r??250)/CELL*CELL_M).toFixed(1).replace('.',',')} m</b></div>`;
   if(t.type!=='light') body+=`<span class="cap">Taille du jeton</span><div class="crange"><input type="range" min="0.5" max="5" step="0.1" value="${t.s||1}" id="c-s"><b id="c-sv">× ${String(t.s||1).replace('.',',')}</b></div>`;
   body+=`<div class="cfoot"><span></span><button class="mini" type="button" data-a="del">${IB('bin')}Retirer</button></div>`;
-  c.innerHTML=head+body;
+  c.innerHTML=head+body; if($('c-box')) $('c-box').onchange=e=>setInbox(t,e.target.checked);
   c.onclick=e=>{ const b=e.target.closest('button'); if(!b) return; if(performance.now()-cardAt<450) return;
     if(b.dataset.a==='close') closeCard();
     else if(b.dataset.a==='hide'){ t.hidden=!t.hidden; tokenEl(t); renderCard(); renderTracker(); renderFoW(); markDirty(); sync(); toast(t.hidden?'Caché aux joueurs':'Visible des joueurs'); }
@@ -4356,10 +4363,10 @@ function propForm(box,t,o){ const T=TYPES[t.type], light=t.type==='light', P=o.p
       :`<div class="subttl">Taille du jeton</div><div class="bgscale"><input type="range" id="${P}-s" min="0.5" max="5" step="0.1" value="${t.s||1}" aria-label="Taille du jeton"><b id="${P}-sv" style="min-width:40px">× ${String(t.s||1).replace('.',',')}</b></div>
       <label class="field"><span class="cap">${item?'Description':'Note secrète (MJ)'}</span><textarea class="cnote" id="${P}-note" placeholder="${item?'Effets, dégâts, poids, prix…':'Ce que cache ce mobilier…'}">${esc(t.note||'')}</textarea></label>`}
     ${o.edit?`<div class="actions"><button class="btn ghost" type="button" id="${P}-cancel">Annuler</button><button class="btn" type="button" id="${P}-ok" style="background:${T.col};border-color:${T.col}">Valider</button></div>`
-      :(o.save?`<div class="actions jstamp"><button class="btn ghost" type="button" id="${P}-save">${IB('chest')}Enregistrer à l'inventaire</button></div>`:'')}</div>`;
+      :(o.save?`${item?boxChk(t,P+'-box'):''}<div class="actions jstamp"><button class="btn ghost" type="button" id="${P}-save">${IB('chest')}Enregistrer à l'inventaire</button></div>`:'')}</div>`;
   const face=()=>{ $p('face').innerHTML=faceHTML({...t,name:$p('name').value||t.name}); };
   const rv=()=>{ if($p('r')) $p('rv').textContent=`${(t.r/PX_M).toFixed(1).replace('.',',')} m`; };
-  const read=()=>{ t.name=$p('name').value.trim(); if($p('s')){ t.s=+$p('s').value; $p('sv').textContent='× '+String(t.s).replace('.',','); } if($p('note')) t.note=$p('note').value; if($p('r')) t.r=+$p('r').value; if(item&&/^o_/.test(t.ico||'')) t.g=t.ico.slice(2); return t; };
+  const read=()=>{ t.name=$p('name').value.trim(); if($p('s')){ t.s=+$p('s').value; $p('sv').textContent='× '+String(t.s).replace('.',','); } if($p('note')) t.note=$p('note').value; if($p('r')) t.r=+$p('r').value; if(item&&/^o_/.test(t.ico||'')) t.g=t.ico.slice(2); if($p('box')){ t.inbox=$p('box').checked; $p('box').parentNode.classList.toggle('on',t.inbox); } return t; };
   const upl=()=>{ imgTarget=img=>{ t.img=img; box.querySelectorAll('#'+P+'-icons [data-ico]').forEach(b=>b.classList.remove('on')); face(); o.onChange&&o.onChange(); }; $('file-img').click(); };
   if(!light){ $p('face').onclick=upl; box.querySelectorAll('#'+P+'-icons [data-ico]').forEach(b=>b.onclick=()=>{ if(b.dataset.ico==='upload'){ upl(); return; } t.img=null; t.ico=b.dataset.ico; box.querySelectorAll('#'+P+'-icons [data-ico]').forEach(x=>x.classList.toggle('on',x===b)); face(); o.onChange&&o.onChange(); }); }
   box.oninput=()=>{ read(); rv(); face(); o.onChange&&o.onChange(); };
@@ -4431,7 +4438,7 @@ function invAll(){ if(!Array.isArray(S.items)) S.items=[]; const M=new Map(), ke
     [['inv',f.inventory],['cyb',f.cybernetics]].forEach(([col,L])=>(L||[]).forEach(d=>{ if(d&&d.name&&!M.has(key(d.name))) M.set(key(d.name),objItem(d,objGroup(d,col),'player',P.name)); })); });
   S.items.filter(x=>x.kind==='item').forEach(x=>M.set(key(x.name),Object.assign({},x,{src:'mj'})));
   return [...M.values()].sort((a,b)=>a.name.localeCompare(b.name,'fr')); }
-const itemProfile=r=>({type:'prop',kind:'item',name:r.name,g:r.g||'misc',ico:r.ico,img:r.img||null,s:r.s||1,note:r.note||''});
+const itemProfile=r=>({type:'prop',kind:'item',inbox:!!r.inbox,name:r.name,g:r.g||'misc',ico:r.ico,img:r.img||null,s:r.s||1,note:r.note||''});
 function saveItem(r){ if(!r.name){ toast('Donnez un nom à l\'objet',true); return; } if(!Array.isArray(S.items)) S.items=[]; S.items=S.items.filter(x=>x.kind==='item');
   const i=S.items.findIndex(x=>normTxt(x.name)===normTxt(r.name)), p=itemProfile(r);
   if(i>=0) S.items[i]=p; else S.items.push(p); markDirty(); toast(`« ${r.name} » enregistré à l'inventaire`); }
@@ -4450,9 +4457,9 @@ function renderItemPanel(){ const box=$('litem-body'); if(!box) return; jetRead=
   if(IP.sec==='board'){ body.innerHTML=`<div class="bsearch"><input class="line-in" id="li-q" placeholder="Rechercher un objet…" autocomplete="off"></div><div class="jlist" id="li-list"></div>`;
     const draw=()=>{ const qq=normTxt($('li-q').value);
       const L=S.tokens.filter(t=>t.kind==='item'&&(!qq||normTxt(t.name||'').includes(qq))).sort((a,b)=>(a.name||'').localeCompare(b.name||'','fr'));
-      const row=t=>`<div class="jrow${t.hidden?' hid':''}" data-id="${t.id}" style="--c:var(--brown)"><span class="bface">${faceHTML(t,'sm')}</span><b>${esc(t.name||'Objet')}</b><span></span><button class="ib" type="button" data-hide title="${t.hidden?'Montrer aux joueurs':'Cacher aux joueurs'}">${IB(t.hidden?'eyeoff':'eye')}</button><button class="ib del" type="button" data-rm title="Retirer du plateau">${IB('bin')}</button></div>`;
+      const row=t=>`<div class="jrow${t.hidden?' hid':''}" data-id="${t.id}" style="--c:var(--brown)"><span class="bface">${faceHTML(t,'sm')}</span><b>${esc(t.name||'Objet')}</b>${boxChk(t)}<button class="ib" type="button" data-hide title="${t.hidden?'Montrer aux joueurs':'Cacher aux joueurs'}">${IB(t.hidden?'eyeoff':'eye')}</button><button class="ib del" type="button" data-rm title="Retirer du plateau">${IB('bin')}</button></div>`;
       $('li-list').innerHTML=L.length?grouped(L,row):`<p class="meta" style="text-align:left;padding:6px 2px">Aucun objet dans cette scène.</p>`;
-      $('li-list').querySelectorAll('.jrow').forEach(r=>{ const t=tok(r.dataset.id); if(!t) return; r.onclick=e=>{
+      $('li-list').querySelectorAll('.jrow').forEach(r=>{ const t=tok(r.dataset.id); if(!t) return; const cb=r.querySelector('[data-box]'); cb.onclick=e=>e.stopPropagation(); cb.onchange=()=>setInbox(t,cb.checked); r.onclick=e=>{ if(e.target.closest('.boxchk')) return;
         if(e.target.closest('[data-hide]')){ t.hidden=!t.hidden; tokenEl(t); renderTracker(); renderFoW(); markDirty(); sync(); draw(); return; }
         if(e.target.closest('[data-rm]')){ removeToken(t.id); draw(); return; }
         centerOn(t.x,t.y); const el=document.querySelector(`.tk[data-id="${t.id}"]`); if(el){ el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); } }; }); };
@@ -4625,7 +4632,7 @@ function send(m){ if(isPlayer) return; m.n=Date.now()*100+(seq++%100); m.from='m
   if(bc&&m.t!=='state') return;   // le canal direct suffit ; le stockage local ne garde que l'état complet
   try{ localStorage.setItem(LS_SYNC,JSON.stringify(m)); }catch(e){ if(m.t==='state'){ const lite={...m,bg:m.bg&&m.bg.length>1.5e6?'':m.bg}; try{ localStorage.setItem(LS_SYNC,JSON.stringify(lite)); }catch(e2){} } } }
 function publicState(){ const pub=t=>({id:t.id,type:t.type,name:t.name,hp:t.hp,hpMax:t.hpMax,img:t.img,ico:t.ico,emo:t.emo,x:t.x,y:t.y,s:t.s,r:t.r,owner:t.owner||null,note:t.type==='prop'&&t.note?' ':''});
-  return {t:'state',bg:S.bg,bgKind:S.bgKind||'',bgW:S.bgW||0,bgH:S.bgH||0,geo:S.geo||null,light:S.light,weather:S.weather||'',ground:S.ground||null,grid:S.grid,drawings:S.drawings,tokens:S.tokens.filter(t=>!t.hidden).map(pub),order:S.order.filter(id=>{ const t=tok(id); return t&&!t.hidden; }),turn:turnIdForPlayers(),view:viewMsg()}; }
+  return {t:'state',bg:S.bg,bgKind:S.bgKind||'',bgW:S.bgW||0,bgH:S.bgH||0,geo:S.geo||null,light:S.light,weather:S.weather||'',ground:S.ground||null,grid:S.grid,drawings:S.drawings,tokens:S.tokens.filter(t=>!t.hidden&&!t.inbox).map(pub),order:S.order.filter(id=>{ const t=tok(id); return t&&!t.hidden; }),turn:turnIdForPlayers(),view:viewMsg()}; }
 function turnIdForPlayers(){ const L=orderToks(), c=L[S.turn]; return c&&!c.hidden?c.id:null; }
 let syncRaf=0; function sync(){ if(isPlayer||syncRaf) return; syncRaf=requestAnimationFrame(()=>{ syncRaf=0; send(publicState()); }); }
 let syncT=0; function syncLater(){ clearTimeout(syncT); syncT=setTimeout(sync,120); }
