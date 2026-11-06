@@ -3917,7 +3917,7 @@ const MAP=(function(){
     if(gridCache){ if(!all){ all={}; gridCache.set(o,all); } all[ck]={n:n,w:o.width,cells:cells}; }
     return cells;
   }
-  function meadowTufts(o){ return gridCells(o, GRASS_STEP, 2, 0); }
+  function meadowTufts(o){ return gridCells(o, GRASS_STEP/Math.max(.3,o.dens||1), 2, 0); }   // densité réglable : cases plus serrées
   function paintTuft(c,t){
     var s1=seeded(t.x,t.y), blades=3+Math.floor(s1*3);
     for(var k=0;k<blades;k++){
@@ -3934,7 +3934,7 @@ const MAP=(function(){
     c.save(); c.globalCompositeOperation='source-over'; c.lineCap='round'; c.lineJoin='round';
     /* prairie : seulement des brins d'herbe, sans aplat de sol */
     var all={};                                                           // 2) touffes : union des cellules
-    for(i=0;i<ms.length;i++){ var cl=meadowTufts(ms[i]); for(k in cl) all[k]=cl[k]; }
+    for(i=0;i<ms.length;i++){ var cl=meadowTufts(ms[i]), dk=(ms[i].dens||1)+':'; for(k in cl) all[dk+k]=cl[k]; }
     c.strokeStyle=MEADOW_GRASS; c.lineWidth=LINE_FINE;
     c.beginPath(); for(k in all){ var tf=all[k]; if(seeded(tf.x*0.61,tf.y*0.83)<0.85) paintTuft(c,tf); } c.stroke();   // touffes un peu plus denses
     c.restore();
@@ -4141,7 +4141,7 @@ const MAP_EMOJI={"Mobilier": ["🗿", "⚰️", "🎁", "🪤", "🚪", "🕯️
    Volet DESSIN (à gauche) : les outils de l'Éditeur de Donjon sur le plateau
    ========================================================= */
 const MAP_TOOLS={"text": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 6V4h14v2M12 4v16M9 20h6\"/></svg>", "n": "Texte", "h": "cliquer pour écrire"}, "arrow": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M7 17L17 7M9 7h8v8\"/></svg>", "n": "Flèche", "h": "clic la pointe, puis clic la queue"}, "pencil": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 20l3.5-1L18 8.5 15.5 6 5 16.5 4 20z\"/><path d=\"M14 7.5l2.5 2.5\"/></svg>", "n": "Crayon", "h": "dessin libre à main levée"}, "corridor": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 5h11a5 5 0 0 1 5 5v11\"/><path d=\"M3 11h8a2 2 0 0 1 2 2v8\"/></svg>", "n": "Chemin", "h": "clic-glisser · couloir, salle"}, "river": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 8q3-3 6 0t6 0 3-1.2\"/><path d=\"M3 13q3-3 6 0t6 0 3-1.2\"/><path d=\"M3 18q3-3 6 0t6 0 3-1.2\"/></svg>", "n": "Eau", "h": "clic-glisser · rivière, lac"}, "foliage": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"8.5\" cy=\"9.5\" r=\"3.2\"/><circle cx=\"15\" cy=\"9\" r=\"3.2\"/><circle cx=\"11.5\" cy=\"13\" r=\"3.6\"/><path d=\"M11.5 16.5V21\"/></svg>", "n": "Feuillage", "h": "clic-glisser · bosquet, forêt"}, "meadow": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 20h18\"/><path d=\"M5.5 20c0-3.5-.8-6-2.3-8\"/><path d=\"M9 20c0-5 .9-8.5 3-11.5\"/><path d=\"M12.5 20c0-3.6-.9-6-2.6-7.8\"/><path d=\"M16 20c0-5 1-8.3 3.2-10.8\"/><path d=\"M19.5 20c0-2.6.6-4.4 1.7-5.6\"/></svg>", "n": "Prairie", "h": "peindre · herbes hautes"}, "desert": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M2 17c3-4.5 6-6 9-6 2.6 0 4.3 1.6 5.2 3.4\"/><path d=\"M11 20c2.6-3 5.2-4.3 7.5-4.3 1.3 0 2.5.4 3.5 1.2\"/><path d=\"M8.4 12.6l1 2.4M10.8 12.2l.7 2.2\"/><circle cx=\"17.5\" cy=\"6\" r=\"2\"/></svg>", "n": "Désert", "h": "peindre · étendue de sable"}, "wood": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"16\" rx=\"1\"/><path d=\"M3 9.3h18M3 14.7h18M9 4v5.3M15 9.3v5.4M7 14.7V20\"/></svg>", "n": "Plancher", "h": "peindre · lames de bois"}, "wall": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 6h18v12H3z\"/><path d=\"M3 12h18M9 6v6M15 12v6\"/></svg>", "n": "Mur", "h": "clic, clic… · double-clic = fin"}, "door": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M6 21V4a1 1 0 0 1 1.2-1l8 1.6A1 1 0 0 1 16 5.6V21\"/><path d=\"M4 21h16\"/><circle cx=\"13\" cy=\"12\" r=\"1\" fill=\"currentColor\" stroke=\"none\"/></svg>", "n": "Porte", "h": "glisser en travers du passage"}, "secret": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M6 3v18M18 3v18\"/><rect x=\"9\" y=\"6\" width=\"6\" height=\"12\" stroke-dasharray=\"2.2 2.2\"/><path d=\"M11 11.5a1 1 0 1 1 1.6.8c-.4.3-.6.5-.6 1.1\" stroke-width=\"1.6\"/><circle cx=\"12\" cy=\"15.3\" r=\".55\" fill=\"currentColor\" stroke=\"none\"/></svg>", "n": "Porte secrète", "h": "glisser en travers du passage"}, "stairs": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 20h4v-4h4v-4h4v-4h4\"/></svg>", "n": "Escalier", "h": "clic-glisser · volée de marches"}, "eraser": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 14.5l6.5-6.5 6 6-5.5 5.5H8z\"/><path d=\"M8.5 19.5H19\"/><path d=\"M9.5 9l6 6\"/></svg>", "n": "Gomme", "h": "cliquer ou glisser sur un élément"}};
-const MT=Object.assign({tool:'corridor',width:40,emoji:'💀',svg:'maison',ink:'#241a12'},(()=>{ try{ return JSON.parse(localStorage.getItem('aldebaran.mj.map')||'{}'); }catch(e){ return {}; } })());
+const MT=Object.assign({tool:'corridor',dens:1,width:40,emoji:'💀',svg:'maison',ink:'#241a12'},(()=>{ try{ return JSON.parse(localStorage.getItem('aldebaran.mj.map')||'{}'); }catch(e){ return {}; } })());
 const saveMT=()=>{ try{ localStorage.setItem('aldebaran.mj.map',JSON.stringify(MT)); }catch(e){} };
 const MAP_INKS=[['#241a12','Encre'],['#ffffff','Blanc'],['#e3262b','Rouge'],['#2b79bd','Bleu'],['#33964d','Vert'],['#7556c2','Violet'],['#d19c00','Or']];
 let mapLive=null, mapPrev=null, wallDraft=null, wallHover=null, wallEnd=null, wallShift=false, arrowTip=null, mapRaf=0;
@@ -4191,7 +4191,7 @@ function mapDown(e,wx,wy){ const wp={x:wx,y:wy}, T=MT.tool; e.preventDefault();
     if(Math.hypot(sp.x-lp.x,sp.y-lp.y)<8/V.z){ finishWall(); return; }
     wallDraft.points.push(sp); wallHover=null; mapLive={type:'wall',width:wallDraft.width,points:wallDraft.points.slice()}; drawMapLater(); return; }
   if(T==='door'||T==='secret'||T==='stairs'){ gesture={k:'map',a:wp}; return; }
-  const st={type:T,points:[wp],width:MT.width}; if(T==='pencil') st.c=MT.ink;
+  const st={type:T,points:[wp],width:MT.width}; if(T==='pencil') st.c=MT.ink; if(T==='meadow') st.dens=MT.dens;
   gesture={k:'map',stroke:st}; mapLive=st; drawMapLater(); }
 function mapMove(e){ const [wx,wy]=toWorld(e.clientX,e.clientY), wp={x:wx,y:wy}, T=MT.tool;
   if(T==='arrow'&&arrowTip){ mapPrev={type:'arrow',tip:arrowTip,tail:wp}; drawMapLater(); return; }
@@ -4223,6 +4223,7 @@ function renderDrawPanel(){ const box=$('ldraw-body'); if(!box) return; const on
     <div class="subttl">Tracés</div><div class="mtgrid">${tb('pencil')}</div>
     ${MT.tool==='pencil'?`<div class="swatches md-inks">${MAP_INKS.map(([c,n])=>`<button type="button" style="--c:${c}" data-ink="${c}" title="${n}" class="${MT.ink===c?'on':''}"></button>`).join('')}</div>`:''}
     <div class="subttl">Terrain</div><div class="mtgrid">${['corridor','river','foliage','meadow','desert','wood','wall'].map(tb).join('')}</div>
+    ${MT.tool==='meadow'?`<div class="subttl">Densité de l'herbe</div><div class="bgscale"><input type="range" id="md-d" min="0.3" max="3" step="0.1" value="${MT.dens}" aria-label="Densité de l'herbe"><b id="md-dv" style="min-width:40px">× ${String(MT.dens).replace('.',',')}</b></div>`:''}
     <div class="subttl">Ouvertures</div><div class="mtgrid">${['door','secret','stairs'].map(tb).join('')}</div>
     <div class="subttl">Annotations</div><div class="mtgrid">${['text','arrow'].map(tb).join('')}</div>
     <div class="subttl">Pictogrammes <small>taille = largeur</small></div>${scat.map(c=>`<div class="mcat">${esc(c)}</div><div class="stgrid">${stamps.filter(k=>(MAP.STAMPS[k].cat||'Divers')===c).map(k=>`<button type="button" class="stb${tool==='map'&&MT.tool==='svg'&&MT.svg===k?' on':''}" data-st="${k}" title="${esc(MAP.STAMPS[k].title||k)}">${MAP.stampMarkup(k)}</button>`).join('')}</div>`).join('')}
@@ -4233,6 +4234,7 @@ function renderDrawPanel(){ const box=$('ldraw-body'); if(!box) return; const on
   box.querySelectorAll('[data-em]').forEach(b=>b.onclick=()=>{ MT.emoji=b.dataset.em; pickMapTool('icon'); });
   box.querySelectorAll('[data-ink]').forEach(b=>b.onclick=()=>{ MT.ink=b.dataset.ink; saveMT(); renderDrawPanel(); });
   $('md-w').oninput=e=>{ MT.width=+e.target.value; $('md-wv').textContent=MT.width; saveMT(); };
+  if($('md-d')) $('md-d').oninput=e=>{ MT.dens=+e.target.value; $('md-dv').textContent='× '+String(MT.dens).replace('.',','); saveMT(); };
   $('md-undo').onclick=mapUndo; $('md-clear').onclick=clearDrawings;
   $('rb-draw').classList.toggle('on-tool',tool==='map'); }
 
