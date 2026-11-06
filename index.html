@@ -2535,18 +2535,19 @@ html.pland:not(.player){--bar:0px;--bot:0px;--rail:56px;--tabs:60px}
 .tk.hid{opacity:.45}
 .tk.deco .face{border:0!important;background:none!important;box-shadow:none!important;border-radius:0;color:#2a2c33}#board.dkmap .tk.deco .face{color:#a3b2c7}
 .tk .glow,.tk .beam{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);border-radius:50%;pointer-events:none;z-index:-1}
-.tk .glow{opacity:.22;mix-blend-mode:screen;transition:opacity .4s}#board.night .tk .glow{opacity:.75}
+.tk .glow{opacity:.1;mix-blend-mode:screen;transition:opacity .4s}#board.night .tk .glow{opacity:.32}
 .g-warm{background:radial-gradient(circle,rgba(255,214,130,.8) 0,rgba(255,176,80,.38) 28%,rgba(255,150,50,0) 70%)}
 .g-cool{background:radial-gradient(circle,rgba(220,236,255,.8) 0,rgba(170,205,255,.36) 28%,rgba(150,190,255,0) 70%)}
 .g-neon{background:radial-gradient(circle,rgba(255,120,220,.8) 0,rgba(240,70,200,.36) 30%,rgba(220,60,200,0) 70%)}
 .g-red{background:radial-gradient(circle,rgba(255,110,90,.85) 0,rgba(255,60,50,.4) 30%,rgba(255,40,40,0) 70%)}
-.fx-flick{animation:lFlick 2.6s ease-in-out infinite}.fx-blink{animation:lBlink 1.4s steps(1) infinite}.fx-neon{animation:lNeon 6s linear infinite}.fx-traffic{animation:lTraffic 12s steps(1) infinite}
-@keyframes lFlick{0%,100%{transform:translate(-50%,-50%) scale(1);filter:brightness(1)}20%{transform:translate(-50%,-50%) scale(.96)}45%{transform:translate(-50%,-50%) scale(1.03);filter:brightness(1.12)}70%{transform:translate(-50%,-50%) scale(.98);filter:brightness(.92)}}
-@keyframes lBlink{0%{opacity:1}50%{opacity:.08}}
+.fx-flick{animation:lFlick 1.9s linear infinite,lWav 3.3s ease-in-out infinite}.fx-blink{animation:lBlink 1.4s steps(1) infinite}.fx-neon{animation:lNeon 6s linear infinite}.fx-traffic{animation:lTraffic 12s steps(1) infinite}
+@keyframes lFlick{0%{transform:translate(-50%,-50%) scale(1)}8%{transform:translate(-50.6%,-50%) scale(.93)}17%{transform:translate(-49.5%,-50.4%) scale(1.05)}26%{transform:translate(-50.2%,-49.6%) scale(.97)}38%{transform:translate(-49.4%,-50.2%) scale(1.07)}47%{transform:translate(-50.5%,-50%) scale(.9)}58%{transform:translate(-50%,-50.5%) scale(1.03)}71%{transform:translate(-49.6%,-49.7%) scale(.95)}83%{transform:translate(-50.4%,-50.2%) scale(1.06)}100%{transform:translate(-50%,-50%) scale(1)}}
+@keyframes lWav{0%,100%{filter:brightness(1)}13%{filter:brightness(.7)}29%{filter:brightness(.95)}41%{filter:brightness(.55)}55%{filter:brightness(1.05)}68%{filter:brightness(.75)}86%{filter:brightness(.92)}}
+@keyframes lBlink{0%{filter:brightness(1)}50%{filter:brightness(.1)}}
 @keyframes lNeon{0%,40%,44%,46%,100%{filter:brightness(1)}42%,45%{filter:brightness(.35)}}
 @keyframes lTraffic{0%{filter:none}42%{filter:hue-rotate(100deg) saturate(1.2)}84%{filter:hue-rotate(30deg)}}
-.tk .beam{background:conic-gradient(from 0deg,rgba(255,238,170,.8) 0deg,rgba(255,238,170,0) 24deg,transparent 180deg,rgba(255,238,170,.8) 180deg,rgba(255,238,170,0) 204deg,transparent 360deg);-webkit-mask:radial-gradient(circle,#000 6%,rgba(0,0,0,.7) 35%,transparent 70%);mask:radial-gradient(circle,#000 6%,rgba(0,0,0,.7) 35%,transparent 70%);animation:lBeam 8s linear infinite;mix-blend-mode:screen;opacity:.3}
-#board.night .tk .beam{opacity:.85}
+.tk .beam{background:conic-gradient(from 0deg,rgba(255,238,170,.8) 0deg,rgba(255,238,170,0) 24deg,transparent 180deg,rgba(255,238,170,.8) 180deg,rgba(255,238,170,0) 204deg,transparent 360deg);-webkit-mask:radial-gradient(circle,#000 6%,rgba(0,0,0,.7) 35%,transparent 70%);mask:radial-gradient(circle,#000 6%,rgba(0,0,0,.7) 35%,transparent 70%);animation:lBeam 8s linear infinite;mix-blend-mode:screen;opacity:.25}
+#board.night .tk .beam{opacity:.6}
 @keyframes lBeam{from{transform:translate(-50%,-50%) rotate(0)}to{transform:translate(-50%,-50%) rotate(-360deg)}}
 @media (prefers-reduced-motion:reduce){.tk .glow,.tk .beam{animation:none}}.tk.deco .face svg{width:100%;height:100%}.tk.deco .nm,.tk.deco .ndot,.tk.deco .halo{display:none}
 .tk.deco.open .face{outline:2px dashed var(--brown);outline-offset:4px}#card .av.deco{border:0;background:none;color:#2a2c33}
@@ -3291,7 +3292,7 @@ function tokenHTML(t){
     ${alive?`<div class="dead">${SKULL}</div><svg class="turn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">${IC.hand}</svg>`:''}
     ${t.type==='prop'&&t.note?'<i class="ndot"></i>':''}
     ${t.type==='light'?`<div class="halo" style="width:${t.r*2}px;height:${t.r*2}px"></div>`:''}
-    ${(L=>L?`<div class="glow g-${L.c} fx-${L.fx||'n'}" style="width:${L.r*2}px;height:${L.r*2}px"></div>${L.fx==='beam'?`<div class="beam" style="width:${L.r*2}px;height:${L.r*2}px"></div>`:''}`:'')(lightOf(t))}
+    ${(L=>!L?'':L.fx==='beam'?`<div class="beam" style="width:${L.r*2}px;height:${L.r*2}px;animation-delay:-${((performance.now()%BEAM_MS)/1000).toFixed(2)}s"></div>`:`<div class="glow g-${L.c} fx-${L.fx||'n'}" style="width:${L.r*2}px;height:${L.r*2}px"></div>`)(lightOf(t))}
     ${t.name&&t.type!=='light'?`<div class="nm">${esc(t.name)}</div>`:''}`;
 }
 function tokenEl(t){
@@ -3327,12 +3328,20 @@ function renderBoard(){
   $('fow').hidden=S.light; renderFoW();
 }
 /* Brouillard : les joueurs et les lumières découpent l'obscurité */
+let fowBeam=0;
 function renderFoW(){
   board.classList.toggle('night',!S.light); const cv=$('fow'); if(S.light) return; const r=board.getBoundingClientRect(), k=.5, W=Math.max(2,Math.round(r.width*k)), H=Math.max(2,Math.round(r.height*k));
   if(cv.width!==W||cv.height!==H){ cv.width=W; cv.height=H; } const x=cv.getContext('2d');
-  x.globalCompositeOperation='source-over'; x.fillStyle='#262a35'; x.fillRect(0,0,W,H);
+  x.globalCompositeOperation='source-over'; x.fillStyle=S.ground&&S.ground.k==='color'?'#0b0d12':'#262a35'; x.fillRect(0,0,W,H);
   x.globalCompositeOperation='destination-out';
-  S.tokens.forEach(t=>{ let R=0, r0=0; if(t.type==='player'){ R=t.r??250; r0=40; } else if(t.type==='light'){ R=t.r||150; r0=20; } else if(lightOf(t)){ R=lightR(t); r0=20; } else return;
+  let beams=false;
+  S.tokens.forEach(t=>{ const L=lightOf(t); if(!L||L.fx!=='beam'||(isPlayer&&t.hidden)) return; beams=true; const z=V.z*k, R=lightR(t)*z, cx=(V.x+t.x*V.z)*k, cy=(V.y+t.y*V.z)*k;
+    const rot=(performance.now()%BEAM_MS)/BEAM_MS*Math.PI*2, w=12*Math.PI/180;
+    [0,Math.PI].forEach(o=>{ const a=-Math.PI/2+w-rot+o, g=x.createRadialGradient(cx,cy,0,cx,cy,R); g.addColorStop(0,'rgba(0,0,0,1)'); g.addColorStop(.55,'rgba(0,0,0,.8)'); g.addColorStop(1,'rgba(0,0,0,0)');
+      x.fillStyle=g; x.beginPath(); x.moveTo(cx,cy); x.arc(cx,cy,R,a-w,a+w); x.closePath(); x.fill(); });
+    const g2=x.createRadialGradient(cx,cy,0,cx,cy,50*z); g2.addColorStop(0,'rgba(0,0,0,.9)'); g2.addColorStop(1,'rgba(0,0,0,0)'); x.fillStyle=g2; x.beginPath(); x.arc(cx,cy,50*z,0,Math.PI*2); x.fill(); });
+  if(beams&&!fowBeam){ fowBeam=setInterval(()=>{ if(S.light||!S.tokens.some(t=>{ const L=lightOf(t); return L&&L.fx==='beam'; })){ clearInterval(fowBeam); fowBeam=0; return; } renderFoW(); },66); }
+  S.tokens.forEach(t=>{ let R=0, r0=0; if(t.type==='player'){ R=t.r??250; r0=40; } else if(t.type==='light'){ R=t.r||150; r0=20; } else if(lightOf(t)&&lightOf(t).fx!=='beam'){ R=lightR(t); r0=20; } else return;
     if(isPlayer&&t.hidden||!R) return; const z=V.z*k;
     const cx=(V.x+t.x*V.z)*k, cy=(V.y+t.y*V.z)*k, g=x.createRadialGradient(cx,cy,Math.min(r0,R*.9)*z,cx,cy,R*z);
     g.addColorStop(0,'rgba(0,0,0,1)'); g.addColorStop(.3,'rgba(0,0,0,.85)'); g.addColorStop(1,'rgba(0,0,0,0)');
@@ -3340,7 +3349,7 @@ function renderFoW(){
   x.globalCompositeOperation='source-over';
 }
 let fowRaf=0; const fowLater=()=>{ if(S.light||fowRaf) return; fowRaf=requestAnimationFrame(()=>{ fowRaf=0; renderFoW(); renderTracker(); }); };
-function inLight(t){ if(S.light) return true; return S.tokens.some(l=>((l.type==='player'||l.type==='light')&&!(isPlayer&&l.hidden)&&Math.hypot(l.x-t.x,l.y-t.y)<=(l.r||(l.type==='player'?250:150)))||(lightOf(l)&&!(isPlayer&&l.hidden)&&Math.hypot(l.x-t.x,l.y-t.y)<=lightR(l))); }
+function inLight(t){ if(S.light) return true; return S.tokens.some(l=>((l.type==='player'||l.type==='light')&&!(isPlayer&&l.hidden)&&Math.hypot(l.x-t.x,l.y-t.y)<=(l.r||(l.type==='player'?250:150)))||(lightOf(l)&&lightOf(l).fx!=='beam'&&!(isPlayer&&l.hidden)&&Math.hypot(l.x-t.x,l.y-t.y)<=lightR(l))); }
 
 /* Initiative */
 const orderToks=()=>S.order.map(tok).filter(t=>ALIVE(t)&&!(isPlayer&&t.hidden));
@@ -5234,8 +5243,9 @@ function openMapText(e,wp){ removeMapText(); const r=board.getBoundingClientRect
   inp.addEventListener('blur',commit); }
 /* pictos lumineux : halo coloré, scintillement, faisceau tournant du phare ; ils éclairent la nuit */
 const LIGHTS={candelabre:{r:180,c:'warm',fx:'flick'},bougies:{r:120,c:'warm',fx:'flick'},torche:{r:220,c:'warm',fx:'flick'},brasero:{r:280,c:'warm',fx:'flick'},feu_camp:{r:320,c:'warm',fx:'flick'},
-  lanterne:{r:200,c:'warm'},lustre:{r:280,c:'warm'},lampadaire:{r:240,c:'warm'},reverbere:{r:300,c:'cool'},projecteur:{r:440,c:'cool'},enseigne:{r:170,c:'neon',fx:'neon'},
+  lanterne:{r:200,c:'warm',fx:'flick'},lustre:{r:280,c:'warm',fx:'flick'},lampadaire:{r:240,c:'warm'},reverbere:{r:300,c:'cool'},projecteur:{r:440,c:'cool'},enseigne:{r:170,c:'neon',fx:'neon'},
   feu_tricolore:{r:90,c:'red',fx:'traffic'},balise:{r:150,c:'red',fx:'blink'},phare:{r:560,c:'warm',fx:'beam'}};
+const BEAM_MS=8000;
 const lightOf=t=>t&&t.stamp&&LIGHTS[t.stamp]&&t.lit!==false?LIGHTS[t.stamp]:null;
 const lightR=t=>{ const L=lightOf(t); return L?Math.round(L.r*(t.s||1)):0; };
 const decoTok=(key,x,y,size)=>({type:'prop',kind:'deco',stamp:key,name:'',ico:'box',img:null,note:'',x:Math.round(x),y:Math.round(y),s:clamp(Math.round((size||72)/72*10)/10,.5,5)});
