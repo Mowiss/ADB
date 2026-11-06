@@ -5156,12 +5156,10 @@ runOpening();
 <script>
 (function(){
   window.__ADB=true;
-  /* mise à jour : on vérifie le service worker à chaque ouverture ; si une nouvelle version prend la main, la page se recharge une fois */
-  if('serviceWorker' in navigator&&location.protocol.startsWith('http')){
-    const had=!!navigator.serviceWorker.controller; let reloaded=false;
-    navigator.serviceWorker.register('sw.js').then(r=>{ r.update().catch(()=>{}); }).catch(()=>{});
-    navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(had&&!reloaded&&!window.__adbGone){ reloaded=true; try{ sessionStorage.setItem('aldebaran.maj','1'); }catch(e){} location.reload(); } });
-  }
+  /* hors ligne / installation : le service worker est enregistré après l'animation, pour ne pas la gêner.
+     Pas de rechargement automatique : la page vient toujours du réseau d'abord (sw.js), la dernière version est déjà là. */
+  if('serviceWorker' in navigator&&location.protocol.startsWith('http'))
+    setTimeout(()=>navigator.serviceWorker.register('sw.js').then(r=>{ r.update().catch(()=>{}); }).catch(()=>{}),4000);
   window.__adbInstall=null;
   window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); window.__adbInstall=e; });
   const q=new URLSearchParams(location.search);
