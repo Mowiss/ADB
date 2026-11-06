@@ -2539,10 +2539,20 @@ html.pland:not(.player){--bar:0px;--bot:0px;--rail:56px;--tabs:60px}
 .g-warm{background:radial-gradient(circle,rgba(255,214,130,.8) 0,rgba(255,176,80,.38) 28%,rgba(255,150,50,0) 70%)}
 .g-cool{background:radial-gradient(circle,rgba(220,236,255,.8) 0,rgba(170,205,255,.36) 28%,rgba(150,190,255,0) 70%)}
 .g-neon{background:radial-gradient(circle,rgba(255,120,220,.8) 0,rgba(240,70,200,.36) 30%,rgba(220,60,200,0) 70%)}
+.g-lime{background:radial-gradient(circle,rgba(220,255,140,.8) 0,rgba(180,240,90,.35) 30%,rgba(160,230,80,0) 70%)}
 .g-red{background:radial-gradient(circle,rgba(255,110,90,.85) 0,rgba(255,60,50,.4) 30%,rgba(255,40,40,0) 70%)}
 .lseg{margin-bottom:8px}.lseg button{padding:8px 4px;font-size:12.5px}.lseg button.on{background:var(--ink-strong);color:#fff;box-shadow:none}
 input.hue{-webkit-appearance:none;appearance:none;height:12px;border-radius:6px;background:linear-gradient(90deg,hsl(0,100%,60%),hsl(60,100%,55%),hsl(120,100%,45%),hsl(180,100%,50%),hsl(240,100%,65%),hsl(300,100%,60%),hsl(360,100%,60%))}
 .fx-broken{animation:lBroken 3.1s steps(1) infinite}
+/* animations des pictos : arbres au vent, pales qui tournent, eau qui coule, braises */
+.tk.sway .face svg{transform-origin:50% 86%;animation:lSway 4.6s ease-in-out var(--sd,0s) infinite alternate}
+@keyframes lSway{from{transform:rotate(calc(var(--sa,1.6deg) * -1)) skewX(calc(var(--sa,1.6deg) * -.5))}to{transform:rotate(var(--sa,1.6deg)) skewX(calc(var(--sa,1.6deg) * .5))}}
+.tk.deco svg g.spin{animation:lSpin 6s linear infinite}@keyframes lSpin{to{transform:rotate(360deg)}}
+.tk.deco svg .flow{stroke-dasharray:.8 1;animation:lFlow .5s linear infinite}@keyframes lFlow{to{stroke-dashoffset:-1.8}}
+.tk .embers{position:absolute;width:0;height:0;pointer-events:none}
+.tk .embers i{position:absolute;left:0;top:0;width:3px;height:3px;margin:-1.5px;border-radius:50%;background:#ffb347;box-shadow:0 0 4px 1px rgba(255,140,40,.9);opacity:0;animation:lEmber var(--d,2s) ease-out var(--t,0s) infinite}
+@keyframes lEmber{0%{transform:translate(0,0) scale(1);opacity:0}10%{opacity:1}100%{transform:translate(var(--x,0),-46px) scale(.3);opacity:0}}
+@media (prefers-reduced-motion:reduce){.tk.sway .face svg,.tk.deco svg g.spin,.tk.deco svg .flow,.tk .embers i{animation:none}}
 .tk .beam.fx-broken{animation:lBeam 8s linear infinite,lBroken 3.1s steps(1) infinite}
 @keyframes lBroken{0%{filter:brightness(1)}6%{filter:brightness(.05)}9%{filter:brightness(1)}11%{filter:brightness(.05)}14%{filter:brightness(.9)}38%{filter:brightness(1)}41%{filter:brightness(.1)}55%{filter:brightness(.1)}57%{filter:brightness(1)}79%{filter:brightness(.6)}81%{filter:brightness(.05)}83%{filter:brightness(1)}}
 .fx-flick{animation:lFlick 1.9s linear infinite,lWav 3.3s ease-in-out infinite}.fx-blink{animation:lBlink 1.4s steps(1) infinite}.fx-neon{animation:lNeon 6s linear infinite}.fx-traffic{animation:lTraffic 12s steps(1) infinite}
@@ -3293,7 +3303,7 @@ const hpCls=p=>p<=.25?'crit':p<=.5?'low':'';
 function tokenHTML(t){
   const p=hpRatio(t), C=2*Math.PI*46, alive=ALIVE(t);
   return `${alive?`<svg class="ring" viewBox="0 0 100 100"><circle class="bgc" cx="50" cy="50" r="46"/><circle class="hp ${hpCls(p)}" cx="50" cy="50" r="46" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C*(1-p)).toFixed(1)}"/></svg>`:''}
-    <div class="face">${faceHTML(t)}</div>${t.type==='player'?'<i class="mineo"></i>':''}
+    <div class="face"${t.stamp?` style="--sd:-${(hashStr(t.id)%50)/10}s;--sa:${SWAY[t.stamp]||0}deg"`:""}>${faceHTML(t)}</div>${emberHTML(t)}${t.type==='player'?'<i class="mineo"></i>':''}
     ${alive?`<div class="dead">${SKULL}</div><svg class="turn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">${IC.hand}</svg>`:''}
     ${t.type==='prop'&&t.note?'<i class="ndot"></i>':''}
     ${t.type==='light'?`<div class="halo" style="width:${t.r*2}px;height:${t.r*2}px"></div>`:''}
@@ -3303,7 +3313,7 @@ function tokenHTML(t){
 function tokenEl(t){
   let el=document.querySelector(`.tk[data-id="${t.id}"]`);
   if(!el){ el=document.createElement('div'); el.dataset.id=t.id; $('tokens').appendChild(el); if(!isPlayer) bindToken(el); }
-  el.className=`tk ${t.type}`+(t.hidden?' hid':'')+(t.inbox?' inbox':'')+(t.box?' box':'')+(t.kind==='deco'?' deco':'')+(ALIVE(t)&&t.hp<=0?' down':'')+(cardId===t.id?' open':'')+(curTurnId()===t.id?' current':'')+(isPlayer&&ME&&t.owner===ME?' mine':'');
+  el.className=`tk ${t.type}`+(t.hidden?' hid':'')+(t.inbox?' inbox':'')+(t.box?' box':'')+(t.kind==='deco'?' deco':'')+(SWAY[t.stamp]?' sway':'')+(ALIVE(t)&&t.hp<=0?' down':'')+(cardId===t.id?' open':'')+(curTurnId()===t.id?' current':'')+(isPlayer&&ME&&t.owner===ME?' mine':'');
   if(isPlayer&&ME&&t.owner===ME&&!el._mine){ el._mine=1; bindMine(el); }
   el.style.left=t.x+'px'; el.style.top=t.y+'px'; el.style.setProperty('--s',t.s||1);
   el.innerHTML=tokenHTML(t);
@@ -4027,8 +4037,8 @@ const MAP=(function(){
         { d:'M8.8 10L12 6.6l3.2 3.4z' },
         { d:'M10.8 20.5v-2.6a1.2 1.2 0 0 1 2.4 0v2.6z', shade:true },
         { d:'M11.2 13h1.6v1.8h-1.6z', ink:true },
-        { d:'M12 8.4L4.4 2.8 M12 8.4l7.6-5.6 M12 8.4L5 14.6 M12 8.4l7 6.2', bold:false },
-        { d:'M5.6 3.6l2.2-1.4 2.6 3.3-2 1.5z M18.4 3.6l-2.2-1.4-2.6 3.3 2 1.5z M5.8 13.8l-1.6-1.8 3-2.8 1.6 1.8z M18.2 13.8l1.6-1.8-3-2.8-1.6 1.8z', fill:true },
+        { d:'M12 8.4L4.4 2.8 M12 8.4l7.6-5.6 M12 8.4L5 14.6 M12 8.4l7 6.2', bold:false, spin:[12,8.4,9] },
+        { d:'M5.6 3.6l2.2-1.4 2.6 3.3-2 1.5z M18.4 3.6l-2.2-1.4-2.6 3.3 2 1.5z M5.8 13.8l-1.6-1.8 3-2.8 1.6 1.8z M18.2 13.8l1.6-1.8-3-2.8-1.6 1.8z', fill:true, spin:[12,8.4,9] },
         { d:'M12 8.4m-.9 0a.9 .9 0 1 0 1.8 0a.9 .9 0 1 0 -1.8 0', ink:true },
         { d:'M1.6 20.5h20.8' },
         { d:'M2.6 20.5l.3-.9.3.9 M21 20.5l.3-.8.3.8', fine:true }
@@ -4205,9 +4215,9 @@ const MAP=(function(){
       layers:[
         { d:'M11.4 20.5l.2-12.6h.8l.2 12.6z', fill:true },
         { d:'M11.4 20.5l.2-12.6h.8l.2 12.6z' },
-        { d:'M12 7.6L12.6 1.6c.3 2.2.1 4.2-.3 6z', fill:true },
-        { d:'M12 7.6l5.6 2.6c-2-.2-3.9-.8-5.4-2z', fill:true },
-        { d:'M12 7.6l-5.4 3c1.4-1.6 3.1-2.6 5-3.4z', fill:true },
+        { d:'M12 7.6L12.6 1.6c.3 2.2.1 4.2-.3 6z', fill:true, spin:[12,7.6,3.5] },
+        { d:'M12 7.6l5.6 2.6c-2-.2-3.9-.8-5.4-2z', fill:true, spin:[12,7.6,3.5] },
+        { d:'M12 7.6l-5.4 3c1.4-1.6 3.1-2.6 5-3.4z', fill:true, spin:[12,7.6,3.5] },
         { d:'M12 7.6m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0', fill:true },
         { d:'M8.4 20.5c.6-1.2 1.6-1.6 3-1.6 M15.6 20.5c-.6-1.2-1.6-1.6-3-1.6', fine:true },
         { d:'M1.6 20.5h20.8' },
@@ -4344,7 +4354,8 @@ const MAP=(function(){
         { d:'M10.8 17.2v-5.6h2.4v5.6' },
         { d:'M7.4 11.6h9.2l-1.2 1.6H8.6z', fill:true },
         { d:'M7.4 11.6h9.2l-1.2 1.6H8.6z' },
-        { d:'M12 11.6V6 M12 6c-1.6-2.2-4.6-2.4-5.6 1.4 M12 6c1.6-2.2 4.6-2.4 5.6 1.4 M6.4 7.4c-.6 1.6-.4 3.2.4 4.2 M17.6 7.4c.6 1.6.4 3.2-.4 4.2', fine:true },
+        { d:'M12 11.6V6 M12 6c-1.6-2.2-4.6-2.4-5.6 1.4 M12 6c1.6-2.2 4.6-2.4 5.6 1.4 M6.4 7.4c-.6 1.6-.4 3.2.4 4.2 M17.6 7.4c.6 1.6.4 3.2-.4 4.2', fine:true, flow:true },
+        { d:'M8.2 13.4c-.2 1.2-.2 2.4 0 3.6 M15.8 13.4c.2 1.2.2 2.4 0 3.6', fine:true, flow:true },
         { d:'M12 4.6m-.9 0a.9 .9 0 1 0 1.8 0a.9 .9 0 1 0 -1.8 0', fill:true },
         { d:'M1.6 20.5h20.8' }
       ]
@@ -4405,7 +4416,7 @@ const MAP=(function(){
       ]
     },
     lampadaire: {
-      title:'Lampadaire', cat:'Architecture',
+      title:'Lampadaire', cat:'Lumières',
       layers:[
         { d:'M11.2 20.5V7.6h1.6v12.9z', fill:true },
         { d:'M11.2 20.5V7.6h1.6v12.9z' },
@@ -4603,6 +4614,85 @@ const MAP=(function(){
         { d:'M12 3.4V1.6 M7.6 5.2L6.2 4 M16.4 5.2L17.8 4 M6.8 8H5 M17.2 8H19', fine:false },
         { d:'M1.6 20.5h20.8' }
       ]
+    },
+    banc: {
+      title:'Banc', cat:'Architecture',
+      layers:[
+        { d:'M3.4 13.4h17.2v1.8H3.4z', fill:true },
+        { d:'M3.4 13.4h17.2v1.8H3.4z' },
+        { d:'M4 9.4h16v2.4H4z', fill:true },
+        { d:'M4 9.4h16v2.4H4z' },
+        { d:'M4 10.6h16', fine:true },
+        { d:'M5.4 11.8v1.6 M18.6 11.8v1.6', bold:false },
+        { d:'M5 15.2l-.6 5.3 M19 15.2l.6 5.3 M5.6 15.2l1 5.3 M18.4 15.2l-1 5.3', bold:false },
+        { d:'M1.6 20.5h20.8' }
+      ]
+    },
+    lampion: {
+      title:'Lampions', cat:'Lumières',
+      layers:[
+        { d:'M2 4.4c3.4 2.4 6.6 3.2 10 3.2s6.6-.8 10-3.2', fine:false },
+        { d:'M5.4 6.6v1.2 M12 7.6v1.2 M18.6 6.6v1.2', fine:true },
+        { d:'M3.8 7.8h3.2c.6 1.2.6 3.2 0 4.4H3.8c-.6-1.2-.6-3.2 0-4.4z M10.4 8.8h3.2c.6 1.2.6 3.2 0 4.4h-3.2c-.6-1.2-.6-3.2 0-4.4z M17 7.8h3.2c.6 1.2.6 3.2 0 4.4H17c-.6-1.2-.6-3.2 0-4.4z', fill:true },
+        { d:'M3.8 7.8h3.2c.6 1.2.6 3.2 0 4.4H3.8c-.6-1.2-.6-3.2 0-4.4z M10.4 8.8h3.2c.6 1.2.6 3.2 0 4.4h-3.2c-.6-1.2-.6-3.2 0-4.4z M17 7.8h3.2c.6 1.2.6 3.2 0 4.4H17c-.6-1.2-.6-3.2 0-4.4z' },
+        { d:'M3.6 10h3.6 M10.2 11h3.6 M16.8 10h3.6', fine:true },
+        { d:'M5.4 12.2v1.4 M12 13.2v1.4 M18.6 12.2v1.4', fine:true }
+      ]
+    },
+    guirlande: {
+      title:'Guirlande', cat:'Lumières',
+      layers:[
+        { d:'M2 5.6c3.4 3.2 6.6 4.4 10 4.4s6.6-1.2 10-4.4', fine:false },
+        { d:'M4.4 7.6l-.2 1.8 M8 9.4v1.8 M12 10v1.8 M16 9.4v1.8 M19.6 7.6l.2 1.8', fine:true },
+        { d:'M4.2 10.6m-.9 0a.9 1.2 0 1 0 1.8 0a.9 1.2 0 1 0 -1.8 0 M8 12.4m-.9 0a.9 1.2 0 1 0 1.8 0a.9 1.2 0 1 0 -1.8 0 M12 13m-.9 0a.9 1.2 0 1 0 1.8 0a.9 1.2 0 1 0 -1.8 0 M16 12.4m-.9 0a.9 1.2 0 1 0 1.8 0a.9 1.2 0 1 0 -1.8 0 M19.8 10.6m-.9 0a.9 1.2 0 1 0 1.8 0a.9 1.2 0 1 0 -1.8 0', fill:true },
+        { d:'M2 5.6v14.9 M22 5.6v14.9', bold:false },
+        { d:'M1.6 20.5h20.8' }
+      ]
+    },
+    lanterne_pierre: {
+      title:'Lanterne de pierre', cat:'Lumières',
+      layers:[
+        { d:'M8.4 20.5h7.2v-1.6H8.4z', fill:true },
+        { d:'M8.4 20.5h7.2v-1.6H8.4z' },
+        { d:'M10.6 18.9v-5h2.8v5', fill:true },
+        { d:'M10.6 18.9v-5h2.8v5' },
+        { d:'M7.6 13.9h8.8l-1-1.6H8.6z', fill:true },
+        { d:'M7.6 13.9h8.8l-1-1.6H8.6z' },
+        { d:'M9 12.3V8.4h6v3.9', fill:true },
+        { d:'M9 12.3V8.4h6v3.9' },
+        { d:'M10.6 9.4h2.8v2.2h-2.8z', fill:true, light:true },
+        { d:'M10.6 9.4h2.8v2.2h-2.8z' },
+        { d:'M6.4 8.4L12 4.6l5.6 3.8z', fill:true },
+        { d:'M12 4.6l5.6 3.8H12z', shade:true, stroke:false },
+        { d:'M6.4 8.4L12 4.6l5.6 3.8z' },
+        { d:'M12 4.6V3.2', bold:false },
+        { d:'M1.6 20.5h20.8' }
+      ]
+    },
+    lucioles: {
+      title:'Lucioles', cat:'Lumières',
+      layers:[
+        { d:'M6 8m-.9 0a.9 .9 0 1 0 1.8 0a.9 .9 0 1 0 -1.8 0 M13.6 5m-.7 0a.7 .7 0 1 0 1.4 0a.7 .7 0 1 0 -1.4 0 M17.8 10.6m-.9 0a.9 .9 0 1 0 1.8 0a.9 .9 0 1 0 -1.8 0 M9.4 13.6m-.7 0a.7 .7 0 1 0 1.4 0a.7 .7 0 1 0 -1.4 0 M14.4 15.4m-.8 0a.8 .8 0 1 0 1.6 0a.8 .8 0 1 0 -1.6 0', fill:true },
+        { d:'M5.2 7.2l-1-.8 M6.8 7.2l1-.8 M13 4.4l-.8-.7 M14.2 4.4l.8-.7 M17 9.8l-1-.8 M18.6 9.8l1-.8', fine:true },
+        { d:'M4 12c1.6-1.4 3.4-1.2 4.4.4 M11 9c1.4-1.6 3.6-1.6 4.8.2 M16 13.6c1.2 1.4 1.4 3 .4 4.4', fine:true },
+        { d:'M3 20.5c.6-1.6 1.4-2.4 2.4-2.6 M5.4 20.5c.2-1.8.8-3 1.8-3.6 M18 20.5c.4-1.4 1.2-2.2 2.2-2.4 M20.4 20.5c-.2-1.4.2-2.6 1-3.4', fine:true },
+        { d:'M1.6 20.5h20.8' }
+      ]
+    },
+    cristal: {
+      title:'Cristal lumineux', cat:'Lumières',
+      layers:[
+        { d:'M12 3l3 6.2-3 10.6-3-10.6z', fill:true },
+        { d:'M12 3l3 6.2-3 10.6z', shade:true, stroke:false },
+        { d:'M12 3l3 6.2-3 10.6-3-10.6z' },
+        { d:'M9 9.2h6 M12 3v16.8', fine:true },
+        { d:'M7.2 12.4l1.8 3.4-1.4 4.7-2-4.2z', fill:true },
+        { d:'M7.2 12.4l1.8 3.4-1.4 4.7-2-4.2z' },
+        { d:'M16.8 11.6l2 3.2-1.4 5.7-1.8-4.8z', fill:true },
+        { d:'M16.8 11.6l2 3.2-1.4 5.7-1.8-4.8z' },
+        { d:'M12 1v-1 M8.6 2.2L7.8 1.4 M15.4 2.2l.8-.8', fine:true },
+        { d:'M1.6 20.5h20.8' }
+      ]
     }
   };
   var svgPathCache = {};
@@ -4615,11 +4705,15 @@ const MAP=(function(){
   function stampMarkup(key,f){
     var st=SVG_STAMPS[key]; if(!st) return ''; f=f||1; var W=function(v){ return +(v*f).toFixed(3); };
     var h='<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="'+W(1.1)+'" stroke-linecap="round" stroke-linejoin="round">';
+    var open=null;
     st.layers.forEach(function(l){
       var f=l.ink ? 'currentColor' : l.shade ? STAMP_SHADE : (l.fill ? STAMP_FILL : 'none');
       var st2=l.stroke===false ? ' stroke="none"' : (l.fine ? ' stroke-width="'+W(0.6)+'"'+(l.light?' stroke="'+STAMP_FILL+'"':'') : (l.bold ? ' stroke-width="'+W(2.2)+'"' : ''));
-      h+='<path d="'+l.d+'" fill="'+f+'"'+st2+'/>';
+      var sk=l.spin?l.spin.join(','):null;
+      if(open!==sk){ if(open) h+='</g>'; if(sk) h+='<g class="spin" style="transform-origin:'+l.spin[0]+'px '+l.spin[1]+'px;animation-duration:'+l.spin[2]+'s">'; open=sk; }
+      h+='<path d="'+l.d+'" fill="'+f+'"'+st2+(l.flow?' class="flow"':'')+'/>';
     });
+    if(open) h+='</g>';
     return h+'</svg>';
   }
 
@@ -5256,8 +5350,13 @@ function openMapText(e,wp){ removeMapText(); const r=board.getBoundingClientRect
 /* pictos lumineux : halo coloré, scintillement, faisceau tournant du phare ; ils éclairent la nuit */
 const LIGHTS={candelabre:{r:180,c:'warm',fx:'flick'},bougies:{r:120,c:'warm',fx:'flick'},torche:{r:220,c:'warm',fx:'flick'},brasero:{r:280,c:'warm',fx:'flick'},feu_camp:{r:320,c:'warm',fx:'flick'},
   lanterne:{r:200,c:'warm',fx:'flick'},lustre:{r:280,c:'warm',fx:'flick'},lampadaire:{r:240,c:'warm'},reverbere:{r:300,c:'cool'},projecteur:{r:440,c:'cool'},enseigne:{r:170,c:'neon',fx:'neon'},
-  feu_tricolore:{r:90,c:'red',fx:'traffic'},balise:{r:150,c:'red',fx:'blink'},phare:{r:560,c:'warm',fx:'beam'}};
+  feu_tricolore:{r:90,c:'red',fx:'traffic'},lampion:{r:200,c:'warm'},guirlande:{r:220,c:'warm'},lanterne_pierre:{r:180,c:'warm',fx:'flick'},lucioles:{r:120,c:'lime',fx:'blink'},cristal:{r:240,c:'cool'},balise:{r:150,c:'red',fx:'blink'},phare:{r:560,c:'warm',fx:'beam'}};
 const BEAM_MS=8000;
+const SWAY={sapin:1.6,arbre:2,palmier:2.6,buisson:1.2,buissons:1.2,arbre_mort:.8,champignons:.6,cactus:.4};
+const EMBERS={torche:[58,16],brasero:[50,36],feu_camp:[50,52],candelabre:[50,22]};
+const hashStr=s=>{ let h=0; for(const c of String(s)) h=(h*31+c.charCodeAt(0))>>>0; return h; };
+function emberHTML(t){ const E=t.stamp&&EMBERS[t.stamp]; if(!E||!lightOf(t)||t.stamp==='candelabre') return ''; const h=hashStr(t.id);
+  return `<div class="embers" style="left:${E[0]}%;top:${E[1]}%">${Array.from({length:7},(_,i)=>`<i style="--x:${(((h>>i)%23)-11)}px;--d:${(1.6+((h>>(i+3))%10)/8).toFixed(2)}s;--t:-${(((h>>(i+5))%20)/10).toFixed(1)}s"></i>`).join('')}</div>`; }
 const lightState=t=>t.ls||(t.lit===false?'off':'on');
 const lightOf=t=>t&&t.stamp&&LIGHTS[t.stamp]&&lightState(t)!=='off'?LIGHTS[t.stamp]:null;
 const lightR=t=>{ const L=lightOf(t); if(!L) return 0; const r=t.lr||Math.round(L.r*(t.s||1)); return lightState(t)==='broken'?Math.round(r*.6):r; };
