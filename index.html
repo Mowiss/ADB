@@ -1997,7 +1997,12 @@ const NET_PEERJS=['https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.mi
 function netLoad(urls){ return new Promise((res,rej)=>{ const go=i=>{ if(i>=urls.length){ rej(new Error('script')); return; } const s=document.createElement('script'); s.src=urls[i]; s.onload=res; s.onerror=()=>{ s.remove(); go(i+1); }; document.head.appendChild(s); }; go(0); }); }
 const netPeerOpts=()=>{ let o={debug:0}; try{ const x=JSON.parse(localStorage.getItem('aldebaran.peer')||'null'); if(x) o=Object.assign(o,x); }catch(e){} return o; };
 const ICE_BASE=[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun.cloudflare.com:3478'},{urls:['turn:eu-0.turn.peerjs.com:3478','turn:us-0.turn.peerjs.com:3478'],username:'peerjs',credential:'peerjsp'}];
-async function netIce(){ const o=netPeerOpts(); if(o.config) return o; let ice=ICE_BASE.slice(); const u=(localStorage.getItem('aldebaran.turn')||'').trim();
+/* relais TURN intégré (Open Relay, identifiants temporaires signés : aucun compte nécessaire) */
+async function openRelayIce(){ try{ const user=(Math.floor(Date.now()/1000)+12*3600)+':aldebaran', te=new TextEncoder();
+  const k=await crypto.subtle.importKey('raw',te.encode('openrelayprojectsecret'),{name:'HMAC',hash:'SHA-1'},false,['sign']);
+  const sig=new Uint8Array(await crypto.subtle.sign('HMAC',k,te.encode(user))), cred=btoa(String.fromCharCode(...sig)), h='staticauth.openrelay.metered.ca';
+  return [{urls:[`turn:${h}:80`,`turn:${h}:80?transport=tcp`,`turn:${h}:443`,`turns:${h}:443?transport=tcp`],username:user,credential:cred}]; }catch(e){ return []; } }
+async function netIce(){ const o=netPeerOpts(); if(o.config) return o; let ice=ICE_BASE.concat(await openRelayIce()); const u=(localStorage.getItem('aldebaran.turn')||'').trim();
   if(/^https:\/\//.test(u)){ try{ const r=await fetch(u,{cache:'no-store'}); const j=await r.json(); if(Array.isArray(j)&&j.length) ice=ice.concat(j); }catch(e){} }
   o.config={iceServers:ice}; return o; }
 const NETP={peer:null,conn:null,code:null,frame:null,ready:false,want:false,last:{state:null,bg:null},pid:null,retry:0};
@@ -2044,7 +2049,7 @@ function tbConnect(){
   tbStatus('wait','Connexion directe…');
   const late=setTimeout(()=>{ if(NETP.conn!==c||c.open) return; NETP.want=false; NETP.conn=null; try{ c.close(); }catch(e){}
     tbStatus('off','Hors ligne'); tbShowJoin();
-    tbMsg('La table est trouvée, mais la connexion directe n\'aboutit pas : votre réseau la bloque (fréquent en 4G/5G). Essayez sur le même Wi-Fi que le maître du destin, ou demandez-lui d\'activer le serveur relais puis de vous renvoyer le lien ou le QR code.'); },20000);
+    tbMsg('La table est trouvée, mais la connexion directe n\'aboutit pas : votre réseau la bloque (fréquent en 4G/5G). Rechargez l\'appli et réessayez ; sinon, demandez au maître du destin d\'activer son serveur relais puis de vous renvoyer le lien ou le QR code.'); },20000);
   c.on('open',async()=>{ clearTimeout(late); NETP.retry=0; c.send({t:'join',pid:NETP.pid,sheet:await sheetData()}); tbStatus('on',NETP.code); tbLive(); });
   c.on('data',tbIn);
   c.on('close',()=>{ if(NETP.conn!==c) return; NETP.conn=null;
@@ -5988,7 +5993,12 @@ function peerOpts(){ let o={debug:0}; try{ const x=JSON.parse(localStorage.getIt
 const ICE_BASE=[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun.cloudflare.com:3478'},{urls:['turn:eu-0.turn.peerjs.com:3478','turn:us-0.turn.peerjs.com:3478'],username:'peerjs',credential:'peerjsp'}];
 const relayUrl=()=>{ const u=(localStorage.getItem('aldebaran.turn')||'').trim(); return /^https:\/\//.test(u)?u:''; };
 async function relayIce(u){ const r=await fetch(u,{cache:'no-store'}); const j=await r.json(); if(!Array.isArray(j)||!j.length) throw new Error('vide'); return j; }
-async function iceOpts(){ const o=peerOpts(); if(o.config) return o; let ice=ICE_BASE.slice(); const u=relayUrl(); if(u){ try{ ice=ice.concat(await relayIce(u)); }catch(e){ toast('Serveur relais injoignable : connexion sans relais',true); } } o.config={iceServers:ice}; return o; }
+/* relais TURN intégré (Open Relay, identifiants temporaires signés : aucun compte nécessaire) */
+async function openRelayIce(){ try{ const user=(Math.floor(Date.now()/1000)+12*3600)+':aldebaran', te=new TextEncoder();
+  const k=await crypto.subtle.importKey('raw',te.encode('openrelayprojectsecret'),{name:'HMAC',hash:'SHA-1'},false,['sign']);
+  const sig=new Uint8Array(await crypto.subtle.sign('HMAC',k,te.encode(user))), cred=btoa(String.fromCharCode(...sig)), h='staticauth.openrelay.metered.ca';
+  return [{urls:[`turn:${h}:80`,`turn:${h}:80?transport=tcp`,`turn:${h}:443`,`turns:${h}:443?transport=tcp`],username:user,credential:cred}]; }catch(e){ return []; } }
+async function iceOpts(){ const o=peerOpts(); if(o.config) return o; let ice=ICE_BASE.concat(await openRelayIce()); const u=relayUrl(); if(u){ try{ ice=ice.concat(await relayIce(u)); }catch(e){ toast('Serveur relais injoignable : connexion sans relais',true); } } o.config={iceServers:ice}; return o; }
 const CODE_CH='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const newCode=()=>Array.from({length:5},()=>CODE_CH[Math.floor(Math.random()*CODE_CH.length)]).join('');
 const peerId=code=>'aldebaran-'+String(code).toLowerCase();
