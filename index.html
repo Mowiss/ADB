@@ -2097,6 +2097,59 @@ $('tb-code').value=ls.get('aldebaran.joueur.table')||'';
 tbStatus('off','Hors ligne');
 if(window.__adbRelay){ try{ localStorage.setItem('aldebaran.turn',window.__adbRelay); }catch(e){} window.__adbRelay=null; }
 if(window.__adbJoin){ const code=window.__adbJoin; window.__adbJoin=null; setTimeout(()=>{ openDrawer('tabledrw'); tbJoin(code); },1200); }
+
+/* ===== Paysage : tablette (fiche + table au centre) et téléphone (table plein écran + fiche express) ===== */
+{ const H=document.documentElement; let view='table';
+  const css=document.createElement('style'); css.textContent=`
+#tbseg,#phud,#pfab,#tbback{display:none}
+html.pt-land #tbseg{display:flex;position:fixed;left:calc(var(--pw,350px) + 16px);top:calc(var(--bar) + 14px);z-index:36;padding:4px;background:var(--paper);border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,.3)}
+#tbseg button{height:40px;padding:0 16px;border:0;border-radius:9px;background:none;font:700 13px var(--f-body);color:var(--ink);cursor:pointer}#tbseg button.on{background:var(--ink-strong);color:#fff}
+html.tbcenter #tabledrw{transform:none!important;left:var(--pw,350px);right:40px;width:auto;padding:0;z-index:30;border:0;box-shadow:none!important;top:calc(var(--bar) + env(safe-area-inset-top,0px))}
+html.tbcenter #tb-join,html.pl-land #tb-join{display:none!important}html.tbcenter #tabledrw .tb-head{display:none}html.tbcenter #tabledrw .tb-live{border:0;border-radius:0}
+html.pl-land{--bar:0px}html.pl-land .appbar,html.pl-land .vtabs{display:none}html.pl-land.vt-show .vtabs{display:flex;top:0}
+html.pl-land #tabledrw{transform:none!important;left:124px;right:0;top:0;bottom:0;width:auto;padding:0;z-index:30;border:0;box-shadow:none!important}
+html.pl-land #tabledrw .tb-head{display:none}html.pl-land #tabledrw .tb-live{border:0;border-radius:0}
+html.pl-land #phud{display:flex;position:fixed;left:0;top:0;bottom:0;width:124px;z-index:31;flex-direction:column;align-items:center;gap:10px;padding:12px 8px;box-sizing:border-box;background:var(--paper);border-right:1px solid var(--rule)}
+#phud .hpv{display:flex;align-items:center;gap:6px}#phud .hpv button{width:28px;height:28px;border-radius:50%;border:1px solid var(--rule);background:var(--paper);font:700 15px var(--f-body);color:var(--ink);padding:0}
+#phud .ring{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--hc,#2a9d4b) var(--hp,100%),var(--rule) 0)}
+#phud .ring span{width:44px;height:44px;border-radius:50%;background:var(--paper);display:flex;flex-direction:column;align-items:center;justify-content:center;font:700 16px var(--f-body);line-height:1}#phud .ring small{font-size:9px;color:var(--ink-soft);letter-spacing:.08em}
+#phud .hst{display:grid;grid-template-columns:repeat(2,44px);gap:10px}
+#phud .sb{position:relative;width:44px;height:44px;border-radius:50%;border:1.5px solid #9aa0ad;background:var(--paper);display:grid;place-items:center;padding:0;font:400 19px var(--f-title);color:var(--ink-strong);cursor:pointer}
+#phud .sb i{position:absolute;bottom:-4px;left:50%;transform:translateX(-50%);font:700 8px var(--f-body);font-style:normal;letter-spacing:.06em;background:var(--paper);padding:0 3px;border-radius:4px}
+#phud .hpa{display:flex;gap:12px;font:700 12px var(--f-body);color:var(--ink-soft)}#phud .hpa b{color:var(--ink-strong)}
+html.pl-land #pfab{display:flex;flex-direction:column;gap:4px;position:fixed;right:10px;top:10px;z-index:32;padding:4px;background:var(--paper);border-radius:14px;box-shadow:0 6px 18px rgba(0,0,0,.35)}
+#pfab button,#tbback{width:40px;height:40px;border:0;border-radius:11px;background:none;color:var(--ink);display:grid;place-items:center;padding:0;cursor:pointer}#pfab svg,#tbback svg{width:21px;height:21px}
+html.pl-body #tbback{display:grid;position:fixed;right:52px;bottom:14px;width:52px;height:52px;border-radius:50%;background:var(--ink-strong);color:#fff;z-index:45;box-shadow:0 6px 18px rgba(0,0,0,.35)}
+html.pl-land .drawer:not(#tabledrw){top:0;right:0;z-index:40}`;
+  document.head.appendChild(css);
+  const svg=d=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+  const seg=document.createElement('div'); seg.id='tbseg'; seg.setAttribute('role','tablist');
+  seg.innerHTML='<button type="button" data-v="body">Corps</button><button type="button" data-v="table">Table</button>'; document.body.appendChild(seg);
+  seg.onclick=e=>{ const b=e.target.closest('[data-v]'); if(b){ view=b.dataset.v; lay(); } };
+  const hud=document.createElement('aside'); hud.id='phud'; hud.setAttribute('aria-label','Fiche express');
+  hud.innerHTML=`<div class="hpv"><button type="button" data-pm="pv" data-d="-1" aria-label="Retirer 1 PV">−</button><span class="ring" id="hud-ring"><span><b id="hud-pv"></b><small>PV</small></span></span><button type="button" data-pm="pv" data-d="1" aria-label="Ajouter 1 PV">+</button></div>
+    <div class="hst">${STATS.map(k=>`<button class="sb" type="button" data-roll="${k}" aria-label="Lancer ${STAT_INFO[k].name}"><b id="hud-${k}"></b><i style="color:${STAT_INFO[k].col}">${k}</i></button>`).join('')}</div>
+    <div class="hpa"><span>PA <b id="hud-pa"></b></span><span>PP <b id="hud-pp"></b></span></div>`; document.body.appendChild(hud);
+  const fab=document.createElement('div'); fab.id='pfab';
+  fab.innerHTML=`<button type="button" data-act="sheet" title="Fiche complète">${svg('<circle cx="12" cy="7.5" r="3.5"/><path d="M5 20c1-4 4-6 7-6s6 2 7 6"/>')}</button><button type="button" data-act="invpanel" title="Inventaire">${svg('<path d="M3.5 7.5L12 3l8.5 4.5v9L12 21l-8.5-4.5z"/><path d="M3.5 7.5L12 12l8.5-4.5M12 12v9"/>')}</button><button type="button" data-act="roller" title="Jet libre">${svg('<path d="M12 2.5L2.5 10 4 15.5 12 21.5l8-6 1.5-5.5z"/><path d="M12 2.5L8 12l4 3.5 4-3.5z"/>')}</button><button type="button" data-act="more" title="Autres volets">${svg('<circle cx="6" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="18" cy="12" r="1.3" fill="currentColor"/>')}</button>`;
+  document.body.appendChild(fab);
+  fab.onclick=e=>{ const b=e.target.closest('[data-act]'); if(!b) return; const a=b.dataset.act;
+    if(a==='sheet'){ view='body'; lay(); } else if(a==='more') H.classList.toggle('vt-show'); else openDrawer(a); };
+  const back=document.createElement('button'); back.id='tbback'; back.type='button'; back.title='Revenir à la table'; back.innerHTML=svg('<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>'); document.body.appendChild(back);
+  back.onclick=()=>{ view='table'; lay(); };
+  function hudUpdate(){ if(!H.classList.contains('pl-land')) return; try{ const D=derive(C), mx=D.pvMax||1, p=Math.max(0,Math.min(1,C.pv/mx));
+    $('hud-pv').textContent=C.pv; const r=$('hud-ring'); r.style.setProperty('--hp',(p*100)+'%'); r.style.setProperty('--hc',C.pv<=4?'#d23b3b':'#2a9d4b');
+    STATS.forEach(k=>{ $('hud-'+k).textContent=D.r[k]; }); $('hud-pa').textContent=D.pa; $('hud-pp').textContent=D.pp; }catch(e){} }
+  function lay(){ const live=!$('tb-live').hidden&&!!$('tb-live').firstChild, touch=matchMedia('(pointer:coarse)').matches||('ontouchstart' in window);
+    const land=innerWidth>innerHeight, pl=land&&innerHeight<=500, pt=land&&!pl&&innerWidth>=900&&touch;
+    const pw=$('panel')?$('panel').getBoundingClientRect().width:350; H.style.setProperty('--pw',Math.round(pw)+'px');
+    H.classList.toggle('pt-land',pt&&live); H.classList.toggle('tbcenter',pt&&live&&view==='table');
+    H.classList.toggle('pl-land',pl&&live&&view==='table'); H.classList.toggle('pl-body',pl&&live&&view==='body'); if(!(pl&&live&&view==='table')) H.classList.remove('vt-show');
+    seg.querySelectorAll('[data-v]').forEach(b=>{ const on=b.dataset.v===view; b.classList.toggle('on',on); b.setAttribute('aria-selected',on); });
+    hudUpdate(); }
+  const _rd=renderDerived; renderDerived=function(){ const r=_rd.apply(this,arguments); hudUpdate(); return r; };
+  new MutationObserver(lay).observe($('tb-live'),{attributes:true,childList:true});
+  let t=0; addEventListener('resize',()=>{ clearTimeout(t); t=setTimeout(lay,120); }); lay(); }
 }
 
 /* Écran toujours allumé (Wake Lock) : réglage commun Aventurier / Maître du destin */
