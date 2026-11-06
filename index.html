@@ -2508,7 +2508,7 @@ svg.i{width:18px;height:18px;flex:none}
 .subttl small{font-family:var(--f-body);letter-spacing:0;text-transform:none;font-size:11px;color:var(--ink-soft);margin-left:6px}
 .ldrawer .blist{max-height:none;flex:1}
 .ldrawer .brow{touch-action:pan-y;user-select:none;cursor:grab}
-.jtabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;position:sticky;top:0;z-index:3;background:var(--paper);padding:4px 0 10px;margin-top:-4px;border-bottom:1px solid var(--rule)}.jtabs .wxb{min-width:0;padding:10px 4px 8px}.jtabs .wxb span{font-size:10.5px;line-height:1.15;text-align:center}.jtabs .wxb svg{color:var(--tc)}
+.jtabs{display:grid;grid-template-columns:repeat(var(--n,3),minmax(0,1fr));gap:6px;position:sticky;top:0;z-index:3;background:var(--paper);padding:4px 0 10px;margin-top:-4px;border-bottom:1px solid var(--rule)}.jtabs .wxb{min-width:0;padding:10px 4px 8px}.jtabs .wxb span{font-size:10.5px;line-height:1.15;text-align:center}.jtabs .wxb svg{color:var(--tc)}
 .jbody{display:flex;flex-direction:column;gap:12px}
 .jsec{border-bottom:1px solid var(--rule)}.jsec>summary{list-style:none;cursor:pointer;font-family:var(--f-title);font-size:14px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-strong);padding:14px 2px;display:flex;align-items:center;gap:10px}.jsec>summary svg{width:20px;height:20px;color:var(--sc)}.jsec>summary span{flex:1}.jsec>summary:hover{color:var(--sc)}
 .jsec.sub{border:1px solid var(--faint);border-radius:10px;padding:0 10px;margin-top:4px}.jsec.sub>summary{font-size:12.5px;padding:11px 0}
@@ -2769,7 +2769,8 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
   <nav class="rail" id="rail" aria-label="Outils">
     <span class="cap">Outils</span>
     <button class="rb" type="button" data-left="ldraw" id="rb-draw" title="Dessin (D)" aria-pressed="false"></button>
-    <button class="rb" type="button" data-left="ljet" id="rb-jet" title="Jetons (J)" aria-pressed="false"></button>
+    <button class="rb" type="button" data-left="ljet" id="rb-jet" title="MOBs (J)" aria-pressed="false"></button>
+    <button class="rb" type="button" data-left="litem" id="rb-item" title="Items (I)" aria-pressed="false"></button>
     <button class="rb" type="button" data-left="fond" id="rb-fond" title="Fond de carte (F)" aria-pressed="false"></button>
   </nav>
   <div id="board">
@@ -2812,7 +2813,8 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
   <button type="button" class="vtab" data-drawer="mapdrw" style="--tc:var(--c-res)"><span>Map</span></button>
 </nav>
 
-<aside class="drawer ldrawer" id="ljet" style="--tc:var(--danger)" aria-label="Jetons"><header><h3>Jetons</h3></header><div class="dscroll" id="ljet-body"></div></aside>
+<aside class="drawer ldrawer" id="ljet" style="--tc:var(--danger)" aria-label="MOBs"><header><h3>MOBs</h3></header><div class="dscroll" id="ljet-body"></div></aside>
+<aside class="drawer ldrawer" id="litem" style="--tc:var(--brown)" aria-label="Items"><header><h3>Items</h3></header><div class="dscroll" id="litem-body"></div></aside>
 <aside class="drawer ldrawer" id="ldraw" style="--tc:var(--c-sav)" aria-label="Dessin"><header><h3>Dessin</h3></header><div class="dscroll" id="ldraw-body"></div></aside>
 <aside class="drawer ldrawer" id="lbest" style="--tc:var(--danger)" aria-label="Bestiaire"><header><h3>Bestiaire</h3></header><div class="dscroll" id="lbest-body"></div></aside>
 <aside class="drawer" id="scenario" style="--tc:var(--c-per)" aria-label="Scénario">
@@ -3285,7 +3287,7 @@ function atkRow(a={}){ return `<div class="arow"><label class="field"><span clas
   <button class="ib del" type="button" data-arm title="Retirer">${IB('x')}</button></div>`; }
 function entityDialog(type,edit,preset){
   if(type==='mob') return mobDialog(edit,preset);
-  if(type==='prop'||type==='light') return edit?openJet({view:'config',edit}):openJet({secProp:true,secLight:type==='light',secCreate:false,secBest:false});
+  if(type==='prop'||type==='light') return openItem(edit?{edit}:{tab:type});
   const T=TYPES[type], t=Object.assign(edit?clone(edit):{type,name:'',ico:T.def,img:null,stats:{},hp:T.hp,hpMax:T.hp,attacks:[],note:'',r:type==='light'?150:250},preset?Object.assign(clone(preset),preset.hpMax!=null?{hp:preset.hpMax}:{}):{});
   if(type!=='prop'&&type!=='light') STATS.forEach(s=>{ if(t.stats[s]==null) t.stats[s]=T.stat; });
   const sq=type==='prop';
@@ -4291,7 +4293,7 @@ function renderDrawPanel(){ const box=$('ldraw-body'); if(!box) return; const on
 function closeLeft(){ if(typeof jetStamp==='function') jetStamp(false); document.querySelectorAll('.ldrawer.open').forEach(d=>{ d.classList.remove('open'); if(d.id==='ldraw'&&(tool==='map'||tool==='measure')) setTool(tool); }); document.querySelectorAll('.rb[data-left]').forEach(b=>b.setAttribute('aria-pressed','false')); }
 function openLeft(id,force){ const was=$(id).classList.contains('open'); if(was&&force) return; closeLeft(); if(was) return;
   $(id).classList.add('open'); document.querySelector(`.rb[data-left="${id}"]`).setAttribute('aria-pressed','true');
-  if(id==='ldraw'){ if(tool!=='map') setTool('map'); renderDrawPanel(); } else if(id==='lbest') renderBestPanel(); else if(id==='ljet'){ renderJetPanel(); } else if(id==='fond') renderFond(); }
+  if(id==='ldraw'){ if(tool!=='map') setTool('map'); renderDrawPanel(); } else if(id==='lbest') renderBestPanel(); else if(id==='ljet'){ renderJetPanel(); } else if(id==='litem'){ renderItemPanel(); } else if(id==='fond') renderFond(); }
 function bestRows(q){ q=normTxt(q); const L=S.bestiary.map((m,i)=>({m,i})).filter(x=>!q||normTxt(x.m.name).includes(q));
   const row=x=>{ const m=x.m; return `<div class="brow" data-i="${x.i}" title="Glisser sur le plateau · cliquer pour ouvrir"><span class="bface">${faceHTML({...m,type:'mob'},'sm')}</span><b>${esc(m.name)}</b><span class="bv">${m.hpMax}</span><span class="bv">${m.pp||0}</span><span class="bss">${STATS.map(s=>`<i style="--sc:${STAT_INFO[s].col}" title="${s}">${m.stats&&m.stats[s]!=null?m.stats[s]:0}</i>`).join('')}</span>${m.cat?'<span class="nodel"></span>':`<button class="ib del" type="button" data-del="${x.i}" title="Retirer du bestiaire">${IB('bin')}</button>`}</div>`; };
   const cats=[...BEST_CATS,...new Set(L.map(x=>x.m.cat).filter(c=>c&&!BEST_CATS.includes(c)))], mine=L.filter(x=>!x.m.cat);
@@ -4372,7 +4374,7 @@ function renderJetPanel(){ const box=$('ljet-body'); if(!box) return; jetRead=nu
     else propForm($('jt-main'),t,{edit:JP.edit,top:top('Modifier'),onBack:back});
     $('jt-back').onclick=back; jetStamp(false); return; }
   /* boutons en tête de volet : un seul contenu affiché à la fois ; recliquer le bouton actif replie tout */
-  const SECS=[['secBoard','Sur le plateau','target','var(--ink-strong)'],['secCreate','Créer un MOB','plus','var(--danger)'],['secBest','Bestiaire','book','var(--danger)'],['secProp','Mobilier','box','var(--brown)']];
+  const SECS=[['secBoard','Sur le plateau','target','var(--ink-strong)'],['secCreate','Créer un MOB','plus','var(--danger)'],['secBest','Bestiaire','book','var(--danger)']];
   const cur=SECS.find(x=>JP[x[0]]);
   box.innerHTML=`<div class="jtabs">${SECS.map(([k,l,ic,col])=>`<button type="button" class="wxb${JP[k]?' on':''}" data-sec="${k}" style="--tc:${col}" aria-pressed="${JP[k]?'true':'false'}">${IB(ic,1.7)}<span>${l}</span></button>`).join('')}</div>
     <div class="jbody" id="jt-body">${!cur?''
@@ -4408,7 +4410,21 @@ function renderJetPanel(){ const box=$('ljet-body'); if(!box) return; jetRead=nu
         centerOn(t.x,t.y); const el=document.querySelector(`.tk[data-id="${t.id}"]`); if(el){ el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); } }; }); };
   $('lj-q').oninput=drawB; drawB(); JP.drawB=drawB;
   jetStamp(stampWanted()); }
-function stampWanted(){ return $('ljet').classList.contains('open')&&!JP.edit&&!!jetRead; }
+function stampWanted(){ return ($('ljet').classList.contains('open')&&!JP.edit||$('litem').classList.contains('open')&&!IP.edit)&&!!jetRead; }
+/* Volet ITEMS : mobilier et lumières (tampon comme les MOBs) */
+const IP={tab:'prop',edit:null,prop:null,light:null};
+function openItem(o){ Object.assign(IP,{edit:null},o||{}); const P=$('litem'); if(!P.classList.contains('open')){ closeLeft(); P.classList.add('open'); document.querySelector('.rb[data-left="litem"]').setAttribute('aria-pressed','true'); } renderItemPanel(); }
+function renderItemPanel(){ const box=$('litem-body'); if(!box) return; jetRead=null;
+  const back=()=>{ IP.edit=null; renderItemPanel(); }, onChange=()=>stampGhost();
+  if(IP.edit){ const t=clone(IP.edit); box.innerHTML='<div id="it-main"></div>'; $('litem').style.setProperty('--tc',TYPES[t.type].col);
+    propForm($('it-main'),t,{edit:IP.edit,pid:'ie',top:`<div class="jback"><button class="btn ghost" type="button" id="it-back">${IB('left')}Retour</button><b>Modifier</b></div>`,onBack:back}); $('it-back').onclick=back; jetStamp(false); return; }
+  const TABS=[['prop','Mobilier','box','var(--brown)'],['light','Lumière','bulb','var(--gold)']], cur=TABS.find(x=>x[0]===IP.tab)||TABS[0];
+  box.innerHTML=`<div class="jtabs" style="--n:2">${TABS.map(([k,l,ic,col])=>`<button type="button" class="wxb${IP.tab===k?' on':''}" data-it="${k}" style="--tc:${col}" aria-pressed="${IP.tab===k}">${IB(ic,1.7)}<span>${l}</span></button>`).join('')}</div><div class="jbody" id="it-body"></div>`;
+  $('litem').style.setProperty('--tc',cur[3]);
+  box.querySelectorAll('[data-it]').forEach(b=>b.onclick=()=>{ IP.tab=b.dataset.it; renderItemPanel(); });
+  if(!IP[IP.tab]) IP[IP.tab]=IP.tab==='light'?{type:'light',name:'',ico:'bulb',img:null,r:200}:{type:'prop',name:'',ico:'box',img:null,note:''};
+  jetRead=propForm($('it-body'),IP[IP.tab],{pid:IP.tab==='light'?'il':'ip',onChange});
+  jetStamp(stampWanted()); }
 function jetRefresh(){ const j=$('ljet'); if(j&&j.classList.contains('open')&&JP.drawB&&document.activeElement!==$('lj-q')) JP.drawB(); }
 function renderBestPanel(){ const box=$('lbest-body'); if(!box) return; $('lbest').querySelector('header h3').textContent='Bestiaire'; importBook(); const todo=bookTodo(), q=$('lb-q')?$('lb-q').value:'';
   box.innerHTML=`<div class="bsearch"><input class="line-in" id="lb-q" placeholder="Rechercher un MOB…" autocomplete="off" value="${esc(q)}"></div>
@@ -4771,7 +4787,7 @@ function wire(){
   // icônes de l'interface
   $('sc-ico').innerHTML=IB('film'); $('sc-prev').innerHTML=IB('left',2); $('sc-next').innerHTML=IB('right',2); $('sc-up').innerHTML=IB('up',2); $('sc-down').innerHTML=IB('down',2);
   $('b-player').innerHTML=IB('screen'); $('b-player').classList.add('icon'); $('b-net').insertAdjacentHTML('afterbegin',IB('table')); $('b-full').innerHTML=IB('full'); $('b-settings').insertAdjacentHTML('afterbegin',IB('gear'));
-  $('rb-draw').innerHTML=IB('pen'); $('rb-jet').innerHTML=IB('person'); $('rb-fond').innerHTML=IB('planet');
+  $('rb-draw').innerHTML=IB('pen'); $('rb-jet').innerHTML=IB('skull'); $('rb-item').innerHTML=IB('box'); $('rb-fond').innerHTML=IB('planet');
   document.querySelectorAll('.rb[data-left]').forEach(b=>b.onclick=()=>openLeft(b.dataset.left));
   $('b-shuffle').innerHTML=IB('shuffle'); $('b-next').innerHTML=IB('next'); $('b-timer').innerHTML=IB('hourglass');
   $('bin').innerHTML=IB('bin'); $('sc-pdf').innerHTML=IB('print'); $('sc-new').innerHTML=IB('clap')+'Nouvelle scène'; $('sc-del').innerHTML=IB('bin')+'Supprimer';
@@ -4827,7 +4843,7 @@ function wire(){
     if(k==='escape'&&tool==='map'&&arrowTip){ arrowTip=null; mapPrev=null; drawMapLater(); return; }
     if(k==='escape'&&jetStampOn){ closeLeft(); return; }
     if(k==='escape'){ if(tool) setTool(tool); closeCard(); closePop(); if(sheetPid) closeSheet(); }
-    else if(k==='m'){ if(!$('ldraw').classList.contains('open')) openLeft('ldraw'); pickMapTool('measure'); } else if(k==='d') openLeft('ldraw'); else if(k==='b') openJet({secBest:true,secCreate:false,secProp:false}); else if(k==='j') openLeft('ljet'); else if(k==='f'&&!e.ctrlKey&&!e.metaKey) openLeft('fond'); else if(k==='0') fitBoard();
+    else if(k==='m'){ if(!$('ldraw').classList.contains('open')) openLeft('ldraw'); pickMapTool('measure'); } else if(k==='d') openLeft('ldraw'); else if(k==='b') openJet({secBest:true,secCreate:false,secProp:false}); else if(k==='j') openLeft('ljet'); else if(k==='i') openLeft('litem'); else if(k==='f'&&!e.ctrlKey&&!e.metaKey) openLeft('fond'); else if(k==='0') fitBoard();
     else if(e.code==='Space'){ e.preventDefault(); nextTurn(); } });
   document.addEventListener('pointerdown',e=>{ if(!e.target.closest('.pop')&&!e.target.closest('[data-tool="draw"]')) closePop(); });
 }
