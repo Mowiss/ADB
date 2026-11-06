@@ -2638,7 +2638,8 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 .arow{display:grid;grid-template-columns:minmax(0,1fr) 78px 62px 28px;gap:8px;align-items:end}
 .arow input,.arow select{font-weight:600}
 .arow .bn{text-align:center}
-.mobhead{display:flex;align-items:center;justify-content:space-between;gap:12px}.mobhead h3{margin:0}
+.mobhead{display:flex;align-items:center;justify-content:space-between;gap:12px}
+#lbest .who{grid-template-columns:76px minmax(0,1fr)}#lbest .portrait{width:76px;height:76px}#lbest .actions{flex-wrap:wrap;position:sticky;bottom:0;background:var(--paper);padding:10px 0 4px;margin-top:4px;border-top:1px solid var(--faint)}#lbest .actions .btn{flex:1}.mobhead h3{margin:0}
 .mopts{display:flex;gap:8px}.mopt{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 4px 7px;border:1px solid var(--rule);border-radius:10px;background:var(--paper);color:var(--ink);font-size:11px;font-weight:700}
 .mopt svg{width:22px;height:22px}.mopt .me{font-size:19px;line-height:22px}.mopt:hover{border-color:var(--ink)}.mopt.on{border-color:var(--c);color:var(--c);box-shadow:inset 0 0 0 1px var(--c)}
 .emogrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(36px,1fr));gap:2px;max-height:170px;overflow:auto;border:1px solid var(--faint);border-radius:10px;padding:6px}
@@ -3312,8 +3313,13 @@ function mobDialog(edit,preset){
   STATS.forEach(s=>{ if(t.stats[s]==null) t.stats[s]=T.stat; }); if(t.ico!=='emoji') t.ico='skull';
   const mode=()=>t.img?'img':t.ico==='emoji'?'emoji':'logo';
   const V=[['hp','❤️','PV',t.hpMax],['pp','💙','PP',t.pp],['pa','🦶🏻','PA',t.pa],['pt','🌀','PT',t.pt]];
-  openDialog(`<div class="mobhead"><h3>${edit?'Modifier le':'Nouveau'} <em>MOB</em></h3><button class="btn ghost" type="button" id="m-best">${IB('book')}Bestiaire</button></div>
-    <div class="who"><button class="portrait" type="button" id="m-face" title="Importer une image (ou coller / déposer une image dans cette fenêtre)"></button>
+  /* le formulaire s'affiche dans le volet Bestiaire (pas de fenêtre) */
+  const P=$('lbest'); if(!P.classList.contains('open')){ closeLeft(); P.classList.add('open'); document.querySelector('.rb[data-left="lbest"]').setAttribute('aria-pressed','true'); }
+  if(dlg.open) dlg.close();
+  const box=$('lbest-body'); P.querySelector('header h3').innerHTML=`${edit?'Modifier':'Nouveau'} MOB`; P.style.setProperty('--c',T.col);
+  const back=()=>{ P.querySelector('header h3').textContent='Bestiaire'; document.onpaste=null; box.ondragover=box.ondrop=null; renderBestPanel(); };
+  box.innerHTML=(`<div class="mobhead"><button class="btn ghost" type="button" id="m-best">${IB('left')}Bestiaire</button></div>
+    <div class="who"><button class="portrait" type="button" id="m-face" title="Importer une image (ou coller / déposer une image dans ce volet)"></button>
       <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
         <div class="field"><label class="cap" for="e-name">Nom</label><input id="e-name" class="line-in name-in" placeholder="Sans nom" value="${esc(t.name)}" autocomplete="off"></div>
         <div class="mopts"><button type="button" class="mopt" data-m="logo">${IB('skull',1.8)}<span>Logo MOB</span></button><button type="button" class="mopt" data-m="emoji"><span class="me" id="m-emo"></span><span>Émoji</span></button><button type="button" class="mopt" data-m="img">${IB('upload',1.8)}<span>Image</span></button></div>
@@ -3323,7 +3329,8 @@ function mobDialog(edit,preset){
     ${statsBlock(t)}
     <div class="subttl">Attaques</div><div class="arows" id="e-atks">${(t.attacks||[]).map(atkRow).join('')}</div><button class="mini" type="button" id="e-addatk" style="align-self:flex-start">${IB('plus')}Ajouter une attaque</button>
     <label class="field"><span class="cap">Notes & remarques</span><textarea class="cnote" id="e-note" placeholder="Capacités, résistances, faiblesses, butin…">${esc(t.note||'')}</textarea></label>
-    <div class="actions"><button class="btn ghost" type="button" data-close>Annuler</button><button class="btn" type="button" id="e-ok" style="background:${T.col};border-color:${T.col}">${edit?'Valider':'Invoquer'}</button><button class="btn ghost" type="button" id="m-save" title="Enregistrer ce MOB dans le bestiaire">${IB('book')}Enregistrer</button></div>`,T.col);
+    <div class="actions"><button class="btn ghost" type="button" id="m-cancel">Annuler</button><button class="btn" type="button" id="e-ok" style="background:${T.col};border-color:${T.col}">${edit?'Valider':'Invoquer'}</button><button class="btn ghost" type="button" id="m-save" title="Enregistrer ce MOB dans le bestiaire">${IB('book')}Enregistrer</button></div>`);
+  box.scrollTop=0; $('m-cancel').onclick=back;
   const face=()=>{ $('m-face').innerHTML=faceHTML({...t,name:$('e-name').value||t.name}); $('m-emo').textContent=t.emo||'💀'; document.querySelectorAll('.mopt').forEach(b=>b.classList.toggle('on',b.dataset.m===mode())); };
   const setImg=img=>{ t.img=img; face(); };
   const upl=()=>{ imgTarget=setImg; $('file-img').click(); };
@@ -3333,10 +3340,10 @@ function mobDialog(edit,preset){
   $('m-emoin').oninput=e=>{ const v=e.target.value.trim(); if(v){ t.emo=firstGlyph(v); t.ico='emoji'; t.img=null; face(); } };
   $('m-face').onclick=upl; $('e-name').oninput=face; face();
   /* une image copiée (clic droit › Copier l'image) se colle ici ; un fichier image se dépose ici */
-  const body=$('dlg-body');
+  const body=box;
   body.ondragover=e=>{ if($('m-face')) e.preventDefault(); };
   body.ondrop=e=>{ if(!$('m-face')) return; const f=[...(e.dataTransfer.files||[])].find(isImgFile); if(f){ e.preventDefault(); readImage(f,128,setImg); } };
-  document.onpaste=e=>{ if(!dlg.open||!$('m-face')) return; const f=[...((e.clipboardData&&e.clipboardData.files)||[])].find(x=>/^image\//.test(x.type)); if(f){ e.preventDefault(); readImage(f,128,img=>{ setImg(img); toast('Image collée'); }); } };
+  document.onpaste=e=>{ if(!$('m-face')||!P.classList.contains('open')) return; const f=[...((e.clipboardData&&e.clipboardData.files)||[])].find(x=>/^image\//.test(x.type)); if(f){ e.preventDefault(); readImage(f,128,img=>{ setImg(img); toast('Image collée'); }); } };
   const num=(id,d)=>{ const v=parseInt($(id).value); return Number.isFinite(v)?v:d; };
   const read=()=>{ t.name=$('e-name').value.trim(); t.hpMax=Math.max(1,num('m-hp',1)); t.hp=$('m-hpc')?clamp(num('m-hpc',t.hpMax),-1,t.hpMax):t.hpMax;
     t.pp=Math.max(0,num('m-pp',0)); t.pa=num('m-pa',0); t.pt=num('m-pt',0);
@@ -3345,11 +3352,11 @@ function mobDialog(edit,preset){
     t.note=$('e-note').value; return t; };
   const bindAtk=()=>document.querySelectorAll('#e-atks [data-arm]').forEach(b=>b.onclick=()=>b.closest('.arow').remove());
   $('e-addatk').onclick=()=>{ $('e-atks').insertAdjacentHTML('beforeend',atkRow({stat:'FOR'})); bindAtk(); $('e-atks').lastElementChild.querySelector('input').focus(); }; bindAtk();
-  $('m-best').onclick=()=>bestiaryDialog(edit);
+  $('m-best').onclick=back;
   $('m-save').onclick=()=>{ const r=read(); if(!r.name){ toast('Donnez un nom au MOB',true); $('e-name').focus(); return; }
     const i=S.bestiary.findIndex(m=>m.name.toLowerCase()===r.name.toLowerCase()), prof=mobProfile(r,i>=0?S.bestiary[i].cat:undefined);
     if(i>=0) S.bestiary[i]=prof; else S.bestiary.push(prof); S.bestiary.sort((a,b)=>a.name.localeCompare(b.name,'fr')); markDirty(); toast(`« ${r.name} » enregistré au bestiaire`); };
-  $('e-ok').onclick=()=>{ const r=read(); dlg.close();
+  $('e-ok').onclick=()=>{ const r=read(); back();
     if(edit){ Object.assign(edit,r); tokenEl(edit); renderTracker(); if(cardId===edit.id) renderCard(); markDirty(); sync(); }
     else addToken(r); };
   setTimeout(()=>{ if(!edit&&!preset) $('e-name').focus(); },50);
@@ -4290,7 +4297,7 @@ function renderJetPanel(){ const box=$('ljet-body'); if(!box) return; const q=$(
         centerOn(t.x,t.y); const el=document.querySelector(`.tk[data-id="${t.id}"]`); if(el){ el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); } }; }); };
   $('lj-q').oninput=draw; draw(); }
 function jetRefresh(){ const j=$('ljet'); if(j&&j.classList.contains('open')&&document.activeElement!==$('lj-q')) renderJetPanel(); }
-function renderBestPanel(){ const box=$('lbest-body'); if(!box) return; importBook(); const todo=bookTodo(), q=$('lb-q')?$('lb-q').value:'';
+function renderBestPanel(){ const box=$('lbest-body'); if(!box) return; $('lbest').querySelector('header h3').textContent='Bestiaire'; importBook(); const todo=bookTodo(), q=$('lb-q')?$('lb-q').value:'';
   box.innerHTML=`<div class="bsearch"><input class="line-in" id="lb-q" placeholder="Rechercher un MOB…" autocomplete="off" value="${esc(q)}"></div>
     <div class="wxrow"><button type="button" class="wxb" id="lb-new">${IB('plus')}<span>Nouveau MOB</span></button>${todo?`<button type="button" class="wxb" id="lb-imp" title="Ajouter les créatures du livre Aldebaran">${IB('book')}<span>Importer le livre (${todo})</span></button>`:''}</div>
     <p class="meta" style="text-align:left;margin:0">Glissez un MOB sur le plateau pour l'invoquer ; cliquez-le pour l'ouvrir.</p>
