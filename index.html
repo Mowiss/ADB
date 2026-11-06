@@ -3353,9 +3353,9 @@ function mobForm(box,t,o){
     <div class="who"><button class="portrait" type="button" id="m-face" title="Importer une image (ou coller / déposer une image dans ce volet)"></button>
       <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
         <div class="field"><label class="cap" for="e-name">Nom</label><input id="e-name" class="line-in name-in" placeholder="Sans nom" value="${esc(t.name)}" autocomplete="off"></div>
-        <div class="mopts"><button type="button" class="mopt" data-m="logo">${IB('skull',1.8)}<span>Logo MOB</span></button><button type="button" class="mopt" data-m="emoji"><span class="me" id="m-emo"></span><span>Émoji</span></button><button type="button" class="mopt" data-m="img">${IB('upload',1.8)}<span>Image</span></button></div>
+        ${o.look?`<div class="mopts"><button type="button" class="mopt" data-m="logo">${IB('skull',1.8)}<span>Logo MOB</span></button><button type="button" class="mopt" data-m="emoji"><span class="me" id="m-emo"></span><span>Émoji</span></button><button type="button" class="mopt" data-m="img">${IB('upload',1.8)}<span>Image</span></button></div>`:''}
       </div></div>
-    <div class="emogrid" id="m-emos" hidden>${EMOJIS.map(e=>`<button type="button" data-e="${e}">${e}</button>`).join('')}<input class="line-in" id="m-emoin" maxlength="12" placeholder="Autre…" aria-label="Autre émoji"></div>
+    ${o.look?`<div class="emogrid" id="m-emos" hidden>${EMOJIS.map(e=>`<button type="button" data-e="${e}">${e}</button>`).join('')}<input class="line-in" id="m-emoin" maxlength="12" placeholder="Autre…" aria-label="Autre émoji"></div>`:''}
     <div class="subttl">Taille du jeton</div><div class="bgscale"><input type="range" id="m-s" min="0.5" max="5" step="0.1" value="${t.s||1}" aria-label="Taille du jeton"><b id="m-sv" style="min-width:40px">× ${String(t.s||1).replace('.',',')}</b></div>
     <div class="subttl">Vitalité</div>
     <div class="sgrid vit${edit?' five':''}">${V.map(([k,e,l,v])=>`<label class="sin"><div class="cir"><i class="vb">${e}</i><input inputmode="numeric" maxlength="3" id="m-${k}" value="${v??0}"></div><span>${l}</span></label>`).join('')}${edit?`<label class="sin"><div class="cir"><i class="vb">❤️</i><input inputmode="numeric" maxlength="3" id="m-hpc" value="${t.hp}"></div><span>PV ACTUELS</span></label>`:''}</div>
@@ -3366,14 +3366,15 @@ function mobForm(box,t,o){
     ${edit?`<div class="actions"><button class="btn ghost" type="button" id="m-cancel">Annuler</button><button class="btn" type="button" id="e-ok" style="background:${T.col};border-color:${T.col}">Valider</button><button class="btn ghost" type="button" id="m-save" title="Enregistrer ce MOB dans le bestiaire">${IB('book')}Enregistrer</button></div>`
       :`<div class="actions jstamp"><button class="btn ghost" type="button" id="m-save" title="Enregistrer ce MOB dans le bestiaire">${IB('book')}Enregistrer au bestiaire</button></div>`}</div>`);
   if($('m-cancel')) $('m-cancel').onclick=back;
-  const face=()=>{ $('m-face').innerHTML=faceHTML({...t,name:$('e-name').value||t.name}); $('m-emo').textContent=t.emo||'💀'; document.querySelectorAll('.mopt').forEach(b=>b.classList.toggle('on',b.dataset.m===mode())); };
+  const face=()=>{ $('m-face').innerHTML=faceHTML({...t,name:$('e-name').value||t.name}); if(!o.look) return; $('m-emo').textContent=t.emo||'💀'; document.querySelectorAll('.mopt').forEach(b=>b.classList.toggle('on',b.dataset.m===mode())); };
   const setImg=img=>{ t.img=img; face(); };
   const upl=()=>{ imgTarget=setImg; $('file-img').click(); };
-  document.querySelectorAll('.mopt').forEach(b=>b.onclick=()=>{ const m=b.dataset.m; if(m==='img'){ upl(); return; }
+  if(o.look) document.querySelectorAll('.mopt').forEach(b=>b.onclick=()=>{ const m=b.dataset.m; if(m==='img'){ upl(); return; }
     t.img=null; t.ico=m==='emoji'?'emoji':'skull'; $('m-emos').hidden=m!=='emoji'||!$('m-emos').hidden; face(); });
-  $('m-emos').querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>{ t.emo=b.dataset.e; t.ico='emoji'; t.img=null; $('m-emos').hidden=true; face(); });
+  if(o.look){ $('m-emos').querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>{ t.emo=b.dataset.e; t.ico='emoji'; t.img=null; $('m-emos').hidden=true; face(); });
   $('m-emoin').oninput=e=>{ const v=e.target.value.trim(); if(v){ t.emo=firstGlyph(v); t.ico='emoji'; t.img=null; face(); } };
-  $('m-face').onclick=upl; $('e-name').oninput=face; face();
+  $('m-face').onclick=upl; }
+  $('e-name').oninput=face; face();
   /* une image copiée (clic droit › Copier l'image) se colle ici ; un fichier image se dépose ici */
   const body=box;
   body.ondragover=e=>{ if($('m-face')) e.preventDefault(); };
@@ -3404,7 +3405,7 @@ function bestiaryDialog(edit){
   const row=x=>{ const m=x.m; return `<div class="brow" data-i="${x.i}" title="Invoquer ${esc(m.name)}"><span class="bface">${faceHTML({...m,type:'mob'},'sm')}</span><b>${esc(m.name)}</b><span class="bv">${m.hpMax}</span><span class="bv">${m.pp||0}</span><span class="bss">${STATS.map(s=>`<i style="--sc:${STAT_INFO[s].col}" title="${s}">${m.stats&&m.stats[s]!=null?m.stats[s]:0}</i>`).join('')}</span>${m.cat?'<span class="nodel"></span>':`<button class="ib del" type="button" data-del="${x.i}" title="Retirer du bestiaire">${IB('bin')}</button>`}</div>`; };
   const draw=()=>{ const q=normTxt($('b-q').value), L=S.bestiary.map((m,i)=>({m,i})).filter(x=>!q||normTxt(x.m.name).includes(q));
     const cats=[...BEST_CATS,...new Set(L.map(x=>x.m.cat).filter(c=>c&&!BEST_CATS.includes(c)))], mine=L.filter(x=>!x.m.cat);
-    let h=mine.length?`<div class="bcat">Mes MOBs</div>${mine.map(row).join('')}`:'';
+    let h=mine.length?`<div class="bcat">MOBs perso</div>${mine.map(row).join('')}`:'';
     cats.forEach(c=>{ const g=L.filter(x=>x.m.cat===c); if(g.length) h+=`<div class="bcat">${esc(c)}</div>${g.map(row).join('')}`; });
     const head=`<div class="bhead"><span></span><span></span><span class="bv" title="Points de vie">❤️</span><span class="bv" title="Points de protection (armure)">💙</span><span class="bss">${STATS.map(s=>`<i style="--sc:${STAT_INFO[s].col}" title="${STAT_INFO[s].name}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${STAT_INFO[s].ico}</svg></i>`).join('')}</span><span></span></div>`;
     $('b-list').innerHTML=h?head+h:`<p class="meta" style="text-align:left;padding:10px 4px">${S.bestiary.length?'Aucun MOB ne correspond.':'Le bestiaire est vide : importez les créatures du livre, ou enregistrez vos propres MOBs depuis « Nouveau MOB ».'}</p>`;
@@ -4292,7 +4293,7 @@ function openLeft(id,force){ const was=$(id).classList.contains('open'); if(was&
 function bestRows(q){ q=normTxt(q); const L=S.bestiary.map((m,i)=>({m,i})).filter(x=>!q||normTxt(x.m.name).includes(q));
   const row=x=>{ const m=x.m; return `<div class="brow" data-i="${x.i}" title="Glisser sur le plateau · cliquer pour ouvrir"><span class="bface">${faceHTML({...m,type:'mob'},'sm')}</span><b>${esc(m.name)}</b><span class="bv">${m.hpMax}</span><span class="bv">${m.pp||0}</span><span class="bss">${STATS.map(s=>`<i style="--sc:${STAT_INFO[s].col}" title="${s}">${m.stats&&m.stats[s]!=null?m.stats[s]:0}</i>`).join('')}</span>${m.cat?'<span class="nodel"></span>':`<button class="ib del" type="button" data-del="${x.i}" title="Retirer du bestiaire">${IB('bin')}</button>`}</div>`; };
   const cats=[...BEST_CATS,...new Set(L.map(x=>x.m.cat).filter(c=>c&&!BEST_CATS.includes(c)))], mine=L.filter(x=>!x.m.cat);
-  let h=mine.length?`<div class="bcat">Mes MOBs</div>${mine.map(row).join('')}`:'';
+  let h=mine.length?`<div class="bcat">MOBs perso</div>${mine.map(row).join('')}`:'';
   cats.forEach(c=>{ const g=L.filter(x=>x.m.cat===c); if(g.length) h+=`<div class="bcat">${esc(c)}</div>${g.map(row).join('')}`; });
   const head=`<div class="bhead"><span></span><span></span><span class="bv" title="Points de vie">❤️</span><span class="bv" title="Points de protection (armure)">💙</span><span class="bss">${STATS.map(s=>`<i style="--sc:${STAT_INFO[s].col}" title="${STAT_INFO[s].name}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${STAT_INFO[s].ico}</svg></i>`).join('')}</span><span></span></div>`;
   return h?head+h:`<p class="meta" style="text-align:left;padding:10px 4px">${S.bestiary.length?'Aucun MOB ne correspond.':'Le bestiaire est vide : importez les créatures du livre, ou enregistrez vos propres MOBs depuis « Nouveau MOB ».'}</p>`; }
@@ -4379,7 +4380,7 @@ function renderJetPanel(){ const box=$('ljet-body'); if(!box) return; jetRead=nu
   if(cur) $('ljet').style.setProperty('--tc',cur[3]);
   box.querySelectorAll('.jtabs [data-sec]').forEach(b=>b.onclick=()=>{ const k=b.dataset.sec, was=JP[k]; SECS.forEach(x=>JP[x[0]]=false); JP[k]=!was; renderJetPanel(); });
   const FORMS=['secCreate','secBest','secProp'], readers={};
-  if(JP.secCreate){ if(!JP.newMob) JP.newMob=mobBase(); readers.secCreate=mobForm($('jt-create'),JP.newMob,{onChange}); }
+  if(JP.secCreate){ if(!JP.newMob) JP.newMob=mobBase(); readers.secCreate=mobForm($('jt-create'),JP.newMob,{look:true,onChange}); }
   if(JP.secBest){ const host=$('jt-best');
     if(JP.cfg){ readers.secBest=mobForm(host,JP.cfg,{top:top(esc(JP.cfg.name||'MOB')),onChange}); $('jt-back').onclick=()=>{ JP.cfg=null; renderJetPanel(); }; }
     else { importBook(); host.innerHTML=`<div class="bsearch"><input class="line-in" id="lb-q" placeholder="Rechercher un MOB…" autocomplete="off"></div><div class="blist" id="lb-list"></div>`;
