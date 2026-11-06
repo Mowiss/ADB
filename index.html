@@ -3201,7 +3201,8 @@ function bindToken(el){
     window.addEventListener('pointermove',mv); window.addEventListener('pointerup',up); window.addEventListener('pointercancel',up);
   });
   el.addEventListener('wheel',e=>{ if(!e.shiftKey) return; e.preventDefault(); e.stopPropagation(); const t=tok(el.dataset.id); if(!t) return;
-    t.s=clamp(Math.round(((t.s||1)+(e.deltaY>0?-.1:.1))*10)/10,.5,5); moveTokenEl(t); placeCard(); markDirty(); send({t:'mv',id:t.id,x:t.x,y:t.y,s:t.s}); },{passive:false});
+    if(t.type==='light'){ t.r=clamp((t.r||150)+(e.deltaY>0?-20:20),50,1000); tokenEl(t); fowLater(); if(cardId===t.id) renderCard(); markDirty(); sync(); return; }
+    t.s=clamp(Math.round(((t.s||1)+(e.deltaY>0?-.1:.1))*10)/10,.5,5); moveTokenEl(t); placeCard(); if(cardId===t.id&&$('c-s')){ $('c-s').value=t.s; $('c-sv').textContent='× '+String(t.s).replace('.',','); } markDirty(); send({t:'mv',id:t.id,x:t.x,y:t.y,s:t.s}); },{passive:false});
   el.addEventListener('contextmenu',e=>{ e.preventDefault(); e.stopPropagation(); });
   el.addEventListener('touchend',e=>{ if(e.cancelable) e.preventDefault(); },{passive:false});
 }
@@ -3246,7 +3247,8 @@ function renderCard(){
   if((t.type==='mob'||t.type==='npc')&&t.note) body+=`<span class="cap">${t.type==='mob'?'Notes & remarques':'Capacités (MJ)'}</span><textarea class="cnote" id="c-note">${esc(t.note)}</textarea>`;
   if(t.type==='light') body+=`<span class="cap">Halo de lumière</span><div class="crange"><input type="range" min="50" max="1000" step="10" value="${t.r||150}" id="c-r"><b id="c-rv">${(((t.r||150)/CELL)*CELL_M).toFixed(1).replace('.',',')} m</b></div>`;
   if(t.type==='player') body+=`<span class="cap">Vision dans le noir</span><div class="crange"><input type="range" min="0" max="1000" step="10" value="${t.r??250}" id="c-r"><b id="c-rv">${((t.r??250)/CELL*CELL_M).toFixed(1).replace('.',',')} m</b></div>`;
-  body+=`<div class="cfoot"><span class="cap">Maj + molette : taille</span><button class="mini" type="button" data-a="del">${IB('bin')}Retirer</button></div>`;
+  if(t.type!=='light') body+=`<span class="cap">Taille du jeton</span><div class="crange"><input type="range" min="0.5" max="5" step="0.1" value="${t.s||1}" id="c-s"><b id="c-sv">× ${String(t.s||1).replace('.',',')}</b></div>`;
+  body+=`<div class="cfoot"><span></span><button class="mini" type="button" data-a="del">${IB('bin')}Retirer</button></div>`;
   c.innerHTML=head+body;
   c.onclick=e=>{ const b=e.target.closest('button'); if(!b) return; if(performance.now()-cardAt<450) return;
     if(b.dataset.a==='close') closeCard();
@@ -3258,6 +3260,7 @@ function renderCard(){
     else if(b.dataset.atk!=null){ const a=t.attacks[+b.dataset.atk]; showRoll(`${t.name||'Monstre'} · ${a.name||'Attaque'}`,(t.stats[a.stat]||0)+(+a.bonus||0)); }
   };
   const nt=$('c-note'); if(nt) nt.oninput=()=>{ t.note=nt.value; const has=!!t.note.trim(), el=document.querySelector(`.tk[data-id="${t.id}"]`); if(el&&!!el.querySelector('.ndot')!==has) tokenEl(t); markDirty(); };
+  const cs=$('c-s'); if(cs) cs.oninput=()=>{ t.s=+cs.value; $('c-sv').textContent='× '+String(t.s).replace('.',','); moveTokenEl(t); placeCard(); fowLater(); markDirty(); send({t:'mv',id:t.id,x:t.x,y:t.y,s:t.s}); };
   const rr=$('c-r'); if(rr) rr.oninput=()=>{ t.r=+rr.value; $('c-rv').textContent=(t.r/CELL*CELL_M).toFixed(1).replace('.',',')+' m'; const h=document.querySelector(`.tk[data-id="${t.id}"] .halo`); if(h){ h.style.width=h.style.height=(t.r*2)+'px'; } fowLater(); markDirty(); syncLater(); };
 }
 function placeCard(){
@@ -3353,6 +3356,7 @@ function mobForm(box,t,o){
         <div class="mopts"><button type="button" class="mopt" data-m="logo">${IB('skull',1.8)}<span>Logo MOB</span></button><button type="button" class="mopt" data-m="emoji"><span class="me" id="m-emo"></span><span>Émoji</span></button><button type="button" class="mopt" data-m="img">${IB('upload',1.8)}<span>Image</span></button></div>
       </div></div>
     <div class="emogrid" id="m-emos" hidden>${EMOJIS.map(e=>`<button type="button" data-e="${e}">${e}</button>`).join('')}<input class="line-in" id="m-emoin" maxlength="12" placeholder="Autre…" aria-label="Autre émoji"></div>
+    <div class="subttl">Taille du jeton</div><div class="bgscale"><input type="range" id="m-s" min="0.5" max="5" step="0.1" value="${t.s||1}" aria-label="Taille du jeton"><b id="m-sv" style="min-width:40px">× ${String(t.s||1).replace('.',',')}</b></div>
     <div class="subttl">Vitalité</div>
     <div class="sgrid vit${edit?' five':''}">${V.map(([k,e,l,v])=>`<label class="sin"><div class="cir"><i class="vb">${e}</i><input inputmode="numeric" maxlength="3" id="m-${k}" value="${v??0}"></div><span>${l}</span></label>`).join('')}${edit?`<label class="sin"><div class="cir"><i class="vb">❤️</i><input inputmode="numeric" maxlength="3" id="m-hpc" value="${t.hp}"></div><span>PV ACTUELS</span></label>`:''}</div>
     <div class="subttl">Caractéristiques</div>
@@ -3380,7 +3384,7 @@ function mobForm(box,t,o){
     t.pp=Math.max(0,num('m-pp',0)); t.pa=num('m-pa',0); t.pt=num('m-pt',0);
     document.querySelectorAll('[data-stat]').forEach(i=>t.stats[i.dataset.stat]=Math.max(0,parseInt(i.value)||0));
     t.attacks=[...document.querySelectorAll('#e-atks .arow')].map(r=>({name:r.querySelector('[data-an]').value.trim(),stat:r.querySelector('[data-as]').value,bonus:parseInt(r.querySelector('[data-ab]').value)||0}));
-    t.note=$('e-note').value; return t; };
+    if($('m-s')){ t.s=+$('m-s').value; $('m-sv').textContent='× '+String(t.s).replace('.',','); } t.note=$('e-note').value; return t; };
   const bindAtk=()=>document.querySelectorAll('#e-atks [data-arm]').forEach(b=>b.onclick=()=>b.closest('.arow').remove());
   $('e-addatk').onclick=()=>{ $('e-atks').insertAdjacentHTML('beforeend',atkRow({stat:'FOR'})); bindAtk(); $('e-atks').lastElementChild.querySelector('input').focus(); }; bindAtk();
   $('m-save').onclick=()=>{ const r=read(); if(!r.name){ toast('Donnez un nom au MOB',true); $('e-name').focus(); return; }
@@ -4329,6 +4333,7 @@ function jetStamp(on){ jetStampOn=!!on; board.classList.toggle('stamping',jetSta
 function stampGhost(ev){ let g=$('stampgh'); if(!jetStampOn||ev===null){ if(g) g.hidden=true; return; }
   if(!g){ g=document.createElement('div'); g.id='stampgh'; g.className='bghost ok'; board.appendChild(g); }
   const r=jetRead&&jetRead(); if(!r) return; g.style.setProperty('--gc',TYPES[r.type].col); const key=JSON.stringify([r.type,r.ico,r.emo,(r.img||'').length,r.name]); if(g.dataset.k!==key){ g.dataset.k=key; g.innerHTML=faceHTML(r); }
+  g.style.transform=`scale(${((r.type==='light'?52/72:(r.s||1))*V.z*72/64).toFixed(3)})`;
   if(ev&&ev.clientX!=null){ const b=board.getBoundingClientRect(); g.hidden=false; g.style.left=(ev.clientX-b.left)+'px'; g.style.top=(ev.clientY-b.top)+'px'; } }
 function jetStampAt(wx,wy){ const r=jetRead&&jetRead(); if(!r) return; const t=clone(r); delete t.id; delete t.cat; delete t.scene; t.x=Math.round(wx); t.y=Math.round(wy);
   if(t.type==='mob'||t.type==='npc') t.hp=t.hpMax;
@@ -4341,12 +4346,13 @@ function propForm(box,t,o){ const T=TYPES[t.type], light=t.type==='light', P=o.p
       <div style="display:flex;flex-direction:column;gap:10px;min-width:0"><div class="field"><label class="cap" for="${P}-name">Nom</label><input id="${P}-name" class="line-in name-in" placeholder="${light?'Torche, lampe…':'Caisse, porte…'}" value="${esc(t.name||'')}" autocomplete="off"></div>
       ${light?'':`<div class="picks sq" id="${P}-icons">${T.icons.map(k=>`<button type="button" data-ico="${k}" class="${!t.img&&t.ico===k?'on':''}" title="${k}">${IB(k,1.8)}</button>`).join('')}<button type="button" class="up" data-ico="upload" title="Image depuis l'ordinateur">${IB('upload',1.8)}</button></div>`}</div></div>
     ${light?`<div class="subttl">Portée de la lumière</div><div class="bgscale"><input type="range" id="${P}-r" min="40" max="900" step="10" value="${t.r||200}" aria-label="Portée"><b id="${P}-rv" style="min-width:64px"></b></div>`
-      :`<label class="field"><span class="cap">Note secrète (MJ)</span><textarea class="cnote" id="${P}-note" placeholder="Ce que cache ce mobilier…">${esc(t.note||'')}</textarea></label>`}
+      :`<div class="subttl">Taille du jeton</div><div class="bgscale"><input type="range" id="${P}-s" min="0.5" max="5" step="0.1" value="${t.s||1}" aria-label="Taille du jeton"><b id="${P}-sv" style="min-width:40px">× ${String(t.s||1).replace('.',',')}</b></div>
+      <label class="field"><span class="cap">Note secrète (MJ)</span><textarea class="cnote" id="${P}-note" placeholder="Ce que cache ce mobilier…">${esc(t.note||'')}</textarea></label>`}
     ${o.edit?`<div class="actions"><button class="btn ghost" type="button" id="${P}-cancel">Annuler</button><button class="btn" type="button" id="${P}-ok" style="background:${T.col};border-color:${T.col}">Valider</button></div>`
       :''}</div>`;
   const face=()=>{ $p('face').innerHTML=faceHTML({...t,name:$p('name').value||t.name}); };
   const rv=()=>{ if($p('r')) $p('rv').textContent=`${(t.r/PX_M).toFixed(1).replace('.',',')} m`; };
-  const read=()=>{ t.name=$p('name').value.trim(); if($p('note')) t.note=$p('note').value; if($p('r')) t.r=+$p('r').value; return t; };
+  const read=()=>{ t.name=$p('name').value.trim(); if($p('s')){ t.s=+$p('s').value; $p('sv').textContent='× '+String(t.s).replace('.',','); } if($p('note')) t.note=$p('note').value; if($p('r')) t.r=+$p('r').value; return t; };
   const upl=()=>{ imgTarget=img=>{ t.img=img; box.querySelectorAll('#'+P+'-icons [data-ico]').forEach(b=>b.classList.remove('on')); face(); o.onChange&&o.onChange(); }; $('file-img').click(); };
   if(!light){ $p('face').onclick=upl; box.querySelectorAll('#'+P+'-icons [data-ico]').forEach(b=>b.onclick=()=>{ if(b.dataset.ico==='upload'){ upl(); return; } t.img=null; t.ico=b.dataset.ico; box.querySelectorAll('#'+P+'-icons [data-ico]').forEach(x=>x.classList.toggle('on',x===b)); face(); o.onChange&&o.onChange(); }); }
   box.oninput=()=>{ read(); rv(); face(); o.onChange&&o.onChange(); };
@@ -4552,7 +4558,7 @@ function send(m){ if(isPlayer) return; m.n=Date.now()*100+(seq++%100); m.from='m
   if(bc) try{ bc.postMessage(m); }catch(e){}
   if(bc&&m.t!=='state') return;   // le canal direct suffit ; le stockage local ne garde que l'état complet
   try{ localStorage.setItem(LS_SYNC,JSON.stringify(m)); }catch(e){ if(m.t==='state'){ const lite={...m,bg:m.bg&&m.bg.length>1.5e6?'':m.bg}; try{ localStorage.setItem(LS_SYNC,JSON.stringify(lite)); }catch(e2){} } } }
-function publicState(){ const pub=t=>({id:t.id,type:t.type,name:t.name,hp:t.hp,hpMax:t.hpMax,img:t.img,ico:t.ico,x:t.x,y:t.y,s:t.s,r:t.r,owner:t.owner||null,note:t.type==='prop'&&t.note?' ':''});
+function publicState(){ const pub=t=>({id:t.id,type:t.type,name:t.name,hp:t.hp,hpMax:t.hpMax,img:t.img,ico:t.ico,emo:t.emo,x:t.x,y:t.y,s:t.s,r:t.r,owner:t.owner||null,note:t.type==='prop'&&t.note?' ':''});
   return {t:'state',bg:S.bg,bgKind:S.bgKind||'',bgW:S.bgW||0,bgH:S.bgH||0,geo:S.geo||null,light:S.light,weather:S.weather||'',ground:S.ground||null,grid:S.grid,drawings:S.drawings,tokens:S.tokens.filter(t=>!t.hidden).map(pub),order:S.order.filter(id=>{ const t=tok(id); return t&&!t.hidden; }),turn:turnIdForPlayers(),view:viewMsg()}; }
 function turnIdForPlayers(){ const L=orderToks(), c=L[S.turn]; return c&&!c.hidden?c.id:null; }
 let syncRaf=0; function sync(){ if(isPlayer||syncRaf) return; syncRaf=requestAnimationFrame(()=>{ syncRaf=0; send(publicState()); }); }
