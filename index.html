@@ -2490,6 +2490,12 @@ svg.i{width:18px;height:18px;flex:none}
 .subttl small{font-family:var(--f-body);letter-spacing:0;text-transform:none;font-size:11px;color:var(--ink-soft);margin-left:6px}
 .ldrawer .blist{max-height:none;flex:1}
 .ldrawer .brow{touch-action:pan-y;user-select:none;cursor:grab}
+.jnew svg{color:var(--tc)}.jnew{cursor:grab;touch-action:pan-y;user-select:none}
+.jlist{display:flex;flex-direction:column;gap:1px}
+.jrow{display:grid;grid-template-columns:30px minmax(0,1fr) auto 28px 28px;gap:8px;align-items:center;padding:4px 6px;border-radius:8px;cursor:pointer}.jrow:hover{background:var(--wash)}
+.jrow .bface{width:30px;height:30px;border-color:var(--c);color:var(--c)}.jrow b{font-size:13px;font-weight:600;color:var(--ink-strong);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.jrow.hid{opacity:.5}.jhp{font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tk.flash .face{animation:tkflash .9s ease-out}@keyframes tkflash{0%{transform:scale(1.35)}100%{transform:scale(1)}}
 .bghost{position:fixed;z-index:200;width:64px;height:64px;margin:-32px 0 0 -32px;border-radius:50%;background:var(--paper);border:3px solid var(--danger);display:grid;place-items:center;color:var(--danger);pointer-events:none;opacity:.6;overflow:hidden;box-shadow:0 6px 18px rgba(47,51,64,.25)}
 .bghost.ok{opacity:1}.bghost svg{width:56%;height:56%}.bghost svg.emo{width:80%;height:80%}.bghost img{width:100%;height:100%;object-fit:cover}
 .drawer.open{transform:none;box-shadow:inset 3px 0 0 var(--tc,transparent)}
@@ -2732,11 +2738,8 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
     <button class="rb" type="button" data-tool="measure" title="Mesurer (M)"></button>
     <button class="rb" type="button" data-left="ldraw" id="rb-draw" title="Dessin (D)" aria-pressed="false"></button>
     <button class="rb" type="button" data-left="lbest" id="rb-best" title="Bestiaire (B)" aria-pressed="false"></button>
-    <div class="hr"></div>
-    <span class="cap">Jetons</span>
-    <button class="rb tk-add" type="button" data-add="mob" style="--c:var(--danger)" title="Nouveau monstre"></button>
-    <button class="rb tk-add" type="button" data-add="prop" style="--c:var(--brown)" title="Nouveau décor"></button>
-    <button class="rb tk-add" type="button" data-add="light" style="--c:var(--gold)" title="Nouvelle lumière"></button>
+    <button class="rb" type="button" data-left="ljet" id="rb-jet" title="Jetons (J)" aria-pressed="false"></button>
+    <button class="rb" type="button" data-left="fond" id="rb-fond" title="Fond de carte (F)" aria-pressed="false"></button>
   </nav>
   <div id="board">
     <div class="bands" aria-hidden="true"><div class="ribbon"><div class="band" style="background:var(--b-yel)"></div><div class="band" style="background:var(--b-blu)"></div><div class="band" style="background:var(--b-gre)"></div><div class="band" style="background:var(--b-red)"></div><div class="band" style="background:var(--b-pin)"></div><div class="band" style="background:var(--b-vio)"></div></div></div>
@@ -2776,9 +2779,9 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
   <button type="button" class="vtab" data-drawer="roller" style="--tc:var(--c-sav)"><span>Jet libre</span></button>
   <button type="button" class="vtab" data-drawer="loot" style="--tc:var(--c-for)"><span>Butin</span></button>
   <button type="button" class="vtab" data-drawer="mapdrw" style="--tc:var(--c-res)"><span>Map</span></button>
-  <button type="button" class="vtab" data-drawer="fond" style="--tc:var(--c-dex)"><span>Fond</span></button>
 </nav>
 
+<aside class="drawer ldrawer" id="ljet" style="--tc:var(--danger)" aria-label="Jetons"><header><h3>Jetons</h3></header><div class="dscroll" id="ljet-body"></div></aside>
 <aside class="drawer ldrawer" id="ldraw" style="--tc:var(--c-sav)" aria-label="Dessin"><header><h3>Dessin</h3></header><div class="dscroll" id="ldraw-body"></div></aside>
 <aside class="drawer ldrawer" id="lbest" style="--tc:var(--danger)" aria-label="Bestiaire"><header><h3>Bestiaire</h3></header><div class="dscroll" id="lbest-body"></div></aside>
 <aside class="drawer" id="scenario" style="--tc:var(--c-per)" aria-label="Scénario">
@@ -2812,7 +2815,7 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
     <div class="loot" id="lt-out"></div>
   </div>
 </aside>
-<aside class="drawer" id="fond" style="--tc:var(--c-dex)" aria-label="Fond de carte">
+<aside class="drawer ldrawer" id="fond" style="--tc:var(--c-dex)" aria-label="Fond de carte">
   <header><h3>Fond de carte</h3></header>
   <div class="dscroll" id="fond-body"></div>
 </aside>
@@ -3070,7 +3073,7 @@ function inLight(t){ if(S.light) return true; return S.tokens.some(l=>(l.type===
 
 /* Initiative */
 const orderToks=()=>S.order.map(tok).filter(t=>ALIVE(t)&&!(isPlayer&&t.hidden));
-function renderTracker(){
+function renderTracker(){ jetRefresh();
   const L=orderToks(), box=$('tracker');
   if(!L.length){ box.innerHTML=`<span class="tr-empty">${isPlayer?'':'Les joueurs et monstres créés rejoignent l\'initiative.'}</span>`; return; }
   box.innerHTML=L.map((t,i)=>{ const unk=t.type==='mob'&&!inLight(t);
@@ -3244,7 +3247,7 @@ function atkRow(a={}){ return `<div class="arow"><label class="field"><span clas
   <button class="ib del" type="button" data-arm title="Retirer">${IB('x')}</button></div>`; }
 function entityDialog(type,edit,preset){
   if(type==='mob') return mobDialog(edit,preset);
-  const T=TYPES[type], t=Object.assign(edit?clone(edit):{type,name:'',ico:T.def,img:null,stats:{},hp:T.hp,hpMax:T.hp,attacks:[],note:'',r:type==='light'?150:250},preset?Object.assign(clone(preset),{hp:preset.hpMax}):{});
+  const T=TYPES[type], t=Object.assign(edit?clone(edit):{type,name:'',ico:T.def,img:null,stats:{},hp:T.hp,hpMax:T.hp,attacks:[],note:'',r:type==='light'?150:250},preset?Object.assign(clone(preset),preset.hpMax!=null?{hp:preset.hpMax}:{}):{});
   if(type!=='prop'&&type!=='light') STATS.forEach(s=>{ if(t.stats[s]==null) t.stats[s]=T.stat; });
   const sq=type==='prop';
   const icons=T.icons.map(k=>`<button type="button" data-ico="${k}" class="${!t.img&&t.ico===k?'on':''}" title="${k}">${IB(k,1.8)}</button>`).join('')
@@ -3303,7 +3306,7 @@ const mobProfile=(r,cat)=>({name:r.name,cat,ico:r.ico,emo:r.emo,img:r.img,hpMax:
 const firstGlyph=v=>{ try{ return [...new Intl.Segmenter().segment(v)][0].segment; }catch(e){ return [...v][0]||''; } };
 function mobDialog(edit,preset){
   const T=TYPES.mob, base={type:'mob',name:'',ico:'skull',emo:'💀',img:null,stats:{},hp:T.hp,hpMax:T.hp,pp:0,pa:1,pt:0,attacks:[],note:''};
-  const t=Object.assign(edit?clone(edit):base, preset?Object.assign(clone(preset),{type:'mob',hp:preset.hpMax}):{});
+  const t=Object.assign(edit?clone(edit):base, preset?Object.assign(clone(preset),{type:'mob'},preset.hpMax!=null?{hp:preset.hpMax}:{}):{});
   STATS.forEach(s=>{ if(t.stats[s]==null) t.stats[s]=T.stat; }); if(t.ico!=='emoji') t.ico='skull';
   const mode=()=>t.img?'img':t.ico==='emoji'?'emoji':'logo';
   const V=[['hp','❤️','PV',t.hpMax],['pp','💙','PP',t.pp],['pa','🦶🏻','PA',t.pa],['pt','🌀','PT',t.pt]];
@@ -4231,11 +4234,10 @@ function renderDrawPanel(){ const box=$('ldraw-body'); if(!box) return; const on
 /* =========================================================
    Volets de gauche : Dessin, Bestiaire
    ========================================================= */
-function openLeft(id){ const was=$(id).classList.contains('open');
-  document.querySelectorAll('.ldrawer').forEach(d=>d.classList.remove('open')); document.querySelectorAll('.rb[data-left]').forEach(b=>b.setAttribute('aria-pressed','false'));
-  if(!was){ $(id).classList.add('open'); document.querySelector(`.rb[data-left="${id}"]`).setAttribute('aria-pressed','true');
-    if(id==='ldraw'){ if(tool!=='map') setTool('map'); renderDrawPanel(); } else renderBestPanel(); }
-  else if(id==='ldraw'&&tool==='map'){ setTool('map'); } }
+function closeLeft(){ document.querySelectorAll('.ldrawer.open').forEach(d=>{ d.classList.remove('open'); if(d.id==='ldraw'&&tool==='map') setTool('map'); }); document.querySelectorAll('.rb[data-left]').forEach(b=>b.setAttribute('aria-pressed','false')); }
+function openLeft(id,force){ const was=$(id).classList.contains('open'); if(was&&force) return; closeLeft(); if(was) return;
+  $(id).classList.add('open'); document.querySelector(`.rb[data-left="${id}"]`).setAttribute('aria-pressed','true');
+  if(id==='ldraw'){ if(tool!=='map') setTool('map'); renderDrawPanel(); } else if(id==='lbest') renderBestPanel(); else if(id==='ljet') renderJetPanel(); else if(id==='fond') renderFond(); }
 function bestRows(q){ q=normTxt(q); const L=S.bestiary.map((m,i)=>({m,i})).filter(x=>!q||normTxt(x.m.name).includes(q));
   const row=x=>{ const m=x.m; return `<div class="brow" data-i="${x.i}" title="Glisser sur le plateau · cliquer pour ouvrir"><span class="bface">${faceHTML({...m,type:'mob'},'sm')}</span><b>${esc(m.name)}</b><span class="bv">${m.hpMax}</span><span class="bv">${m.pp||0}</span><span class="bss">${STATS.map(s=>`<i style="--sc:${STAT_INFO[s].col}" title="${s}">${m.stats&&m.stats[s]!=null?m.stats[s]:0}</i>`).join('')}</span>${m.cat?'<span class="nodel"></span>':`<button class="ib del" type="button" data-del="${x.i}" title="Retirer du bestiaire">${IB('bin')}</button>`}</div>`; };
   const cats=[...BEST_CATS,...new Set(L.map(x=>x.m.cat).filter(c=>c&&!BEST_CATS.includes(c)))], mine=L.filter(x=>!x.m.cat);
@@ -4255,6 +4257,37 @@ function bindBestList(list,onPick,drag){ { const bh=list.querySelector('.bhead')
         const ob=document.elementFromPoint(ev.clientX,ev.clientY);
         if(ob&&ob.closest('#board')){ const [wx,wy]=toWorld(ev.clientX,ev.clientY), t=Object.assign(clone(M),{type:'mob',hp:M.hpMax,x:Math.round(wx),y:Math.round(wy)}); delete t.cat; addToken(t); } };
       document.addEventListener('pointermove',mv,{passive:false}); document.addEventListener('pointerup',up); document.addEventListener('pointercancel',up); }; }); }
+/* Volet JETONS : créer (cliquer, ou glisser sur le plateau) et retrouver les jetons de la scène */
+const JET_NEW=[['mob','Nouveau MOB'],['prop','Décor'],['light','Lumière']];
+function newTokenAt(k,x,y){ const pos=x!=null?{x:Math.round(x),y:Math.round(y)}:{};
+  if(k==='light') addToken(Object.assign({type:'light',name:'',ico:'bulb',r:200},pos)); else if(k==='mob') mobDialog(null,x!=null?pos:undefined); else entityDialog(k,null,x!=null?pos:undefined); }
+function dragOut(btn,face,onDrop,onClick){ btn.onpointerdown=e=>{ if(e.button!==0) return; const sx=e.clientX, sy=e.clientY; let gh=null;
+  const mv=ev=>{ if(!gh){ if(Math.hypot(ev.clientX-sx,ev.clientY-sy)<6) return; gh=document.createElement('div'); gh.className='bghost'; gh.innerHTML=face(); document.body.appendChild(gh); }
+    ev.preventDefault(); gh.style.left=ev.clientX+'px'; gh.style.top=ev.clientY+'px'; const ob=document.elementFromPoint(ev.clientX,ev.clientY); gh.classList.toggle('ok',!!(ob&&ob.closest('#board'))); };
+  const up=ev=>{ document.removeEventListener('pointermove',mv); document.removeEventListener('pointerup',up); document.removeEventListener('pointercancel',up);
+    if(!gh){ if(ev.type==='pointerup') onClick(); return; } gh.remove(); if(ev.type!=='pointerup') return; const ob=document.elementFromPoint(ev.clientX,ev.clientY);
+    if(ob&&ob.closest('#board')){ const [wx,wy]=toWorld(ev.clientX,ev.clientY); onDrop(wx,wy); } };
+  document.addEventListener('pointermove',mv,{passive:false}); document.addEventListener('pointerup',up); document.addEventListener('pointercancel',up); }; }
+function renderJetPanel(){ const box=$('ljet-body'); if(!box) return; const q=$('lj-q')?$('lj-q').value:'';
+  box.innerHTML=`<div class="subttl">Créer <small>cliquer, ou glisser sur le plateau</small></div>
+    <div class="wxrow">${JET_NEW.map(([k,l])=>`<button type="button" class="wxb jnew" data-new="${k}" style="--tc:${TYPES[k].col}" title="${l} — glisser sur le plateau pour le poser à cet endroit">${IB(TYPES[k].def,1.7)}<span>${l}</span></button>`).join('')}</div>
+    <div class="subttl">Sur le plateau</div>
+    <div class="bsearch"><input class="line-in" id="lj-q" placeholder="Rechercher un jeton…" autocomplete="off" value="${esc(q)}"></div>
+    <div class="jlist" id="lj-list"></div>`;
+  box.querySelectorAll('[data-new]').forEach(b=>{ const k=b.dataset.new; dragOut(b,()=>faceHTML({type:k,ico:TYPES[k].def}),(x,y)=>newTokenAt(k,x,y),()=>newTokenAt(k)); });
+  const draw=()=>{ const qq=normTxt($('lj-q').value), order=['player','npc','mob','prop','light'];
+    const L=S.tokens.filter(t=>!qq||normTxt(t.name||TYPES[t.type].label).includes(qq)).sort((a,b)=>order.indexOf(a.type)-order.indexOf(b.type)||(a.name||'').localeCompare(b.name||'','fr'));
+    $('lj-list').innerHTML=L.length?L.map(t=>`<div class="jrow${t.hidden?' hid':''}" data-id="${t.id}" style="--c:${TYPES[t.type].col}" title="Centrer la vue sur ce jeton">
+        <span class="bface">${faceHTML(t,'sm')}</span><b>${esc(t.name||TYPES[t.type].label)}</b><span class="jhp">${t.type==='player'||t.type==='mob'||t.type==='npc'?`❤️ ${t.hp}/${t.hpMax}`:''}</span>
+        ${t.type!=='player'?`<button class="ib" type="button" data-hide title="${t.hidden?'Montrer aux joueurs':'Cacher aux joueurs'}">${IB(t.hidden?'eyeoff':'eye')}</button><button class="ib del" type="button" data-rm title="Retirer du plateau">${IB('bin')}</button>`:'<span></span><span></span>'}</div>`).join('')
+      :`<p class="meta" style="text-align:left;padding:6px 2px">${S.tokens.length?'Aucun jeton ne correspond.':'Aucun jeton dans cette scène.'}</p>`;
+    $('lj-list').querySelectorAll('.jrow').forEach(r=>{ const t=tok(r.dataset.id); if(!t) return;
+      r.onclick=e=>{ const h=e.target.closest('[data-hide]'), d=e.target.closest('[data-rm]');
+        if(h){ t.hidden=!t.hidden; tokenEl(t); renderTracker(); renderFoW(); markDirty(); sync(); draw(); return; }
+        if(d){ removeToken(t.id); draw(); return; }
+        centerOn(t.x,t.y); const el=document.querySelector(`.tk[data-id="${t.id}"]`); if(el){ el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); } }; }); };
+  $('lj-q').oninput=draw; draw(); }
+function jetRefresh(){ const j=$('ljet'); if(j&&j.classList.contains('open')&&document.activeElement!==$('lj-q')) renderJetPanel(); }
 function renderBestPanel(){ const box=$('lbest-body'); if(!box) return; importBook(); const todo=bookTodo(), q=$('lb-q')?$('lb-q').value:'';
   box.innerHTML=`<div class="bsearch"><input class="line-in" id="lb-q" placeholder="Rechercher un MOB…" autocomplete="off" value="${esc(q)}"></div>
     <div class="wxrow"><button type="button" class="wxb" id="lb-new">${IB('plus')}<span>Nouveau MOB</span></button>${todo?`<button type="button" class="wxb" id="lb-imp" title="Ajouter les créatures du livre Aldebaran">${IB('book')}<span>Importer le livre (${todo})</span></button>`:''}</div>
@@ -4389,11 +4422,10 @@ $('timers').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; cons
 /* =========================================================
    Volets latéraux : un seul ouvert à la fois
    ========================================================= */
-const DRAWERS=['scenario','notes','roller','loot','fond','mapdrw'];
+const DRAWERS=['scenario','notes','roller','loot','mapdrw'];
 function openDrawer(id,force){ const was=id&&$(id).classList.contains('open');
   DRAWERS.forEach(d=>$(d).classList.remove('open')); document.querySelectorAll('.vtab').forEach(b=>b.classList.remove('on'));
   if(id&&(!was||force)){ $(id).classList.add('open'); document.querySelector(`.vtab[data-drawer="${id}"]`).classList.add('on');
-    if(id==='fond') renderFond();
     if(id==='mapdrw'&&!$('mapwrap').firstChild) $('mapwrap').innerHTML=`<iframe src="${document.querySelector('.maplink').href}" title="Carte du monde d'Aldebaran" loading="lazy"></iframe>`; } }
 const STEP_LIM={'rl-n':[1,50],'rl-t':[2,10],'tm-m':[1,600]};
 function bindSteppers(root){ root.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>{ const i=$(b.dataset.step), L=STEP_LIM[b.dataset.step]||[0,99]; i.value=clamp((parseInt(i.value)||0)+(+b.dataset.d),L[0],L[1]); }); }
@@ -4618,9 +4650,8 @@ function wire(){
   $('sc-ico').innerHTML=IB('film'); $('sc-prev').innerHTML=IB('left',2); $('sc-next').innerHTML=IB('right',2); $('sc-up').innerHTML=IB('up',2); $('sc-down').innerHTML=IB('down',2);
   $('b-player').innerHTML=IB('screen'); $('b-player').classList.add('icon'); $('b-net').insertAdjacentHTML('afterbegin',IB('table')); $('b-full').innerHTML=IB('full'); $('b-settings').insertAdjacentHTML('afterbegin',IB('gear'));
   document.querySelector('[data-tool="measure"]').insertAdjacentHTML('afterbegin',IB('ruler'));
-  $('rb-draw').innerHTML=IB('pen'); $('rb-best').innerHTML=IB('book');
+  $('rb-draw').innerHTML=IB('pen'); $('rb-best').innerHTML=IB('book'); $('rb-jet').innerHTML=IB('person'); $('rb-fond').innerHTML=IB('planet');
   document.querySelectorAll('.rb[data-left]').forEach(b=>b.onclick=()=>openLeft(b.dataset.left));
-  document.querySelectorAll('[data-add]').forEach(b=>b.innerHTML=IB(TYPES[b.dataset.add].def,1.7));
   $('b-shuffle').innerHTML=IB('shuffle'); $('b-next').innerHTML=IB('next'); $('b-timer').innerHTML=IB('hourglass');
   $('bin').innerHTML=IB('bin'); $('sc-pdf').innerHTML=IB('print'); $('sc-new').innerHTML=IB('clap')+'Nouvelle scène'; $('sc-del').innerHTML=IB('bin')+'Supprimer';
   const VT={scenario:IB('scroll'),notes:IB('note'),roller:D10ICO,loot:IB('coins'),fond:IB('planet'),mapdrw:IB('map')};
@@ -4643,7 +4674,6 @@ function wire(){
   // rail
   document.querySelectorAll('.rb[data-tool]').forEach(b=>{
     b.onclick=()=>setTool(b.dataset.tool); });
-  document.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>{ const k=b.dataset.add; if(k==='light') addToken({type:'light',name:'',ico:'bulb',r:200}); else entityDialog(k); });
   // haut
   $('b-player').onclick=openPlayerView; $('b-net').onclick=netDialog; $('sp-close').innerHTML=IB('x'); $('sp-close').onclick=closeSheet; netStatus('off'); $('b-settings').onclick=settings;
   $('b-full').onclick=()=>{ if(!document.fullscreenElement) document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); else document.exitFullscreen(); };
@@ -4675,7 +4705,7 @@ function wire(){
     if(tool==='map'&&wallDraft&&(k==='escape'||k==='enter')){ e.preventDefault(); finishWall(); return; }
     if(k==='escape'&&tool==='map'&&arrowTip){ arrowTip=null; mapPrev=null; drawMapLater(); return; }
     if(k==='escape'){ if(tool) setTool(tool); closeCard(); closePop(); if(sheetPid) closeSheet(); }
-    else if(k==='m') setTool('measure'); else if(k==='d') openLeft('ldraw'); else if(k==='b') openLeft('lbest'); else if(k==='0') fitBoard();
+    else if(k==='m') setTool('measure'); else if(k==='d') openLeft('ldraw'); else if(k==='b') openLeft('lbest'); else if(k==='j') openLeft('ljet'); else if(k==='f'&&!e.ctrlKey&&!e.metaKey) openLeft('fond'); else if(k==='0') fitBoard();
     else if(e.code==='Space'){ e.preventDefault(); nextTurn(); } });
   document.addEventListener('pointerdown',e=>{ if(!e.target.closest('.pop')&&!e.target.closest('[data-tool="draw"]')) closePop(); });
 }
@@ -4825,7 +4855,7 @@ function renderFond(){ const box=$('fond-body'); if(!box) return;
   $('bg-cat').onclick=()=>{ fondCat=!fondCat; renderFond(); };
   $('bg-pc').onclick=pickBgFile;
   const sv=$('bg-sc'); if(sv){ const lab=()=>{ $('bg-scv').textContent=`${Math.round((S.bgScale||1)*100)} % · ${fmtM(S.bgW/PX_M)} × ${fmtM(S.bgH/PX_M)} m`; }; lab(); sv.oninput=()=>{ fondHold=true; try{ setBgScale(Math.pow(10,+sv.value)); } finally{ fondHold=false; } lab(); };
-    $('bg-ech').onclick=()=>{ openDrawer(null); if(tool!=='scale') setTool('scale'); toast('Mise à l\'échelle : tracez sur la carte une distance dont vous connaissez la longueur'); }; }
+    $('bg-ech').onclick=()=>{ closeLeft(); if(tool!=='scale') setTool('scale'); toast('Mise à l\'échelle : tracez sur la carte une distance dont vous connaissez la longueur'); }; }
   loadFonds().then(L=>{ const g=$('fd-grid'); if(!g) return;
     g.innerHTML=L.length?L.map(x=>{ const u=FONDS+x.f; return `<button type="button" class="fd${S.bg===u?' on':''}" data-f="${esc(x.f)}" title="${esc(x.nom)}"><span class="m"><img src="${esc(u)}" alt="" loading="lazy"></span><b>${esc(x.nom)}</b></button>`; }).join('')
       :`<p class="meta" style="text-align:left;grid-column:1/-1">${location.protocol.startsWith('http')?'Le catalogue est vide pour l\'instant : déposez des photos dans le dossier « fonds » du dépôt.':'Le catalogue s\'affiche sur la version en ligne de l\'appli.'}</p>`;
