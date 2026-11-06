@@ -2506,7 +2506,8 @@ svg.i{width:18px;height:18px;flex:none}
 .subttl small{font-family:var(--f-body);letter-spacing:0;text-transform:none;font-size:11px;color:var(--ink-soft);margin-left:6px}
 .ldrawer .blist{max-height:none;flex:1}
 .ldrawer .brow{touch-action:pan-y;user-select:none;cursor:grab}
-.jtabs{display:flex;gap:8px;position:sticky;top:-18px;z-index:3;background:var(--paper);padding:4px 0 10px;margin-top:-4px}.jtabs .wxb{flex:1}
+.jtabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;position:sticky;top:-18px;z-index:3;background:var(--paper);padding:4px 0 10px;margin-top:-4px;border-bottom:1px solid var(--rule)}.jtabs .wxb{min-width:0;padding:10px 4px 8px}.jtabs .wxb span{font-size:10.5px;line-height:1.15;text-align:center}.jtabs .wxb svg{color:var(--tc)}
+.jbody{display:flex;flex-direction:column;gap:12px}
 .jsec{border-bottom:1px solid var(--rule)}.jsec>summary{list-style:none;cursor:pointer;font-family:var(--f-title);font-size:14px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-strong);padding:14px 2px;display:flex;align-items:center;gap:10px}.jsec>summary svg{width:20px;height:20px;color:var(--sc)}.jsec>summary span{flex:1}.jsec>summary:hover{color:var(--sc)}
 .jsec.sub{border:1px solid var(--faint);border-radius:10px;padding:0 10px;margin-top:4px}.jsec.sub>summary{font-size:12.5px;padding:11px 0}
 .subttl.sadd{display:flex;align-items:center;gap:10px}.subttl.sadd .ib{width:26px;height:26px}.subttl.sadd .ib svg{width:15px;height:15px}.arows:empty{display:none}
@@ -4361,12 +4362,16 @@ function renderJetPanel(){ const box=$('ljet-body'); if(!box) return; jetRead=nu
     if(tab==='mob'){ STATS.forEach(s=>{ if(!t.stats) t.stats={}; if(t.stats[s]==null) t.stats[s]=TYPES.mob.stat; }); mobForm($('jt-main'),t,{edit:JP.edit,top:top('Modifier ce MOB'),onBack:back}); }
     else propForm($('jt-main'),t,{edit:JP.edit,top:top('Modifier'),onBack:back});
     $('jt-back').onclick=back; jetStamp(false); return; }
-  /* sections repliables (fermées au départ) ; une seule section de réglage ouverte à la fois */
-  const sec=(key,title,ico,col,inner,cls)=>`<details class="jsec ${cls||''}" data-sec="${key}" ${JP[key]?'open':''} style="--sc:${col}"><summary>${IB(ico,1.7)}<span>${title}</span></summary><div class="jsec-in">${inner}</div></details>`;
-  box.innerHTML=sec('secBoard','Sur le plateau','target','var(--ink-strong)',`<div class="bsearch"><input class="line-in" id="lj-q" placeholder="Rechercher un jeton…" autocomplete="off"></div><div class="jlist" id="lj-list"></div>`)
-    +sec('secCreate','Créer un MOB','plus','var(--danger)','<div id="jt-create"></div>')
-    +sec('secBest','Bestiaire','book','var(--danger)','<div id="jt-best"></div>')
-    +sec('secProp','Mobilier','box','var(--brown)',`<div id="jt-prop"></div>${sec('secLight','Lumière','bulb','var(--gold)','<div id="jt-light"></div>','sub')}`);
+  /* boutons en tête de volet : un seul contenu affiché à la fois ; recliquer le bouton actif replie tout */
+  const SECS=[['secBoard','Sur le plateau','target','var(--ink-strong)'],['secCreate','Créer un MOB','plus','var(--danger)'],['secBest','Bestiaire','book','var(--danger)'],['secProp','Mobilier','box','var(--brown)']];
+  const cur=SECS.find(x=>JP[x[0]]);
+  box.innerHTML=`<div class="jtabs">${SECS.map(([k,l,ic,col])=>`<button type="button" class="wxb${JP[k]?' on':''}" data-sec="${k}" style="--tc:${col}" aria-pressed="${JP[k]?'true':'false'}">${IB(ic,1.7)}<span>${l}</span></button>`).join('')}</div>
+    <div class="jbody" id="jt-body">${!cur?`<p class="meta" style="text-align:left">Choisissez une rubrique ci-dessus. Un jeton réglé ici devient un tampon : chaque clic sur le plateau en pose un.</p>`
+      :cur[0]==='secBoard'?`<div class="bsearch"><input class="line-in" id="lj-q" placeholder="Rechercher un jeton…" autocomplete="off"></div><div class="jlist" id="lj-list"></div>`
+      :cur[0]==='secCreate'?'<div id="jt-create"></div>':cur[0]==='secBest'?'<div id="jt-best"></div>'
+      :`<div id="jt-prop"></div><details class="jsec sub" data-sub="secLight" ${JP.secLight?'open':''} style="--sc:var(--gold)"><summary>${IB('bulb',1.7)}<span>Lumière</span></summary><div class="jsec-in"><div id="jt-light"></div></div></details>`}</div>`;
+  if(cur) $('ljet').style.setProperty('--tc',cur[3]);
+  box.querySelectorAll('.jtabs [data-sec]').forEach(b=>b.onclick=()=>{ const k=b.dataset.sec, was=JP[k]; SECS.forEach(x=>JP[x[0]]=false); JP[k]=!was; renderJetPanel(); });
   const FORMS=['secCreate','secBest','secProp'], readers={};
   if(JP.secCreate){ if(!JP.newMob) JP.newMob=mobBase(); readers.secCreate=mobForm($('jt-create'),JP.newMob,{onChange}); }
   if(JP.secBest){ const host=$('jt-best');
@@ -4375,13 +4380,11 @@ function renderJetPanel(){ const box=$('ljet-body'); if(!box) return; jetRead=nu
       const draw=()=>{ const l=$('lb-list'); l.innerHTML=bestRows($('lb-q').value); bindBestList(l,m=>{ if(m){ JP.cfg=Object.assign(mobBase(),clone(m),{type:'mob',hp:m.hpMax}); delete JP.cfg.cat; renderJetPanel(); } else draw(); },true); };
       $('lb-q').oninput=draw; draw(); } }
   if(JP.secProp){ if(!JP.prop) JP.prop={type:'prop',name:'',ico:'box',img:null,note:''}; readers.secProp=propForm($('jt-prop'),JP.prop,{pid:'pp',onChange});
-    if(JP.secLight){ if(!JP.light) JP.light={type:'light',name:'',ico:'bulb',img:null,r:200}; readers.secLight=propForm($('jt-light'),JP.light,{pid:'pl',onChange}); } }
-  /* le tampon suit la section de réglage ouverte (la lumière prime sur le mobilier) */
-  const act=JP.secLight&&JP.secProp?'secLight':FORMS.find(k=>JP[k]&&readers[k]);
+    if(JP.secLight){ if(!JP.light) JP.light={type:'light',name:'',ico:'bulb',img:null,r:200}; readers.secLight=propForm($('jt-light'),JP.light,{pid:'pl',onChange}); }
+    box.querySelector('[data-sub="secLight"]').addEventListener('toggle',e=>{ if(JP.secLight===e.target.open) return; JP.secLight=e.target.open; renderJetPanel(); }); }
+  const act=JP.secProp&&JP.secLight?'secLight':FORMS.find(k=>JP[k]&&readers[k]);
   jetRead=act?readers[act]:null;
-  box.querySelectorAll('details.jsec').forEach(d=>d.addEventListener('toggle',()=>{ const k=d.dataset.sec; if(JP[k]===d.open) return; JP[k]=d.open;
-    if(d.open&&FORMS.includes(k)) FORMS.forEach(o=>{ if(o!==k) JP[o]=false; });
-    renderJetPanel(); }));
+  if(!JP.secBoard){ JP.drawB=null; jetStamp(stampWanted()); return; }
   const drawB=()=>{ const qq=normTxt($('lj-q').value), order=['player','npc','mob','prop','light'], GL={player:'Joueurs',npc:'PNJ',mob:'MOBs',prop:'Mobilier',light:'Lumières'};
     const L=S.tokens.filter(t=>!qq||normTxt(t.name||TYPES[t.type].label).includes(qq)).sort((a,b)=>(a.name||'').localeCompare(b.name||'','fr'));
     const row=t=>`<div class="jrow${t.hidden?' hid':''}" data-id="${t.id}" style="--c:${TYPES[t.type].col}" title="Centrer la vue sur ce jeton"><span class="bface">${faceHTML(t,'sm')}</span><b>${esc(t.name||TYPES[t.type].label)}</b><span class="jhp">${t.type==='player'||t.type==='mob'||t.type==='npc'?`❤️ ${t.hp}/${t.hpMax}`:''}</span>
