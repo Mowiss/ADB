@@ -3844,6 +3844,28 @@ const MAP=(function(){
   }
 
   /* ---- ESCALIER : rectangle + marches perpendiculaires au sens du tracé ---- */
+  /* ---- PONT : tablier de planches, garde-corps et poteaux, ombre portée ---- */
+  function paintBridge(c,obj){
+    var a=obj.a, b=obj.b, dx=b.x-a.x, dy=b.y-a.y, len=Math.hypot(dx,dy);
+    if(len<6){ len=120; a={x:obj.a.x-60,y:obj.a.y}; b={x:obj.a.x+60,y:obj.a.y}; dx=120; dy=0; }
+    var w=Math.max(30,obj.width||72), L=len+10;
+    c.save(); c.translate((a.x+b.x)/2,(a.y+b.y)/2); c.rotate(Math.atan2(dy,dx)); c.globalCompositeOperation='source-over';
+    c.fillStyle='rgba(0,0,0,.22)'; c.fillRect(-L/2+4,-w/2+5,L,w);                     // ombre sur l'eau
+    c.fillStyle=WOOD_FILL; c.fillRect(-L/2,-w/2,L,w);                                    // tablier
+    c.strokeStyle=INK_COLOR; c.lineCap='butt'; c.lineWidth=LINE_FINE; c.beginPath();      // planches en travers
+    for(var x=-L/2+9,i=0; x<L/2-2; x+=9,i++){ var j=(seeded(i*1.7,len)*2-1)*0.8; c.moveTo(x+j,-w/2+3); c.lineTo(x-j,w/2-3); }
+    c.stroke();
+    c.lineWidth=LINE_FINE*0.7; c.globalAlpha=.5; c.beginPath();                          // quelques joints décalés
+    for(x=-L/2+9,i=0; x<L/2-9; x+=9,i++){ if(seeded(i,w)<.35){ var yy=(seeded(w,i)*2-1)*(w/2-8); c.moveTo(x+2,yy); c.lineTo(x+7,yy); } }
+    c.stroke(); c.globalAlpha=1;
+    var rw=Math.max(4,w*0.09);                                                           // garde-corps des deux côtés
+    c.fillStyle=WOOD_FILL; c.lineWidth=LINE_W; c.lineJoin='round';
+    [-w/2,w/2-rw].forEach(function(y0){ c.fillRect(-L/2,y0,L,rw); c.strokeRect(-L/2,y0,L,rw); });
+    c.fillStyle=INK_COLOR; var n=Math.max(2,Math.round(L/40)), ps=rw+3;                   // poteaux
+    for(i=0;i<=n;i++){ x=-L/2+i*(L/n); x=Math.max(-L/2+ps/2,Math.min(L/2-ps/2,x)); [-w/2+rw/2,w/2-rw/2].forEach(function(y){ c.fillRect(x-ps/2,y-ps/2,ps,ps); }); }
+    c.lineWidth=LINE_W; c.strokeRect(-L/2,-w/2,L,w);                                     // contour
+    c.restore();
+  }
   function paintStairs(c,obj){
     var a=obj.a, b=obj.b;
     var dx=b.x-a.x, dy=b.y-a.y, len=Math.hypot(dx,dy);
@@ -4206,6 +4228,7 @@ const MAP=(function(){
     else if(obj.type==='door') paintDoor(c,obj);
     else if(obj.type==='secret') paintSecret(c,obj);
     else if(obj.type==='stairs') paintStairs(c,obj);
+    else if(obj.type==='bridge') paintBridge(c,obj);
     else if(obj.type==='arrow') paintArrow(c,obj);
   }
 
@@ -4227,7 +4250,7 @@ const MAP=(function(){
     if(o.type==='pencil'){ return distToPolyline(p,o.points) <= pencilWidth(o)/2 + 6; }
     if(o.type==='wall'){ return distToPolyline(p,o.points) <= wallThick(o)/2 + 6; }
     if(o.type==='corridor' || o.type==='river' || o.type==='foliage'){ return distToPolyline(p,o.points) <= (o.width/2 + 8); }
-    if(o.type==='door' || o.type==='secret' || o.type==='stairs'){ return distToSeg(p,o.a,o.b) <= ((o.width? o.width/2:0) + 20); }
+    if(o.type==='door' || o.type==='secret' || o.type==='stairs' || o.type==='bridge'){ return distToSeg(p,o.a,o.b) <= ((o.width? o.width/2:0) + 20); }
     if(o.type==='arrow'){ return distToSeg(p,o.tip,o.tail) <= 12; }
     if(o.type==='icon'){ return Math.hypot(p.x-o.x, p.y-o.y) <= 22; }
     if(o.type==='svg'){ return Math.abs(p.x-o.x) <= (o.size||40)/2+4 && Math.abs(p.y-o.y) <= (o.size||40)/2+4; }
@@ -4247,8 +4270,8 @@ const MAP=(function(){
     objects.forEach(function(q){ if(q.type==='corridor') strokeWalls(c,q); });
     objects.forEach(function(q){ if(q.type==='corridor') strokeFloor(c,q); });
     foliagePass(c, by('foliage')); wallPass(c, by('wall'));
-    ['stairs','door','secret','pencil','icon','svg','arrow','text'].forEach(function(t){ for(i=0;i<objects.length;i++){ o=objects[i]; if(o.type!==t) continue;
-      if(t==='stairs') paintStairs(c,o); else if(t==='door') paintDoor(c,o); else if(t==='secret') paintSecret(c,o); else if(t==='pencil') paintPencil(c,o);
+    ['bridge','stairs','door','secret','pencil','icon','svg','arrow','text'].forEach(function(t){ for(i=0;i<objects.length;i++){ o=objects[i]; if(o.type!==t) continue;
+      if(t==='bridge') paintBridge(c,o); else if(t==='stairs') paintStairs(c,o); else if(t==='door') paintDoor(c,o); else if(t==='secret') paintSecret(c,o); else if(t==='pencil') paintPencil(c,o);
       else if(t==='icon') paintIcon(c,o); else if(t==='svg') paintSvgStamp(c,o); else if(t==='arrow') paintArrow(c,o); else paintText(c,o); } });
   }
   /* thème : encre noire sur parchemin (fond clair) ou bleu-gris clair sur fond sombre */
@@ -4265,6 +4288,7 @@ const MAP_EMOJI={"Mobilier": ["🗿", "⚰️", "🎁", "🪤", "🚪", "🕯️
    ========================================================= */
 const MAP_TOOLS={"text": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 6V4h14v2M12 4v16M9 20h6\"/></svg>", "n": "Texte", "h": "cliquer pour écrire"}, "arrow": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M7 17L17 7M9 7h8v8\"/></svg>", "n": "Flèche", "h": "clic la pointe, puis clic la queue"}, "pencil": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 20l3.5-1L18 8.5 15.5 6 5 16.5 4 20z\"/><path d=\"M14 7.5l2.5 2.5\"/></svg>", "n": "Crayon", "h": "dessin libre à main levée"}, "corridor": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 5h11a5 5 0 0 1 5 5v11\"/><path d=\"M3 11h8a2 2 0 0 1 2 2v8\"/></svg>", "n": "Chemin", "h": "clic-glisser · couloir, salle"}, "river": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 8q3-3 6 0t6 0 3-1.2\"/><path d=\"M3 13q3-3 6 0t6 0 3-1.2\"/><path d=\"M3 18q3-3 6 0t6 0 3-1.2\"/></svg>", "n": "Eau", "h": "clic-glisser · rivière, lac"}, "foliage": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"8.5\" cy=\"9.5\" r=\"3.2\"/><circle cx=\"15\" cy=\"9\" r=\"3.2\"/><circle cx=\"11.5\" cy=\"13\" r=\"3.6\"/><path d=\"M11.5 16.5V21\"/></svg>", "n": "Feuillage", "h": "clic-glisser · bosquet, forêt"}, "meadow": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 20h18\"/><path d=\"M5.5 20c0-3.5-.8-6-2.3-8\"/><path d=\"M9 20c0-5 .9-8.5 3-11.5\"/><path d=\"M12.5 20c0-3.6-.9-6-2.6-7.8\"/><path d=\"M16 20c0-5 1-8.3 3.2-10.8\"/><path d=\"M19.5 20c0-2.6.6-4.4 1.7-5.6\"/></svg>", "n": "Prairie", "h": "peindre · herbes hautes"}, "desert": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M2 17c3-4.5 6-6 9-6 2.6 0 4.3 1.6 5.2 3.4\"/><path d=\"M11 20c2.6-3 5.2-4.3 7.5-4.3 1.3 0 2.5.4 3.5 1.2\"/><path d=\"M8.4 12.6l1 2.4M10.8 12.2l.7 2.2\"/><circle cx=\"17.5\" cy=\"6\" r=\"2\"/></svg>", "n": "Désert", "h": "peindre · étendue de sable"}, "wood": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"16\" rx=\"1\"/><path d=\"M3 9.3h18M3 14.7h18M9 4v5.3M15 9.3v5.4M7 14.7V20\"/></svg>", "n": "Plancher", "h": "peindre · lames de bois"}, "wall": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 6h18v12H3z\"/><path d=\"M3 12h18M9 6v6M15 12v6\"/></svg>", "n": "Mur", "h": "clic, clic… · double-clic = fin"}, "door": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M6 21V4a1 1 0 0 1 1.2-1l8 1.6A1 1 0 0 1 16 5.6V21\"/><path d=\"M4 21h16\"/><circle cx=\"13\" cy=\"12\" r=\"1\" fill=\"currentColor\" stroke=\"none\"/></svg>", "n": "Porte", "h": "glisser en travers du passage"}, "secret": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M6 3v18M18 3v18\"/><rect x=\"9\" y=\"6\" width=\"6\" height=\"12\" stroke-dasharray=\"2.2 2.2\"/><path d=\"M11 11.5a1 1 0 1 1 1.6.8c-.4.3-.6.5-.6 1.1\" stroke-width=\"1.6\"/><circle cx=\"12\" cy=\"15.3\" r=\".55\" fill=\"currentColor\" stroke=\"none\"/></svg>", "n": "Porte secrète", "h": "glisser en travers du passage"}, "stairs": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 20h4v-4h4v-4h4v-4h4\"/></svg>", "n": "Escalier", "h": "clic-glisser · volée de marches"}, "eraser": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 14.5l6.5-6.5 6 6-5.5 5.5H8z\"/><path d=\"M8.5 19.5H19\"/><path d=\"M9.5 9l6 6\"/></svg>", "n": "Gomme", "h": "cliquer ou glisser sur un élément"}};
 MAP_TOOLS.corridor.n='Chemin libre'; MAP_TOOLS.corridor.h='clic-glisser · tracé à main levée';
+MAP_TOOLS.bridge={n:'Pont',h:'glisser d\'une rive à l\'autre · largeur réglable',svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h18M3 16h18"/><path d="M7 8v8M11 8v8M15 8v8M19 8v8" stroke-width="1.2"/><path d="M3 6v4M21 6v4M3 14v4M21 14v4"/></svg>'};
 MAP_TOOLS.pathline={n:'Chemin droit',h:'clic, clic… · double-clic ou Entrée = fin · Maj = angles à 45°',svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19l6-9h8"/><circle cx="4" cy="19" r="1.6" fill="currentColor"/><circle cx="10" cy="10" r="1.6" fill="currentColor"/><circle cx="18" cy="10" r="1.6" fill="currentColor"/></svg>'};
 const MT=Object.assign({tool:'corridor',dens:1,width:40,emoji:'💀',svg:'maison',ink:'#241a12'},(()=>{ try{ return JSON.parse(localStorage.getItem('aldebaran.mj.map')||'{}'); }catch(e){ return {}; } })());
 if(MT.tool==='icon') MT.tool='corridor';
@@ -4330,7 +4354,7 @@ function mapDown(e,wx,wy){ const wp={x:wx,y:wy}, T=MT.tool; e.preventDefault();
     const sp=wallSnap(wp), lp=wallDraft.points[wallDraft.points.length-1];
     if(Math.hypot(sp.x-lp.x,sp.y-lp.y)<8/V.z){ finishWall(); return; }
     wallDraft.points.push(sp); wallHover=null; mapLive={type:wallDraft.type,width:wallDraft.width,points:wallDraft.points.slice()}; drawMapLater(); return; }
-  if(T==='door'||T==='secret'||T==='stairs'){ gesture={k:'map',a:wp}; return; }
+  if(T==='door'||T==='secret'||T==='stairs'||T==='bridge'){ gesture={k:'map',a:wp}; return; }
   const st={type:T,points:[wp],width:mtW()}; if(T==='pencil') st.c=MT.ink; if(T==='meadow') st.dens=MT.dens;
   gesture={k:'map',stroke:st}; mapLive=st; drawMapLater(); }
 function mapMove(e){ const [wx,wy]=toWorld(e.clientX,e.clientY), wp={x:wx,y:wy}, T=MT.tool;
@@ -4338,18 +4362,18 @@ function mapMove(e){ const [wx,wy]=toWorld(e.clientX,e.clientY), wp={x:wx,y:wy},
   if((T==='wall'||T==='pathline')&&wallDraft){ wallShift=!!e.shiftKey; wallHover=wallSnap(wp); mapLive={type:wallDraft.type,width:wallDraft.width,points:wallDraft.points.concat([wallHover])}; drawMapLater(); return; }
   if(!gesture||gesture.k!=='map') return;
   if(T==='eraser'){ mapErase(wp); return; }
-  if(gesture.a){ mapPrev={type:T,a:gesture.a,b:wp,width:MT.width}; drawMapLater(); return; }
+  if(gesture.a){ mapPrev={type:T,a:gesture.a,b:wp,width:mtW()}; drawMapLater(); return; }
   const st=gesture.stroke; if(!st) return; const l=st.points[st.points.length-1];
   if(Math.hypot(wx-l.x,wy-l.y)>(st.type==='pencil'?1.5:5)/V.z){ st.points.push(wp); drawMapLater(); } }
 function mapUp(e,g){ const T=MT.tool; if(T==='eraser') return;
-  if(g.a){ const [wx,wy]=toWorld(e.clientX,e.clientY); mapPrev=null; mapCommit({type:T,a:g.a,b:{x:wx,y:wy},width:MT.width}); return; }
+  if(g.a){ const [wx,wy]=toWorld(e.clientX,e.clientY); mapPrev=null; mapCommit({type:T,a:g.a,b:{x:wx,y:wy},width:mtW()}); return; }
   const st=g.stroke; if(!st) return;
   if(st.points.length>=2||(['foliage','pencil','meadow','desert','wood'].includes(st.type)&&st.points.length)) mapCommit(st); else { mapLive=null; drawMapLater(); } }
 function scaleDrawing(o,fx,fy){ const P=p=>{ if(p){ p.x=r1(p.x*fx); p.y=r1(p.y*fy); } };
   (o.points||[]).forEach(P); P(o.a); P(o.b); P(o.tip); P(o.tail); if(o.x!=null){ o.x=r1(o.x*fx); o.y=r1(o.y*fy); } }
 /* choisir un outil */
 /* un chemin fait au moins 1 m de large */
-const PATHW=()=>MT.tool==='corridor'||MT.tool==='pathline', mtW=()=>PATHW()?clamp(MT.width,PX_M,PX_M*5):MT.width;
+const PATHW=()=>MT.tool==='corridor'||MT.tool==='pathline'||MT.tool==='bridge', mtW=()=>PATHW()?clamp(MT.width,PX_M,PX_M*5):MT.width;
 const mtWLabel=()=>fmtMm(mtW()/PX_M);
 function pickMapTool(k){ if(wallDraft&&k!==MT.tool) finishWall(); arrowTip=null; mapPrev=null; removeMapText();
   if(k==='measure'){ if(tool!=='measure') setTool('measure'); }
@@ -4369,7 +4393,7 @@ function renderDrawPanel(){ const box=$('ldraw-body'); if(!box) return; const on
     ${MT.tool==='pencil'?`<div class="swatches md-inks">${MAP_INKS.map(([c,n])=>`<button type="button" style="--c:${c}" data-ink="${c}" title="${n}" class="${MT.ink===c?'on':''}"></button>`).join('')}</div>`:''}
     <div class="subttl">Terrain</div><div class="mtgrid">${['corridor','pathline','river','foliage','meadow','desert','wood','wall'].map(tb).join('')}</div>
     ${MT.tool==='meadow'?`<div class="subttl">Densité de l'herbe</div><div class="bgscale"><input type="range" id="md-d" min="0.3" max="3" step="0.1" value="${MT.dens}" aria-label="Densité de l'herbe"><b id="md-dv" style="min-width:40px">${fmtMm(MT.dens)}</b></div>`:''}
-    <div class="subttl">Ouvertures</div><div class="mtgrid">${['door','secret','stairs'].map(tb).join('')}</div>
+    <div class="subttl">Ouvertures</div><div class="mtgrid">${['door','secret','stairs','bridge'].map(tb).join('')}</div>
     <div class="subttl">Annotations</div><div class="mtgrid">${['text','arrow'].map(tb).join('')}</div>
     <div class="subttl">Pictogrammes</div>${scat.map(c=>`<div class="mcat">${esc(c)}</div><div class="stgrid">${stamps.filter(k=>(MAP.STAMPS[k].cat||'Divers')===c).map(k=>`<button type="button" class="stb${tool==='map'&&MT.tool==='svg'&&MT.svg===k?' on':''}" data-st="${k}" title="${esc(MAP.STAMPS[k].title||k)}">${MAP.stampMarkup(k)}</button>`).join('')}</div>`).join('')}
 `;
