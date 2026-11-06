@@ -5072,6 +5072,7 @@ function groundTile(k){ if(groundTiles[k]) return groundTiles[k]; const T=GROUND
     for(let i=0;i<40;i++){ const px=R()*T, py=R()*T, rx=2+R()*4, ry=1.5+R()*3; const col=R()<.5?'#9c8f80':'#7d7166'; wrap(()=>{ x.fillStyle=col; x.strokeStyle='rgba(40,30,20,.45)'; x.lineWidth=.8; x.beginPath(); x.ellipse(px,py,rx,ry,R()*3,0,Math.PI*2); x.fill(); x.stroke(); }); } }
   return groundTiles[k]=c.toDataURL('image/jpeg',.9); }
 function renderGround(){ const el=$('ground'); if(!el) return; const G=S.ground; board.classList.toggle('grounded',!!G);
+  if(G&&G.k==='color') G.c='#2a2e36';
   if(!G){ el.hidden=true; if(MAP.setTheme(false)){ mapVer++; drawMapLater(); } board.classList.remove('dkmap'); return; } el.hidden=false;
   const dark=G.k==='color'?(()=>{ const h=(G.c||'#2a2e36').replace('#',''), n=parseInt(h.length===3?h.split('').map(c=>c+c).join(''):h,16); return ((n>>16&255)*.3+(n>>8&255)*.59+(n&255)*.11)<128; })():G.k==='dirt'||G.k==='grass';
   const dkm=dark&&G.k==='color'; if(MAP.setTheme(dkm)){ mapVer++; drawMapLater(); } board.classList.toggle('dkmap',dkm);
@@ -5111,7 +5112,6 @@ function renderFond(){ const box=$('fond-body'); if(!box) return;
   box.innerHTML=(`
     <div class="subttl">Fond</div>
     <div class="wxrow gnd">${Object.entries(GROUNDS).map(([k,l])=>`<button type="button" class="wxb${S.ground&&S.ground.k===k?' on':''}" data-gnd="${k}" title="${l}${S.ground&&S.ground.k===k?' — cliquer pour revenir au fond normal':''}"><i class="gsw" style="${k==='color'?`background:${esc(S.ground&&S.ground.c||'#2a2e36')}`:`background-image:url('${groundTile(k)}');background-size:120px`}"></i><span>${l}</span></button>`).join('')}</div>
-    ${S.ground&&S.ground.k==='color'?`<label class="gcol"><span class="cap">Couleur</span><input type="color" id="gnd-c" value="${esc(S.ground.c||'#2a2e36')}"></label>`:''}
     <div class="subttl">Ambiance</div>
     <div class="wxrow">${wb('wx-day',S.light?'sun':'moon',S.light?'Jour':'Nuit',!S.light)}${wb('wx-fine','fine','Beau temps',!W)}${wb('wx-rain','rain','Pluie',W==='rain')}${wb('wx-storm','storm','Orage',W==='storm')}</div>
     <div class="subttl">Plateau</div>
@@ -5127,7 +5127,7 @@ function renderFond(){ const box=$('fond-body'); if(!box) return;
     <div class="geores" id="geo-res"></div>
 
     <button class="btn ghost" type="button" id="bg-rm" ${S.bg||S.geo?'':'disabled'}>${IB('bin')}Retirer le fond</button>`);
-  box.querySelectorAll('[data-gnd]').forEach(b=>b.onclick=()=>{ const k=b.dataset.gnd; S.ground={k,c:(S.ground&&S.ground.c)||'#2a2e36'}; renderBoard(); markDirty(); sync(); });
+  box.querySelectorAll('[data-gnd]').forEach(b=>b.onclick=()=>{ const k=b.dataset.gnd; S.ground={k,c:'#2a2e36'}; renderBoard(); markDirty(); sync(); });
   if($('gnd-c')) $('gnd-c').oninput=e=>{ S.ground={k:'color',c:e.target.value}; fondHold=true; try{ renderGround(); } finally{ fondHold=false; } box.querySelector('[data-gnd="color"] .gsw').style.background=e.target.value; markDirty(); syncLater(); };
   $('wx-day').onclick=()=>{ S.light=!S.light; renderBoard(); renderTracker(); markDirty(); sync(); toast(S.light?'Jour : le brouillard se lève':'Nuit : brouillard de guerre'); };
   const setW=w=>{ S.weather=w; renderBoard(); markDirty(); sync(); };
