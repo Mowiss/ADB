@@ -2396,6 +2396,8 @@ svg.i{width:18px;height:18px;flex:none}
 .tk .halo{position:absolute;left:50%;top:50%;border:1.5px dashed var(--gold);border-radius:50%;pointer-events:none;display:none;transform:translate(-50%,-50%)}
 .tk.light.open .halo{display:block}
 .tk.hid{opacity:.45}
+.tk.deco .face{border:0!important;background:none!important;box-shadow:none!important;border-radius:0;color:#2a2c33}.tk.deco .face svg{width:100%;height:100%}.tk.deco .nm,.tk.deco .ndot,.tk.deco .halo{display:none}
+.tk.deco.open .face{outline:2px dashed var(--brown);outline-offset:4px}#card .av.deco{border:0;background:none;color:#2a2c33}
 .tk.inbox{opacity:.6}.tk.inbox .face{border-style:dashed}.tk.inbox::after{content:'';position:absolute;right:-4px;top:-4px;width:18px;height:18px;border-radius:6px;background:var(--brown) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='6' width='18' height='14' rx='2'/%3E%3Cpath d='M3 11h18M10 11v3h4v-3'/%3E%3C/svg%3E") center/13px no-repeat;box-shadow:0 0 0 2px var(--paper)}
 .boxchk{display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;font-weight:700;color:var(--ink-soft,#7a7f8c);user-select:none}.boxchk input{width:16px;height:16px;margin:0;accent-color:var(--brown);cursor:pointer}.boxchk svg{width:17px;height:17px}.boxchk.on{color:var(--brown)}
 #litem .jrow .boxchk span{display:none}#litem .jrow .boxchk{padding:4px 6px;border-radius:8px}#litem .jrow .boxchk:hover{background:var(--wash)}
@@ -3077,6 +3079,7 @@ function zoomAt(cx,cy,f){ const r=board.getBoundingClientRect(), z=clamp(V.z*f,S
    Rendu
    ========================================================= */
 function faceHTML(t,cls){
+  if(t.stamp&&typeof MAP!=='undefined') return MAP.stampMarkup(t.stamp);
   const ico=()=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${cls==='sm'?1.8:1.6}" stroke-linecap="round" stroke-linejoin="round">${IC[t.ico]||IC[TYPES[t.type]?.def||'skull']}</svg>`;
   /* image en ligne (bestiaire du livre) : si elle ne charge pas, l'icône reprend sa place */
   if(t.img) return /^https?:/.test(t.img)?`<img src="${esc(t.img)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()" hidden onload="this.hidden=false;this.nextElementSibling&&this.nextElementSibling.remove()">${ico()}`:`<img src="${t.img}" alt="">`;
@@ -3098,7 +3101,7 @@ function tokenHTML(t){
 function tokenEl(t){
   let el=document.querySelector(`.tk[data-id="${t.id}"]`);
   if(!el){ el=document.createElement('div'); el.dataset.id=t.id; $('tokens').appendChild(el); if(!isPlayer) bindToken(el); }
-  el.className=`tk ${t.type}`+(t.hidden?' hid':'')+(t.inbox?' inbox':'')+(t.box?' box':'')+(ALIVE(t)&&t.hp<=0?' down':'')+(cardId===t.id?' open':'')+(curTurnId()===t.id?' current':'')+(isPlayer&&ME&&t.owner===ME?' mine':'');
+  el.className=`tk ${t.type}`+(t.hidden?' hid':'')+(t.inbox?' inbox':'')+(t.box?' box':'')+(t.kind==='deco'?' deco':'')+(ALIVE(t)&&t.hp<=0?' down':'')+(cardId===t.id?' open':'')+(curTurnId()===t.id?' current':'')+(isPlayer&&ME&&t.owner===ME?' mine':'');
   if(isPlayer&&ME&&t.owner===ME&&!el._mine){ el._mine=1; bindMine(el); }
   el.style.left=t.x+'px'; el.style.top=t.y+'px'; el.style.setProperty('--s',t.s||1);
   el.innerHTML=tokenHTML(t);
@@ -3275,6 +3278,10 @@ const boxChk=(t,id)=>`<label class="boxchk${t.inbox?' on':''}" title="Dans un co
 function setInbox(t,v){ t.inbox=!!v; tokenEl(t); renderTracker(); renderFoW(); if(cardId===t.id) renderCard(); jetRefresh(); markDirty(); sync(); }
 function renderCard(){
   const t=tok(cardId), c=$('card'); if(!t){ closeCard(); return; } const T=TYPES[t.type]; c.style.setProperty('--c',T.col);
+  if(t.kind==='deco'){ c.innerHTML=`<div class="ch"><div class="av deco">${faceHTML(t,'sm')}</div><div class="t"><b>Pictogramme</b><span>${esc((MAP.STAMPS[t.stamp]||{}).label||'')}</span></div><button class="ib" type="button" data-a="close" title="Fermer">${IB('x')}</button></div>
+    <span class="cap">Taille</span><div class="crange"><input type="range" min="0.5" max="5" step="0.1" value="${t.s||1}" id="c-s"><b id="c-sv">× ${String(t.s||1).replace('.',',')}</b></div>
+    <div class="cfoot"><span></span><button class="mini" type="button" data-a="del">${IB('bin')}Retirer</button></div>`; c.onclick=e=>{ const b=e.target.closest('button'); if(!b||performance.now()-cardAt<450) return; if(b.dataset.a==='close') closeCard(); else if(b.dataset.a==='del') removeToken(t.id); };
+    const cs=$('c-s'); cs.oninput=()=>{ t.s=+cs.value; $('c-sv').textContent='× '+String(t.s).replace('.',','); moveTokenEl(t); placeCard(); markDirty(); send({t:'mv',id:t.id,x:t.x,y:t.y,s:t.s}); }; return; }
   const head=`<div class="ch"><div class="av">${faceHTML(t,'sm')}</div><div class="t"><b>${esc(t.name||T.label)}</b><span>${T.label}${t.scene?' · scène':''}</span></div>
     <button class="ib ${t.hidden?'on':''}" type="button" data-a="hide" title="${t.hidden?'Caché aux joueurs — cliquer pour montrer':'Visible des joueurs — cliquer pour cacher'}">${IB(t.hidden?'eyeoff':'eye')}</button>
     ${t.type!=='light'?`<button class="ib" type="button" data-a="edit" title="Modifier">${IB('edit')}</button>`:''}
@@ -4219,6 +4226,8 @@ const MAP_EMOJI={"Mobilier": ["🗿", "⚰️", "🎁", "🪤", "🚪", "🕯️
    Volet DESSIN (à gauche) : les outils de l'Éditeur de Donjon sur le plateau
    ========================================================= */
 const MAP_TOOLS={"text": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 6V4h14v2M12 4v16M9 20h6\"/></svg>", "n": "Texte", "h": "cliquer pour écrire"}, "arrow": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M7 17L17 7M9 7h8v8\"/></svg>", "n": "Flèche", "h": "clic la pointe, puis clic la queue"}, "pencil": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 20l3.5-1L18 8.5 15.5 6 5 16.5 4 20z\"/><path d=\"M14 7.5l2.5 2.5\"/></svg>", "n": "Crayon", "h": "dessin libre à main levée"}, "corridor": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 5h11a5 5 0 0 1 5 5v11\"/><path d=\"M3 11h8a2 2 0 0 1 2 2v8\"/></svg>", "n": "Chemin", "h": "clic-glisser · couloir, salle"}, "river": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 8q3-3 6 0t6 0 3-1.2\"/><path d=\"M3 13q3-3 6 0t6 0 3-1.2\"/><path d=\"M3 18q3-3 6 0t6 0 3-1.2\"/></svg>", "n": "Eau", "h": "clic-glisser · rivière, lac"}, "foliage": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"8.5\" cy=\"9.5\" r=\"3.2\"/><circle cx=\"15\" cy=\"9\" r=\"3.2\"/><circle cx=\"11.5\" cy=\"13\" r=\"3.6\"/><path d=\"M11.5 16.5V21\"/></svg>", "n": "Feuillage", "h": "clic-glisser · bosquet, forêt"}, "meadow": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 20h18\"/><path d=\"M5.5 20c0-3.5-.8-6-2.3-8\"/><path d=\"M9 20c0-5 .9-8.5 3-11.5\"/><path d=\"M12.5 20c0-3.6-.9-6-2.6-7.8\"/><path d=\"M16 20c0-5 1-8.3 3.2-10.8\"/><path d=\"M19.5 20c0-2.6.6-4.4 1.7-5.6\"/></svg>", "n": "Prairie", "h": "peindre · herbes hautes"}, "desert": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M2 17c3-4.5 6-6 9-6 2.6 0 4.3 1.6 5.2 3.4\"/><path d=\"M11 20c2.6-3 5.2-4.3 7.5-4.3 1.3 0 2.5.4 3.5 1.2\"/><path d=\"M8.4 12.6l1 2.4M10.8 12.2l.7 2.2\"/><circle cx=\"17.5\" cy=\"6\" r=\"2\"/></svg>", "n": "Désert", "h": "peindre · étendue de sable"}, "wood": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"16\" rx=\"1\"/><path d=\"M3 9.3h18M3 14.7h18M9 4v5.3M15 9.3v5.4M7 14.7V20\"/></svg>", "n": "Plancher", "h": "peindre · lames de bois"}, "wall": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 6h18v12H3z\"/><path d=\"M3 12h18M9 6v6M15 12v6\"/></svg>", "n": "Mur", "h": "clic, clic… · double-clic = fin"}, "door": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M6 21V4a1 1 0 0 1 1.2-1l8 1.6A1 1 0 0 1 16 5.6V21\"/><path d=\"M4 21h16\"/><circle cx=\"13\" cy=\"12\" r=\"1\" fill=\"currentColor\" stroke=\"none\"/></svg>", "n": "Porte", "h": "glisser en travers du passage"}, "secret": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M6 3v18M18 3v18\"/><rect x=\"9\" y=\"6\" width=\"6\" height=\"12\" stroke-dasharray=\"2.2 2.2\"/><path d=\"M11 11.5a1 1 0 1 1 1.6.8c-.4.3-.6.5-.6 1.1\" stroke-width=\"1.6\"/><circle cx=\"12\" cy=\"15.3\" r=\".55\" fill=\"currentColor\" stroke=\"none\"/></svg>", "n": "Porte secrète", "h": "glisser en travers du passage"}, "stairs": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 20h4v-4h4v-4h4v-4h4\"/></svg>", "n": "Escalier", "h": "clic-glisser · volée de marches"}, "eraser": {"svg": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 14.5l6.5-6.5 6 6-5.5 5.5H8z\"/><path d=\"M8.5 19.5H19\"/><path d=\"M9.5 9l6 6\"/></svg>", "n": "Gomme", "h": "cliquer ou glisser sur un élément"}};
+MAP_TOOLS.corridor.n='Chemin libre'; MAP_TOOLS.corridor.h='clic-glisser · tracé à main levée';
+MAP_TOOLS.pathline={n:'Chemin droit',h:'clic, clic… · double-clic ou Entrée = fin · Maj = angles à 45°',svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19l6-9h8"/><circle cx="4" cy="19" r="1.6" fill="currentColor"/><circle cx="10" cy="10" r="1.6" fill="currentColor"/><circle cx="18" cy="10" r="1.6" fill="currentColor"/></svg>'};
 const MT=Object.assign({tool:'corridor',dens:1,width:40,emoji:'💀',svg:'maison',ink:'#241a12'},(()=>{ try{ return JSON.parse(localStorage.getItem('aldebaran.mj.map')||'{}'); }catch(e){ return {}; } })());
 if(MT.tool==='icon') MT.tool='corridor';
 const saveMT=()=>{ try{ localStorage.setItem('aldebaran.mj.map',JSON.stringify(MT)); }catch(e){} };
@@ -4266,25 +4275,29 @@ function openMapText(e,wp){ removeMapText(); const r=board.getBoundingClientRect
   inp.addEventListener('input',grow); inp.addEventListener('pointerdown',ev=>ev.stopPropagation());
   inp.addEventListener('keydown',ev=>{ ev.stopPropagation(); if(ev.key==='Enter'&&!ev.shiftKey){ ev.preventDefault(); commit(); } else if(ev.key==='Escape'){ done=true; removeMapText(); } });
   inp.addEventListener('blur',commit); }
+const decoTok=(key,x,y,size)=>({type:'prop',kind:'deco',stamp:key,name:'',ico:'box',img:null,note:'',x:Math.round(x),y:Math.round(y),s:clamp(Math.round((size||72)/72*10)/10,.5,5)});
+/* anciens pictos dessinés sur la carte : ils deviennent des jetons */
+function decoMigrate(){ if(isPlayer||!Array.isArray(S.drawings)) return; const L=S.drawings.filter(d=>d&&d.type==='svg'); if(!L.length) return;
+  S.drawings=S.drawings.filter(d=>!(d&&d.type==='svg')); L.forEach(d=>S.tokens.push(Object.assign(decoTok(d.key,d.x,d.y,d.size),{id:nid()}))); if(typeof mapVer!=='undefined') mapVer++; }
 function mapDown(e,wx,wy){ const wp={x:wx,y:wy}, T=MT.tool; e.preventDefault();
   if(mapTextEl) return;
   if(T==='eraser'){ gesture={k:'map'}; mapErase(wp); return; }
   if(T==='text'){ openMapText(e,wp); return; }
   if(T==='icon'){ mapCommit({type:'icon',x:wx,y:wy,emoji:MT.emoji}); return; }
-  if(T==='svg'){ mapCommit({type:'svg',x:wx,y:wy,key:MT.svg,size:MT.width}); return; }
+  if(T==='svg'){ addToken(decoTok(MT.svg,wx,wy,MT.width)); return; }
   if(T==='arrow'){ if(!arrowTip) arrowTip=wp; else { mapCommit({type:'arrow',tip:arrowTip,tail:wp}); arrowTip=null; } return; }
-  if(T==='wall'){ wallShift=!!e.shiftKey;
+  if(T==='wall'||T==='pathline'){ wallShift=!!e.shiftKey; const ty=T==='wall'?'wall':'corridor';
     if(!wallDraft){ if(wallEnd&&performance.now()-wallEnd.t<450&&Math.hypot(wx-wallEnd.x,wy-wallEnd.y)<10/V.z) return;
-      wallDraft={type:'wall',width:MT.width,points:[wp]}; wallHover=null; mapLive={type:'wall',width:MT.width,points:[wp]}; drawMapLater(); return; }
+      wallDraft={type:ty,width:mtW(),points:[wp]}; wallHover=null; mapLive={type:ty,width:mtW(),points:[wp]}; drawMapLater(); return; }
     const sp=wallSnap(wp), lp=wallDraft.points[wallDraft.points.length-1];
     if(Math.hypot(sp.x-lp.x,sp.y-lp.y)<8/V.z){ finishWall(); return; }
-    wallDraft.points.push(sp); wallHover=null; mapLive={type:'wall',width:wallDraft.width,points:wallDraft.points.slice()}; drawMapLater(); return; }
+    wallDraft.points.push(sp); wallHover=null; mapLive={type:wallDraft.type,width:wallDraft.width,points:wallDraft.points.slice()}; drawMapLater(); return; }
   if(T==='door'||T==='secret'||T==='stairs'){ gesture={k:'map',a:wp}; return; }
-  const st={type:T,points:[wp],width:MT.width}; if(T==='pencil') st.c=MT.ink; if(T==='meadow') st.dens=MT.dens;
+  const st={type:T,points:[wp],width:mtW()}; if(T==='pencil') st.c=MT.ink; if(T==='meadow') st.dens=MT.dens;
   gesture={k:'map',stroke:st}; mapLive=st; drawMapLater(); }
 function mapMove(e){ const [wx,wy]=toWorld(e.clientX,e.clientY), wp={x:wx,y:wy}, T=MT.tool;
   if(T==='arrow'&&arrowTip){ mapPrev={type:'arrow',tip:arrowTip,tail:wp}; drawMapLater(); return; }
-  if(T==='wall'&&wallDraft){ wallShift=!!e.shiftKey; wallHover=wallSnap(wp); mapLive={type:'wall',width:wallDraft.width,points:wallDraft.points.concat([wallHover])}; drawMapLater(); return; }
+  if((T==='wall'||T==='pathline')&&wallDraft){ wallShift=!!e.shiftKey; wallHover=wallSnap(wp); mapLive={type:wallDraft.type,width:wallDraft.width,points:wallDraft.points.concat([wallHover])}; drawMapLater(); return; }
   if(!gesture||gesture.k!=='map') return;
   if(T==='eraser'){ mapErase(wp); return; }
   if(gesture.a){ mapPrev={type:T,a:gesture.a,b:wp,width:MT.width}; drawMapLater(); return; }
@@ -4297,7 +4310,10 @@ function mapUp(e,g){ const T=MT.tool; if(T==='eraser') return;
 function scaleDrawing(o,fx,fy){ const P=p=>{ if(p){ p.x=r1(p.x*fx); p.y=r1(p.y*fy); } };
   (o.points||[]).forEach(P); P(o.a); P(o.b); P(o.tip); P(o.tail); if(o.x!=null){ o.x=r1(o.x*fx); o.y=r1(o.y*fy); } }
 /* choisir un outil */
-function pickMapTool(k){ if(wallDraft&&k!=='wall') finishWall(); arrowTip=null; mapPrev=null; removeMapText();
+/* un chemin fait au moins 1 m de large */
+const PATHW=()=>MT.tool==='corridor'||MT.tool==='pathline', mtW=()=>PATHW()?clamp(MT.width,PX_M,PX_M*5):MT.width;
+const mtWLabel=()=>PATHW()?(mtW()/PX_M).toFixed(2).replace(/\.?0+$/,'').replace('.',',')+' m':String(MT.width);
+function pickMapTool(k){ if(wallDraft&&k!==MT.tool) finishWall(); arrowTip=null; mapPrev=null; removeMapText();
   if(k==='measure'){ if(tool!=='measure') setTool('measure'); }
   else if(k==='none'){ if(tool) setTool(tool); } else { MT.tool=k; saveMT(); if(tool!=='map') setTool('map'); }
   renderDrawPanel(); drawMapLater(); }
@@ -4310,10 +4326,10 @@ function renderDrawPanel(){ const box=$('ldraw-body'); if(!box) return; const on
       ${tb('eraser')}
       <button type="button" class="wxb" id="md-undo" title="Annuler le dernier tracé (Ctrl+Z)">${IB('undo')}<span>Annuler</span></button>
       <button type="button" class="wxb" id="md-clear" title="Effacer tous les tracés de la scène">${IB('bin')}<span>Tout effacer</span></button></div>
-    <div class="subttl">Largeur</div><div class="bgscale"><input type="range" id="md-w" min="20" max="150" step="2" value="${MT.width}" aria-label="Largeur"><b id="md-wv" style="min-width:40px">${MT.width}</b></div>
+    <div class="subttl">Largeur</div><div class="bgscale"><input type="range" id="md-w" min="${PATHW()?PX_M:20}" max="${PATHW()?PX_M*5:150}" step="${PATHW()?PX_M/4:2}" value="${mtW()}" aria-label="Largeur"><b id="md-wv" style="min-width:48px">${mtWLabel()}</b></div>
     <div class="subttl">Tracés</div><div class="mtgrid">${tb('pencil')}</div>
     ${MT.tool==='pencil'?`<div class="swatches md-inks">${MAP_INKS.map(([c,n])=>`<button type="button" style="--c:${c}" data-ink="${c}" title="${n}" class="${MT.ink===c?'on':''}"></button>`).join('')}</div>`:''}
-    <div class="subttl">Terrain</div><div class="mtgrid">${['corridor','river','foliage','meadow','desert','wood','wall'].map(tb).join('')}</div>
+    <div class="subttl">Terrain</div><div class="mtgrid">${['corridor','pathline','river','foliage','meadow','desert','wood','wall'].map(tb).join('')}</div>
     ${MT.tool==='meadow'?`<div class="subttl">Densité de l'herbe</div><div class="bgscale"><input type="range" id="md-d" min="0.3" max="3" step="0.1" value="${MT.dens}" aria-label="Densité de l'herbe"><b id="md-dv" style="min-width:40px">× ${String(MT.dens).replace('.',',')}</b></div>`:''}
     <div class="subttl">Ouvertures</div><div class="mtgrid">${['door','secret','stairs'].map(tb).join('')}</div>
     <div class="subttl">Annotations</div><div class="mtgrid">${['text','arrow'].map(tb).join('')}</div>
@@ -4322,7 +4338,7 @@ function renderDrawPanel(){ const box=$('ldraw-body'); if(!box) return; const on
   box.querySelectorAll('[data-mt]').forEach(b=>b.onclick=()=>pickMapTool(b.dataset.mt));
   box.querySelectorAll('[data-st]').forEach(b=>b.onclick=()=>{ MT.svg=b.dataset.st; pickMapTool('svg'); });
   box.querySelectorAll('[data-ink]').forEach(b=>b.onclick=()=>{ MT.ink=b.dataset.ink; saveMT(); renderDrawPanel(); });
-  $('md-w').oninput=e=>{ MT.width=+e.target.value; $('md-wv').textContent=MT.width; saveMT(); };
+  $('md-w').oninput=e=>{ MT.width=+e.target.value; $('md-wv').textContent=mtWLabel(); saveMT(); };
   if($('md-d')) $('md-d').oninput=e=>{ MT.dens=+e.target.value; $('md-dv').textContent='× '+String(MT.dens).replace('.',','); saveMT(); };
   $('md-undo').onclick=mapUndo; $('md-clear').onclick=clearDrawings;
   $('rb-draw').classList.toggle('on-tool',tool==='map'); }
@@ -4667,7 +4683,7 @@ function send(m){ if(isPlayer) return; m.n=Date.now()*100+(seq++%100); m.from='m
   if(bc) try{ bc.postMessage(m); }catch(e){}
   if(bc&&m.t!=='state') return;   // le canal direct suffit ; le stockage local ne garde que l'état complet
   try{ localStorage.setItem(LS_SYNC,JSON.stringify(m)); }catch(e){ if(m.t==='state'){ const lite={...m,bg:m.bg&&m.bg.length>1.5e6?'':m.bg}; try{ localStorage.setItem(LS_SYNC,JSON.stringify(lite)); }catch(e2){} } } }
-function publicState(){ const pub=t=>({id:t.id,type:t.type,name:t.name,hp:t.hp,hpMax:t.hpMax,img:t.img,ico:t.ico,emo:t.emo,x:t.x,y:t.y,s:t.s,r:t.r,owner:t.owner||null,note:t.type==='prop'&&t.note?' ':''});
+function publicState(){ const pub=t=>({id:t.id,type:t.type,name:t.name,hp:t.hp,hpMax:t.hpMax,img:t.img,ico:t.ico,emo:t.emo,x:t.x,y:t.y,s:t.s,r:t.r,owner:t.owner||null,note:t.type==='prop'&&t.note?' ':'',kind:t.kind==='deco'?'deco':undefined,stamp:t.stamp||undefined});
   return {t:'state',bg:S.bg,bgKind:S.bgKind||'',bgW:S.bgW||0,bgH:S.bgH||0,geo:S.geo||null,light:S.light,weather:S.weather||'',ground:S.ground||null,grid:S.grid,drawings:S.drawings,tokens:S.tokens.filter(t=>!t.hidden).map(t=>t.kind==='item'&&!t.inbox?Object.assign(pub(t),{item:1,g:t.g||'misc',data:itemData(t)}):t.inbox?{id:t.id,type:'prop',name:'',ico:'chest',img:null,x:t.x,y:t.y,s:Math.max(1,t.s||1),box:1,note:''}:pub(t)),order:S.order.filter(id=>{ const t=tok(id); return t&&!t.hidden; }),turn:turnIdForPlayers(),view:viewMsg()}; }
 function turnIdForPlayers(){ const L=orderToks(), c=L[S.turn]; return c&&!c.hidden?c.id:null; }
 let syncRaf=0; function sync(){ if(isPlayer||syncRaf) return; syncRaf=requestAnimationFrame(()=>{ syncRaf=0; send(publicState()); }); }
@@ -4883,7 +4899,7 @@ async function doInstall(){ const ev=installEvt||window.__adbInstall;
    Branchements
    ========================================================= */
 function renderAllBoard(){ renderBoard(); renderDrawings(); renderTokens(); renderTracker(); renderFoW(); if(cardId) renderCard(); }
-function renderAll(){ renderAllBoard(); renderScenes(); renderProf(); $('notes-in').value=S.notes||''; }
+function renderAll(){ decoMigrate(); renderAllBoard(); renderScenes(); renderProf(); $('notes-in').value=S.notes||''; }
 function fitBoard(){ const r=board.getBoundingClientRect();
   if(bounded()){ centerOn(S.bgW/2,S.bgH/2,clamp(Math.min((r.width-40)/S.bgW,(r.height-40)/S.bgH),.15,1.5)); return; }
   const L=S.tokens; if(L.length){ const cx=L.reduce((a,t)=>a+t.x,0)/L.length, cy=L.reduce((a,t)=>a+t.y,0)/L.length; centerOn(cx,cy,1); } else centerOn(0,0,1); }
