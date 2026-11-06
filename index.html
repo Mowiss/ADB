@@ -3723,21 +3723,24 @@ const MAP=(function(){
 
   /* ---- motif de hachure uniforme (lignes diagonales régulières) ---- */
   var hatchTile = document.createElement('canvas');
-  (function(){
+  function buildHatch(){
     var TS=7; hatchTile.width=TS; hatchTile.height=TS;
     var tc=hatchTile.getContext('2d');
     tc.strokeStyle=INK_COLOR; tc.lineWidth=1; tc.lineCap='square';
-    tc.beginPath(); tc.moveTo(-1,TS+1); tc.lineTo(TS+1,-1); tc.stroke();   // diagonale 45°, tuilée = lignes parallèles
-  })();
+    tc.clearRect(0,0,TS,TS); tc.beginPath(); tc.moveTo(-1,TS+1); tc.lineTo(TS+1,-1); tc.stroke();   // diagonale 45°, tuilée = lignes parallèles
+  } buildHatch();
   var waveTile = document.createElement('canvas');
-  (function(){
+  function buildWave(){
     var W=16, H=8; waveTile.width=W; waveTile.height=H;
     var wc=waveTile.getContext('2d');
     wc.strokeStyle=WAVE_COLOR; wc.lineWidth=1.1; wc.lineCap='round';
     wc.beginPath();
+    wc.clearRect(0,0,W,H); wc.beginPath();
     for(var x=0;x<=W;x++){ var y=H/2+Math.sin(x/W*Math.PI*2)*2; if(x===0) wc.moveTo(x,y); else wc.lineTo(x,y); }
     wc.stroke();
-  })();
+  } buildWave();
+  /* le navigateur peut vider ces petites toiles hors écran (veille, mémoire) : on les refait à chaque rendu */
+  function freshTiles(){ buildHatch(); buildWave(); if(woodTile){ try{ var wx=woodTile.getContext('2d'); if((wx.isContextLost&&wx.isContextLost())||wx.getImageData(1,1,1,1).data[3]===0) woodTile=null; }catch(e){ woodTile=null; } } }
 
   /* ---- géométrie ---- */
   function roundRectPath(c,x,y,w,h,r){
@@ -3776,7 +3779,7 @@ const MAP=(function(){
   }
   // aperçu couloir (pendant le tracé)
   function paintCorridorPreview(c,o){
-    var hp=c.createPattern(hatchTile,'repeat');
+    buildHatch(); var hp=c.createPattern(hatchTile,'repeat');
     c.globalCompositeOperation='source-over';
     if(hp) strokeHalo(c,o,hp);
     strokeWalls(c,o);
@@ -4222,7 +4225,7 @@ const MAP=(function(){
     return false;
   }
   function renderAll(c, objects){
-    var i,o, by=function(t){ return objects.filter(function(q){ return q.type===t; }); };
+    freshTiles(); var i,o, by=function(t){ return objects.filter(function(q){ return q.type===t; }); };
     desertPass(c, by('desert')); meadowPass(c, by('meadow')); woodPass(c, by('wood'));
     var hp=c.createPattern(hatchTile,'repeat'); c.globalCompositeOperation='source-over';
     if(hp) objects.forEach(function(q){ if(q.type==='corridor') strokeHalo(c,q,hp); });
@@ -4238,9 +4241,7 @@ const MAP=(function(){
   var THEME='light';
   function setTheme(dark){ var k=dark?'dark':'light'; if(k===THEME) return false; THEME=k;
     INK_COLOR=dark?'#a3b2c7':'#241a12'; PARCHMENT_COLOR=dark?'#e4eaf2':'#ece0c3'; BRICK_FILL=dark?'#c9d3e0':'#d6c08f'; WOOD_FILL=dark?'#d9e0ea':'#e4d5b1';
-    var tc=hatchTile.getContext('2d'); tc.clearRect(0,0,hatchTile.width,hatchTile.height); tc.strokeStyle=INK_COLOR; tc.lineWidth=1; tc.lineCap='square';
-    tc.beginPath(); tc.moveTo(-1,hatchTile.height+1); tc.lineTo(hatchTile.width+1,-1); tc.stroke();
-    woodTile=null; return true; }
+    buildHatch(); woodTile=null; return true; }
   return { setTheme:setTheme, renderAll:renderAll, paintActive:paintActive, hitObject:hitObject, stampMarkup:stampMarkup, STAMPS:SVG_STAMPS, distToSeg:distToSeg, pencilWidth:pencilWidth };
 })();
 const MAP_EMOJI={"Mobilier": ["🗿", "⚰️", "🎁", "🪤", "🚪", "🕯️", "🛏️", "📺", "🛢️", "🪜", "🌳", "🏺"], "Items": ["🗡️", "🔫", "🛡️", "📚", "🗺️", "🔑", "🪖", "💽", "🏹", "🪙", "📜", "🔨"], "Nourriture": ["🍽️", "🍕", "🍎", "🥩", "🥦", "🥑", "🌸", "🧀", "🍷", "💊", "🍄", "💩"], "PNJ": ["👨‍💼", "👨‍🍳", "🦹🏼", "🧙‍♂️", "🧝‍♂️", "🕵️‍♂️", "🧞", "🧑🏼‍🎨", "🤹🏽", "👸", "👩🏻‍🔬", "👩🏽‍⚖️"], "Pin's": ["💥", "🔥", "📍", "⚠️", "☢️", "⚓", "💀", "🚨", "🔎", "❓", "⛔", "⚡"], "Animaux": ["🐀", "🦂", "🐍", "🐊", "🐎", "🦤", "🦍", "🐕", "🐆", "🦅", "🪳", "🕷️"], "Monstres": ["👻", "🦇", "🐉", "🧌", "🧟‍♀️", "🐦‍🔥", "🧚", "🦖", "🧜", "🦑", "👽", "🦄"]};
