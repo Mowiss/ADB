@@ -3932,16 +3932,11 @@ const MAP=(function(){
     var ms=[], i, k; for(i=0;i<list.length;i++){ if(list[i].points && list[i].points.length) ms.push(list[i]); }
     if(!ms.length) return;
     c.save(); c.globalCompositeOperation='source-over'; c.lineCap='round'; c.lineJoin='round';
-    c.fillStyle=MEADOW_FILL; c.strokeStyle=MEADOW_FILL;                  // 1) aplat (sans contour : sol doux)
-    for(i=0;i<ms.length;i++){
-      var pts=ms[i].points;
-      if(pts.length===1){ c.beginPath(); c.arc(pts[0].x,pts[0].y,ms[i].width/2,0,Math.PI*2); c.fill(); }
-      else { corridorPath(c,pts); c.lineWidth=ms[i].width; c.stroke(); }
-    }
+    /* prairie : seulement des brins d'herbe, sans aplat de sol */
     var all={};                                                           // 2) touffes : union des cellules
     for(i=0;i<ms.length;i++){ var cl=meadowTufts(ms[i]); for(k in cl) all[k]=cl[k]; }
     c.strokeStyle=MEADOW_GRASS; c.lineWidth=LINE_FINE;
-    c.beginPath(); for(k in all){ var tf=all[k]; if(seeded(tf.x*0.61,tf.y*0.83)<0.65) paintTuft(c,tf); } c.stroke();   // ~2 cases sur 3 : touffes éparses
+    c.beginPath(); for(k in all){ var tf=all[k]; if(seeded(tf.x*0.61,tf.y*0.83)<0.85) paintTuft(c,tf); } c.stroke();   // touffes un peu plus denses
     c.restore();
   }
   function paintMeadow(c,o){ meadowPass(c,[o]); }
