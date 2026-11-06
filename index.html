@@ -2686,7 +2686,7 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 .field{display:flex;flex-direction:column;gap:1px;min-width:0}
 .name-in{font-family:var(--f-title);font-size:23px;letter-spacing:.05em;color:var(--ink-strong)}
 .name-in::placeholder{color:#c3c6cf}
-.picks{display:flex;flex-wrap:wrap;gap:6px}
+.picks{display:grid;grid-template-columns:repeat(auto-fill,38px);gap:6px;justify-content:start}
 .picks button{width:38px;height:38px;border-radius:50%;border:1.5px solid var(--rule);background:var(--paper);display:grid;place-items:center;padding:0;color:var(--c)}
 .picks button svg{width:58%;height:58%}
 .picks button:hover{border-color:var(--c)}
@@ -4389,7 +4389,7 @@ function propForm(box,t,o){ const T=TYPES[t.type], light=t.type==='light', P=o.p
   box.innerHTML=`<div class="mform">${o.top||''}
     <div class="who"><button class="portrait ${light?'':'sq'}" type="button" id="${P}-face" title="${light?'':'Image depuis l\'ordinateur'}"></button>
       <div style="display:flex;flex-direction:column;gap:10px;min-width:0"><div class="field"><label class="cap" for="${P}-name">Nom</label><input id="${P}-name" class="line-in name-in" placeholder="${light?'Torche, lampe…':item?'Pistolet, medkit…':'Caisse, porte…'}" value="${esc(t.name||'')}" autocomplete="off"></div>
-      ${light?'':`<div class="picks sq" id="${P}-icons">${ICS.map(k=>`<button type="button" data-ico="${k}" class="${!t.img&&t.ico===k?'on':''}" title="${item?OBJ_GL[k.slice(2)]:k}">${IB(k,1.8)}</button>`).join('')}<button type="button" class="up" data-ico="upload" title="Image depuis l'ordinateur">${IB('upload',1.8)}</button></div>`}</div></div>
+      ${light||item&&o.noIcons?'':`<div class="picks sq" id="${P}-icons" style="--c:${item?'var(--brown)':T.col}">${ICS.map(k=>`<button type="button" data-ico="${k}" class="${!t.img&&t.ico===k?'on':''}" title="${item?OBJ_GL[k.slice(2)]:k}">${IB(k,1.8)}</button>`).join('')}<button type="button" class="up" data-ico="upload" title="Image depuis l'ordinateur">${IB('upload',1.8)}</button></div>`}</div></div>
     ${light?`<div class="subttl">Portée de la lumière</div><div class="bgscale"><input type="range" id="${P}-r" min="40" max="900" step="10" value="${t.r||200}" aria-label="Portée"><b id="${P}-rv" style="min-width:64px"></b></div>`
       :`<div class="subttl">Taille du jeton</div><div class="bgscale"><input type="range" id="${P}-s" min="0.5" max="5" step="0.1" value="${t.s||1}" aria-label="Taille du jeton"><b id="${P}-sv" style="min-width:40px">× ${String(t.s||1).replace('.',',')}</b></div>
       <label class="field"><span class="cap">${item?'Description':'Note secrète (MJ)'}</span><textarea class="cnote" id="${P}-note" placeholder="${item?'Effets, dégâts, poids, prix…':'Ce que cache ce mobilier…'}">${esc(t.note||'')}</textarea></label>`}
@@ -4485,7 +4485,7 @@ function renderItemPanel(){ const box=$('litem-body'); if(!box) return; jetRead=
   const grouped=(L,row)=>OBJ_G.map(([k,l])=>{ const g=L.filter(x=>(x.g||'misc')===k); return g.length?`<div class="bcat">${l} <small>${g.length}</small></div>${g.map(row).join('')}`:''; }).join('');
   $('litem').style.setProperty('--tc','var(--brown)');
   if(IP.edit){ const t=clone(IP.edit); box.innerHTML='<div id="it-main"></div>';
-    propForm($('it-main'),t,{edit:IP.edit,pid:'ie',top:top('Modifier'),onBack:back}); $('it-back').onclick=back; jetStamp(false); return; }
+    propForm($('it-main'),t,{edit:IP.edit,pid:'ie',noIcons:1,top:top('Modifier'),onBack:back}); $('it-back').onclick=back; jetStamp(false); return; }
   const SECS=[['board','Sur le plateau','target'],['create','Créer un item','plus'],['inv','Inventaire','chest']];
   box.innerHTML=`<div class="jtabs">${SECS.map(([k,l,ic])=>`<button type="button" class="wxb${IP.sec===k?' on':''}" data-is="${k}" style="--tc:var(--brown)" aria-pressed="${IP.sec===k}">${IB(ic,1.7)}<span>${l}</span></button>`).join('')}</div><div class="jbody" id="it-body"></div>`;
   box.querySelectorAll('[data-is]').forEach(b=>b.onclick=()=>{ IP.sec=IP.sec===b.dataset.is?null:b.dataset.is; IP.cfg=null; renderItemPanel(); });
@@ -4503,7 +4503,7 @@ function renderItemPanel(){ const box=$('litem-body'); if(!box) return; jetRead=
   else if(IP.sec==='create'){ if(!IP.item) IP.item={type:'prop',kind:'item',name:'',ico:'o_misc',g:'misc',img:null,note:'',s:1};
     jetRead=propForm(body,IP.item,{pid:'ic',onChange,save:saveItem}); }
   else if(IP.sec==='inv'){
-    if(IP.cfg){ jetRead=propForm(body,IP.cfg,{pid:'iv',top:top(esc(IP.cfg.name||'Objet')),onChange,save:saveItem}); $('it-back').onclick=()=>{ IP.cfg=null; renderItemPanel(); }; }
+    if(IP.cfg){ jetRead=propForm(body,IP.cfg,{pid:'iv',noIcons:1,top:top(esc(IP.cfg.name||'Objet')),onChange,save:saveItem}); $('it-back').onclick=()=>{ IP.cfg=null; renderItemPanel(); }; }
     else { body.innerHTML=`<div class="bsearch"><input class="line-in" id="lv-q" placeholder="Rechercher un objet…" autocomplete="off"></div><div class="jlist" id="lv-list"></div>`;
       const draw=()=>{ const qq=normTxt($('lv-q').value), ALL=invAll(), L=ALL.filter(x=>!qq||normTxt(x.name).includes(qq));
         const row=x=>`<div class="jrow brow" data-k="${esc(x.name)}" style="--c:var(--brown)" title="Glisser sur le plateau · cliquer pour régler"><span class="bface">${faceHTML(x,'sm')}</span><b>${esc(x.name)}</b><span class="jhp">${x.src==='player'?esc(x.who||'Joueur'):x.src==='mj'?'perso':''}</span><span></span>${x.src==='mj'?`<button class="ib del" type="button" data-del title="Retirer de l'inventaire">${IB('bin')}</button>`:'<span></span>'}</div>`;
