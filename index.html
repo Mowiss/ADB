@@ -3360,7 +3360,7 @@ function mobForm(box,t,o){
     <div class="subttl sadd">Attaques<button class="ib" type="button" id="e-addatk" title="Ajouter une attaque" aria-label="Ajouter une attaque">${IB('plus')}</button></div><div class="arows" id="e-atks">${(t.attacks||[]).map(atkRow).join('')}</div>
     <div class="subttl">Notes & remarques</div><textarea class="cnote" id="e-note" placeholder="Capacités, résistances, faiblesses, butin…" aria-label="Notes et remarques">${esc(t.note||'')}</textarea>
     ${edit?`<div class="actions"><button class="btn ghost" type="button" id="m-cancel">Annuler</button><button class="btn" type="button" id="e-ok" style="background:${T.col};border-color:${T.col}">Valider</button><button class="btn ghost" type="button" id="m-save" title="Enregistrer ce MOB dans le bestiaire">${IB('book')}Enregistrer</button></div>`
-      :`<div class="actions jstamp"><span class="meta">${IB('target')}Cliquez sur le plateau pour poser ce MOB</span><button class="btn ghost" type="button" id="m-save" title="Enregistrer ce MOB dans le bestiaire">${IB('book')}Enregistrer au bestiaire</button></div>`}</div>`);
+      :`<div class="actions jstamp"><button class="btn ghost" type="button" id="m-save" title="Enregistrer ce MOB dans le bestiaire">${IB('book')}Enregistrer au bestiaire</button></div>`}</div>`);
   if($('m-cancel')) $('m-cancel').onclick=back;
   const face=()=>{ $('m-face').innerHTML=faceHTML({...t,name:$('e-name').value||t.name}); $('m-emo').textContent=t.emo||'💀'; document.querySelectorAll('.mopt').forEach(b=>b.classList.toggle('on',b.dataset.m===mode())); };
   const setImg=img=>{ t.img=img; face(); };
@@ -4268,8 +4268,8 @@ function renderDrawPanel(){ const box=$('ldraw-body'); if(!box) return; const on
     ${MT.tool==='meadow'?`<div class="subttl">Densité de l'herbe</div><div class="bgscale"><input type="range" id="md-d" min="0.3" max="3" step="0.1" value="${MT.dens}" aria-label="Densité de l'herbe"><b id="md-dv" style="min-width:40px">× ${String(MT.dens).replace('.',',')}</b></div>`:''}
     <div class="subttl">Ouvertures</div><div class="mtgrid">${['door','secret','stairs'].map(tb).join('')}</div>
     <div class="subttl">Annotations</div><div class="mtgrid">${['text','arrow'].map(tb).join('')}</div>
-    <div class="subttl">Pictogrammes <small>taille = largeur</small></div>${scat.map(c=>`<div class="mcat">${esc(c)}</div><div class="stgrid">${stamps.filter(k=>(MAP.STAMPS[k].cat||'Divers')===c).map(k=>`<button type="button" class="stb${tool==='map'&&MT.tool==='svg'&&MT.svg===k?' on':''}" data-st="${k}" title="${esc(MAP.STAMPS[k].title||k)}">${MAP.stampMarkup(k)}</button>`).join('')}</div>`).join('')}
-    <p class="meta" style="text-align:left">Mur : clic, clic… double-clic (ou clic droit, Entrée) pour finir, Maj = angles de 45°. Flèche : clic la pointe, puis la queue. Clic molette : déplacer la vue.</p>`;
+    <div class="subttl">Pictogrammes</div>${scat.map(c=>`<div class="mcat">${esc(c)}</div><div class="stgrid">${stamps.filter(k=>(MAP.STAMPS[k].cat||'Divers')===c).map(k=>`<button type="button" class="stb${tool==='map'&&MT.tool==='svg'&&MT.svg===k?' on':''}" data-st="${k}" title="${esc(MAP.STAMPS[k].title||k)}">${MAP.stampMarkup(k)}</button>`).join('')}</div>`).join('')}
+`;
   box.querySelectorAll('[data-mt]').forEach(b=>b.onclick=()=>pickMapTool(b.dataset.mt));
   box.querySelectorAll('[data-st]').forEach(b=>b.onclick=()=>{ MT.svg=b.dataset.st; pickMapTool('svg'); });
   box.querySelectorAll('[data-ink]').forEach(b=>b.onclick=()=>{ MT.ink=b.dataset.ink; saveMT(); renderDrawPanel(); });
@@ -4343,7 +4343,7 @@ function propForm(box,t,o){ const T=TYPES[t.type], light=t.type==='light', P=o.p
     ${light?`<div class="subttl">Portée de la lumière</div><div class="bgscale"><input type="range" id="${P}-r" min="40" max="900" step="10" value="${t.r||200}" aria-label="Portée"><b id="${P}-rv" style="min-width:64px"></b></div>`
       :`<label class="field"><span class="cap">Note secrète (MJ)</span><textarea class="cnote" id="${P}-note" placeholder="Ce que cache ce mobilier…">${esc(t.note||'')}</textarea></label>`}
     ${o.edit?`<div class="actions"><button class="btn ghost" type="button" id="${P}-cancel">Annuler</button><button class="btn" type="button" id="${P}-ok" style="background:${T.col};border-color:${T.col}">Valider</button></div>`
-      :`<div class="actions jstamp"><span class="meta">${IB('target')}Cliquez sur le plateau pour poser ${light?'cette lumière':'ce mobilier'}</span></div>`}</div>`;
+      :''}</div>`;
   const face=()=>{ $p('face').innerHTML=faceHTML({...t,name:$p('name').value||t.name}); };
   const rv=()=>{ if($p('r')) $p('rv').textContent=`${(t.r/PX_M).toFixed(1).replace('.',',')} m`; };
   const read=()=>{ t.name=$p('name').value.trim(); if($p('note')) t.note=$p('note').value; if($p('r')) t.r=+$p('r').value; return t; };
@@ -4366,7 +4366,7 @@ function renderJetPanel(){ const box=$('ljet-body'); if(!box) return; jetRead=nu
   const SECS=[['secBoard','Sur le plateau','target','var(--ink-strong)'],['secCreate','Créer un MOB','plus','var(--danger)'],['secBest','Bestiaire','book','var(--danger)'],['secProp','Mobilier','box','var(--brown)']];
   const cur=SECS.find(x=>JP[x[0]]);
   box.innerHTML=`<div class="jtabs">${SECS.map(([k,l,ic,col])=>`<button type="button" class="wxb${JP[k]?' on':''}" data-sec="${k}" style="--tc:${col}" aria-pressed="${JP[k]?'true':'false'}">${IB(ic,1.7)}<span>${l}</span></button>`).join('')}</div>
-    <div class="jbody" id="jt-body">${!cur?`<p class="meta" style="text-align:left">Choisissez une rubrique ci-dessus. Un jeton réglé ici devient un tampon : chaque clic sur le plateau en pose un.</p>`
+    <div class="jbody" id="jt-body">${!cur?''
       :cur[0]==='secBoard'?`<div class="bsearch"><input class="line-in" id="lj-q" placeholder="Rechercher un jeton…" autocomplete="off"></div><div class="jlist" id="lj-list"></div>`
       :cur[0]==='secCreate'?'<div id="jt-create"></div>':cur[0]==='secBest'?'<div id="jt-best"></div>'
       :`<div id="jt-prop"></div><details class="jsec sub" data-sub="secLight" ${JP.secLight?'open':''} style="--sc:var(--gold)"><summary>${IB('bulb',1.7)}<span>Lumière</span></summary><div class="jsec-in"><div id="jt-light"></div></div></details>`}</div>`;
@@ -4376,7 +4376,7 @@ function renderJetPanel(){ const box=$('ljet-body'); if(!box) return; jetRead=nu
   if(JP.secCreate){ if(!JP.newMob) JP.newMob=mobBase(); readers.secCreate=mobForm($('jt-create'),JP.newMob,{onChange}); }
   if(JP.secBest){ const host=$('jt-best');
     if(JP.cfg){ readers.secBest=mobForm(host,JP.cfg,{top:top(esc(JP.cfg.name||'MOB')),onChange}); $('jt-back').onclick=()=>{ JP.cfg=null; renderJetPanel(); }; }
-    else { importBook(); host.innerHTML=`<div class="bsearch"><input class="line-in" id="lb-q" placeholder="Rechercher un MOB…" autocomplete="off"></div><p class="meta" style="text-align:left;margin:0">Cliquez un MOB pour le régler puis le poser, ou glissez-le directement sur le plateau.</p><div class="blist" id="lb-list"></div>`;
+    else { importBook(); host.innerHTML=`<div class="bsearch"><input class="line-in" id="lb-q" placeholder="Rechercher un MOB…" autocomplete="off"></div><div class="blist" id="lb-list"></div>`;
       const draw=()=>{ const l=$('lb-list'); l.innerHTML=bestRows($('lb-q').value); bindBestList(l,m=>{ if(m){ JP.cfg=Object.assign(mobBase(),clone(m),{type:'mob',hp:m.hpMax}); delete JP.cfg.cat; renderJetPanel(); } else draw(); },true); };
       $('lb-q').oninput=draw; draw(); } }
   if(JP.secProp){ if(!JP.prop) JP.prop={type:'prop',name:'',ico:'box',img:null,note:''}; readers.secProp=propForm($('jt-prop'),JP.prop,{pid:'pp',onChange});
@@ -4403,7 +4403,7 @@ function jetRefresh(){ const j=$('ljet'); if(j&&j.classList.contains('open')&&JP
 function renderBestPanel(){ const box=$('lbest-body'); if(!box) return; $('lbest').querySelector('header h3').textContent='Bestiaire'; importBook(); const todo=bookTodo(), q=$('lb-q')?$('lb-q').value:'';
   box.innerHTML=`<div class="bsearch"><input class="line-in" id="lb-q" placeholder="Rechercher un MOB…" autocomplete="off" value="${esc(q)}"></div>
     <div class="wxrow"><button type="button" class="wxb" id="lb-new">${IB('plus')}<span>Nouveau MOB</span></button>${todo?`<button type="button" class="wxb" id="lb-imp" title="Ajouter les créatures du livre Aldebaran">${IB('book')}<span>Importer le livre (${todo})</span></button>`:''}</div>
-    <p class="meta" style="text-align:left;margin:0">Glissez un MOB sur le plateau pour l'invoquer ; cliquez-le pour l'ouvrir.</p>
+
     <div class="blist" id="lb-list"></div>`;
   const draw=()=>{ const l=$('lb-list'); l.innerHTML=bestRows($('lb-q').value); bindBestList(l,m=>{ if(m) mobDialog(null,m); else draw(); },true); };
   $('lb-q').oninput=draw; $('lb-new').onclick=()=>mobDialog(); if($('lb-imp')) $('lb-imp').onclick=()=>{ const n=importBook(); toast(n?`Bestiaire du livre : ${n} créature${n>1?'s':''} ajoutée${n>1?'s':''}`:'Le bestiaire du livre est déjà complet'); renderBestPanel(); };
@@ -4951,11 +4951,11 @@ function renderFond(){ const box=$('fond-body'); if(!box) return;
     <div class="fdgrid" id="fd-grid" ${fondCat?'':'hidden'}><p class="meta" style="text-align:left;grid-column:1/-1">Chargement du catalogue…</p></div>
     <div class="drop" id="bg-drop">Déposez une image dans ce volet</div>
     ${S.bg&&S.bgKind!=='video'?`<div class="bgscale"><input type="range" id="bg-sc" min="-1.7" max="1.3" step="0.005" value="${sc}" aria-label="Taille de l'image"><b id="bg-scv"></b></div>
-    <div class="georow" style="align-items:center"><button class="mini" type="button" id="bg-ech">${IB('ruler')}Mettre à l'échelle</button><span class="meta" style="text-align:left">Tracez une distance connue, puis donnez sa vraie longueur : un jeton ≈ 1 m.</span></div>`:''}
+    <div class="georow" style="align-items:center"><button class="mini" type="button" id="bg-ech">${IB('ruler')}Mettre à l'échelle</button></div>`:''}
     <div class="subttl">Orthophoto</div>
     <div class="georow"><input class="line-in" id="geo-q" placeholder="Un lieu, une adresse, ou « 44.559, 6.079 »" value="${esc(S.geo&&S.geo.label||'')}"><button class="mini" type="button" id="geo-go">Chercher</button><button class="mini" type="button" id="geo-me" title="Ma position">${IB('target')}</button></div>
     <div class="geores" id="geo-res"></div>
-    <p class="meta" style="text-align:left">Orthophotos à l'échelle 1 : un jeton ≈ 1 m. Zoomez à fond ou dézoomez jusqu'à voir la région. Recherche © OpenStreetMap, orthophotos © IGN (hors France © Esri).</p>
+
     <button class="btn ghost" type="button" id="bg-rm" ${S.bg||S.geo?'':'disabled'}>${IB('bin')}Retirer le fond</button>`);
   box.querySelectorAll('[data-gnd]').forEach(b=>b.onclick=()=>{ const k=b.dataset.gnd; S.ground=S.ground&&S.ground.k===k?null:{k,c:(S.ground&&S.ground.c)||'#2a2e36'}; renderBoard(); markDirty(); sync(); });
   if($('gnd-c')) $('gnd-c').oninput=e=>{ S.ground={k:'color',c:e.target.value}; fondHold=true; try{ renderGround(); } finally{ fondHold=false; } box.querySelector('[data-gnd="color"] .gsw').style.background=e.target.value; markDirty(); syncLater(); };
