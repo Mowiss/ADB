@@ -3304,12 +3304,14 @@ function openCard(id){
 }
 const boxChk=(t,id)=>`<label class="boxchk${t.inbox?' on':''}" title="Dans un contenant (caisse, coffre…) : invisible des joueurs"><input type="checkbox" ${id?`id="${id}"`:'data-box'} ${t.inbox?'checked':''}>${IB('chest',1.7)}<span>Dans un contenant</span></label>`;
 function setInbox(t,v){ t.inbox=!!v; tokenEl(t); renderTracker(); renderFoW(); if(cardId===t.id) renderCard(); jetRefresh(); markDirty(); sync(); }
+/* envoi aux joueurs groupé à la frame : une réglette ne noie pas le réseau */
+let sendQ=null; function sendLater(m){ const first=!sendQ; sendQ=m; if(first) requestAnimationFrame(()=>{ const q=sendQ; sendQ=null; if(q) send(q); }); }
 function renderCard(){
   const t=tok(cardId), c=$('card'); if(!t){ closeCard(); return; } const T=TYPES[t.type]; c.style.setProperty('--c',T.col);
   if(t.kind==='deco'){ c.innerHTML=`<div class="ch"><div class="av deco">${faceHTML(t,'sm')}</div><div class="t"><b>Pictogramme</b><span>${esc((MAP.STAMPS[t.stamp]||{}).label||'')}</span></div><button class="ib" type="button" data-a="close" title="Fermer">${IB('x')}</button></div>
     <span class="cap">Taille</span><div class="crange"><input type="range" min="0.5" max="5" step="0.1" value="${t.s||1}" id="c-s"><b id="c-sv">${fmtMm(t.s||1)}</b></div>
     <div class="cfoot"><span></span><button class="mini" type="button" data-a="del">${IB('bin')}Retirer</button></div>`; c.onclick=e=>{ const b=e.target.closest('button'); if(!b||performance.now()-cardAt<450) return; if(b.dataset.a==='close') closeCard(); else if(b.dataset.a==='del') removeToken(t.id); };
-    const cs=$('c-s'); cs.oninput=()=>{ t.s=+cs.value; $('c-sv').textContent=fmtMm(t.s); moveTokenEl(t); placeCard(); markDirty(); send({t:'mv',id:t.id,x:t.x,y:t.y,s:t.s}); }; return; }
+    const cs=$('c-s'); cs.oninput=()=>{ t.s=+cs.value; $('c-sv').textContent=fmtMm(t.s); moveTokenEl(t); markDirty(); sendLater({t:'mv',id:t.id,x:t.x,y:t.y,s:t.s}); }; cs.onchange=()=>placeCard(); return; }
   const head=`<div class="ch"><div class="av">${faceHTML(t,'sm')}</div><div class="t"><b>${esc(t.name||T.label)}</b><span>${T.label}${t.scene?' · scène':''}</span></div>
     <button class="ib ${t.hidden?'on':''}" type="button" data-a="hide" title="${t.hidden?'Caché aux joueurs — cliquer pour montrer':'Visible des joueurs — cliquer pour cacher'}">${IB(t.hidden?'eyeoff':'eye')}</button>
     ${t.type!=='light'?`<button class="ib" type="button" data-a="edit" title="Modifier">${IB('edit')}</button>`:''}
@@ -3339,7 +3341,7 @@ function renderCard(){
     else if(b.dataset.atk!=null){ const a=t.attacks[+b.dataset.atk]; showRoll(`${t.name||'Monstre'} · ${a.name||'Attaque'}`,(t.stats[a.stat]||0)+(+a.bonus||0)); }
   };
   const nt=$('c-note'); if(nt) nt.oninput=()=>{ t.note=nt.value; const has=!!t.note.trim(), el=document.querySelector(`.tk[data-id="${t.id}"]`); if(el&&!!el.querySelector('.ndot')!==has) tokenEl(t); markDirty(); };
-  const cs=$('c-s'); if(cs) cs.oninput=()=>{ t.s=+cs.value; $('c-sv').textContent=fmtMm(t.s); moveTokenEl(t); placeCard(); fowLater(); markDirty(); send({t:'mv',id:t.id,x:t.x,y:t.y,s:t.s}); };
+  const cs=$('c-s'); if(cs){ cs.oninput=()=>{ t.s=+cs.value; $('c-sv').textContent=fmtMm(t.s); moveTokenEl(t); fowLater(); markDirty(); sendLater({t:'mv',id:t.id,x:t.x,y:t.y,s:t.s}); }; cs.onchange=()=>placeCard(); }
   const rr=$('c-r'); if(rr) rr.oninput=()=>{ t.r=+rr.value; $('c-rv').textContent=(t.r/CELL*CELL_M).toFixed(1).replace('.',',')+' m'; const h=document.querySelector(`.tk[data-id="${t.id}"] .halo`); if(h){ h.style.width=h.style.height=(t.r*2)+'px'; } fowLater(); markDirty(); syncLater(); };
 }
 function placeCard(){
