@@ -2159,7 +2159,7 @@ runOpening();
   --danger:#e3262b; --gold:#d19c00; --ok:#2f9a55; --brown:#a0642b;
   --f-title:"Josefin Sans","Century Gothic","Avenir Next",sans-serif;
   --f-body:"Quicksand","Nunito","Segoe UI",system-ui,sans-serif;
-  --bar:56px; --bot:68px; --tim:30px; --tabs:40px; --rail:60px;
+  --bar:56px; --bot:68px; --tim:30px; --tabs:0px; --rail:60px;
   color-scheme:light;
 }
 *{box-sizing:border-box}
@@ -2189,7 +2189,10 @@ svg.i{width:18px;height:18px;flex:none}
 .sdot{width:9px;height:9px;border-radius:50%;background:var(--ok);display:inline-block;position:absolute;top:5px;right:5px;border:1.5px solid var(--paper)}
 .sdot.dirty{background:var(--gold)}
 .scenenav{display:flex;align-items:center;gap:4px;min-width:0;flex:0 1 auto;border-left:1px solid var(--rule);padding-left:12px}
-.sc-ico{display:grid;place-items:center;color:var(--ink-soft);margin-right:2px;flex:none}.sc-ico svg{width:18px;height:18px}
+.sc-ico{display:grid;place-items:center;color:var(--ink-soft);flex:none}.sc-ico svg{width:18px;height:18px}
+.sc-num{display:flex;align-items:center;gap:5px;padding:0 6px;cursor:pointer}.scenenav .sc-num b{font-family:var(--f-body);font-size:19px;letter-spacing:0;padding:0;color:var(--ink-soft);min-width:12px;text-align:center}.scenenav .sc-num b.none{font-size:19px}
+.scnb{display:flex;align-items:center;gap:10px;border:0;background:none;padding:4px 14px 4px 10px;margin-left:8px;border-right:1px solid var(--rule);border-radius:0;color:var(--ink);font-family:var(--f-title);font-size:15px;letter-spacing:.24em;cursor:pointer}
+.scnb #scn-ico svg{width:26px;height:26px;display:block}.scnb:hover,.scnb[aria-pressed="true"]{color:var(--c-per)}
 .scenenav b{font-family:var(--f-title);font-weight:400;font-size:16px;letter-spacing:.12em;color:var(--ink-strong);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:32vw;cursor:pointer;padding:0 6px}
 .scenenav b.none{color:var(--ink-soft);font-size:13px;letter-spacing:.06em}
 .nb{width:28px;height:28px;border-radius:50%;border:1px solid var(--rule);background:var(--paper);display:grid;place-items:center;padding:0;color:var(--ink)}
@@ -2523,7 +2526,7 @@ svg.i{width:18px;height:18px;flex:none}
 .timer.paused .r1 b{color:var(--ink-soft)}
 
 /* Onglets verticaux et volets (repris de la fiche joueur) */
-.vtabs{position:fixed;right:0;top:var(--bar);bottom:0;width:var(--tabs);z-index:41;display:flex;flex-direction:column;gap:4px;padding:14px 0;background:var(--paper);border-left:1px solid var(--rule);overflow-y:auto}
+.vtabs[hidden]{display:none!important}.vtabs{position:fixed;right:0;top:var(--bar);bottom:0;width:var(--tabs);z-index:41;display:flex;flex-direction:column;gap:4px;padding:14px 0;background:var(--paper);border-left:1px solid var(--rule);overflow-y:auto}
 .vtab{display:flex;flex-direction:column;align-items:center;gap:7px;width:40px;padding:10px 0;border:0;border-left:3px solid transparent;border-radius:0;flex:none;background:var(--paper);color:var(--ink);cursor:pointer}
 .vtab svg{width:20px;height:20px;flex:none}
 .vtab span{writing-mode:vertical-rl;transform:rotate(180deg);font-size:10.5px;white-space:nowrap;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
@@ -2532,7 +2535,7 @@ svg.i{width:18px;height:18px;flex:none}
 .drawer{position:fixed;top:var(--bar);right:var(--tabs);bottom:0;width:min(440px,100vw - 40px);background:var(--paper);border-left:1px solid var(--rule);z-index:40;transform:translateX(calc(100% + 42px));transition:transform .3s ease;display:flex;flex-direction:column;padding:16px 18px 16px 18px}
 .ldrawer{left:var(--rail);right:auto;width:min(400px,calc(100vw - var(--rail) - 8px));border-left:0;border-right:1px solid var(--rule);transform:translateX(calc(-100% - var(--rail) - 6px));z-index:39}
 /* les volets de gauche passent derrière le bandeau du bas (sabliers + initiative) */
-.ldrawer{z-index:9;padding-bottom:0}.ldrawer .dscroll{padding-bottom:calc(var(--bot) + var(--tim) + 16px)}
+.ldrawer{z-index:9;padding-bottom:calc(var(--bot) + var(--tim) + 10px)}.ldrawer .dscroll{padding-bottom:16px}
 .ldrawer.open{box-shadow:inset -3px 0 0 var(--tc,transparent)!important}
 .rb.on-tool:not([aria-pressed="true"]){color:var(--c-sav)}
 .ldrawer .wxb{min-width:62px}
@@ -2580,7 +2583,7 @@ button.bcat .bcl{flex:none}button.bcat small{margin-left:auto}button.bcat .stars
 .drawer header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .drawer h3{margin:0;font-family:var(--f-title);font-weight:300;letter-spacing:.24em;font-size:24px;text-transform:uppercase;color:var(--ink-strong)}
 .drawer.open h3{color:var(--tc,var(--ink-strong))}
-.map-drawer{width:min(980px,100vw - 40px)}
+.map-drawer{width:min(980px,100vw - 40px)}.ldrawer.map-drawer{width:min(980px,calc(100vw - var(--rail) - 8px))}
 .mapwrap{flex:1;min-height:0;border:1px solid var(--rule);border-radius:10px;overflow:hidden;background:var(--wash)}
 .mapwrap iframe{width:100%;height:100%;border:0;display:block}
 .maplink{font-size:12.5px;color:var(--c-res);margin-top:8px;align-self:flex-start;text-decoration:none}
@@ -2796,10 +2799,10 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 <header class="appbar">
   <div class="brand"><span class="dot"></span>ALDEBARAN<small>Maître du destin</small></div>
   <div class="scenenav">
-    <span class="sc-ico" id="sc-ico" title="Scène"></span>
     <button class="nb" type="button" id="sc-prev" title="Scène précédente"></button>
-    <b id="sc-title" title="Ouvrir le scénario"></b>
+    <span class="sc-num" id="sc-num"><span class="sc-ico" id="sc-ico"></span><b id="sc-title"></b></span>
     <button class="nb" type="button" id="sc-next" title="Scène suivante"></button>
+    <button class="scnb" type="button" id="b-scen" data-left="scenario" title="Scénario" aria-pressed="false"><span id="scn-ico"></span><span>scenario</span></button>
   </div>
   <div class="spacer"></div>
   <div class="tools">
@@ -2812,11 +2815,16 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 </header>
 
 <nav class="rail" id="rail" aria-label="Outils">
-    <span class="cap">Outils</span>
+    <span class="cap">Créa</span>
     <button class="rb" type="button" data-left="ldraw" id="rb-draw" title="Dessin (D)" aria-pressed="false"></button>
     <button class="rb" type="button" data-left="ljet" id="rb-jet" title="MOBs (J)" aria-pressed="false"></button>
     <button class="rb" type="button" data-left="litem" id="rb-item" title="Items (I)" aria-pressed="false"></button>
     <button class="rb" type="button" data-left="fond" id="rb-fond" title="Fond de carte (F)" aria-pressed="false"></button>
+    <span class="hr"></span><span class="cap">Jeu</span>
+    <button class="rb" type="button" data-left="notes" id="rb-notes" title="Notes du MJ" aria-pressed="false"></button>
+    <button class="rb" type="button" data-left="roller" id="rb-roll" title="Jet libre" aria-pressed="false"></button>
+    <button class="rb" type="button" data-left="loot" id="rb-loot" title="Butin" aria-pressed="false"></button>
+    <button class="rb" type="button" data-left="mapdrw" id="rb-map" title="Carte du monde" aria-pressed="false"></button>
   </nav>
 <div class="stage" id="stage">
   <div id="board">
@@ -2851,7 +2859,7 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 <div class="ptabs" id="ptabs"></div>
 <div id="sheetpanel" hidden><div class="sp-tab"><span class="pt-tok placed" id="sp-tok"></span><b id="sp-name"></b><button class="ib" type="button" id="sp-close" title="Fermer la fiche"></button></div><div id="sp-body"></div></div>
 
-<nav class="vtabs" id="vtabs" aria-label="Volets">
+<nav class="vtabs" id="vtabs" aria-label="Volets" hidden>
   <button type="button" class="vtab" data-drawer="scenario" style="--tc:var(--c-per)"><span>Scénario</span></button>
   <button type="button" class="vtab" data-drawer="notes" style="--tc:var(--c-cha)"><span>Notes</span></button>
   <button type="button" class="vtab" data-drawer="roller" style="--tc:var(--c-sav)"><span>Jet libre</span></button>
@@ -2863,16 +2871,16 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 <aside class="drawer ldrawer" id="litem" style="--tc:var(--brown)" aria-label="Items"><header><h3>Items</h3></header><div class="dscroll" id="litem-body"></div></aside>
 <aside class="drawer ldrawer" id="ldraw" style="--tc:var(--c-sav)" aria-label="Dessin"><header><h3>Dessin</h3></header><div class="dscroll" id="ldraw-body"></div></aside>
 <aside class="drawer ldrawer" id="lbest" style="--tc:var(--danger)" aria-label="Bestiaire"><header><h3>Bestiaire</h3></header><div class="dscroll" id="lbest-body"></div></aside>
-<aside class="drawer" id="scenario" style="--tc:var(--c-per)" aria-label="Scénario">
+<aside class="drawer ldrawer" id="scenario" style="--tc:var(--c-per)" aria-label="Scénario">
   <header><h3>Scénario</h3><span class="spacer"></span><button class="ib" type="button" id="sc-pdf" title="Exporter le scénario (PDF)"></button></header>
   <div class="dscroll" id="scenes"></div>
   <div class="dfoot"><button class="btn" type="button" id="sc-new"></button><button class="btn ghost" type="button" id="sc-del" title="Supprimer la scène active"></button><span class="spacer"></span><button class="nb" type="button" id="sc-up" title="Scène précédente"></button><button class="nb" type="button" id="sc-down" title="Scène suivante"></button></div>
 </aside>
-<aside class="drawer" id="notes" style="--tc:var(--c-cha)" aria-label="Notes du MJ">
+<aside class="drawer ldrawer" id="notes" style="--tc:var(--c-cha)" aria-label="Notes du MJ">
   <header><h3>Notes MJ</h3></header>
   <textarea class="notes" id="notes-in" placeholder="Vos notes, secrets, noms à retenir…"></textarea>
 </aside>
-<aside class="drawer" id="roller" style="--tc:var(--c-sav)" aria-label="Jet libre">
+<aside class="drawer ldrawer" id="roller" style="--tc:var(--c-sav)" aria-label="Jet libre">
   <header><h3>Jet libre</h3></header>
   <div class="dscroll">
     <div class="rl-row">
@@ -2885,7 +2893,7 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
     <div class="hist" id="rl-hist"></div>
   </div>
 </aside>
-<aside class="drawer" id="loot" style="--tc:var(--c-for)" aria-label="Butin">
+<aside class="drawer ldrawer" id="loot" style="--tc:var(--c-for)" aria-label="Butin">
   <header><h3>Butin</h3></header>
   <div class="dscroll">
     <span class="cap">Profusion du lieu</span>
@@ -2898,7 +2906,7 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
   <header><h3>Fond de carte</h3></header>
   <div class="dscroll" id="fond-body"></div>
 </aside>
-<aside class="drawer map-drawer" id="mapdrw" style="--tc:var(--c-res)" aria-label="Carte du monde">
+<aside class="drawer ldrawer map-drawer" id="mapdrw" style="--tc:var(--c-res)" aria-label="Carte du monde">
   <header><h3>Map</h3></header>
   <div class="mapwrap" id="mapwrap"></div>
   <a class="maplink" href="https://framacarte.org/fr/map/aldebaran_185113?scaleControl=false&amp;miniMap=false&amp;scrollWheelZoom=true&amp;zoomControl=true&amp;editMode=disabled&amp;moreControl=true&amp;searchControl=null&amp;tilelayersControl=null&amp;embedControl=null&amp;datalayersControl=true&amp;onLoadPanel=none&amp;captionBar=false&amp;captionMenus=true" target="_blank" rel="noopener">Voir en plein écran ↗</a>
@@ -4369,9 +4377,9 @@ function renderDrawPanel(){ const box=$('ldraw-body'); if(!box) return; const on
 /* =========================================================
    Volets de gauche : Dessin, Bestiaire
    ========================================================= */
-function closeLeft(){ if(typeof jetStamp==='function') jetStamp(false); document.querySelectorAll('.ldrawer.open').forEach(d=>{ d.classList.remove('open'); if(d.id==='ldraw'&&(tool==='map'||tool==='measure')) setTool(tool); }); document.querySelectorAll('.rb[data-left]').forEach(b=>b.setAttribute('aria-pressed','false')); }
+function closeLeft(){ if(typeof jetStamp==='function') jetStamp(false); document.querySelectorAll('.ldrawer.open').forEach(d=>{ d.classList.remove('open'); if(d.id==='ldraw'&&(tool==='map'||tool==='measure')) setTool(tool); }); document.querySelectorAll('[data-left]').forEach(b=>b.setAttribute('aria-pressed','false')); }
 function openLeft(id,force){ const was=$(id).classList.contains('open'); if(was&&force) return; closeLeft(); if(was) return;
-  $(id).classList.add('open'); document.querySelector(`.rb[data-left="${id}"]`).setAttribute('aria-pressed','true');
+  $(id).classList.add('open'); document.querySelectorAll(`[data-left="${id}"]`).forEach(b=>b.setAttribute('aria-pressed','true')); drawerOpened(id);
   if(id==='ldraw'){ if(tool!=='map') setTool('map'); renderDrawPanel(); } else if(id==='lbest') renderBestPanel(); else if(id==='ljet'){ renderJetPanel(); } else if(id==='litem'){ renderItemPanel(); } else if(id==='fond') renderFond(); }
 function bestRows(q){ q=normTxt(q); const L=S.bestiary.map((m,i)=>({m,i})).filter(x=>!q||normTxt(x.m.name).includes(q));
   const row=x=>{ const m=x.m; return `<div class="brow" data-i="${x.i}" title="Glisser sur le plateau · cliquer pour ouvrir"><span class="bface">${faceHTML({...m,type:'mob'},'sm')}</span><b>${esc(m.name)}</b><span class="bv">${m.hpMax}</span><span class="bv">${m.pp||0}</span><span class="bss">${STATS.map(s=>`<i style="--sc:${STAT_INFO[s].col}" title="${s}">${m.stats&&m.stats[s]!=null?m.stats[s]:0}</i>`).join('')}</span>${m.cat?'<span class="nodel"></span>':`<button class="ib del" type="button" data-del="${x.i}" title="Retirer du bestiaire">${IB('bin')}</button>`}</div>`; };
@@ -4638,7 +4646,7 @@ function renderScenes(){
   renderSceneNav();
 }
 function renderSceneNav(){ const sc=S.scenes[S.scene], b=$('sc-title');
-  b.textContent=sc?(sc.title||`Scène ${S.scene+1}`):'Aucune scène'; b.classList.toggle('none',!sc);
+  b.textContent=S.scene+1; $('sc-num').title=sc?(sc.title||`Scène ${S.scene+1}`)+` — ${S.scene+1} / ${S.scenes.length}`:'Aucune scène'; b.classList.toggle('none',!sc);
   $('sc-prev').disabled=S.scene<=0; $('sc-next').disabled=S.scene<0||S.scene>=S.scenes.length-1; }
 function exportScenario(){
   if(!S.scenes.length){ toast('Le scénario est vide',true); return; } snapshot();
@@ -4689,9 +4697,8 @@ $('timers').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; cons
    Volets latéraux : un seul ouvert à la fois
    ========================================================= */
 const DRAWERS=['scenario','notes','roller','loot','mapdrw'];
-function openDrawer(id,force){ const was=id&&$(id).classList.contains('open');
-  DRAWERS.forEach(d=>$(d).classList.remove('open')); document.querySelectorAll('.vtab').forEach(b=>b.classList.remove('on'));
-  if(id&&(!was||force)){ $(id).classList.add('open'); document.querySelector(`.vtab[data-drawer="${id}"]`).classList.add('on');
+function openDrawer(id,force){ if(!id){ closeLeft(); return; } openLeft(id,force); }
+function drawerOpened(id){ {
     if(id==='mapdrw'&&!$('mapwrap').firstChild) $('mapwrap').innerHTML=`<iframe src="${document.querySelector('.maplink').href}" title="Carte du monde d'Aldebaran" loading="lazy"></iframe>`; } }
 const STEP_LIM={'rl-n':[1,50],'rl-t':[2,10],'tm-m':[1,600]};
 function bindSteppers(root){ root.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>{ const i=$(b.dataset.step), L=STEP_LIM[b.dataset.step]||[0,99]; i.value=clamp((parseInt(i.value)||0)+(+b.dataset.d),L[0],L[1]); }); }
@@ -4936,7 +4943,8 @@ function wire(){
   $('sc-ico').innerHTML=IB('film'); $('sc-prev').innerHTML=IB('left',2); $('sc-next').innerHTML=IB('right',2); $('sc-up').innerHTML=IB('up',2); $('sc-down').innerHTML=IB('down',2);
   $('b-player').innerHTML=IB('screen'); $('b-player').classList.add('icon'); $('b-net').insertAdjacentHTML('afterbegin',IB('table')); $('b-full').innerHTML=IB('full'); $('b-settings').insertAdjacentHTML('afterbegin',IB('gear'));
   $('rb-draw').innerHTML=IB('pen'); $('rb-jet').innerHTML=IB('skull'); $('rb-item').innerHTML=IB('box'); $('rb-fond').innerHTML=IB('planet');
-  document.querySelectorAll('.rb[data-left]').forEach(b=>b.onclick=()=>openLeft(b.dataset.left));
+  $('rb-notes').innerHTML=IB('note'); $('rb-roll').innerHTML=D10ICO; $('rb-loot').innerHTML=IB('coins'); $('rb-map').innerHTML=IB('map'); $('scn-ico').innerHTML=IB('scroll',1.5);
+  document.querySelectorAll('[data-left]').forEach(b=>b.onclick=()=>openLeft(b.dataset.left));
   $('b-shuffle').innerHTML=IB('shuffle'); $('b-next').innerHTML=IB('next'); $('b-timer').innerHTML=IB('hourglass');
   $('bin').innerHTML=IB('bin'); $('sc-pdf').innerHTML=IB('print'); $('sc-new').innerHTML=IB('clap')+'Nouvelle scène'; $('sc-del').innerHTML=IB('bin')+'Supprimer';
   const VT={scenario:IB('scroll'),notes:IB('note'),roller:D10ICO,loot:IB('coins'),fond:IB('planet'),mapdrw:IB('map')};
@@ -4962,7 +4970,7 @@ function wire(){
   // haut
   $('b-player').onclick=openPlayerView; $('b-net').onclick=netDialog; $('sp-close').innerHTML=IB('x'); $('sp-close').onclick=closeSheet; netStatus('off'); $('b-settings').onclick=settings;
   $('b-full').onclick=()=>{ if(!document.fullscreenElement) document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); else document.exitFullscreen(); };
-  $('sc-prev').onclick=()=>gotoScene(S.scene-1); $('sc-next').onclick=()=>gotoScene(S.scene+1); $('sc-title').onclick=()=>openDrawer('scenario',true);
+  $('sc-prev').onclick=()=>gotoScene(S.scene-1); $('sc-next').onclick=()=>gotoScene(S.scene+1); $('sc-num').onclick=()=>openDrawer('scenario',true);
   // scénario
   $('sc-new').onclick=newSceneDialog; $('sc-del').onclick=deleteScene; $('sc-up').onclick=()=>gotoScene(S.scene-1); $('sc-down').onclick=()=>gotoScene(S.scene+1); $('sc-pdf').onclick=exportScenario;
   $('notes-in').oninput=e=>{ S.notes=e.target.value; markDirty(); };
