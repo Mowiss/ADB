@@ -2053,6 +2053,9 @@ function tbConnect(){
 }
 function tbIn(d){ if(!d||typeof d!=='object') return;
   if(d.t==='pv'){ const v=Math.round(+d.v); if(Number.isFinite(v)&&v!==C.pv){ C.pv=v; renderAll(); markDirty(); toast(`PV : ${v} (maître du destin)`); } return; }
+  if(d.t==='given'&&d.item){ const it=Object.assign(JSON.parse(JSON.stringify(d.item)),{id:Date.now()});
+    if(d.g==='cyb'){ it.bodyPart=''; C.cybernetics.unshift(it); } else { it.zone=''; it.equipped=false; C.inventory.unshift(it); }
+    renderCards(); renderDerived(); markDirty(); toast(`${it.name||'Objet'} ajouté à l'inventaire`); return; }
   if(d.t==='closed'){ NETP.want=false; tbStatus('off','Table fermée'); tbMsg('Le maître du destin a fermé la table.'); }
   if(d.t==='state') NETP.last.state=d; if(d.t==='bg') NETP.last.bg=d;
   tbToFrame(d);
@@ -2066,7 +2069,12 @@ function tbLive(){ $('tb-join').hidden=true; $('tb-live').hidden=false; $('tb-le
   f.srcdoc=html.replace('<head>','<head><script>window.__ADB_NET_VIEW=1<'+'/script>'); NETP.frame=f; NETP.ready=false; $('tb-live').appendChild(f); }
 window.addEventListener('message',e=>{ if(!NETP.frame||e.source!==NETP.frame.contentWindow) return; const d=e.data; if(!d||!d.__adbUp||!d.m) return; const m=d.m;
   if(m.t==='ready'){ NETP.ready=true; tbToFrame({t:'me',id:NETP.pid}); if(NETP.last.bg) tbToFrame(NETP.last.bg); if(NETP.last.state) tbToFrame(NETP.last.state); }
-  else if(m.t==='ptr'&&netOpen()) NETP.conn.send({t:'ptr',x:m.x,y:m.y,end:m.end?1:0}); });
+  else if(m.t==='ptr'&&netOpen()) NETP.conn.send({t:'ptr',x:m.x,y:m.y,end:m.end?1:0});
+  else if(m.t==='open'&&netOpen()) NETP.conn.send({t:'open',id:String(m.id)});
+  else if(m.t==='take'&&netOpen()){ const st=NETP.last.state, t=st&&(st.tokens||[]).find(x=>x.id===m.id); if(!t||!t.item) return; const d=t.data||{}, w=+d.weight||0;
+    const fits=d.itemType==='backpack'||(t.g==='cyb'&&d.type!=='cybernetic')||derive(C).pc-w>=0;
+    if(!fits){ tbToFrame({t:'full',id:t.id}); toast('Plus de place dans l\'inventaire'); return; }
+    NETP.conn.send({t:'take',id:String(t.id)}); } });
 function tbLeave(){ NETP.want=false; const c=NETP.conn, p=NETP.peer; NETP.conn=null; NETP.peer=null;
   try{ if(c) c.close(); }catch(e){} try{ if(p) p.destroy(); }catch(e){}
   if(NETP.frame){ NETP.frame.remove(); NETP.frame=null; } NETP.ready=false; NETP.last={state:null,bg:null};
@@ -2392,6 +2400,29 @@ svg.i{width:18px;height:18px;flex:none}
 .boxchk{display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;font-weight:700;color:var(--ink-soft,#7a7f8c);user-select:none}.boxchk input{width:16px;height:16px;margin:0;accent-color:var(--brown);cursor:pointer}.boxchk svg{width:17px;height:17px}.boxchk.on{color:var(--brown)}
 #litem .jrow .boxchk span{display:none}#litem .jrow .boxchk{padding:4px 6px;border-radius:8px}#litem .jrow .boxchk:hover{background:var(--wash)}
 #card .boxchk{margin:2px 0 6px}
+#openask{position:absolute;z-index:30;transform:translate(-50%,-100%);display:flex;gap:4px;padding:5px;background:var(--paper);border:1px solid var(--rule);border-radius:12px;box-shadow:0 8px 24px rgba(30,32,40,.22);animation:oaIn .18s ease-out}
+#openask button{display:flex;align-items:center;gap:7px;border:0;border-radius:9px;padding:8px 12px;font:700 13px Quicksand,sans-serif;cursor:pointer}
+#openask .oa-go{background:var(--brown);color:#fff}#openask .oa-n{align-self:center;padding:0 6px 0 4px;font:700 13px Quicksand,sans-serif;color:var(--ink-strong);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#openask.full{align-items:center;gap:7px;padding:8px 12px;background:var(--danger,#d23b3b);border-color:var(--danger,#d23b3b);color:#fff;font:700 13px Quicksand,sans-serif}#openask.full svg{width:17px;height:17px}
+.tk.nofit .face{animation:noFit .7s ease-in-out;border-color:var(--danger,#d23b3b)!important;color:var(--danger,#d23b3b);box-shadow:0 0 0 4px rgba(210,59,59,.25)}
+@keyframes noFit{0%,100%{transform:translateX(0)}15%{transform:translateX(-7px)}30%{transform:translateX(6px)}45%{transform:translateX(-5px)}60%{transform:translateX(4px)}75%{transform:translateX(-2px)}}#openask .oa-x{background:var(--wash);color:var(--ink);padding:8px}#openask svg{width:17px;height:17px}
+@keyframes oaIn{from{opacity:0;transform:translate(-50%,-90%) scale(.9)}}
+.tk.box .face{border-color:var(--brown);color:var(--brown)}
+.reveal{position:absolute;z-index:29;width:0;height:0;pointer-events:none;transform:scale(var(--k))}
+.reveal .rv-halo{position:absolute;left:-90px;top:-150px;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,rgba(255,240,190,.95) 0%,rgba(255,214,120,.55) 35%,rgba(255,200,90,0) 70%);opacity:0;animation:rvHalo 3.6s ease-out forwards}
+.reveal .rv-rays{position:absolute;left:-110px;top:-170px;width:220px;height:220px;border-radius:50%;background:repeating-conic-gradient(rgba(255,226,140,.5) 0 8deg,transparent 8deg 24deg);-webkit-mask:radial-gradient(circle,#000 20%,transparent 68%);mask:radial-gradient(circle,#000 20%,transparent 68%);opacity:0;animation:rvRays 3.6s linear forwards}
+.reveal .rv-chest{position:absolute;left:-30px;top:-30px;width:60px;height:60px;border-radius:14px;background:var(--paper);border:2px solid var(--brown);color:var(--brown);display:grid;place-items:center;animation:rvShake .5s ease-in-out}
+.reveal .rv-chest svg{width:36px;height:36px}
+.reveal .rv-item{position:absolute;left:-30px;top:-30px;width:60px;height:60px;border-radius:14px;background:#fff;border:2px solid #f2c45a;color:var(--brown);display:grid;place-items:center;overflow:hidden;box-shadow:0 0 22px 6px rgba(255,214,110,.75);opacity:0;animation:rvUp 3.6s cubic-bezier(.2,.9,.3,1.2) .35s forwards}
+.reveal .rv-item svg,.reveal .rv-item img{width:40px;height:40px;object-fit:cover}.reveal .rv-item img{width:100%;height:100%}
+.reveal .rv-name{position:absolute;left:0;top:-178px;transform:translateX(-50%);white-space:nowrap;background:var(--ink-strong,#2f3340);color:#fff;font:700 13px Quicksand,sans-serif;padding:5px 11px;border-radius:9px;display:flex;flex-direction:column;align-items:center;opacity:0;animation:rvName 3.2s ease-out .8s forwards}
+.reveal .rv-name small{font-weight:500;font-size:10.5px;opacity:.75}
+.reveal.out{opacity:0;transition:opacity .7s}
+@keyframes rvShake{0%,100%{transform:rotate(0)}25%{transform:rotate(-7deg)}50%{transform:rotate(6deg)}75%{transform:rotate(-3deg)}}
+@keyframes rvUp{0%{opacity:0;transform:translateY(0) scale(.35)}25%{opacity:1}55%{transform:translateY(-92px) scale(1.25)}100%{opacity:1;transform:translateY(-82px) scale(1.15)}}
+@keyframes rvHalo{0%{opacity:0;transform:scale(.3)}30%{opacity:1;transform:scale(1.1)}100%{opacity:.85;transform:scale(1)}}
+@keyframes rvRays{0%{opacity:0;transform:rotate(0)}30%{opacity:1}100%{opacity:.6;transform:rotate(90deg)}}
+@keyframes rvName{0%{opacity:0;transform:translate(-50%,8px)}100%{opacity:1;transform:translate(-50%,0)}}
 .tk.hid .face{border-style:dashed}
 
 
@@ -3067,7 +3098,7 @@ function tokenHTML(t){
 function tokenEl(t){
   let el=document.querySelector(`.tk[data-id="${t.id}"]`);
   if(!el){ el=document.createElement('div'); el.dataset.id=t.id; $('tokens').appendChild(el); if(!isPlayer) bindToken(el); }
-  el.className=`tk ${t.type}`+(t.hidden?' hid':'')+(t.inbox?' inbox':'')+(ALIVE(t)&&t.hp<=0?' down':'')+(cardId===t.id?' open':'')+(curTurnId()===t.id?' current':'')+(isPlayer&&ME&&t.owner===ME?' mine':'');
+  el.className=`tk ${t.type}`+(t.hidden?' hid':'')+(t.inbox?' inbox':'')+(t.box?' box':'')+(ALIVE(t)&&t.hp<=0?' down':'')+(cardId===t.id?' open':'')+(curTurnId()===t.id?' current':'')+(isPlayer&&ME&&t.owner===ME?' mine':'');
   if(isPlayer&&ME&&t.owner===ME&&!el._mine){ el._mine=1; bindMine(el); }
   el.style.left=t.x+'px'; el.style.top=t.y+'px'; el.style.setProperty('--s',t.s||1);
   el.innerHTML=tokenHTML(t);
@@ -3241,7 +3272,7 @@ function openCard(id){
   renderCard(); $('card').hidden=false; placeCard();
 }
 const boxChk=(t,id)=>`<label class="boxchk${t.inbox?' on':''}" title="Dans un contenant (caisse, coffre…) : invisible des joueurs"><input type="checkbox" ${id?`id="${id}"`:'data-box'} ${t.inbox?'checked':''}>${IB('chest',1.7)}<span>Dans un contenant</span></label>`;
-function setInbox(t,v){ t.inbox=!!v; tokenEl(t); renderTracker(); renderFoW(); if(cardId===t.id) renderCard(); if(typeof IP!=='undefined'&&IP.drawB) IP.drawB(); markDirty(); sync(); }
+function setInbox(t,v){ t.inbox=!!v; tokenEl(t); renderTracker(); renderFoW(); if(cardId===t.id) renderCard(); jetRefresh(); markDirty(); sync(); }
 function renderCard(){
   const t=tok(cardId), c=$('card'); if(!t){ closeCard(); return; } const T=TYPES[t.type]; c.style.setProperty('--c',T.col);
   const head=`<div class="ch"><div class="av">${faceHTML(t,'sm')}</div><div class="t"><b>${esc(t.name||T.label)}</b><span>${T.label}${t.scene?' · scène':''}</span></div>
@@ -4428,17 +4459,22 @@ const OBJ_BOOK=[{"cid": "b-arme-de-fortune", "g": "melee", "data": {"name": "Arm
 const OBJ_G=[['melee','Corps à corps'],['fire','Armes à feu'],['energy','Armes à énergie'],['weapon','Autres armes'],['armor','Habits & armures'],['care','Soins'],['drug','Drogues & stimulants'],['misc','Divers'],['backpack','Sacs'],['cyb','Cyber & mutations']], OBJ_GL=Object.fromEntries(OBJ_G);
 function objGroup(d,col){ if(col==='cyb') return 'cyb'; if(['melee','fire','energy','care','drug'].includes(d.cat)) return d.cat;
   return d.itemType==='weapon'||+d.hands>0?'weapon':d.itemType==='armor'?'armor':d.itemType==='backpack'?'backpack':'misc'; }
+const objClean=d=>{ const o={}; Object.keys(d||{}).forEach(k=>{ if(!['id','cid','zone','equipped','bodyPart','_col'].includes(k)) o[k]=d[k]; }); return o; };
+/* ce que reçoit la fiche du joueur qui prend l'objet */
+function itemData(t){ const d=Object.assign({},t.data||{}); d.name=t.name||d.name||'Objet';
+  if(!t.data){ const g=t.g||'misc'; if(['melee','fire','energy','care','drug'].includes(g)) d.cat=g; d.itemType=g==='armor'?'armor':g==='backpack'?'backpack':['melee','fire','energy','weapon'].includes(g)?'weapon':'misc'; if(d.itemType==='weapon') d.hands=1; d.weight=d.weight??1; if(t.note) d.specialAbility=t.note; }
+  return d; }
 function objNote(d){ const L=[]; if(d.stat&&+d.diceBonus) L.push(`${d.stat} ${+d.diceBonus>0?'+':''}${+d.diceBonus} D`); if(+d.successThreshold) L.push(`seuil ${d.successThreshold}`);
   if(+d.armorPoints) L.push(`${d.armorPoints} PP`); if(+d.weight) L.push(`${d.weight} kg`); if(d.bastosCost&&d.bastosCost!=='-') L.push(`${d.bastosCost} ₿`);
   const t=L.join(' · '), x=d.specialAbility||d.ability||d.description||''; return [t,x].filter(Boolean).join('\n'); }
-const objItem=(d,g,src,who)=>({type:'prop',kind:'item',name:String(d.name||'Objet'),g,ico:'o_'+g,img:null,s:1,note:objNote(d),src,who});
+const objItem=(d,g,src,who)=>({type:'prop',kind:'item',data:objClean(d),name:String(d.name||'Objet'),g,ico:'o_'+g,img:null,s:1,note:objNote(d),src,who});
 function invAll(){ if(!Array.isArray(S.items)) S.items=[]; const M=new Map(), key=n=>normTxt(n);
   OBJ_BOOK.forEach(x=>M.set(key(x.data.name),objItem(x.data,x.g,'book')));
   if(typeof PL!=='undefined') PL.forEach(P=>{ const f=P.sheet&&P.sheet.full; if(!f) return;
     [['inv',f.inventory],['cyb',f.cybernetics]].forEach(([col,L])=>(L||[]).forEach(d=>{ if(d&&d.name&&!M.has(key(d.name))) M.set(key(d.name),objItem(d,objGroup(d,col),'player',P.name)); })); });
   S.items.filter(x=>x.kind==='item').forEach(x=>M.set(key(x.name),Object.assign({},x,{src:'mj'})));
   return [...M.values()].sort((a,b)=>a.name.localeCompare(b.name,'fr')); }
-const itemProfile=r=>({type:'prop',kind:'item',inbox:!!r.inbox,name:r.name,g:r.g||'misc',ico:r.ico,img:r.img||null,s:r.s||1,note:r.note||''});
+const itemProfile=r=>({type:'prop',kind:'item',data:r.data||null,inbox:!!r.inbox,name:r.name,g:r.g||'misc',ico:r.ico,img:r.img||null,s:r.s||1,note:r.note||''});
 function saveItem(r){ if(!r.name){ toast('Donnez un nom à l\'objet',true); return; } if(!Array.isArray(S.items)) S.items=[]; S.items=S.items.filter(x=>x.kind==='item');
   const i=S.items.findIndex(x=>normTxt(x.name)===normTxt(r.name)), p=itemProfile(r);
   if(i>=0) S.items[i]=p; else S.items.push(p); markDirty(); toast(`« ${r.name} » enregistré à l'inventaire`); }
@@ -4632,7 +4668,7 @@ function send(m){ if(isPlayer) return; m.n=Date.now()*100+(seq++%100); m.from='m
   if(bc&&m.t!=='state') return;   // le canal direct suffit ; le stockage local ne garde que l'état complet
   try{ localStorage.setItem(LS_SYNC,JSON.stringify(m)); }catch(e){ if(m.t==='state'){ const lite={...m,bg:m.bg&&m.bg.length>1.5e6?'':m.bg}; try{ localStorage.setItem(LS_SYNC,JSON.stringify(lite)); }catch(e2){} } } }
 function publicState(){ const pub=t=>({id:t.id,type:t.type,name:t.name,hp:t.hp,hpMax:t.hpMax,img:t.img,ico:t.ico,emo:t.emo,x:t.x,y:t.y,s:t.s,r:t.r,owner:t.owner||null,note:t.type==='prop'&&t.note?' ':''});
-  return {t:'state',bg:S.bg,bgKind:S.bgKind||'',bgW:S.bgW||0,bgH:S.bgH||0,geo:S.geo||null,light:S.light,weather:S.weather||'',ground:S.ground||null,grid:S.grid,drawings:S.drawings,tokens:S.tokens.filter(t=>!t.hidden&&!t.inbox).map(pub),order:S.order.filter(id=>{ const t=tok(id); return t&&!t.hidden; }),turn:turnIdForPlayers(),view:viewMsg()}; }
+  return {t:'state',bg:S.bg,bgKind:S.bgKind||'',bgW:S.bgW||0,bgH:S.bgH||0,geo:S.geo||null,light:S.light,weather:S.weather||'',ground:S.ground||null,grid:S.grid,drawings:S.drawings,tokens:S.tokens.filter(t=>!t.hidden).map(t=>t.kind==='item'&&!t.inbox?Object.assign(pub(t),{item:1,g:t.g||'misc',data:itemData(t)}):t.inbox?{id:t.id,type:'prop',name:'',ico:'chest',img:null,x:t.x,y:t.y,s:Math.max(1,t.s||1),box:1,note:''}:pub(t)),order:S.order.filter(id=>{ const t=tok(id); return t&&!t.hidden; }),turn:turnIdForPlayers(),view:viewMsg()}; }
 function turnIdForPlayers(){ const L=orderToks(), c=L[S.turn]; return c&&!c.hidden?c.id:null; }
 let syncRaf=0; function sync(){ if(isPlayer||syncRaf) return; syncRaf=requestAnimationFrame(()=>{ syncRaf=0; send(publicState()); }); }
 let syncT=0; function syncLater(){ clearTimeout(syncT); syncT=setTimeout(sync,120); }
@@ -4645,6 +4681,7 @@ function receive(m){ if(!m) return;
   if(!isPlayer){ if(m.t==='hello') sync(); return; }
   if(m.t==='me'){ ME=m.id; renderTokens(); followMe(); return; }
   if(m.t==='bg'){ S.bg=m.data||''; S.bgKind=m.kind||''; renderBoard(); return; }
+  if(m.t==='full'){ noRoom(m.id); return; }
   if(m.t==='closed'){ $('pwait').textContent='Le maître du destin a fermé la table'; $('pwait').classList.remove('gone'); return; }
   if(m.from!=='mj'||m.n<=lastSeq) return; lastSeq=m.n;
   if(m.t==='state'){ $('pwait').classList.add('gone');
@@ -4652,6 +4689,7 @@ function receive(m){ if(!m) return;
     Object.assign(S,{bgKind:m.bgKind||'',bgW:m.bgW||0,bgH:m.bgH||0,geo:m.geo||null,light:m.light,weather:m.weather||'',ground:m.ground||null,grid:m.grid,drawings:m.drawings,tokens:m.tokens,order:m.order}); const L=orderToks(); S.turn=L.findIndex(t=>t.id===m.turn);
     if(myDrag){ const t=tok(myDrag.id); if(t){ t.x=myDrag.x; t.y=myDrag.y; } }
     renderAllBoard(); if(NETVIEW) followMe(); else if(m.view) setPlayerView(m.view); }
+  else if(m.t==='opened'){ reveal(m.id,m.item||{},m.by); }
   else if(m.t==='roll') toast(`${m.who} · ${m.label} : ${m.succ} réussite${m.succ>1?'s':''}`);
   else if(m.t==='view'){ if(!NETVIEW) setPlayerView(m); }
   else if(m.t==='ptr'){ if(m.pid!==ME) showPtr(m); }
@@ -4665,6 +4703,19 @@ let lastView=null;
 const PCOL=['#2b79bd','#33964d','#c74990','#7556c2','#d24c45','#c79600','#0e9aa7','#e07b1a'];
 const pcol=pid=>{ let h=0; for(const ch of String(pid)) h=(h*31+ch.charCodeAt(0))>>>0; return PCOL[h%PCOL.length]; };
 const PTRS=new Map();
+/* Contenant : « Ouvrir ? » puis l'objet sort par le dessus, dans un halo */
+function openAsk(id){ const t=tok(id); if(!t) return; let a=$('openask'); if(!a){ a=document.createElement('div'); a.id='openask'; board.appendChild(a); }
+  const [sx,sy]=toScreen(t.x,t.y), b=board.getBoundingClientRect(); a.style.left=(sx-b.left)+'px'; a.style.top=(sy-b.top-(t.s||1)*V.z*36-14)+'px';
+  a.classList.remove('full'); a.innerHTML=t.box?`<button type="button" class="oa-go">${IB('chest',1.8)}Ouvrir ?</button><button type="button" class="oa-x" title="Laisser fermé">${IB('x',2)}</button>`
+    :`<b class="oa-n">${esc(t.name||'Objet')}</b><button type="button" class="oa-go">${IB('o_backpack',1.8)}Prendre</button><button type="button" class="oa-x" title="Laisser">${IB('x',2)}</button>`; a.hidden=false;
+  a.querySelector('.oa-go').onpointerdown=e=>{ e.stopPropagation(); a.hidden=true; up(t.box?{t:'open',id}:{t:'take',id}); };
+  a.querySelector('.oa-x').onpointerdown=e=>{ e.stopPropagation(); a.hidden=true; }; }
+function noRoom(id){ const el=document.querySelector(`.tk[data-id="${id}"]`); if(el){ el.classList.remove('nofit'); void el.offsetWidth; el.classList.add('nofit'); setTimeout(()=>el.classList.remove('nofit'),900); }
+  const t=tok(id); if(!t) return; openAsk(id); const a=$('openask'); a.classList.add('full'); a.innerHTML=`${IB('o_backpack',1.8)}<b>Plus de place</b>`; clearTimeout(noRoom.T); noRoom.T=setTimeout(()=>{ a.hidden=true; },1800); }
+function reveal(id,it,by){ const t=tok(id); if(!t) return; const [sx,sy]=toScreen(t.x,t.y), b=board.getBoundingClientRect(), k=clamp(V.z*(t.s||1)*1.4,1,2.2);
+  const el=document.createElement('div'); el.className='reveal'; el.style.left=(sx-b.left)+'px'; el.style.top=(sy-b.top)+'px'; el.style.setProperty('--k',k);
+  el.innerHTML=`<i class="rv-halo"></i><i class="rv-rays"></i><div class="rv-chest">${IB('chest',1.6)}</div><div class="rv-item">${faceHTML(Object.assign({type:'prop'},it))}</div><b class="rv-name">${esc(it.name||'Objet')}${by?`<small>${esc(by)}</small>`:''}</b>`;
+  board.appendChild(el); setTimeout(()=>el.classList.add('out'),3400); setTimeout(()=>el.remove(),4100); }
 function showPtr(m){ let p=PTRS.get(m.pid); if(!p){ const el=document.createElement('div'); el.className='ptr'; el.innerHTML='<i></i><b></b>'; board.appendChild(el); p={el}; PTRS.set(m.pid,p); }
   p.x=+m.x||0; p.y=+m.y||0; p.el.style.setProperty('--pc',m.color||pcol(m.pid)); p.el.querySelector('b').textContent=m.name||''; p.el.classList.remove('fade'); clearTimeout(p.t);
   placePtr(p);
@@ -5153,6 +5204,10 @@ function netIn(c,d){ if(!d||typeof d!=='object') return;
     renderPtabs(); if(sheetPid===c.pid) sheetRefresh(); netStatus(NET.status);
     if(d.t==='join'){ c.bgId=null; const st=publicState(); st.n=Date.now()*100+(seq++%100); st.from='mj'; netSendTo(c,st); } }
   else if(d.t==='ptr'&&c.pid){ const m={t:'ptr',pid:c.pid,name:c.name,color:pcol(c.pid),x:Math.round(+d.x||0),y:Math.round(+d.y||0),end:d.end?1:0}; showPtr(m); send(m); }
+  else if(d.t==='open'&&c.pid){ const t=tok(String(d.id)); if(!t||!t.inbox) return; t.inbox=false; tokenEl(t); renderTracker(); renderFoW(); if(cardId===t.id) renderCard(); jetRefresh(); markDirty();
+    const it={name:t.name||'Objet',ico:t.ico,img:t.img||null,type:'prop'}; toast(`${c.name} ouvre le contenant : ${it.name}`); reveal(t.id,it,c.name); send({t:'opened',id:t.id,by:c.name,item:it}); sync(); }
+  else if(d.t==='take'&&c.pid){ const t=tok(String(d.id)); if(!t||t.kind!=='item'||t.inbox||t.hidden) return;
+    const it=itemData(t), g=t.g||'misc'; removeToken(t.id); jetRefresh(); toast(`${c.name} prend : ${it.name}`); netTo(c.pid,{t:'given',g,item:it}); sync(); }
   else if(d.t==='roll'&&c.pid){ const succ=+d.succ||0, label=String(d.label||'Jet').slice(0,60);
     logRoll(`${c.name} · ${label}`,Array.isArray(d.rolls)?d.rolls.slice(0,60):[],+d.th||8,succ);
     toast(`${c.name} · ${label} : ${succ} réussite${succ>1?'s':''}`); send({t:'roll',who:c.name,label,succ}); }
@@ -5302,7 +5357,7 @@ if(isPlayer){
   window.addEventListener('resize',()=>{ if(NETVIEW) followMe(); else if(lastView) setPlayerView(lastView); });
   if(NETVIEW){ $('pwait').classList.add('gone'); V.z=.32; followMe(); window.addEventListener('message',e=>{ if(e.data&&e.data.__adb) receive(e.data.m); }); up({t:'ready'});
     /* le joueur ne déplace pas son jeton : il montre avec son pointeur */
-    let pd=false, raf=0, last=null;
+    let pd=false, raf=0, last=null, pdAt=null;
     const ptr=(e,end)=>{ const [x,y]=toWorld(e.clientX,e.clientY); last={x:Math.round(x),y:Math.round(y)};
       showPtr({pid:ME||'moi',name:'Vous',color:pcol(ME||'moi'),x:last.x,y:last.y,end});
       if(end){ up({t:'ptr',x:last.x,y:last.y,end:1}); return; } if(!raf) raf=requestAnimationFrame(()=>{ raf=0; up({t:'ptr',x:last.x,y:last.y}); }); };
@@ -5311,10 +5366,12 @@ if(isPlayer){
     const pdist=()=>{ const a=[...touches.values()]; return Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)||1; };
     board.addEventListener('pointerdown',e=>{ touches.set(e.pointerId,{x:e.clientX,y:e.clientY});
       if(touches.size===2){ if(pd){ pd=false; ptr(e,true); } pinch={d:pdist(),z:V.z}; return; }
-      pd=true; try{ board.setPointerCapture(e.pointerId); }catch(err){} ptr(e); });
+      const oa=$('openask'); if(oa&&!oa.hidden&&!e.target.closest('#openask')) oa.hidden=true;
+      if(e.target.closest('#openask')) return; pd=true; pdAt={x:e.clientX,y:e.clientY}; try{ board.setPointerCapture(e.pointerId); }catch(err){} ptr(e); });
     board.addEventListener('pointermove',e=>{ if(touches.has(e.pointerId)) touches.set(e.pointerId,{x:e.clientX,y:e.clientY});
       if(pinch&&touches.size>=2){ V.z=clamp(pinch.z*pdist()/pinch.d,PZ[0],PZ[1]); followMe(); return; } if(pd) ptr(e); });
-    const endp=e=>{ touches.delete(e.pointerId); if(touches.size<2) pinch=null; if(!pd) return; pd=false; ptr(e,true); }; board.addEventListener('pointerup',endp); board.addEventListener('pointercancel',endp);
+    const endp=e=>{ touches.delete(e.pointerId); if(touches.size<2) pinch=null; if(!pd) return; pd=false; ptr(e,true);
+      if(e.type==='pointerup'&&pdAt&&Math.hypot(e.clientX-pdAt.x,e.clientY-pdAt.y)<8){ const [wx,wy]=toWorld(e.clientX,e.clientY), h=S.tokens.filter(t=>(t.box||t.item)&&Math.hypot(t.x-wx,t.y-wy)<36*(t.s||1)+6).sort((a,b)=>Math.hypot(a.x-wx,a.y-wy)-Math.hypot(b.x-wx,b.y-wy))[0]; if(h) openAsk(h.id); } pdAt=null; }; board.addEventListener('pointerup',endp); board.addEventListener('pointercancel',endp);
     board.addEventListener('wheel',e=>{ e.preventDefault(); V.z=clamp(V.z*(e.deltaY>0?1/1.12:1.12),PZ[0],PZ[1]); followMe(); },{passive:false}); }
   else { try{ const m=JSON.parse(ls.get(LS_SYNC)||'null'); if(m&&m.t==='state') receive(m); }catch(e){}
     const hello={t:'hello',from:'player'}; if(bc) bc.postMessage(hello); try{ localStorage.setItem(LS_SYNC+'.hello',Date.now()+''); }catch(e){} }
