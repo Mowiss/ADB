@@ -2071,6 +2071,7 @@ window.addEventListener('message',e=>{ if(!NETP.frame||e.source!==NETP.frame.con
   if(m.t==='ready'){ NETP.ready=true; tbToFrame({t:'me',id:NETP.pid}); if(NETP.last.bg) tbToFrame(NETP.last.bg); if(NETP.last.state) tbToFrame(NETP.last.state); }
   else if(m.t==='ptr'&&netOpen()) NETP.conn.send({t:'ptr',x:m.x,y:m.y,end:m.end?1:0});
   else if(m.t==='open'&&netOpen()) NETP.conn.send({t:'open',id:String(m.id)});
+  else if(m.t==='say'&&netOpen()) NETP.conn.send({t:'say',text:String(m.text||'').slice(0,140)});
   else if(m.t==='take'&&netOpen()){ const st=NETP.last.state, t=st&&(st.tokens||[]).find(x=>x.id===m.id); if(!t||!t.item) return; const d=t.data||{}, w=+d.weight||0;
     const fits=d.itemType==='backpack'||(t.g==='cyb'&&d.type!=='cybernetic')||derive(C).pc-w>=0;
     if(!fits){ tbToFrame({t:'full',id:t.id}); toast('Plus de place dans l\'inventaire'); return; }
@@ -2159,7 +2160,7 @@ runOpening();
   --danger:#e3262b; --gold:#d19c00; --ok:#2f9a55; --brown:#a0642b;
   --f-title:"Josefin Sans","Century Gothic","Avenir Next",sans-serif;
   --f-body:"Quicksand","Nunito","Segoe UI",system-ui,sans-serif;
-  --bar:56px; --bot:68px; --tim:30px; --tabs:0px; --rail:60px;
+  --bar:56px; --bot:68px; --tim:60px; --tabs:0px; --rail:60px;
   color-scheme:light;
 }
 *{box-sizing:border-box}
@@ -2239,7 +2240,32 @@ svg.i{width:18px;height:18px;flex:none}
 .bands{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:0}
 .ribbon{position:absolute;left:-25%;width:150%;top:58%;transform:translateY(-50%) rotate(-14deg);display:flex;flex-direction:column;gap:12px}
 .band{height:60px;opacity:.26}
-.appbar,.rail,.bottom,.timbar{background:var(--bandsimg,none) 0 0/100vw 100vh no-repeat fixed,var(--paper)!important}
+.msgbar{position:fixed;left:0;right:var(--tabs);bottom:calc(var(--bot) + 30px);height:30px;border-top:1px solid var(--rule);display:flex;align-items:center;gap:8px;padding:0 10px 0 16px;z-index:10}
+.msgbar .mb-ico{display:grid;place-items:center;color:var(--c-per)}.msgbar .mb-ico svg{width:16px;height:16px}
+.msgbar input{flex:1;min-width:0;border:0;background:none;outline:none;font:600 12.5px var(--f-body);color:var(--ink-strong)}.msgbar input::placeholder{color:var(--ink-soft);font-weight:500;letter-spacing:.02em}
+.msgbar .mb-go{border:0;background:none;color:var(--c-per);display:grid;place-items:center;padding:4px;cursor:pointer;border-radius:6px}.msgbar .mb-go svg{width:17px;height:17px}.msgbar .mb-go:hover{background:var(--wash)}
+.player .msgbar{display:none!important}
+/* bulles de BD : jets, messages des joueurs */
+.bub{position:absolute;z-index:6;pointer-events:none;transform:translate(-50%,-100%) scale(var(--iz,1));transform-origin:50% 100%}
+.bub>div{position:relative;margin-bottom:12px;background:#fff;border:2px solid #2a2c33;border-radius:16px;padding:7px 12px;font:700 15px var(--f-body);color:#2a2c33;white-space:nowrap;display:flex;align-items:center;gap:6px;box-shadow:0 4px 14px rgba(0,0,0,.25);animation:bubIn .35s cubic-bezier(.3,1.6,.5,1) both}
+.bub>div::after{content:'';position:absolute;left:50%;bottom:-11px;margin-left:-8px;border:9px solid transparent;border-top-color:#2a2c33;border-bottom:0}
+.bub>div::before{content:'';position:absolute;left:50%;bottom:-7px;margin-left:-6px;border:7px solid transparent;border-top-color:#fff;border-bottom:0;z-index:1}
+.bub.say>div{white-space:normal;max-width:220px;font-weight:600;font-size:14px;line-height:1.3}
+.bub small{display:block;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#7a7f8c;font-weight:700}
+.bub svg{width:22px;height:22px;flex:none}.bub b{font-size:19px}
+.bub.out{opacity:0;transition:opacity .5s}
+.bubfix{position:fixed;left:50%;bottom:120px;z-index:60}
+@keyframes bubIn{from{opacity:0;transform:scale(.4) translateY(10px)}}
+.chatbtn{position:fixed;right:16px;bottom:16px;width:52px;height:52px;border-radius:50%;border:0;background:var(--ink-strong);color:#fff;display:grid;place-items:center;z-index:40;box-shadow:0 6px 18px rgba(0,0,0,.35);cursor:pointer}.chatbtn svg{width:26px;height:26px}
+.chatpop{position:fixed;right:16px;bottom:78px;z-index:41;display:flex;gap:6px;background:var(--paper);border:1px solid var(--rule);border-radius:14px;padding:6px;box-shadow:0 10px 30px rgba(0,0,0,.3);width:min(320px,calc(100vw - 32px))}
+.chatpop input{flex:1;min-width:0;border:0;outline:none;font:600 15px var(--f-body);padding:8px 8px;background:none;color:var(--ink-strong)}
+.chatpop button{border:0;background:var(--c-per);color:#fff;border-radius:10px;width:42px;display:grid;place-items:center;cursor:pointer}.chatpop button svg{width:20px;height:20px}
+.sysbox{position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:60;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;width:min(560px,calc(100vw - 24px))}
+.sysm{pointer-events:auto;cursor:pointer;position:relative;background:#fff;border:2px solid #2a2c33;border-radius:16px;padding:9px 14px 9px 12px;font:600 15px var(--f-body);color:#2a2c33;display:flex;gap:10px;align-items:flex-start;box-shadow:0 6px 20px rgba(0,0,0,.3);animation:sysIn .4s cubic-bezier(.3,1.5,.5,1) both;max-width:100%}
+.sysm svg{width:22px;height:22px;flex:none;color:var(--c-per);margin-top:1px}.sysm small{display:block;font:700 10px var(--f-body);letter-spacing:.1em;text-transform:uppercase;color:var(--c-per);margin-bottom:2px}
+.sysm.out{opacity:0;transform:translateY(-10px);transition:opacity .5s,transform .5s}
+@keyframes sysIn{from{opacity:0;transform:translateY(-16px) scale(.9)}}
+.appbar,.rail,.bottom,.timbar,.msgbar{background:var(--bandsimg,none) 0 0/100vw 100vh no-repeat fixed,var(--paper)!important}
 .player #edgebands{display:none}
 #world{position:absolute;left:0;top:0;width:0;height:0;overflow:visible;transform-origin:0 0;z-index:1}
 #bg{position:absolute;left:0;top:0}
@@ -2506,7 +2532,7 @@ svg.i{width:18px;height:18px;flex:none}
 .mini.solid{background:var(--ink-strong);border-color:var(--ink-strong);color:#fff}
 .mini.solid:hover{background:#000}
 .mini.ico{padding:6px 8px}
-.timbar{position:fixed;left:0;right:var(--tabs);bottom:var(--bot);height:var(--tim);background:var(--paper);border-top:1px solid var(--rule);display:flex;align-items:center;gap:8px;padding:0 10px 0 14px;z-index:10}
+.timbar{position:fixed;left:0;right:var(--tabs);bottom:var(--bot);height:30px;background:var(--paper);border-top:1px solid var(--rule);display:flex;align-items:center;gap:8px;padding:0 10px 0 14px;z-index:10}
 .tb-add{width:24px;height:24px;flex:none;border:0;background:none;padding:0;display:grid;place-items:center;color:var(--gold);border-radius:6px}
 .tb-add:hover{background:var(--faint)}.tb-add svg{width:16px;height:16px}
 .timers{display:flex;gap:6px;overflow-x:auto;min-width:0;flex:1;align-items:center}
@@ -2857,6 +2883,7 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
     <div class="tracker" id="tracker"></div>
   </div>
 </footer>
+<div class="msgbar" id="msgbar"><span class="mb-ico" id="mb-ico"></span><input id="mb-in" placeholder="Message système aux joueurs — @nom pour un seul joueur" autocomplete="off" maxlength="200"><button class="mb-go" type="button" id="mb-go" title="Envoyer (Entrée)"></button></div>
 <div class="timbar" id="timbar"><button class="tb-add" type="button" id="b-timer" title="Nouveau sablier"></button><div class="timers" id="timers"><span class="tim-empty">Sabliers</span></div></div>
 
 <div class="ptabs" id="ptabs"></div>
@@ -2918,6 +2945,7 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 <div id="card" hidden></div>
 <div id="nosig"><canvas id="nosig-cv" width="160" height="90"></canvas><span>NO SIGNAL</span></div>
 <div class="pmark"><span class="dot"></span>ALDEBARAN</div>
+<button class="chatbtn" type="button" id="chatbtn" title="Envoyer un message" hidden></button><div class="chatpop" id="chatpop" hidden><input id="chat-in" maxlength="140" placeholder="Votre message…" autocomplete="off"><button type="button" id="chat-go" title="Envoyer"></button></div><div class="sysbox" id="sysbox"></div>
 <div class="pwait" id="pwait">En attente du maître du destin…</div>
 <div id="stitle"><span class="cap">Scène</span><svg class="ttl" viewBox="0 0 1600 70" preserveAspectRatio="xMidYMid meet"><text x="800" y="56" text-anchor="middle"></text></svg></div>
 <dialog id="dlg"><div class="dlg" id="dlg-body"></div></dialog>
@@ -2964,6 +2992,9 @@ const STAT_INFO={
 };
 /* Pictogrammes dessinés (grille 24, trait) — jamais d'emoji */
 const IC={o_melee:'<g transform="translate(1.90 1.85) scale(0.848)" stroke-width="1.47"><path d="M5.82 11.62L13 18.17L12.44 18.78L5.26 12.23ZM20.2 2.94L11.17 16.51M9.23 15.85L5.67 19.76M20.2 2.94L7.5 13.16M8.33 15.03L4.79 18.91M20.2 2.94L11.24 12.75"/><circle cx="4.64" cy="19.94" r="1.04"/></g>',o_fire:'<g transform="translate(3.51 3.49) scale(0.725)" stroke-width="1.72"><path d="M7.87 6.64L7.8 6.45L20.64 1.44M21.08 1.27L21.38 1.15L22.11 3.02L14.75 5.9M8.49 15.02L6.99 15.61L4.07 8.12L14.09 4.21L17.01 11.69L12.13 13.6M7.03 7.87L12.64 5.68L14.46 10.32L8.84 12.52ZM4.9 10.25L4.28 11.87L3.43 12.54L3.78 17.55L5.77 21.58L8.41 22.63L12.6 19.82L10.01 17.22M11.09 13.05L10.64 15.16L11.45 16.17L10.1 15.41L9.85 13.15M21.08 1.27L20.39 0.84L20.64 1.44M4.45 7.97L4.15 7.2L4.94 6.89L5.54 7.23L5.65 7.5M4.85 10.14L3.22 9.57L1.3 10.32L1.45 10.72L2.8 10.2L4.29 11.85M18.16 16.08L21.62 16.08L21.62 21.08L18.16 21.08ZM18.16 21.3L21.63 21.3L21.63 21.88L18.16 21.88ZM21.62 16.08L21.57 15.69L21.45 15.33L21.24 15L20.97 14.73L20.64 14.52L20.28 14.39L19.89 14.35L19.51 14.39L19.14 14.52L18.81 14.73L18.54 15L18.34 15.33L18.21 15.69L18.16 16.08M21.46 21.08L21.46 21.3M18.29 21.3L18.29 21.08"/><circle cx="10.64" cy="15.16" r="2.16"/></g>',o_energy:'<g transform="translate(3.21 3.26) scale(0.739)" stroke-width="1.69"><path d="M7.64 6.72L7.57 6.54L20.41 1.52M20.85 1.35L21.16 1.23L21.89 3.1L14.52 5.98M8.26 15.1L6.76 15.69L3.84 8.2L13.86 4.29L16.78 11.78L11.91 13.68M6.8 7.95L12.42 5.76L14.23 10.41L8.62 12.6ZM4.67 10.33L4.05 11.95L3.2 12.63L3.56 17.64L5.55 21.66L8.19 22.72L12.37 19.9L9.79 17.3M10.86 13.13L10.41 15.24L11.22 16.25L9.88 15.49L9.63 13.23M20.85 1.35L20.17 0.93L20.41 1.52M4.23 8.05L3.93 7.28L4.71 6.97L5.32 7.31L5.42 7.58M4.63 10.22L2.99 9.65L1.07 10.4L1.23 10.8L2.58 10.28L4.07 11.93M20.22 9.63L16.44 16.48L19.94 16.56L17.93 22.67L22.72 15.43L19.5 14.95Z"/><circle cx="10.41" cy="15.24" r="2.16"/></g>',o_weapon:'<g transform="translate(3.34 3.24) scale(0.737)" stroke-width="1.70"><path d="M7.77 13.3L4.26 9L14.59 0.57L18.96 5.93L17.8 6.88M9.4 10.23L16.09 4.78L18.7 7.98L12.02 13.43ZM11.12 12.33L9.04 14.02M15.09 1.18L15.61 0.75L17.46 3.02L16.93 3.45M17.49 4.13L17.84 3.84L18.78 4.99L18.43 5.28M5.45 10.46L3.88 13.3L1.65 15.12L2.35 17.44L6.53 16.14M2.98 17.24L3.25 18.15L4.06 19.93L5.28 21.64L6.71 22.92L7.3 23.22L10.68 19L8.94 18.18L7.53 17.14L7.35 16.57M3.69 11.95L1.94 13M1.94 13L1.99 13.6M1.99 13.6L3.42 13.02M3.42 13.02L3.59 13.54M4.55 12.08L3.69 11.95M6.63 13.67L7.06 15.15L8.07 15.7L7.67 14.95L7.97 13.32M18.4 15.95L21.85 15.95L21.85 20.95L18.4 20.95ZM18.4 21.17L21.86 21.17L21.86 21.75L18.4 21.75ZM21.85 15.95L21.81 15.57L21.68 15.2L21.47 14.87L21.2 14.6L20.87 14.39L20.51 14.27L20.12 14.22L19.74 14.27L19.37 14.39L19.05 14.6L18.77 14.87L18.57 15.2L18.44 15.57L18.4 15.95M21.69 20.95L21.69 21.17M18.52 21.17L18.52 20.95"/><circle cx="7.67" cy="14.95" r="1.65"/></g>',o_armor:'<g transform="translate(0.75 0.67) scale(0.928)" stroke-width="1.35"><path d="M14.97 4.37L17.42 4.37M17.42 10.12L17.42 20.05L6.83 20.05L6.83 10.12M6.83 4.37L9.28 4.37M6.83 10.12L4.47 11.78L1.76 7.94L6.83 4.37M12.12 7.22L12.62 7.17L13.1 7.04L13.55 6.83L13.95 6.55L14.3 6.2L14.59 5.79L14.8 5.34L14.92 4.86L14.97 4.37M9.28 4.37L9.32 4.86L9.45 5.34L9.66 5.79L9.94 6.2L10.3 6.55L10.7 6.83L11.15 7.04L11.63 7.17L12.12 7.22M12.12 7.22L12.12 20.05M17.42 10.12L19.77 11.78L22.48 7.94L17.42 4.37"/></g>',o_care:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V4.8h6V7M12 10.5v6M9 13.5h6"/>',o_drug:'<g transform="translate(1.35 0.97) scale(0.894)" stroke-width="1.40"><path d="M19.88 9.77L15.61 15.23L8.21 9.44L12.49 3.98L12.63 3.8L12.79 3.63L12.95 3.47L13.12 3.31L13.3 3.17L13.49 3.03L13.68 2.9L13.88 2.78L14.08 2.68L14.29 2.58L14.5 2.49L14.72 2.41L14.94 2.35L15.16 2.29L15.39 2.25L15.62 2.21L15.85 2.19L16.08 2.18L16.31 2.18L16.54 2.19L16.77 2.22L17 2.25L17.22 2.29L17.45 2.35L17.67 2.42L17.88 2.5L18.1 2.59L18.3 2.68L18.51 2.79L18.71 2.91L18.9 3.04L19.08 3.18L19.26 3.33L19.43 3.48L19.59 3.64L19.75 3.81L19.89 3.99L20.03 4.18L20.16 4.37L20.28 4.57L20.39 4.77L20.48 4.98L20.57 5.19L20.65 5.41L20.71 5.63L20.77 5.86L20.82 6.08L20.85 6.31L20.87 6.54L20.88 6.77L20.88 7L20.87 7.23L20.85 7.46L20.81 7.69L20.77 7.92L20.71 8.14L20.64 8.36L20.56 8.58L20.48 8.79L20.38 9L20.27 9.2L20.15 9.4L20.02 9.59Z" fill="currentColor" stroke="none" opacity=".45"/><path d="M3.93 14.9L12.49 3.98M19.88 9.77L11.33 20.69M19.88 9.77L20.26 9.22L20.55 8.62L20.75 7.98L20.86 7.32L20.88 6.65L20.8 5.98L20.62 5.33L20.36 4.72L20.01 4.14L19.58 3.63L19.08 3.18L18.53 2.8L17.92 2.51L17.28 2.31L16.62 2.2L15.95 2.18L15.29 2.27L14.64 2.44L14.02 2.71L13.45 3.06L12.94 3.48L12.49 3.98M3.93 14.9L3.56 15.45L3.27 16.06L3.06 16.7L2.95 17.36L2.94 18.03L3.02 18.69L3.19 19.34L3.46 19.96L3.81 20.53L4.24 21.04L4.73 21.49L5.29 21.87L5.89 22.16L6.53 22.36L7.19 22.47L7.86 22.49L8.53 22.41L9.18 22.23L9.79 21.97L10.36 21.62L10.88 21.19L11.33 20.69M8.21 9.44L15.61 15.23"/></g>',o_misc:'<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>',o_backpack:'<path d="M6 8h12l1 12H5z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>',o_cyb:'<rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4M10 10h4v4h-4z"/>',
+  chat:'<path d="M3 4.5h12v8H8.2L5 15v-2.5H3z"/><path d="M15 8.5h6v8h-2V19l-3-2.5h-5.6v-4"/>',
+  send:'<path d="M4 11.6L20 4.5l-6.4 15.9-2.9-6.4z"/><path d="M10.7 14L20 4.5"/>',
+  mega:'<path d="M4 9.5h3l9-4.5v14l-9-4.5H4z"/><path d="M7 14.5l1.4 4.6h2.4L9.6 15"/><path d="M19 9.5a3 3 0 0 1 0 5"/>',
   lock:'<rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/><path d="M12 14.5v2.2"/>',
   unlock:'<rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 7.6-1.7"/><path d="M12 14.5v2.2"/>',
   person:'<circle cx="12" cy="7.5" r="3.5"/><path d="M5 20c.6-4 3.4-6.5 7-6.5s6.4 2.5 7 6.5"/>',
@@ -3095,7 +3126,7 @@ function confirmDialog(title,text,okLbl,fn){ openDialog(`<h3>${title}</h3><p>${t
    Vue : déplacement et zoom
    ========================================================= */
 const board=$('board'), world=$('world');
-function applyView(){ world.style.transform=`translate(${V.x}px,${V.y}px) scale(${V.z})`; mapViewT=performance.now(); drawMapLater(); world.style.setProperty('--gl',Math.max(1,1/V.z).toFixed(2)+'px'); geoLater();
+function applyView(){ world.style.transform=`translate(${V.x}px,${V.y}px) scale(${V.z})`; world.style.setProperty('--iz',(1/V.z).toFixed(4)); mapViewT=performance.now(); drawMapLater(); world.style.setProperty('--gl',Math.max(1,1/V.z).toFixed(2)+'px'); geoLater();
   board.style.backgroundSize=`${CELL*V.z}px ${CELL*V.z}px`; board.style.backgroundPosition=`${V.x}px ${V.y}px`; groundView();
   placeCard(); placeMeasureLabel(); placePtrs(); if(!S.light) fowLater(); if(!isPlayer){ S.view={...V}; sendView(); } }
 function toWorld(cx,cy){ const r=board.getBoundingClientRect(); return [(cx-r.left-V.x)/V.z,(cy-r.top-V.y)/V.z]; }
@@ -4880,6 +4911,7 @@ function receive(m){ if(!m) return;
   if(m.t==='me'){ ME=m.id; renderTokens(); followMe(); return; }
   if(m.t==='bg'){ S.bg=m.data||''; S.bgKind=m.kind||''; renderBoard(); return; }
   if(m.t==='full'){ noRoom(m.id); return; }
+  if(m.t==='sys'&&m.priv){ sysMsg(m.text,true); return; }
   if(m.t==='closed'){ $('pwait').textContent='Le maître du destin a fermé la table'; $('pwait').classList.remove('gone'); return; }
   if(m.from!=='mj'||m.n<=lastSeq) return; lastSeq=m.n;
   if(m.t==='state'){ $('pwait').classList.add('gone');
@@ -4888,7 +4920,9 @@ function receive(m){ if(!m) return;
     if(myDrag){ const t=tok(myDrag.id); if(t){ t.x=myDrag.x; t.y=myDrag.y; } }
     renderAllBoard(); if(NETVIEW) followMe(); else if(m.view) setPlayerView(m.view); }
   else if(m.t==='opened'){ reveal(m.id,m.item||{},m.by); }
-  else if(m.t==='roll') toast(`${m.who} · ${m.label} : ${m.succ} réussite${m.succ>1?'s':''}`);
+  else if(m.t==='roll') bubble(m.pid,rollHTML(m.succ,m.dn),'',m.who);
+  else if(m.t==='say') bubble(m.pid,esc(m.text||''),'say',m.who);
+  else if(m.t==='sys') sysMsg(m.text,false);
   else if(m.t==='view'){ if(!NETVIEW) setPlayerView(m); }
   else if(m.t==='ptr'){ if(m.pid!==ME) showPtr(m); }
   else if(m.t==='mv'){ const t=tok(m.id); if(t&&!(myDrag&&myDrag.id===m.id)){ t.x=m.x; t.y=m.y; t.s=m.s; moveTokenEl(t); fowLater(); if(NETVIEW&&t.owner===ME) followMe(); } }
@@ -4914,6 +4948,15 @@ function reveal(id,it,by){ const t=tok(id); if(!t) return; const [sx,sy]=toScree
   const el=document.createElement('div'); el.className='reveal'; el.style.left=(sx-b.left)+'px'; el.style.top=(sy-b.top)+'px'; el.style.setProperty('--k',k);
   el.innerHTML=`<i class="rv-halo"></i><i class="rv-rays"></i><div class="rv-chest">${IB('chest',1.6)}</div><div class="rv-item">${faceHTML(Object.assign({type:'prop'},it))}</div><b class="rv-name">${esc(it.name||'Objet')}${by?`<small>${esc(by)}</small>`:''}</b>`;
   board.appendChild(el); setTimeout(()=>el.classList.add('out'),3400); setTimeout(()=>el.remove(),4100); }
+/* bulles de BD au-dessus du jeton du joueur (ou en bas de l'écran s'il n'a pas de jeton) */
+function bubble(pid,html,cls,who){ const t=pid&&S.tokens.find(x=>x.owner===pid); const el=document.createElement('div'); el.className='bub '+(cls||'');
+  if(t){ document.querySelectorAll(`.bub[data-pid="${CSS.escape(pid)}"]`).forEach(b=>b.remove()); el.dataset.pid=pid; el.style.left=t.x+'px'; el.style.top=(t.y-36*(t.s||1))+'px'; el.innerHTML=`<div>${html}</div>`; $('world').appendChild(el); }
+  else { el.classList.add('bubfix'); el.innerHTML=`<div>${who?`<span><small>${esc(who)}</small>${html}</span>`:html}</div>`; document.body.appendChild(el); }
+  const life=cls==='say'?6500:4200; setTimeout(()=>el.classList.add('out'),life); setTimeout(()=>el.remove(),life+600); }
+const rollHTML=(succ,n)=>`${D10ICO}<b>${succ>0?succ:Math.max(1,n||0)}</b>${succ>0?'🏆':'♟️'}`;
+function sysMsg(text,priv){ const box=$('sysbox'); if(!box) return; const el=document.createElement('div'); el.className='sysm';
+  el.innerHTML=`${IB('mega',1.7)}<span><small>Maître du destin${priv?' · pour vous':''}</small>${esc(text)}</span>`; el.onclick=()=>el.remove(); box.appendChild(el);
+  setTimeout(()=>el.classList.add('out'),9000); setTimeout(()=>el.remove(),9600); }
 function showPtr(m){ let p=PTRS.get(m.pid); if(!p){ const el=document.createElement('div'); el.className='ptr'; el.innerHTML='<i></i><b></b>'; board.appendChild(el); p={el}; PTRS.set(m.pid,p); }
   p.x=+m.x||0; p.y=+m.y||0; p.el.style.setProperty('--pc',m.color||pcol(m.pid)); p.el.querySelector('b').textContent=m.name||''; p.el.classList.remove('fade'); clearTimeout(p.t);
   placePtr(p);
@@ -5094,7 +5137,16 @@ function renderAll(){ edgeBands(); if(!S.ground) S.ground=GROUND0(); decoMigrate
 function fitBoard(){ const r=board.getBoundingClientRect();
   if(bounded()){ centerOn(S.bgW/2,S.bgH/2,clamp(Math.min((r.width-40)/S.bgW,(r.height-40)/S.bgH),.15,1.5)); return; }
   const L=S.tokens; if(L.length){ const cx=L.reduce((a,t)=>a+t.x,0)/L.length, cy=L.reduce((a,t)=>a+t.y,0)/L.length; centerOn(cx,cy,1); } else centerOn(0,0,1); }
+/* message système du MJ : à tous, ou « @nom message » pour un seul joueur */
+function sysSend(){ const i=$('mb-in'); let text=i.value.trim(); if(!text) return; const m=text.match(/^@(\S+)\s+([\s\S]+)$/);
+  if(m){ const k=normTxt(m[1].replace(/_/g,' ')), P=typeof PL!=='undefined'?[...PL.values()].find(P=>normTxt(P.name).startsWith(k)||normTxt(P.name).split(/\s+/).includes(k)):null;
+    if(!P){ toast(`Aucun joueur « ${m[1]} » à la table`,true); return; }
+    netTo(P.pid,{t:'sys',text:m[2].trim(),priv:1}); toast(`Message envoyé à ${P.name}`); }
+  else { send({t:'sys',text}); toast('Message envoyé à tous les joueurs'); }
+  i.value=''; }
 function wire(){
+  if($('mb-ico')){ $('mb-ico').innerHTML=IB('mega',1.7); $('mb-go').innerHTML=IB('send',1.8); $('mb-go').onclick=sysSend;
+    $('mb-in').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); sysSend(); } else if(e.key==='Escape') e.target.blur(); }); }
   // icônes de l'interface
   $('sc-ico').innerHTML=IB('film'); $('sc-prev').innerHTML=IB('left',2); $('sc-next').innerHTML=IB('right',2); $('sc-up').innerHTML=IB('up',2); $('sc-down').innerHTML=IB('down',2);
   $('b-player').innerHTML=IB('screen'); $('b-player').classList.add('icon'); $('b-net').insertAdjacentHTML('afterbegin',IB('table')); $('b-full').innerHTML=IB('full'); $('b-settings').insertAdjacentHTML('afterbegin',IB('gear'));
@@ -5430,7 +5482,8 @@ function netIn(c,d){ if(!d||typeof d!=='object') return;
     const it=itemData(t), g=t.g||'misc'; removeToken(t.id); jetRefresh(); toast(`${c.name} prend : ${it.name}`); netTo(c.pid,{t:'given',g,item:it}); sync(); }
   else if(d.t==='roll'&&c.pid){ const succ=+d.succ||0, label=String(d.label||'Jet').slice(0,60);
     logRoll(`${c.name} · ${label}`,Array.isArray(d.rolls)?d.rolls.slice(0,60):[],+d.th||8,succ);
-    toast(`${c.name} · ${label} : ${succ} réussite${succ>1?'s':''}`); send({t:'roll',who:c.name,label,succ}); }
+    const n=Array.isArray(d.rolls)?d.rolls.length:0; bubble(c.pid,rollHTML(succ,n),'',c.name); send({t:'roll',who:c.name,label,succ,dn:n,pid:c.pid}); }
+  else if(d.t==='say'&&c.pid){ const text=String(d.text||'').trim().slice(0,140); if(!text) return; bubble(c.pid,esc(text),'say',c.name); send({t:'say',pid:c.pid,who:c.name,text}); }
 }
 function playerGone(c){ if(!c.pid) return; const P=PL.get(c.pid); if(P&&![...NET.conns].some(x=>x!==c&&x.pid===c.pid)){ P.online=false; renderPtabs(); } }
 /* le jeton du joueur suit sa fiche (nom, portrait, statistiques, PV) */
@@ -5576,6 +5629,11 @@ if(isPlayer){
   renderAllBoard(); fitBoard();
   window.addEventListener('resize',()=>{ if(NETVIEW) followMe(); else if(lastView) setPlayerView(lastView); });
   if(NETVIEW){ $('pwait').classList.add('gone'); V.z=.32; followMe(); window.addEventListener('message',e=>{ if(e.data&&e.data.__adb) receive(e.data.m); }); up({t:'ready'});
+    /* petit message : bouton rond en bas à droite */
+    const cb=$('chatbtn'), cp=$('chatpop'), ci=$('chat-in'); cb.hidden=false; cb.innerHTML=IB('chat',1.7); $('chat-go').innerHTML=IB('send',1.9);
+    const say=()=>{ const t=ci.value.trim(); if(!t) return; up({t:'say',text:t}); ci.value=''; cp.hidden=true; };
+    cb.onclick=()=>{ cp.hidden=!cp.hidden; if(!cp.hidden) setTimeout(()=>ci.focus(),30); };
+    $('chat-go').onclick=say; ci.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); say(); } else if(e.key==='Escape') cp.hidden=true; });
     /* le joueur ne déplace pas son jeton : il montre avec son pointeur */
     let pd=false, raf=0, last=null, pdAt=null;
     const ptr=(e,end)=>{ const [x,y]=toWorld(e.clientX,e.clientY); last={x:Math.round(x),y:Math.round(y)};
