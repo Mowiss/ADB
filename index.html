@@ -2239,7 +2239,7 @@ svg.i{width:18px;height:18px;flex:none}
 .bands{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:0}
 .ribbon{position:absolute;left:-25%;width:150%;top:58%;transform:translateY(-50%) rotate(-14deg);display:flex;flex-direction:column;gap:12px}
 .band{height:60px;opacity:.26}
-#edgebands{position:fixed;inset:0;z-index:42;pointer-events:none;overflow:hidden}
+.appbar,.rail,.bottom,.timbar{background:var(--bandsimg,none) 0 0/100vw 100vh no-repeat fixed,var(--paper)!important}
 .player #edgebands{display:none}
 #world{position:absolute;left:0;top:0;width:0;height:0;overflow:visible;transform-origin:0 0;z-index:1}
 #bg{position:absolute;left:0;top:0}
@@ -4929,11 +4929,15 @@ async function doInstall(){ const ev=installEvt||window.__adbInstall;
    Branchements
    ========================================================= */
 function renderAllBoard(){ renderBoard(); renderDrawings(); renderTokens(); renderTracker(); renderFoW(); if(cardId) renderCard(); }
-function edgeBands(){ if(isPlayer) return; let e=$('edgebands'); if(!e){ const b=document.querySelector('#board .bands'); if(!b) return; e=b.cloneNode(true); e.id='edgebands'; e.className=''; document.body.appendChild(e);
-    new ResizeObserver(edgeClip).observe(board); window.addEventListener('resize',edgeClip); } edgeClip(); }
-/* les bandes passent sur l'interface, jamais sur la zone de travail */
-function edgeClip(){ const e=$('edgebands'); if(!e) return; const r=board.getBoundingClientRect(), W=innerWidth, H=innerHeight;
-  e.style.clipPath=`polygon(evenodd,0 0,${W}px 0,${W}px ${H}px,0 ${H}px,0 0,${r.left}px ${r.top}px,${r.left}px ${r.bottom}px,${r.right}px ${r.bottom}px,${r.right}px ${r.top}px,${r.left}px ${r.top}px)`; }
+/* bandes pastel : peintes dans le fond des cadres (en-tête, barre d'outils, bandeaux du bas), sous leurs éléments, jamais sur la zone de travail */
+let bandsKey='';
+function edgeBands(){ if(isPlayer) return; const W=innerWidth, H=innerHeight, key=W+'x'+H; if(key===bandsKey) return; bandsKey=key;
+  const cs=getComputedStyle(document.documentElement), cols=['--b-yel','--b-blu','--b-gre','--b-red','--b-pin','--b-vio'].map(v=>cs.getPropertyValue(v).trim()||'#ccc');
+  const c=document.createElement('canvas'); c.width=W; c.height=H; const x=c.getContext('2d'), BH=60, G=12, h=cols.length*BH+(cols.length-1)*G;
+  x.translate(W/2,H*.58); x.rotate(-14*Math.PI/180); x.globalAlpha=.26;
+  cols.forEach((col,i)=>{ x.fillStyle=col; x.fillRect(-W*.75,-h/2+i*(BH+G),W*1.5,BH); });
+  document.documentElement.style.setProperty('--bandsimg',`url(${c.toDataURL('image/png')})`);
+  if(!edgeBands.on){ edgeBands.on=1; let t=0; window.addEventListener('resize',()=>{ clearTimeout(t); t=setTimeout(edgeBands,150); }); } }
 function renderAll(){ edgeBands(); if(!S.ground) S.ground=GROUND0(); decoMigrate(); renderAllBoard(); renderScenes(); renderProf(); $('notes-in').value=S.notes||''; }
 function fitBoard(){ const r=board.getBoundingClientRect();
   if(bounded()){ centerOn(S.bgW/2,S.bgH/2,clamp(Math.min((r.width-40)/S.bgW,(r.height-40)/S.bgH),.15,1.5)); return; }
