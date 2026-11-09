@@ -317,7 +317,7 @@ func infoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "no-store")
-	json.NewEncoder(w).Encode(map[string]any{"app": AppName, "v": Version, "port": Port, "ip": ip, "ips": ips, "players": H.players(), "mj": H.mjCode(), "mjurl": mjLink()})
+	json.NewEncoder(w).Encode(map[string]any{"app": AppName, "v": Version, "port": Port, "ip": ip, "ips": ips, "players": H.players(), "mj": H.mjCode(), "mjurl": mjLink(), "visits": recentVisits()})
 }
 
 func qrHandler(w http.ResponseWriter, r *http.Request) {
@@ -473,6 +473,32 @@ func alreadyRunning() bool {
 	return j["app"] == AppName
 }
 
+/* visites venues d'autres appareils (diagnostic : si rien n'arrive, c'est le réseau ou le pare-feu qui bloque) */
+type visit struct {
+	T    string `json:"t"`
+	IP   string `json:"ip"`
+	Path string `json:"path"`
+}
+
+var visits []visit
+var visitMu sync.Mutex
+
+func visitLog(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		host, _, _ := net.SplitHostPort(r.RemoteAddr)
+		if ip := net.ParseIP(host); ip != nil && !ip.IsLoopback() && r.URL.Path != "/info" && r.URL.Path != "/qr.svg" {
+			visitMu.Lock()
+			visits = append(visits, visit{time.Now().Format("15:04:05"), host, r.URL.Path})
+			if len(visits) > 8 {
+				visits = visits[len(visits)-8:]
+			}
+			visitMu.Unlock()
+			logf("visite %s %s %s", host, r.URL.Path, r.UserAgent())
+		}
+		h.ServeHTTP(w, r)
+	})
+}
+
 func startServer() error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/ws", wsHandler)
@@ -510,7 +536,7 @@ func startServer() error {
 	if err != nil {
 		return err
 	}
-	srv := &http.Server{Handler: mux, ReadHeaderTimeout: 10 * time.Second}
+	srv := &http.Server{Handler: visitLog(mux), ReadHeaderTimeout: 10 * time.Second}
 	go srv.Serve(ln)
 	return nil
 }
@@ -547,6 +573,12 @@ func appSeen(a string) {
 		setBase(b)
 		go refreshApp()
 	}
+}
+
+func recentVisits() []visit {
+	visitMu.Lock()
+	defer visitMu.Unlock()
+	return append([]visit{}, visits...)
 }
 
 func statusLink() string { return fmt.Sprintf("http://localhost:%d/serveur", Port) }

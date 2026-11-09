@@ -66,6 +66,7 @@ select{font:600 13px Quicksand,'Segoe UI',sans-serif;border:1px solid var(--rule
 <div class="card">
 <h2>Un téléphone n'arrive pas à se connecter ?</h2>
 <p class="soft" style="margin:0 0 6px">Le plus souvent, c'est le pare-feu de Windows qui bloque : il considère le wifi de la maison comme un réseau « public », ou la fenêtre d'autorisation a été fermée. Ce bouton ouvre l'accès (Windows demande une confirmation).</p>
+<div id="vis" class="soft" style="margin:4px 0 12px;padding:10px 12px;border-radius:10px;background:#f6f7f9"></div>
 <div class="row"><button type="button" id="fw">Autoriser dans le pare-feu Windows</button><span class="soft" id="fwmsg" style="align-self:center"></span></div>
 <p class="soft" style="margin:12px 0 0">Si ça ne passe toujours pas : vérifiez que le téléphone est sur le même wifi que ce PC, et pas sur un wifi « invités » (qui isole les appareils). Les données mobiles du téléphone doivent laisser la place au wifi.</p>
 </div>
@@ -93,6 +94,7 @@ function draw(){
   if(L){ $('addr').textContent=L; const q='/qr.svg?t='+encodeURIComponent(L); $('qr').style.visibility=''; $('copy').hidden=false; if($('qr').dataset.q!==q){ $('qr').src=q; $('qr').dataset.q=q; } $('hint').textContent='Les joueurs scannent ce QR code, ou tapent cette adresse dans leur navigateur. Ils doivent être sur le même wifi que ce PC.'; }
   else { $('addr').textContent='Aucun réseau'; $('qr').style.visibility='hidden'; $('copy').hidden=true; $('hint').textContent='Ce PC n\'est connecté à aucun wifi ou réseau local.'; }
   $('tbl').textContent=info.mj?info.mj:'pas encore ouverte'; $('tbl').style.fontSize=info.mj?'26px':'17px';
+  const V=info.visits||[]; $('vis').innerHTML=V.length?'<b style="color:#1f2230">Dernières visites reçues d\'un autre appareil :</b><br>'+V.slice().reverse().map(v=>`${v.t} · ${v.ip} · ${v.path}`).join('<br>'):'<b style="color:#c0392b">Aucune visite reçue d\'un autre appareil.</b> Si un téléphone vient d\'essayer, sa demande n\'est pas arrivée jusqu\'ici : c\'est le pare-feu de ce PC ou le wifi qui bloque.';
   $('np').textContent=info.players||0; $('open').href=info.mjurl||'#';
 }
 async function poll(){ try{ const r=await fetch('/info',{cache:'no-store'}); info=await r.json(); }catch(e){ info=null; } draw(); }
