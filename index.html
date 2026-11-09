@@ -1993,6 +1993,55 @@ renderAll(); updateSaveState(); if(!window.__ADB_SHEET_VIEW) setupAutosave(); pl
    et ses jets de dés sont partagés.
    ========================================================= */
 if(!window.__ADB_SHEET_VIEW){
+/* =========================================================
+   PARTIE LOCALE — même interface que PeerJS, mais par le serveur local
+   (Aldebaran-Serveur.exe sur le PC du MJ) : un simple relais WebSocket,
+   sans Internet. Le reste de l'appli ne voit aucune différence.
+   ========================================================= */
+const ADB_LOCAL_PORT=4777;
+const adbLocalPage=()=>location.protocol==='http:'&&+location.port===ADB_LOCAL_PORT;
+class LPEmit{ constructor(){ this._h={}; } on(e,f){ (this._h[e]=this._h[e]||[]).push(f); return this; }
+  off(e,f){ const L=this._h[e]; if(L) this._h[e]=f?L.filter(x=>x!==f):[]; return this; }
+  emit(e,...a){ (this._h[e]||[]).slice().forEach(f=>{ try{ f(...a); }catch(x){ console.error(x); } }); } }
+class LocalConn extends LPEmit{
+  constructor(peer,cid,remote,meta){ super(); this.provider=peer; this.cid=cid; this.peer=remote; this.metadata=meta||null; this.open=false; this.peerConnection=null; this.local=true; this._done=false; }
+  send(d){ if(!this.open) return; this.provider._tx({type:'data',cid:this.cid,to:this.peer,d}); }
+  close(){ if(this._done) return; this.provider._tx({type:'close',cid:this.cid,to:this.peer}); this._end(); }
+  _end(){ if(this._done) return; this._done=true; this.open=false; this.provider.conns.delete(this.cid); this.emit('close'); } }
+class LocalPeer extends LPEmit{
+  constructor(id,opts){ super(); if(id&&typeof id==='object'){ opts=id; id=null; }
+    this.id=id||('p'+Date.now().toString(36)+Math.random().toString(36).slice(2,8)); this.url=(opts&&opts.url)||LocalPeer.url();
+    this.conns=new Map(); this.open=false; this.destroyed=false; this.disconnected=false; this.ws=null; this._q=[]; this._n=0; this._fails=0; this._go(); }
+  static url(){ return adbLocalPage()?`ws://${location.host}/ws`:`ws://127.0.0.1:${ADB_LOCAL_PORT}/ws`; }
+  _go(){ let ws; try{ ws=new WebSocket(this.url+'?id='+encodeURIComponent(this.id)+(adbLocalPage()?'':'&app='+encodeURIComponent(location.origin+location.pathname))); }catch(e){ this.disconnected=true; setTimeout(()=>this.emit('error',{type:'network'})); return; }
+    this.ws=ws; let ok=false;
+    ws.onmessage=e=>{ let m; try{ m=JSON.parse(e.data); }catch(x){ return; } if(m.type==='open') ok=true; this._rx(m); };
+    ws.onclose=()=>{ if(this.ws!==ws) return; this.ws=null; const was=this.open; this.open=false;
+      [...this.conns.values()].forEach(c=>c._end()); this.conns.clear(); this._q=[]; if(this.destroyed) return; this.disconnected=true;
+      clearTimeout(this._rt); this._rt=setTimeout(()=>this.reconnect(),Math.min(5000,700*(++this._fails)));   /* le serveur revient : on se reconnecte seul */
+      if(was||ok) this.emit('disconnected',this.id); else this.emit('error',{type:'network'}); }; }
+  reconnect(){ clearTimeout(this._rt); if(this.destroyed||this.ws) return; this.disconnected=false; this._go(); }
+  disconnect(){ const ws=this.ws; this.ws=null; this.open=false; this.disconnected=true; try{ ws&&ws.close(); }catch(e){} }
+  _tx(m){ const s=JSON.stringify(m); if(this.ws&&this.ws.readyState===1) this.ws.send(s); else this._q.push(s); }
+  _rx(m){ const c=m.cid!=null?this.conns.get(m.cid):null;
+    switch(m.type){
+      case 'open': this.open=true; this.disconnected=false; this._fails=0; { const q=this._q; this._q=[]; q.forEach(s=>{ try{ this.ws.send(s); }catch(e){} }); } this.emit('open',this.id); break;
+      case 'taken': this.destroyed=true; this.emit('error',{type:'unavailable-id'}); this.destroy(true); break;
+      case 'connect': { const k=new LocalConn(this,m.cid,m.from,m.meta); this.conns.set(m.cid,k); this.emit('connection',k);
+        k.open=true; this._tx({type:'accept',cid:m.cid,to:m.from}); setTimeout(()=>{ if(!k._done) k.emit('open'); }); break; }
+      case 'accept': if(c&&!c.open){ c.open=true; c.emit('open'); } break;
+      case 'nopeer': if(c) c._end(); this.emit('error',{type:'peer-unavailable'}); break;
+      case 'data': if(c&&c.open) c.emit('data',m.d); break;
+      case 'close': if(c) c._end(); break;
+      case 'gone': [...this.conns.values()].forEach(k=>{ if(k.peer===m.id) k._end(); }); break; } }
+  connect(to,o){ const cid=this.id+'.'+(++this._n); const k=new LocalConn(this,cid,to,o&&o.metadata); this.conns.set(cid,k); this._tx({type:'connect',cid,to,meta:k.metadata}); return k; }
+  destroy(){ if(this._dead) return; this._dead=true; this.destroyed=true; clearTimeout(this._rt); [...this.conns.values()].forEach(c=>{ try{ c.close(); }catch(e){} }); this.conns.clear();
+    const ws=this.ws; this.ws=null; this.open=false; setTimeout(()=>{ try{ ws&&ws.close(); }catch(e){} },50); this.emit('close'); } }
+/* le serveur local tourne-t-il sur ce PC ? (renvoie ses infos : adresses, joueurs) */
+async function localProbe(){ try{ const ctl=new AbortController(), t=setTimeout(()=>ctl.abort(),1800);
+    const base=adbLocalPage()?location.origin:`http://127.0.0.1:${ADB_LOCAL_PORT}`;
+    const r=await fetch(base+'/info',{cache:'no-store',signal:ctl.signal,targetAddressSpace:adbLocalPage()?undefined:'loopback'}); clearTimeout(t); const j=await r.json(); return j&&j.app==='aldebaran-local'?j:null; }catch(e){ return null; } }
+
 const NET_PEERJS=['https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js','https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js','https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js'];
 function netLoad(urls){ return new Promise((res,rej)=>{ const go=i=>{ if(i>=urls.length){ rej(new Error('script')); return; } const s=document.createElement('script'); s.src=urls[i]; s.onload=res; s.onerror=()=>{ s.remove(); go(i+1); }; document.head.appendChild(s); }; go(0); }); }
 const netPeerOpts=()=>{ let o={debug:0}; try{ const x=JSON.parse(localStorage.getItem('aldebaran.peer')||'null'); if(x) o=Object.assign(o,x); }catch(e){} return o; };
@@ -2028,20 +2077,21 @@ async function tbJoin(code){
   code=String(code||'').toUpperCase().replace(/[^A-Z0-9]/g,''); $('tb-code').value=code;
   if(code.length<4){ tbMsg('Saisissez le code donné par le maître du destin.'); $('tb-code').focus(); return; }
   NETP.code=code; NETP.want=true; ls.set('aldebaran.joueur.table',code); tbMsg(''); tbStatus('wait','Connexion…');
-  tbStatus('wait','1/3 · Chargement…');
-  try{ if(!window.Peer) await netLoad(NET_PEERJS); }catch(e){ tbStatus('off','Hors ligne'); tbMsg('Module réseau introuvable : vérifiez la connexion internet.'); return; }
+  tbStatus('wait','1/3 · Chargement…'); const LOC=adbLocalPage();
+  if(!LOC) try{ if(!window.Peer) await netLoad(NET_PEERJS); }catch(e){ tbStatus('off','Hors ligne'); tbMsg('Module réseau introuvable : vérifiez la connexion internet.'); return; }
   if(!NETP.peer||NETP.peer.destroyed){
-    tbStatus('wait','2/3 · Serveur de rendez-vous…');
-    const p=new Peer(await netIce()); NETP.peer=p;
+    tbStatus('wait',LOC?'2/3 · Serveur local…':'2/3 · Serveur de rendez-vous…');
+    const p=LOC?new LocalPeer():new Peer(await netIce()); NETP.peer=p;
     p.on('error',e=>{ if(NETP.peer!==p) return;
-      if(e.type==='peer-unavailable'){ tbStatus('off','Hors ligne'); tbMsg(`Aucune table ouverte sous le code ${NETP.code}. Vérifiez le code, ou demandez au maître du destin d'ouvrir sa table.`); NETP.want=false; tbShowJoin(); }
+      if(e.type==='peer-unavailable'&&LOC){ tbStatus('wait','En attente de la table du maître du destin…'); }
+      else if(e.type==='peer-unavailable'){ tbStatus('off','Hors ligne'); tbMsg(`Aucune table ouverte sous le code ${NETP.code}. Vérifiez le code, ou demandez au maître du destin d'ouvrir sa table.`); NETP.want=false; tbShowJoin(); }
       else if(['network','server-error','socket-error','socket-closed'].includes(e.type)){ tbStatus('wait','Réseau indisponible, nouvel essai…'); }
       else if(e.type==='browser-incompatible'){ tbStatus('off','Hors ligne'); tbMsg('Ce navigateur ne gère pas la connexion directe (WebRTC).'); }
       else tbMsg('Réseau : '+e.type); });
     p.on('disconnected',()=>{ if(NETP.peer===p&&!p.destroyed) setTimeout(()=>{ try{ p.reconnect(); }catch(e){} },1500); });
     const ok=await new Promise(res=>{ if(p.open) return res(true); p.on('open',()=>res(true)); setTimeout(()=>res(p.open),15000); });
     if(!ok){ if(NETP.peer===p){ try{ p.destroy(); }catch(e){} NETP.peer=null; NETP.want=false; tbStatus('off','Hors ligne'); tbShowJoin();
-      tbMsg('Le serveur de rendez-vous ne répond pas (étape 2/3). Vérifiez la connexion internet puis réessayez dans un instant.'); } return; }
+      tbMsg(LOC?'Le serveur local du maître du destin ne répond pas. Vérifiez que vous êtes sur le même wifi que lui, puis réessayez.':'Le serveur de rendez-vous ne répond pas (étape 2/3). Vérifiez la connexion internet puis réessayez dans un instant.'); } return; }
   }
   tbConnect();
 }
@@ -2058,7 +2108,7 @@ function tbConnect(){
   watch();
   const late=setTimeout(()=>{ if(NETP.conn!==c||c.open) return; if(NETP.retry>0){ NETP.conn=null; try{ c.close(); }catch(e){} tbRetry(); return; } NETP.want=false; NETP.conn=null; try{ c.close(); }catch(e){}
     tbStatus('off','Hors ligne'); tbShowJoin();
-    tbMsg('La table est trouvée, mais la connexion n\'aboutit pas (étape 3/3) : votre réseau la bloque (fréquent en 4G/5G). Rechargez l\'appli et réessayez ; sinon, demandez au maître du destin d\'activer son serveur relais puis de vous renvoyer le lien ou le QR code.'); },35000);
+    tbMsg('La table est trouvée, mais la connexion n\'aboutit pas (étape 3/3) : votre réseau la bloque (fréquent en 4G/5G). Rechargez l\'appli et réessayez ; sinon, demandez au maître du destin d\'activer son serveur relais puis de vous renvoyer le lien ou le QR code.'); },adbLocalPage()?8000:35000);
   c.on('open',async()=>{ clearTimeout(late); NETP.retry=0; NETP.seen=Date.now(); c.send({t:'join',pid:NETP.pid,sheet:await sheetData()}); tbStatus('on',NETP.code); tbLive(); });
   c.on('data',d=>{ NETP.seen=Date.now(); if(d&&d.t==='hb'){ try{ c.send({t:'hb'}); }catch(e){} return; } tbIn(d); });
   c.on('close',()=>{ if(NETP.conn!==c) return; NETP.conn=null;
@@ -2115,14 +2165,20 @@ $('tb-code').addEventListener('keydown',e=>{ if(e.key==='Enter') tbJoin($('tb-co
 $('tb-code').addEventListener('input',e=>{ const v=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,5); if(v!==e.target.value) e.target.value=v; });
 $('tb-leave').onclick=tbLeave;
 /* pas de veille pendant une partie (activé par défaut) */
-const PWAKE={lock:null};
+const PWAKE={lock:null,vid:null};
+const PW_HAS=()=>'wakeLock' in navigator;
+function pwVideo(on){ if(on){ if(!PWAKE.vid){ const v=document.createElement('video'); v.setAttribute('playsinline',''); v.setAttribute('muted',''); v.muted=true; v.loop=true; v.title='Aldebaran';
+    v.style.cssText='position:fixed;left:0;bottom:0;width:2px;height:2px;opacity:.02;pointer-events:none;z-index:-1';
+    v.innerHTML='<source src="data:video/webm;base64,GkXfo59ChoEBQveBAULygQRC84EIQoKEd2VibUKHgQRChYECGFOAZwEAAAAAAAevEU2bdLpNu4tTq4QVSalmU6yBoU27i1OrhBZUrmtTrIHYTbuMU6uEElTDZ1OsggGETbuMU6uEHFO7a1OsggeZ7AEAAAAAAABZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAVSalmsirXsYMPQkBNgI1MYXZmNjAuMTYuMTAwV0GNTGF2ZjYwLjE2LjEwMESJiECfYAAAAAAAFlSua0CmrgEAAAAAAAA414EBc8WInIbrRFmZCtOcgQAitZyDdW5kiIEAhoVWX1ZQOIOBASPjg4QdzWUA4ImwgRC6gRCagQKuAQAAAAAAAFzXgQJzxYha2l0wLsbWTZyBACK1nIN1bmSIgQCGhkFfT1BVU1aqg2MuoFa7hATEtACDgQLhkZ+BAbWIQL9AAAAAAABiZIEQY6KTT3B1c0hlYWQBATgBQB8AAAAAABJUw2dA1nNzoGPAgGfImkWjh0VOQ09ERVJEh41MYXZmNjAuMTYuMTAwc3PWY8CLY8WInIbrRFmZCtNnyKFFo4dFTkNPREVSRIeUTGF2YzYwLjMxLjEwMiBsaWJ2cHhnyKFFo4hEVVJBVElPTkSHkzAwOjAwOjAyLjAwMDAwMDAwMABzc9djwItjxYha2l0wLsbWTWfIokWjh0VOQ09ERVJEh5VMYXZjNjAuMzEuMTAyIGxpYm9wdXNnyKFFo4hEVVJBVElPTkSHkzAwOjAwOjAyLjAwODAwMDAwMAAfQ7Z1RTPngQCji4IAAIAIC+Y7I6tgo6OBAACAEAIAnQEqEAAQAABHCIWFiIWEiAICAAwNYAD+/6tQgKOKggAVgAgIrLMOxqOKggApgAgIrLMOxqOKggA9gAgIrLMOxqOKggBRgAgIrLMOxqOKggBlgAgIrLMOxqOKggB5gAgIrLMOxqOKggCNgAgIrLMOxqOKggChgAgIrLMOxqOKggC1gAgIrLMOxqOKggDJgAgIrLMOxqOKggDdgAgIrLMOxqOKggDxgAgIrLMOxqOKggEFgAgIrLMOxqOKggEZgAgIrLMOxqOKggEtgAgIrLMOxqOKggFBgAgIrLMOxqOKggFVgAgIrLMOxqOKggFpgAgIrLMOxqOKggF9gAgIrLMOxqOKggGRgAgIrLMOxqOKggGlgAgIrLMOxqOKggG5gAgIrLMOxqOKggHNgAgIrLMOxqOKggHhgAgIrLMOxqOKggH1gAgIrLMOxqOVgQH0ALEBAAEQEAAYABhYL/QACAAAo4qCAgmACAissw7Go4qCAh2ACAissw7Go4qCAjGACAissw7Go4qCAkWACAissw7Go4qCAlmACAissw7Go4qCAm2ACAissw7Go4qCAoGACAissw7Go4qCApWACAissw7Go4qCAqmACAissw7Go4qCAr2ACAissw7Go4qCAtGACAissw7Go4qCAuWACAissw7Go4qCAvmACAissw7Go4qCAw2ACAissw7Go4qCAyGACAissw7Go4qCAzWACAissw7Go4qCA0mACAissw7Go4qCA12ACAissw7Go4qCA3GACAissw7Go4qCA4WACAissw7Go4qCA5mACAissw7Go4qCA62ACAissw7Go4qCA8GACAissw7Go4qCA9WACAissw7Go4qCA+mACAissw7Go5WBA+gAsQEAARAQABgAGFgv9AAIAACjioID/YAICKyzDsajioIEEYAICKyzDsajioIEJYAICKyzDsajioIEOYAICKyzDsajioIETYAICKyzDsajioIEYYAICKyzDsajioIEdYAICKyzDsajioIEiYAICKyzDsajioIEnYAICKyzDsajioIEsYAICKyzDsajioIExYAICKyzDsajioIE2YAICKyzDsajioIE7YAICKyzDsajioIFAYAICKyzDsajioIFFYAICKyzDsajioIFKYAICKyzDsajioIFPYAICKyzDsajioIFUYAICKyzDsajioIFZYAICKyzDsajioIFeYAICKyzDsajioIFjYAICKyzDsajioIFoYAICKyzDsajioIFtYAICKyzDsajioIFyYAICKyzDsajioIF3YAICKyzDsajlYEF3ACxAQABEBAAGAAYWC/0AAgAAKOKggXxgAgIrLMOxqOKggYFgAgIrLMOxqOKggYZgAgIrLMOxqOKggYtgAgIrLMOxqOKggZBgAgIrLMOxqOKggZVgAgIrLMOxqOKggZpgAgIrLMOxqOKggZ9gAgIrLMOxqOKggaRgAgIrLMOxqOKggalgAgIrLMOxqOKgga5gAgIrLMOxqOKggbNgAgIrLMOxqOKggbhgAgIrLMOxqOKggb1gAgIrLMOxqOKggcJgAgIrLMOxqOKggcdgAgIrLMOxqOKggcxgAgIrLMOxqOKggdFgAgIrLMOxqOKggdZgAgIrLMOxqOKggdtgAgIrLMOxqOKggeBgAgIrLMOxqOKggeVgAgIrLMOxqOKggepgAgIrLMOxqOKgge9gAgIrLMOxqCToYqCB9EACAissw7GdaKEAM3+YBxTu2uRu4+zgQC3iveBAfGCAmDwgRA=" type="video/webm"><source src="data:video/mp4;base64,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X3JlZj0wIG1lX3JhbmdlPTE2IGNocm9tYV9tZT0xIHRyZWxsaXM9MCA4eDhkY3Q9MCBjcW09MCBkZWFkem9uZT0yMSwxMSBmYXN0X3Bza2lwPTEgY2hyb21hX3FwX29mZnNldD0wIHRocmVhZHM9MSBsb29rYWhlYWRfdGhyZWFkcz0xIHNsaWNlZF90aHJlYWRzPTAgbnI9MCBkZWNpbWF0ZT0xIGludGVybGFjZWQ9MCBibHVyYXlfY29tcGF0PTAgY29uc3RyYWluZWRfaW50cmE9MCBiZnJhbWVzPTAgd2VpZ2h0cD0wIGtleWludD0yNTAga2V5aW50X21pbj0yIHNjZW5lY3V0PTQwIGludHJhX3JlZnJlc2g9MCByY19sb29rYWhlYWQ9MTAgcmM9Y3JmIG1idHJlZT0xIGNyZj0yMy4wIHFjb21wPTAuNjAgcXBtaW49MCBxcG1heD02OSBxcHN0ZXA9NCBpcF9yYXRpbz0xLjQwIGFxPTE6MS4wMACAAAAADmWIhAU///8PRQABPf+AARggBwEYIAcBGCAHARggBwAAAAVBmiAU9QEYIAcBGCAHARggBwEYIAcAAAAFQZpAFPUBGCAHARggBwEYIAcBGCAHAAAABUGaYBL1ARggBwEYIAcBGCAHARggBw==" type="video/mp4">';
+    document.body.appendChild(v); PWAKE.vid=v; } if(PWAKE.vid.paused) PWAKE.vid.play().catch(()=>{}); } else if(PWAKE.vid&&!PWAKE.vid.paused) PWAKE.vid.pause(); }
 const pwOn=()=>ls.get('aldebaran.joueur.veille')!=='0';
 async function pwApply(){ try{
-  if(pwOn()&&NETP.want&&document.visibilityState==='visible'){ if(!PWAKE.lock&&'wakeLock' in navigator){ PWAKE.lock=await navigator.wakeLock.request('screen'); PWAKE.lock.addEventListener('release',()=>{ PWAKE.lock=null; }); } }
+  if(!PW_HAS()){ pwVideo(pwOn()&&NETP.want&&document.visibilityState==='visible'); }
+  else if(pwOn()&&NETP.want&&document.visibilityState==='visible'){ if(!PWAKE.lock){ PWAKE.lock=await navigator.wakeLock.request('screen'); PWAKE.lock.addEventListener('release',()=>{ PWAKE.lock=null; }); } }
   else if(PWAKE.lock){ const l=PWAKE.lock; PWAKE.lock=null; await l.release(); }
 }catch(e){} pwBtn(); }
 function pwBtn(){ const b=$('tb-wake'); if(!b) return; const on=pwOn(); b.classList.toggle('on',on); b.setAttribute('aria-pressed',on?'true':'false');
-  b.title=on?'Pas de veille : activé':'Pas de veille : désactivé'; b.hidden=!NETP.want||!('wakeLock' in navigator); }
+  b.title=on?'Pas de veille : activé':'Pas de veille : désactivé'; b.hidden=!NETP.want; }
 (()=>{ const x=$('tb-leave'); if(!x) return; const b=document.createElement('button'); b.type='button'; b.className='tb-x tb-wake'; b.id='tb-wake'; b.hidden=true;
   b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg>';
   b.onclick=()=>{ ls.set('aldebaran.joueur.veille',pwOn()?'0':'1'); pwApply(); };
@@ -2130,6 +2186,7 @@ function pwBtn(){ const b=$('tb-wake'); if(!b) return; const on=pwOn(); b.classL
   const st=document.createElement('style'); st.textContent='.tb-wake{margin-right:6px;color:var(--ink-soft)}.tb-wake.on{color:var(--ok);border-color:var(--ok)}.tb-wake:hover{border-color:var(--ok);color:var(--ok)}.sheetview .tb-wake{display:none!important}';
   document.head.appendChild(st); })();
 document.addEventListener('visibilitychange',pwApply);
+document.addEventListener('pointerdown',()=>{ if(!PW_HAS()&&pwOn()&&NETP.want) pwVideo(true); },true);
 { const _sj=tbShowJoin, _lv=tbLive; tbShowJoin=function(){ _sj.apply(this,arguments); pwApply(); }; tbLive=function(){ _lv.apply(this,arguments); pwApply(); }; }
 $('tb-code').value=ls.get('aldebaran.joueur.table')||'';
 tbStatus('off','Hors ligne');
@@ -2478,6 +2535,13 @@ html.pland:not(.player){--bar:0px;--bot:0px;--rail:56px;--tabs:60px}
 .nlink{display:flex;gap:8px;align-items:center;border:1px solid var(--rule);border-radius:10px;padding:6px 6px 6px 12px}
 .nlink input{flex:1;min-width:0;border:0;outline:none;background:transparent;font-size:12.5px;color:var(--ink)}
 .nqr{display:grid;place-items:center}
+.nqr img#loc-qr{width:170px!important;height:170px!important}
+.nlink select.mini{max-width:130px}
+.locoff{padding:8px 8px 8px 12px;font-size:13px;color:var(--ink-soft)}.locoff span{flex:1;min-width:0}
+.srvsteps{display:flex;flex-direction:column;gap:14px}.ss{display:flex;gap:12px;line-height:1.5}.ss>i{flex:none;width:26px;height:26px;border-radius:50%;border:1.5px solid var(--ink-strong);display:grid;place-items:center;font-style:normal;font-weight:700;font-size:13px}
+.mock{margin-top:8px;border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;align-items:flex-start;font-size:12.5px;max-width:300px}.mock b{font-weight:600}
+.mock.smart{background:#1f5fa8;color:#fff}.mock.smart .lk{color:#cfe3ff}.mock .bt{border:1px solid currentColor;border-radius:4px;padding:3px 10px;align-self:flex-end}.mock .bt.hl{box-shadow:0 0 0 3px #f2c94c}
+.mock.fw{background:#fff;color:#222;border:1px solid var(--rule)}.mock.fw span:not(.bt){display:flex;align-items:center;gap:6px}.mock .ck{width:13px;height:13px;border:1.5px solid #1f5fa8;background:#1f5fa8;border-radius:2px;box-shadow:inset 0 0 0 2px #fff}
 .nqr img,.nqr canvas{width:150px!important;height:150px!important}
 .nplayers{display:flex;flex-direction:column}
 .np{display:flex;align-items:center;gap:10px;padding:7px 2px;border-bottom:1px dashed var(--rule)}
@@ -3218,6 +3282,7 @@ const IC={o_melee:'<g transform="translate(1.90 1.85) scale(0.848)" stroke-width
   open:'<path d="M3 7V5h6l2 2h8v3"/><path d="M3 7v12h15l3-9H6l-3 9"/>',
   home:'<path d="M3 11l9-7 9 7"/><path d="M5.5 9.5V20h13V9.5M10 20v-5.5h4V20"/>',
   table:'<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/>',
+  server:'<rect x="3.5" y="4" width="17" height="6.5" rx="1.6"/><rect x="3.5" y="13.5" width="17" height="6.5" rx="1.6"/><circle cx="7.5" cy="7.25" r=".9" fill="currentColor"/><circle cx="7.5" cy="16.75" r=".9" fill="currentColor"/><path d="M11.5 7.25h5M11.5 16.75h5"/>',
   wifi:'<path d="M2.5 9a14 14 0 0 1 19 0M5.5 12.3a9.5 9.5 0 0 1 13 0M8.7 15.6a5 5 0 0 1 6.6 0"/><circle cx="12" cy="19" r="1.2" fill="currentColor"/>',
   copy:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>',
   film:'<rect x="3" y="5" width="18" height="14" rx="1.5"/><path d="M7 5v14M17 5v14M3 9.5h4M3 14.5h4M17 9.5h4M17 14.5h4"/>',
@@ -5975,11 +6040,12 @@ function settings(){
     <div class="subttl">Plateau</div>
     <label class="switch"><input type="checkbox" id="p-wake">Empêcher la mise en veille de l'écran</label>
     <div class="inst"><div><b>Effacer la campagne en cours</b><span>Remet la table à zéro (avec confirmation). Le fichier enregistré n'est pas touché.</span></div><button class="btn danger" type="button" id="p-new">${IB('bin')}Effacer</button></div>
+    <div class="inst"><div><b>Partie locale</b><span id="loc-msg">${LOC_TXT}</span></div><button class="btn" type="button" id="p-srv" title="PC du MJ uniquement — Windows. Les joueurs n'installent rien." ${isWinPC()?'':'disabled'}>${IB('server')}Télécharger le serveur</button></div>
     <div class="inst"><div><b>Application</b><span id="inst-msg">${installMsg()}</span></div><button class="btn" type="button" id="p-install" ${isStandalone()?'disabled':''}>${isStandalone()?'Installée':'Installer'}</button></div>
     <div class="actions" style="justify-content:space-between"><span class="meta">Aldebaran MJ · version ${APP_VER}</span><span style="display:flex;gap:8px">${window.__ADB?`<button class="btn ghost" type="button" id="p-home" title="Revenir au choix Aventurier / Maître du destin">${IB('home')}Accueil</button>`:''}<button class="btn ghost" type="button" id="p-guide">${IB('help')}Guide</button><button class="btn ghost" type="button" data-close>Fermer</button></span></div>`);
   $('p-new').onclick=newTable; $('p-open').onclick=()=>{ dlg.close(); openFile(); }; $('p-save').onclick=()=>{ dlg.close(); save(); }; $('p-saveas').onclick=()=>{ dlg.close(); saveAs(); };
   $('p-auto').onchange=e=>{ prefs.autosave=+e.target.value; savePrefs(); setupAutosave(); }; wakeBind();
-  $('p-install').onclick=doInstall; $('p-guide').onclick=showGuide; if($('p-home')) $('p-home').onclick=()=>{ saveLocal(true); location.href=location.pathname; }; updateSaveState();
+  $('p-srv').onclick=srvDownload; locMsg(); $('p-install').onclick=doInstall; $('p-guide').onclick=showGuide; if($('p-home')) $('p-home').onclick=()=>{ saveLocal(true); location.href=location.pathname; }; updateSaveState();
 }
 function showGuide(){
   openDialog(`<h3>Guide</h3><div class="guide">
@@ -6329,6 +6395,55 @@ function fondRefresh(){ const f=$('fond'); if(!fondHold&&f&&f.classList.contains
    tout seul), un clic sur l'onglet ouvre sa fiche.
    Rien n'est stocké sur un serveur : PeerJS sert seulement à se trouver.
    ========================================================= */
+/* =========================================================
+   PARTIE LOCALE — même interface que PeerJS, mais par le serveur local
+   (Aldebaran-Serveur.exe sur le PC du MJ) : un simple relais WebSocket,
+   sans Internet. Le reste de l'appli ne voit aucune différence.
+   ========================================================= */
+const ADB_LOCAL_PORT=4777;
+const adbLocalPage=()=>location.protocol==='http:'&&+location.port===ADB_LOCAL_PORT;
+class LPEmit{ constructor(){ this._h={}; } on(e,f){ (this._h[e]=this._h[e]||[]).push(f); return this; }
+  off(e,f){ const L=this._h[e]; if(L) this._h[e]=f?L.filter(x=>x!==f):[]; return this; }
+  emit(e,...a){ (this._h[e]||[]).slice().forEach(f=>{ try{ f(...a); }catch(x){ console.error(x); } }); } }
+class LocalConn extends LPEmit{
+  constructor(peer,cid,remote,meta){ super(); this.provider=peer; this.cid=cid; this.peer=remote; this.metadata=meta||null; this.open=false; this.peerConnection=null; this.local=true; this._done=false; }
+  send(d){ if(!this.open) return; this.provider._tx({type:'data',cid:this.cid,to:this.peer,d}); }
+  close(){ if(this._done) return; this.provider._tx({type:'close',cid:this.cid,to:this.peer}); this._end(); }
+  _end(){ if(this._done) return; this._done=true; this.open=false; this.provider.conns.delete(this.cid); this.emit('close'); } }
+class LocalPeer extends LPEmit{
+  constructor(id,opts){ super(); if(id&&typeof id==='object'){ opts=id; id=null; }
+    this.id=id||('p'+Date.now().toString(36)+Math.random().toString(36).slice(2,8)); this.url=(opts&&opts.url)||LocalPeer.url();
+    this.conns=new Map(); this.open=false; this.destroyed=false; this.disconnected=false; this.ws=null; this._q=[]; this._n=0; this._fails=0; this._go(); }
+  static url(){ return adbLocalPage()?`ws://${location.host}/ws`:`ws://127.0.0.1:${ADB_LOCAL_PORT}/ws`; }
+  _go(){ let ws; try{ ws=new WebSocket(this.url+'?id='+encodeURIComponent(this.id)+(adbLocalPage()?'':'&app='+encodeURIComponent(location.origin+location.pathname))); }catch(e){ this.disconnected=true; setTimeout(()=>this.emit('error',{type:'network'})); return; }
+    this.ws=ws; let ok=false;
+    ws.onmessage=e=>{ let m; try{ m=JSON.parse(e.data); }catch(x){ return; } if(m.type==='open') ok=true; this._rx(m); };
+    ws.onclose=()=>{ if(this.ws!==ws) return; this.ws=null; const was=this.open; this.open=false;
+      [...this.conns.values()].forEach(c=>c._end()); this.conns.clear(); this._q=[]; if(this.destroyed) return; this.disconnected=true;
+      clearTimeout(this._rt); this._rt=setTimeout(()=>this.reconnect(),Math.min(5000,700*(++this._fails)));   /* le serveur revient : on se reconnecte seul */
+      if(was||ok) this.emit('disconnected',this.id); else this.emit('error',{type:'network'}); }; }
+  reconnect(){ clearTimeout(this._rt); if(this.destroyed||this.ws) return; this.disconnected=false; this._go(); }
+  disconnect(){ const ws=this.ws; this.ws=null; this.open=false; this.disconnected=true; try{ ws&&ws.close(); }catch(e){} }
+  _tx(m){ const s=JSON.stringify(m); if(this.ws&&this.ws.readyState===1) this.ws.send(s); else this._q.push(s); }
+  _rx(m){ const c=m.cid!=null?this.conns.get(m.cid):null;
+    switch(m.type){
+      case 'open': this.open=true; this.disconnected=false; this._fails=0; { const q=this._q; this._q=[]; q.forEach(s=>{ try{ this.ws.send(s); }catch(e){} }); } this.emit('open',this.id); break;
+      case 'taken': this.destroyed=true; this.emit('error',{type:'unavailable-id'}); this.destroy(true); break;
+      case 'connect': { const k=new LocalConn(this,m.cid,m.from,m.meta); this.conns.set(m.cid,k); this.emit('connection',k);
+        k.open=true; this._tx({type:'accept',cid:m.cid,to:m.from}); setTimeout(()=>{ if(!k._done) k.emit('open'); }); break; }
+      case 'accept': if(c&&!c.open){ c.open=true; c.emit('open'); } break;
+      case 'nopeer': if(c) c._end(); this.emit('error',{type:'peer-unavailable'}); break;
+      case 'data': if(c&&c.open) c.emit('data',m.d); break;
+      case 'close': if(c) c._end(); break;
+      case 'gone': [...this.conns.values()].forEach(k=>{ if(k.peer===m.id) k._end(); }); break; } }
+  connect(to,o){ const cid=this.id+'.'+(++this._n); const k=new LocalConn(this,cid,to,o&&o.metadata); this.conns.set(cid,k); this._tx({type:'connect',cid,to,meta:k.metadata}); return k; }
+  destroy(){ if(this._dead) return; this._dead=true; this.destroyed=true; clearTimeout(this._rt); [...this.conns.values()].forEach(c=>{ try{ c.close(); }catch(e){} }); this.conns.clear();
+    const ws=this.ws; this.ws=null; this.open=false; setTimeout(()=>{ try{ ws&&ws.close(); }catch(e){} },50); this.emit('close'); } }
+/* le serveur local tourne-t-il sur ce PC ? (renvoie ses infos : adresses, joueurs) */
+async function localProbe(){ try{ const ctl=new AbortController(), t=setTimeout(()=>ctl.abort(),1800);
+    const base=adbLocalPage()?location.origin:`http://127.0.0.1:${ADB_LOCAL_PORT}`;
+    const r=await fetch(base+'/info',{cache:'no-store',signal:ctl.signal,targetAddressSpace:adbLocalPage()?undefined:'loopback'}); clearTimeout(t); const j=await r.json(); return j&&j.app==='aldebaran-local'?j:null; }catch(e){ return null; } }
+
 const PEERJS=['https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js','https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js','https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js'];
 function loadScript(urls){ return new Promise((res,rej)=>{ const go=i=>{ if(i>=urls.length){ rej(new Error('script')); return; } const s=document.createElement('script'); s.src=urls[i]; s.onload=res; s.onerror=()=>{ s.remove(); go(i+1); }; document.head.appendChild(s); }; go(0); }); }
 const loadPeer=()=>window.Peer?Promise.resolve():loadScript(PEERJS);
@@ -6347,7 +6462,8 @@ async function iceOpts(){ const o=peerOpts(); if(o.config) return o; let ice=ICE
 const CODE_CH='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const newCode=()=>Array.from({length:5},()=>CODE_CH[Math.floor(Math.random()*CODE_CH.length)]).join('');
 const peerId=code=>'aldebaran-'+String(code).toLowerCase();
-const NET={peer:null,conns:new Set(),pending:new Set(),status:'off',code:null};
+const NET={peer:null,lpeer:null,lon:false,local:null,conns:new Set(),pending:new Set(),status:'off',code:null};
+const netUp=()=>!!(NET.peer||NET.lpeer);
 const bgId=bg=>bg?bg.length+':'+bg.slice(-48):'';
 const players=()=>[...NET.conns].filter(c=>c.pid);
 
@@ -6359,26 +6475,40 @@ function netSend(m){ if(!NET.conns.size) return; NET.conns.forEach(c=>{ if(c.pid
 const PL=new Map();   // joueurs de la séance : pid → {pid,name,sheet,online}
 function netTo(pid,m){ NET.conns.forEach(c=>{ if(c.pid===pid) netSendTo(c,m); }); }
 
-function netStatus(st){ NET.status=st; const b=$('b-net'); if(!b) return;
+function netStatus(st){ if(st==='wait'&&NET.lon) st='on'; NET.status=st; const b=$('b-net'); if(!b) return;
   b.classList.toggle('on',st==='on'); b.classList.toggle('wait',st==='wait');
   const n=players().length; $('net-n').textContent=st!=='off'&&n?n:'';
   b.title=st==='off'?'Table en ligne : les joueurs se connectent depuis leur fiche Aventurier':`Table en ligne · code ${NET.code} · ${n} joueur${n>1?'s':''}`;
   renderNetBody(); }
 
+/* une connexion de joueur (en ligne ou locale : même traitement) */
+function wireConn(c){
+  NET.pending.add(c); netStatus(NET.status);
+  c.on('open',()=>{ c.seen=Date.now(); NET.pending.delete(c); NET.conns.add(c); netStatus(NET.status); });
+  c.on('iceStateChanged',st=>{ if(st==='failed'&&NET.pending.has(c)){ NET.pending.delete(c); netStatus(NET.status); toast('Un joueur n\'a pas pu se connecter (réseau bloquant) : activez le serveur relais',true); } });
+  c.on('data',d=>{ c.seen=Date.now(); if(d&&d.t==='hb') return; netIn(c,d); });
+  const gone=()=>{ if(NET.pending.delete(c)) netStatus(NET.status); if(NET.conns.delete(c)){ if(c.pid){ toast(`${c.name||'Un joueur'} a quitté la table`); playerGone(c); } netStatus(NET.status); } };
+  c.on('close',gone); c.on('error',gone); }
+/* partie locale : le serveur local tourne sur ce PC → la table y est aussi ouverte */
+async function localOpen(quiet){ if(NET.lpeer||!NET.code) return !!NET.lpeer; const info=await localProbe(); NET.local=info; if(!info) return false;
+  const p=new LocalPeer(peerId(NET.code)); NET.lpeer=p;
+  p.on('open',()=>{ if(NET.lpeer!==p) return; const first=!NET.lon; NET.lon=true; netStatus('on'); if(first&&!quiet) toast('Partie locale ouverte : les joueurs du wifi scannent le QR code'); });
+  p.on('connection',wireConn);
+  const again=()=>setTimeout(()=>{ if(NET.lpeer===p&&!p.destroyed) p.reconnect(); },2500);
+  p.on('disconnected',()=>{ if(NET.lpeer!==p) return; NET.lon=false; netStatus(NET.peer&&NET.peer.open?'on':'wait'); again(); });
+  p.on('error',e=>{ if(NET.lpeer!==p) return;
+    if(e.type==='unavailable-id'){ NET.lpeer=null; NET.lon=false; toast('Cette table est ouverte en local sur un autre onglet',true); netStatus(NET.peer?NET.status:'off'); }
+    else if(e.type==='network'){ NET.lon=false; again(); } });
+  return true; }
 async function openTable(){
-  if(NET.peer) return; netStatus('wait');
-  try{ await loadPeer(); }catch(e){ netStatus('off'); toast('Module réseau introuvable : vérifiez la connexion internet',true); return; }
+  if(netUp()) return; netStatus('wait');
   if(!S.netCode){ S.netCode=newCode(); markDirty(); }
   NET.code=S.netCode;
+  await localOpen();
+  try{ await loadPeer(); }catch(e){ if(NET.lpeer){ toast('Pas d\'internet : table ouverte en local seulement'); netStatus(NET.lon?'on':'wait'); } else { netStatus('off'); toast('Module réseau introuvable : vérifiez la connexion internet',true); } return; }
   const p=new Peer(peerId(NET.code),await iceOpts()); NET.peer=p;
   p.on('open',()=>{ if(NET.peer!==p) return; netStatus('on'); toast(`Table ouverte · code ${NET.code}`); });
-  p.on('connection',c=>{
-    NET.pending.add(c); netStatus(NET.status);
-    c.on('open',()=>{ c.seen=Date.now(); NET.pending.delete(c); NET.conns.add(c); netStatus(NET.status); });
-    c.on('iceStateChanged',st=>{ if(st==='failed'&&NET.pending.has(c)){ NET.pending.delete(c); netStatus(NET.status); toast('Un joueur n\'a pas pu se connecter (réseau bloquant) : activez le serveur relais',true); } });
-    c.on('data',d=>{ c.seen=Date.now(); if(d&&d.t==='hb') return; netIn(c,d); });
-    const gone=()=>{ if(NET.pending.delete(c)) netStatus(NET.status); if(NET.conns.delete(c)){ if(c.pid){ toast(`${c.name||'Un joueur'} a quitté la table`); playerGone(c); } netStatus(NET.status); } };
-    c.on('close',gone); c.on('error',gone); });
+  p.on('connection',wireConn);
   p.on('disconnected',()=>{ if(NET.peer===p&&!p.destroyed){ netStatus('wait'); setTimeout(()=>{ try{ if(NET.peer===p&&!p.destroyed) p.reconnect(); }catch(e){} },1500); } });
   p.on('error',e=>{ if(NET.peer!==p) return;
     if(e.type==='unavailable-id'){ toast('Ce code est déjà ouvert sur un autre appareil : fermez l\'autre table ou prenez un nouveau code',true); closeTable(); }
@@ -6386,7 +6516,7 @@ async function openTable(){
     else if(e.type==='browser-incompatible'){ toast('Ce navigateur ne gère pas la connexion directe (WebRTC)',true); closeTable(); }
     else if(e.type!=='peer-unavailable') toast('Réseau : '+e.type,true); });
 }
-function closeTable(){ const p=NET.peer; NET.peer=null; PL.forEach(P=>P.online=false); setTimeout(renderPtabs); NET.conns.forEach(c=>{ try{ c.send({t:'closed'}); c.close(); }catch(e){} }); NET.conns.clear(); if(p) try{ p.destroy(); }catch(e){} netStatus('off'); }
+function closeTable(){ const p=NET.peer, lp=NET.lpeer; NET.peer=null; NET.lpeer=null; NET.lon=false; if(lp) setTimeout(()=>{ try{ lp.destroy(); }catch(e){} },100); PL.forEach(P=>P.online=false); setTimeout(renderPtabs); NET.conns.forEach(c=>{ try{ c.send({t:'closed'}); c.close(); }catch(e){} }); NET.conns.clear(); if(p) try{ p.destroy(); }catch(e){} netStatus('off'); }
 
 /* messages reçus des joueurs */
 function netIn(c,d){ if(!d||typeof d!=='object') return;
@@ -6411,7 +6541,7 @@ function netIn(c,d){ if(!d||typeof d!=='object') return;
 function playerGone(c){ if(!c.pid) return; const P=PL.get(c.pid); if(P&&![...NET.conns].some(x=>x!==c&&x.pid===c.pid)){ P.online=false; renderPtabs();
     clearTimeout(P.bye); P.bye=setTimeout(()=>{ const Q=PL.get(P.pid); if(Q&&!Q.online){ PL.delete(P.pid); if(sheetPid===P.pid) closeSheet(); renderPtabs(); netStatus(NET.status); } },12000); } }
 /* battement de cœur : un joueur muet depuis 15 s est considéré parti (plus de joueurs fantômes) */
-setInterval(()=>{ if(!NET.peer) return; const now=Date.now();
+setInterval(()=>{ if(!netUp()) return; const now=Date.now();
   NET.conns.forEach(c=>{ if(now-(c.seen||now)>15000){ NET.conns.delete(c); try{ c.close(); }catch(e){} if(c.pid){ toast(`${c.name||'Un joueur'} a perdu la connexion`); playerGone(c); } netStatus(NET.status); }
     else netSendTo(c,{t:'hb'}); }); },4000);
 /* le jeton du joueur suit sa fiche (nom, portrait, statistiques, PV) */
@@ -6464,9 +6594,41 @@ function sheetRefresh(){ const P=PL.get(sheetPid), f=$('sp-body').querySelector(
 function spTok(P){ const img=P.sheet&&P.sheet.img; $('sp-tok').innerHTML=img?`<img src="${img}" alt="">`:`<span class="ini">${esc((P.name||'?').trim().split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase())}</span>`; }
 function closeSheet(){ sheetPid=null; $('sheetpanel').hidden=true; $('sp-body').innerHTML=''; renderPtabs(); }
 
+/* serveur local : téléchargement, état, lien et QR code pour les joueurs du wifi */
+const SRV_URL=new URL('Aldebaran-Serveur.exe',location.protocol==='https:'&&/github\.io$/.test(location.hostname)?location.href:'https://mowiss.github.io/ADB/').href;
+const isWinPC=()=>/Windows/i.test(navigator.userAgent)&&!/Phone|Mobile/i.test(navigator.userAgent);
+let LOC_TXT='Jouer sur le même wifi, même sans Internet.';
+async function locMsg(){ const e=$('loc-msg'); if(!e) return; if(!isWinPC()){ e.textContent='Serveur pour PC Windows : à installer sur le PC du MJ.'; return; }
+  const i=await localProbe(); const t=i?`Serveur lancé sur ce PC · ${i.players?i.players+' joueur'+(i.players>1?'s':'')+' connecté'+(i.players>1?'s':''):'aucun joueur connecté'}`:LOC_TXT; if($('loc-msg')) $('loc-msg').textContent=t; }
+function srvDownload(){ const a=document.createElement('a'); a.href=SRV_URL; a.download='Aldebaran-Serveur.exe'; if(new URL(SRV_URL).origin!==location.origin){ a.target='_blank'; a.rel='noopener'; } document.body.appendChild(a); a.click(); a.remove();
+  openDialog(`<h3>Serveur local</h3><div class="srvsteps">
+    <div class="ss"><i>1</i><div><b>Ouvrez Aldebaran-Serveur.exe</b> (dans vos Téléchargements). Rangez-le où vous voulez, sur le bureau par exemple.</div></div>
+    <div class="ss"><i>2</i><div><b>Première fois seulement :</b> Windows prévient qu'il ne connaît pas ce programme.<div class="mock smart"><b>Windows a protégé votre ordinateur</b><span class="lk">Informations complémentaires</span><span class="bt hl">Exécuter quand même</span></div></div></div>
+    <div class="ss"><i>3</i><div><b>Pare-feu :</b> autorisez sur le réseau privé, sinon les joueurs ne pourront pas se connecter.<div class="mock fw"><b>Pare-feu Windows</b><span><em class="ck"></em>Réseaux privés</span><span class="bt hl">Autoriser</span></div></div></div>
+    <div class="ss"><i>4</i><div>L'icône Aldebaran apparaît près de l'horloge et la table s'ouvre dans le navigateur. Si le navigateur demande l'accès aux <b>appareils du réseau local</b>, répondez <b>Autoriser</b>.</div></div>
+    </div><div class="actions"><button class="btn" type="button" data-close>OK</button></div>`,'var(--ok)');
+  dlg.querySelectorAll('[data-close]').forEach(x=>x.onclick=()=>dlg.close()); }
+const localBase=()=>adbLocalPage()?location.origin:`http://127.0.0.1:${ADB_LOCAL_PORT}`;
+const localLink=ip=>`http://${ip}:${(NET.local&&NET.local.port)||ADB_LOCAL_PORT}/?table=${NET.code}`;
+function localHTML(){
+  if(!isWinPC()&&!NET.lpeer) return '';
+  if(NET.lon&&NET.local&&!NET.local.ip) return `<div class="subttl">Partie locale <small>même wifi</small></div><div class="nlink locoff"><span>Aucun réseau wifi détecté sur ce PC</span></div>`;
+  if(NET.lon&&NET.local&&NET.local.ip){ const ips=NET.local.ips||[NET.local.ip], ip=NET.localIp&&ips.includes(NET.localIp)?NET.localIp:ips[0], L=localLink(ip);
+    return `<div class="subttl">Partie locale <small>même wifi</small></div>
+      <div class="nqr"><img id="loc-qr" alt="QR code de la partie locale" src="${localBase()}/qr.svg?t=${encodeURIComponent(L)}"></div>
+      <div class="nlink"><input readonly value="${esc(L)}" aria-label="Adresse de la partie locale">${ips.length>1?`<select class="mini" id="loc-ip" title="Carte réseau">${ips.map(x=>`<option${x===ip?' selected':''}>${x}</option>`).join('')}</select>`:''}<button class="mini" type="button" id="loc-copy">${IB('copy')}Copier</button></div>`; }
+  return `<div class="subttl">Partie locale <small>même wifi</small></div><div class="nlink locoff"><span>${NET.lpeer?'Connexion au serveur local…':'Serveur local non lancé sur ce PC'}</span>${NET.lpeer?'':`<button class="mini" type="button" id="loc-retry">Réessayer</button><button class="mini" type="button" id="loc-dl" title="PC du MJ uniquement — Windows. Les joueurs n'installent rien.">${IB('server')}Télécharger</button>`}</div>`; }
+function localWire(b){
+  const c=b.querySelector('#loc-copy'); if(c) c.onclick=()=>{ const i=c.parentNode.querySelector('input'); (navigator.clipboard?navigator.clipboard.writeText(i.value):Promise.reject()).then(()=>toast('Adresse copiée')).catch(()=>{ i.select(); document.execCommand('copy'); toast('Adresse copiée'); }); };
+  const s=b.querySelector('#loc-ip'); if(s) s.onchange=()=>{ NET.localIp=s.value; renderNetBody(); };
+  const r=b.querySelector('#loc-retry'); if(r) r.onclick=async()=>{ r.disabled=true; const ok=await localOpen(); if(!ok){ r.disabled=false; toast('Serveur local introuvable : lancez Aldebaran-Serveur.exe',true); } renderNetBody(); };
+  const d=b.querySelector('#loc-dl'); if(d) d.onclick=srvDownload; }
+
 /* fenêtre « Table en ligne » */
 function netLink(){ if(!location.protocol.startsWith('http')||!NET.code) return ''; const u=relayUrl(); return location.origin+location.pathname+'?table='+NET.code+(u?'&relay='+encodeURIComponent(u):''); }
-function netDialog(){ openDialog(`<h3>Table en ligne</h3><div id="net-body" style="display:flex;flex-direction:column;gap:14px"></div>`,'var(--ok)'); renderNetBody(); }
+function netDialog(){ if(netUp()&&!NET.lpeer&&isWinPC()) localOpen(true).then(ok=>{ if(ok) renderNetBody(); });
+  if(NET.lpeer) localProbe().then(i=>{ if(i&&JSON.stringify(i.ips)!==JSON.stringify(NET.local&&NET.local.ips)){ NET.local=i; renderNetBody(); } });
+  openDialog(`<h3>Table en ligne</h3><div id="net-body" style="display:flex;flex-direction:column;gap:14px"></div>`,'var(--ok)'); renderNetBody(); }
 function renderNetBody(){ const b=$('net-body'); if(!b||!dlg.open) return;
   if(NET.status==='off'){
     b.innerHTML=`<p>Les joueurs rejoignent la table depuis leur fiche <b>Aventurier</b>, sur téléphone ou ordinateur : onglet <b>Table</b>, puis le code. Chacun voit le plateau centré sur son jeton (de la neige « NO SIGNAL » tant que vous ne l'avez pas posé) et montre des choses avec un pointeur à sa couleur ; seul vous déplacez les jetons. Chacun apparaît dans un onglet au-dessus du bandeau bas : glissez son jeton sur la table pour le placer, cliquez l'onglet pour consulter sa fiche. Leurs jets de dés arrivent ici.</p>
@@ -6480,9 +6642,11 @@ function renderNetBody(){ const b=$('net-body'); if(!b||!dlg.open) return;
         :'<p class="meta">Ouvrez l\'appli depuis son adresse en ligne (GitHub Pages) pour obtenir un lien et un QR code à partager.</p>'}
       <div class="subttl">Joueurs connectés</div>${NET.pending.size?`<p class="meta" style="text-align:left">${NET.pending.size} joueur${NET.pending.size>1?'s':''} en cours de connexion…</p>`:''}
       <div class="nplayers">${L.length?L.map(c=>{ const t=S.tokens.find(x=>x.owner===c.pid); return `<div class="np"><i></i><b>${esc(c.name)}</b><small>${t?`${t.hp} / ${t.hpMax} PV`:''}</small></div>`; }).join(''):'<p class="meta" style="text-align:left">Personne pour l\'instant.</p>'}</div>
+      ${localHTML()}
       <div class="actions"><button class="btn ghost" type="button" id="net-new" style="margin-right:auto" title="Changer le code de la table">Nouveau code</button><button class="btn danger" type="button" id="net-close">Fermer la table</button><button class="btn" type="button" data-close>OK</button></div>`;
     $('net-close').onclick=()=>{ const k=players().length; confirmDialog('Fermer la table',`La table en ligne sera fermée${k?` et ${k} joueur${k>1?'s':''} déconnecté${k>1?'s':''}`:''}. Vous pourrez la rouvrir avec le même code.`,'Fermer la table',()=>{ closeTable(); toast('Table fermée'); }); };
     $('net-new').onclick=()=>{ confirmDialog('Nouveau code','La table est fermée puis rouverte sous un nouveau code : les joueurs connectés devront se reconnecter avec ce code.','Changer de code',()=>{ closeTable(); S.netCode=newCode(); markDirty(); openTable().then(netDialog); }); };
+    localWire(b);
     if(link){ $('net-copy').onclick=()=>{ (navigator.clipboard?navigator.clipboard.writeText(link):Promise.reject()).then(()=>toast('Lien copié')).catch(()=>{ b.querySelector('.nlink input').select(); document.execCommand('copy'); toast('Lien copié'); }); };
       loadScript(['https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js']).then(()=>{ const q=$('net-qr'); if(q&&!q.firstChild&&window.QRCode) new QRCode(q,{text:link,width:300,height:300,colorDark:'#2f3340',colorLight:'#ffffff'}); }).catch(()=>{}); }
   }
