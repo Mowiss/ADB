@@ -26,3 +26,5 @@ func runUI() {
 }
 
 func maybeInstall() bool { return false }
+
+func fixFirewall() error { return nil }

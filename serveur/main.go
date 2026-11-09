@@ -483,6 +483,18 @@ func startServer() error {
 		w.Header().Set("Cache-Control", "no-store")
 		w.Write(statusHTML)
 	})
+	mux.HandleFunc("/firewall", func(w http.ResponseWriter, r *http.Request) {
+		host, _, _ := net.SplitHostPort(r.RemoteAddr)
+		if r.Method != http.MethodPost || !net.ParseIP(host).IsLoopback() {
+			http.Error(w, "non", 403)
+			return
+		}
+		if err := fixFirewall(); err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+		io.WriteString(w, "ok")
+	})
 	mux.HandleFunc("/stop", func(w http.ResponseWriter, r *http.Request) {
 		host, _, _ := net.SplitHostPort(r.RemoteAddr)
 		if r.Method != http.MethodPost || !net.ParseIP(host).IsLoopback() {

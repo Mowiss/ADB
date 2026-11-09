@@ -64,6 +64,13 @@ select{font:600 13px Quicksand,'Segoe UI',sans-serif;border:1px solid var(--rule
 </div>
 
 <div class="card">
+<h2>Un téléphone n'arrive pas à se connecter ?</h2>
+<p class="soft" style="margin:0 0 6px">Le plus souvent, c'est le pare-feu de Windows qui bloque : il considère le wifi de la maison comme un réseau « public », ou la fenêtre d'autorisation a été fermée. Ce bouton ouvre l'accès (Windows demande une confirmation).</p>
+<div class="row"><button type="button" id="fw">Autoriser dans le pare-feu Windows</button><span class="soft" id="fwmsg" style="align-self:center"></span></div>
+<p class="soft" style="margin:12px 0 0">Si ça ne passe toujours pas : vérifiez que le téléphone est sur le même wifi que ce PC, et pas sur un wifi « invités » (qui isole les appareils). Les données mobiles du téléphone doivent laisser la place au wifi.</p>
+</div>
+
+<div class="card">
 <h2>Bon à savoir</h2>
 <ul class="soft">
 <li>Le serveur tourne en arrière-plan. Son icône est près de l'horloge de Windows (parfois cachée derrière la petite flèche ^).</li>
@@ -91,6 +98,7 @@ function draw(){
 async function poll(){ try{ const r=await fetch('/info',{cache:'no-store'}); info=await r.json(); }catch(e){ info=null; } draw(); }
 $('ips').onchange=e=>{ ip=e.target.value; draw(); };
 $('copy').onclick=()=>{ const L=link(); if(!L) return; (navigator.clipboard?navigator.clipboard.writeText(L):Promise.reject()).then(()=>{ $('copy').textContent='Adresse copiée'; setTimeout(()=>$('copy').textContent='Copier l\'adresse',1500); }).catch(()=>{}); };
+$('fw').onclick=async()=>{ $('fwmsg').textContent='Confirmez dans la fenêtre de Windows…'; try{ const r=await fetch('/firewall',{method:'POST'}); $('fwmsg').textContent=r.ok?'Fait. Réessayez depuis le téléphone.':'Autorisation refusée.'; }catch(e){ $('fwmsg').textContent='Échec.'; } };
 $('stop').onclick=async()=>{ const n=info&&info.players||0;
   if(!confirm(n?`${n} joueur(s) connecté(s). Arrêter quand même le serveur ? La partie locale s'arrêtera pour tout le monde.`:'Arrêter le serveur local ?')) return;
   try{ await fetch('/stop',{method:'POST'}); }catch(e){} info=null; draw(); };

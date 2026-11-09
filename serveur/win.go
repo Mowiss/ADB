@@ -83,6 +83,7 @@ func onReady() {
 	systray.AddSeparator()
 	st := systray.AddMenuItem("Ouvrir la page du serveur", "Adresse, QR code et joueurs connectés")
 	open := systray.AddMenuItem("Ouvrir la table du MJ", "Ouvre l'appli Aldebaran dans le navigateur")
+	fw := systray.AddMenuItem("Autoriser dans le pare-feu", "Si les téléphones n'arrivent pas à se connecter")
 	lg := systray.AddMenuItem("Journal du serveur", "Ouvre le fichier journal")
 	systray.AddSeparator()
 	quit := systray.AddMenuItem("Arrêter le serveur", "Ferme la partie locale")
@@ -121,6 +122,8 @@ func onReady() {
 				openBrowser(statusLink())
 			case <-open.ClickedCh:
 				openBrowser(mjLink())
+			case <-fw.ClickedCh:
+				fixFirewall()
 			case <-lg.ClickedCh:
 				openBrowser(filepath.Join(filepath.Dir(cacheDir), "serveur.log"))
 			case <-quit.ClickedCh:

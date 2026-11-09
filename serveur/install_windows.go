@@ -41,6 +41,7 @@ func maybeInstall() bool {
 		return false
 	}
 	shortcuts(dst)
+	fixFirewall() // une fenêtre Windows demande l'autorisation : sans elle, les téléphones ne voient pas le serveur
 	cmd := exec.Command(dst)
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	if cmd.Start() != nil {
