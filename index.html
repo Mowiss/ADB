@@ -2114,6 +2114,23 @@ $('tb-go').onclick=()=>tbJoin($('tb-code').value);
 $('tb-code').addEventListener('keydown',e=>{ if(e.key==='Enter') tbJoin($('tb-code').value); });
 $('tb-code').addEventListener('input',e=>{ const v=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,5); if(v!==e.target.value) e.target.value=v; });
 $('tb-leave').onclick=tbLeave;
+/* pas de veille pendant une partie (activé par défaut) */
+const PWAKE={lock:null};
+const pwOn=()=>ls.get('aldebaran.joueur.veille')!=='0';
+async function pwApply(){ try{
+  if(pwOn()&&NETP.want&&document.visibilityState==='visible'){ if(!PWAKE.lock&&'wakeLock' in navigator){ PWAKE.lock=await navigator.wakeLock.request('screen'); PWAKE.lock.addEventListener('release',()=>{ PWAKE.lock=null; }); } }
+  else if(PWAKE.lock){ const l=PWAKE.lock; PWAKE.lock=null; await l.release(); }
+}catch(e){} pwBtn(); }
+function pwBtn(){ const b=$('tb-wake'); if(!b) return; const on=pwOn(); b.classList.toggle('on',on); b.setAttribute('aria-pressed',on?'true':'false');
+  b.title=on?'Pas de veille : activé':'Pas de veille : désactivé'; b.hidden=!NETP.want||!('wakeLock' in navigator); }
+(()=>{ const x=$('tb-leave'); if(!x) return; const b=document.createElement('button'); b.type='button'; b.className='tb-x tb-wake'; b.id='tb-wake'; b.hidden=true;
+  b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg>';
+  b.onclick=()=>{ ls.set('aldebaran.joueur.veille',pwOn()?'0':'1'); pwApply(); };
+  x.parentNode.insertBefore(b,x);
+  const st=document.createElement('style'); st.textContent='.tb-wake{margin-right:6px;color:var(--ink-soft)}.tb-wake.on{color:var(--ok);border-color:var(--ok)}.tb-wake:hover{border-color:var(--ok);color:var(--ok)}.sheetview .tb-wake{display:none!important}';
+  document.head.appendChild(st); })();
+document.addEventListener('visibilitychange',pwApply);
+{ const _sj=tbShowJoin, _lv=tbLive; tbShowJoin=function(){ _sj.apply(this,arguments); pwApply(); }; tbLive=function(){ _lv.apply(this,arguments); pwApply(); }; }
 $('tb-code').value=ls.get('aldebaran.joueur.table')||'';
 tbStatus('off','Hors ligne');
 if(window.__adbRelay){ try{ localStorage.setItem('aldebaran.turn',window.__adbRelay); }catch(e){} window.__adbRelay=null; }
