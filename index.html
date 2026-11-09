@@ -6587,8 +6587,9 @@ function srvDownload(){ const a=document.createElement('a'); a.href=SRV_URL; a.d
   openDialog(`<h3>Serveur local</h3><div class="srvsteps">
     <div class="ss"><i>1</i><div><b>Ouvrez Aldebaran-Serveur.exe</b> (dans vos Téléchargements). Rangez-le où vous voulez, sur le bureau par exemple.</div></div>
     <div class="ss"><i>2</i><div><b>Première fois seulement :</b> Windows prévient qu'il ne connaît pas ce programme.<div class="mock smart"><b>Windows a protégé votre ordinateur</b><span class="lk">Informations complémentaires</span><span class="bt hl">Exécuter quand même</span></div></div></div>
-    <div class="ss"><i>3</i><div><b>Pare-feu :</b> autorisez sur le réseau privé, sinon les joueurs ne pourront pas se connecter.<div class="mock fw"><b>Pare-feu Windows</b><span><em class="ck"></em>Réseaux privés</span><span class="bt hl">Autoriser</span></div></div></div>
-    <div class="ss"><i>4</i><div>L'icône Aldebaran apparaît près de l'horloge et la table s'ouvre dans le navigateur. Si le navigateur demande l'accès aux <b>appareils du réseau local</b>, répondez <b>Autoriser</b>.</div></div>
+    <div class="ss"><i>3</i><div>Le serveur propose de s'<b>installer</b> : répondez Oui. Un raccourci <b>Aldebaran Serveur</b> arrive sur le bureau ; le fichier téléchargé peut ensuite être supprimé.</div></div>
+    <div class="ss"><i>4</i><div><b>Pare-feu :</b> autorisez sur le réseau privé, sinon les joueurs ne pourront pas se connecter.<div class="mock fw"><b>Pare-feu Windows</b><span><em class="ck"></em>Réseaux privés</span><span class="bt hl">Autoriser</span></div></div></div>
+    <div class="ss"><i>5</i><div>La page <b>Serveur local</b> s'ouvre : adresse et QR code pour les joueurs. Ouvrez ensuite la table comme d'habitude. Si le navigateur demande l'accès aux <b>appareils du réseau local</b>, répondez <b>Autoriser</b>.</div></div>
     </div><div class="actions"><button class="btn" type="button" data-close>OK</button></div>`,'var(--ok)');
   dlg.querySelectorAll('[data-close]').forEach(x=>x.onclick=()=>dlg.close()); }
 const localBase=()=>adbLocalPage()?location.origin:`http://127.0.0.1:${ADB_LOCAL_PORT}`;

@@ -120,109 +120,138 @@ nav.toc button{display:none;width:100%;border:0;background:none;font:600 13px Qu
 <!-- =====================================================================
      AVENTURIER
      ===================================================================== -->
-<div class="role" id="r-aventurier" data-title="Aventurier" data-lead="Votre personnage tient dans une seule page : ses statistiques, son corps, son sac et sa place à la table. Voici comment tout ça fonctionne, et ce que vous pouvez en faire.">
+<div class="role" id="r-aventurier" data-title="Aventurier" data-lead="Votre personnage tient sur une seule page : ses statistiques, son corps, son sac, son argent et sa place à la table. Voici comment tout ça fonctionne, et ce que vous pouvez en faire en partie.">
 
 <div class="chap"><h2>Les outils <span>Aventurier</span></h2>
 <p class="lead">Ce que vous avez sous les yeux, zone par zone.</p>
 
 <section class="s" id="a-fiche"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="7.5" r="3.5"/><path d="M5 20c1-4 4-6 7-6s6 2 7 6"/></svg>La fiche</h3>
-<p>À gauche, tout ce qui définit votre aventurier. En haut, le <b>portrait</b> (un clic pour choisir une image, puis la recadrer), le <b>nom</b> et la <b>race</b>.</p>
-<p>Juste en dessous, les six <b>statistiques</b> : Force, Résistance, Charisme, Savoir, Dextérité et Perception. Le grand chiffre, c'est le nombre de dés que vous lancez. Il tient déjà compte des malus : une jambe cassée, une armure lourde… Le petit dé sous le chiffre lance le jet.</p>
-<p>Enfin, le <b>décompte</b> : Points de Vie, de Charge, d'Action, d'Armure, de Tourment et d'Éveil. Les boutons − et + servent pendant la partie, quand on prend un coup ou qu'on se soigne.</p>
-<figure><img loading="lazy" src="guide/ply-fiche.webp" alt="La fiche Aventurier : personnage, statistiques, décompte et silhouette"><figcaption>Kaëla a la jambe gauche cassée : sa Force passe de 3 à 2 dés, et la jambe est rouge sur la silhouette.</figcaption></figure>
-<div class="tip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg><div>PV maximum = Résistance + 5. Sous 5 PV, on est « pas top top » (le seuil de réussite monte d'un cran) ; à 0, on est étourdi ; à −1, hors jeu.</div></div>
+<p>La colonne de gauche, c'est la carte d'identité de votre aventurier. Elle se lit de haut en bas, dans l'ordre où on en a besoin pendant une partie.</p>
+<p><b>Personnage.</b> Le rond, c'est le portrait : cliquez dessus pour choisir une image sur votre appareil, puis recadrez-la en la faisant glisser. Le nom se tape directement sur la ligne, et la race se choisit dans la liste. La race compte : elle apporte un trait (une petite bulle « ADN » apparaît autour du corps), qui peut modifier vos statistiques.</p>
+<p><b>Statistiques.</b> Six cercles : Force, Résistance, Charisme, Savoir, Dextérité et Perception. Le grand chiffre est le nombre de dés que vous lancez vraiment. Il tient déjà compte de tout ce qui vous gêne : une fracture divise la statistique par deux, une armure lourde peut retirer un dé (un petit bouclier le signale alors sur le cercle). Si le chiffre est rouge, c'est qu'un malus s'applique. Le petit dé sous le chiffre lance le jet.</p>
+<p><b>Décompte.</b> Six compteurs qui bougent pendant la partie :</p>
+<ul>
+<li><b>Points de Vie</b> (le cœur) : maximum = Résistance + 5. Sous 5, vous êtes « pas top top » et le seuil de réussite monte d'un cran. À 0, vous êtes étourdi ; à −1, hors jeu.</li>
+<li><b>Points de Charge</b> : ce que vous pouvez porter. Chaque objet du sac pèse ; au-delà, plus rien ne rentre.</li>
+<li><b>Points d'Action</b> : combien de choses vous pouvez faire dans un tour, calculés depuis la Dextérité.</li>
+<li><b>Points d'Armure</b> : la somme des protections que vous portez.</li>
+<li><b>Points de Tourment</b> : tous les 10, chaque statistique perd un point. On les gagne quand le scénario devient dur à vivre.</li>
+<li><b>Points d'Éveil</b> : à 10, le cadran s'allume.</li>
+</ul>
+<p>Les boutons − et + sous les compteurs servent en cours de partie : un coup reçu, une potion bue, un moment de terreur.</p>
+<figure><img loading="lazy" src="guide/ply-fiche.webp" alt="La fiche Aventurier : personnage, statistiques, décompte et silhouette"><figcaption>Kaëla a la jambe gauche cassée : sa Force passe de 3 à 2 dés, et la jambe apparaît en rouge sur la silhouette.</figcaption></figure>
+<p>Tout en haut, le compteur de <b>Bastos</b> (la monnaie d'Aldebaran) : un clic pour gagner ou dépenser, ou pour mettre de l'argent à l'abri dans la Quantum Bank.</p>
 </section>
 
 <section class="s" id="a-corps"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="4.5" r="2"/><path d="M12 7v7M6 9.5h12M12 14l-3 7M12 14l3 7"/></svg>Le corps</h3>
-<p>La silhouette au centre est vivante. <b>Un clic sur une partie du corps la fracture</b>, un second clic la soigne. Chaque zone touche une statistique : la tête la Perception, le torse la Résistance, les bras la Dextérité, les jambes la Force. La statistique est divisée par deux tant que la fracture est là.</p>
-<p>Autour, deux arcs : <b>Équipement</b> à gauche (ce que vous tenez et portez) et <b>Amélioration</b> à droite (cybernétique, mutations, particularités). Un clic sur une icône ouvre sa description, avec « Utiliser » quand c'est possible.</p>
-<p>Le bouton <b>+</b> en haut ajoute un <b>effet</b> : un bonus, un malus, un état. Chaque effet devient une petite bulle qui tourne doucement autour du personnage ; passez dessus pour la lire, la modifier ou la retirer.</p>
+<p>La silhouette au centre n'est pas là pour décorer : elle réagit au clic.</p>
+<p><b>Les fractures.</b> Un clic sur une partie du corps la casse, un second clic la soigne. Six zones, chacune liée à une statistique : la tête à la Perception, le torse à la Résistance, chaque bras à la Dextérité, chaque jambe à la Force. Tant que la zone est cassée, ses os passent au rouge et la statistique est divisée par deux. Deux fractures sur la même statistique (les deux jambes, par exemple) ne la divisent qu'une fois : on n'est pas plus lent avec deux jambes cassées qu'avec une, on est juste très malheureux.</p>
+<p><b>Les arcs.</b> Le grand cercle porte deux arcs. À gauche, <b>Équipement</b> : les icônes de ce que vous tenez en main et portez sur vous. À droite, <b>Amélioration</b> : la cybernétique implantée, les mutations, les particularités. Un clic sur une icône ouvre sa fiche : la zone du corps, les dés, la description, et un bouton <b>Utiliser</b> quand l'objet s'utilise (une seringue, un médikit).</p>
+<p><b>Les effets.</b> Le gros <b>+</b> en haut du cercle ajoute un effet : un bonus temporaire, un malus, un état (empoisonné, aveuglé…). Chaque effet devient une petite bulle qui tourne lentement autour du personnage. Passez dessus : les bulles s'arrêtent et une infobulle explique l'effet, avec Modifier et Retirer. Les fractures et le trait de race y apparaissent aussi.</p>
 </section>
 
 <section class="s" id="a-inventaire"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M3.5 7.5L12 3l8.5 4.5v9L12 21l-8.5-4.5z"/><path d="M3.5 7.5L12 12l8.5-4.5M12 12v9"/></svg>L'inventaire</h3>
-<p>Les onglets du bord droit ouvrent les volets, un à la fois. L'<b>Inventaire</b> liste tout ce que vous transportez, avec le poids en haut (ici 0 / 5 PC). Pour chaque objet : la statistique qu'il utilise, le bonus de dés, le seuil, le poids.</p>
+<p>Le bord droit de l'écran porte une colonne d'onglets : Inventaire, Jet libre, Journal, Quantum Bank, Map et Table. Chacun ouvre un volet ; un seul à la fois, et un clic sur l'onglet actif le referme.</p>
+<p>L'<b>Inventaire</b> liste tout ce que vous transportez. En haut, la charge utilisée sur la charge maximale (par exemple 3 / 5 PC). Chaque ligne montre la statistique utilisée par l'objet, le bonus de dés, le seuil de réussite, son poids, et pour une arme, ses dégâts.</p>
 <figure><img loading="lazy" src="guide/ply-inventaire.webp" alt="Le volet Inventaire"></figure>
-<p>Le <b>+</b> ouvre deux choix : le <b>Catalogue</b> (près de 200 objets prêts à l'emploi) ou <b>Créer un objet</b> sur mesure. Tout ce que vous créez part aussi dans le catalogue, pour vos autres personnages.</p>
-<figure class="sm"><img loading="lazy" src="guide/ply-ajouter.webp" alt="Ajouter : catalogue ou créer un objet"></figure>
-<ul>
-<li><b>Équiper</b> : l'étiquette bleue (Rangée, Non portée…) choisit où va l'objet : main gauche, main droite, deux mains, corps. Une arme à deux mains occupe les deux poings.</li>
-<li><b>Lire la description</b> : le petit (i) au bout de la ligne.</li>
-<li><b>Se débarrasser d'un objet</b> : glissez-le sur le + qui devient une poubelle. Il reste au catalogue.</li>
-<li><b>Le mettre au coffre</b> : pendant le glisser, l'icône du coffre apparaît à côté de la poubelle.</li>
-</ul>
+<p><b>Ajouter un objet.</b> Le bouton <b>+</b> propose deux chemins. Le <b>Catalogue</b> contient près de 200 objets prêts à l'emploi, du couteau rouillé au fusil à plasma : on cherche, on clique, c'est dans le sac. <b>Créer un objet</b> ouvre une fiche vierge pour inventer le vôtre : arme, armure, soin, sac, cybernétique, mutation ou particularité, avec sa statistique, ses dés et son poids. Tout ce que vous créez rejoint le catalogue, et vous le retrouverez pour vos autres personnages.</p>
+<p><b>Équiper.</b> L'étiquette bleue de chaque ligne (« Rangée », « Non portée »…) choisit où va l'objet : main gauche, main droite, les deux mains, le corps. Une arme à deux mains occupe les deux poings : impossible d'en tenir une autre. Ce qui est équipé apparaît en icône sur l'arc Équipement.</p>
+<p><b>Les petits gestes.</b> Le (i) au bout d'une ligne déplie la description. Pour se débarrasser d'un objet, on le glisse sur le + du haut, qui devient une poubelle (l'objet reste au catalogue). Pendant ce glisser, une icône de coffre apparaît à côté : lâchez-y l'objet pour le mettre à la Quantum Bank, où il ne pèse plus rien.</p>
+<div class="tip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg><div>Une armure peut changer une statistique (DEX −1 pour une armure lourde, par exemple). L'effet s'applique seulement quand elle est portée.</div></div>
 </section>
 
 <section class="s" id="a-jet"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M12 2.5L2.5 10 4 15.5 12 21.5l8-6 1.5-5.5z"/><path d="M12 2.5L8 12l4 3.5 4-3.5z"/></svg>Les dés</h3>
-<p>Aldebaran se joue avec une poignée de <b>D10</b>. Chaque dé qui atteint le seuil (8 par défaut) est une <b>réussite</b>. Un 10 est un critique, un 1 un échec critique.</p>
-<p>Le plus simple : cliquez sur le dé d'une statistique. Le bon nombre de dés part tout seul, et le résultat s'affiche en grand.</p>
+<p>Aldebaran se joue avec une poignée de <b>dés à dix faces</b>. On lance autant de dés que la statistique, et chaque dé qui atteint le <b>seuil</b> (8 par défaut) compte comme une <b>réussite</b>. Un 10 est un critique, un 1 un échec critique. Plus vous avez de réussites, mieux ça se passe ; c'est le maître du destin qui dit combien il en faut.</p>
+<p>Le plus simple : cliquez sur le petit dé d'une statistique. Le bon nombre de dés part tout seul, avec les malus déjà comptés, et le résultat s'affiche en grand avec les dés réussis en vert et les échecs critiques en rouge. « Relancer » refait le même jet.</p>
 <figure class="sm"><img loading="lazy" src="guide/ply-lancer.webp" alt="Un jet de Dextérité : 5 dés, 1 succès"></figure>
-<p>Pour un jet sur mesure (« lance 4 dés, seuil 7 »), ouvrez le volet <b>Jet libre</b> : nombre de dés, seuil, Lancer. Les derniers jets restent listés en dessous.</p>
-<figure><img loading="lazy" src="guide/ply-jet.webp" alt="Le volet Jet libre"></figure>
+<p>Pour un jet hors statistique (« lance 4 dés, seuil 7 »), ouvrez le volet <b>Jet libre</b> : réglez le nombre de dés et le seuil avec − et +, puis Lancer. Les derniers jets restent listés en dessous, avec l'heure, pour vérifier en cas de doute.</p>
+<p>Quand vous êtes connecté à une table, chaque jet part aussi chez le maître du destin et s'affiche en bulle au-dessus de votre jeton, pour tout le monde.</p>
 </section>
 
 <section class="s" id="a-journal"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M9 3v18M12 8h4M12 12h4"/></svg>Journal, banque et carte</h3>
-<p>Le <b>Journal</b> garde vos notes de partie : un nom, un indice, une adresse. « Ajouter une entrée » et c'est noté.</p>
-<p>La <b>Quantum Bank</b> sert de coffre-fort. On y dépose des Bastos (depuis le compteur de Bastos en haut, « Épargner ») et des objets qu'on ne veut pas porter : au coffre, ils ne pèsent plus rien. « Retirer » rend l'argent au portefeuille.</p>
-<figure class="duo"><img loading="lazy" src="guide/ply-journal.webp" alt="Le Journal"><img loading="lazy" src="guide/ply-bank.webp" alt="La Quantum Bank"><figcaption>Le Journal et la Quantum Bank.</figcaption></figure>
-<p>La <b>Map</b> ouvre la carte du monde d'Aldebaran, avec un lien pour la voir en plein écran.</p>
+<p><b>Le Journal</b> est votre carnet de notes de partie. « Ajouter une entrée », et vous notez le nom du marchand, l'indice trouvé dans la cave, l'adresse du contact. Les entrées se gardent avec la fiche, d'une séance à l'autre.</p>
+<p><b>La Quantum Bank</b> est un coffre-fort. On y met deux choses :</p>
+<ul>
+<li><b>des Bastos</b> : depuis le compteur de Bastos en haut de l'écran, « Épargner » les dépose ; dans la banque, « Retirer » les rend au portefeuille. L'argent à la banque ne se perd pas si on vous détrousse.</li>
+<li><b>des objets</b> : glissés depuis l'inventaire sur l'icône du coffre. Au coffre, ils ne pèsent plus sur votre charge. L'icône de l'inventaire, dans la banque, permet de les reprendre.</li>
+</ul>
+<p><b>La Map</b> affiche la carte du monde d'Aldebaran, avec un lien pour l'ouvrir en plein écran et s'y promener.</p>
 </section>
 
 <section class="s" id="a-table"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>La table</h3>
-<p>L'onglet <b>Table</b> vous relie au maître du destin. Tapez le code qu'il vous donne, « Rejoindre », et c'est tout : votre fiche lui est envoyée, et vous voyez le plateau.</p>
-<figure><img loading="lazy" src="guide/ply-table-code.webp" alt="Rejoindre une table avec un code"></figure>
-<p>Une fois connecté, la caméra suit votre jeton. Tant que le maître du destin ne l'a pas posé sur la carte, vous voyez de la neige « NO SIGNAL » : c'est normal, il vous fait entrer en scène quand il le décide.</p>
+<p>L'onglet <b>Table</b> vous relie au maître du destin. Il vous donne un code de cinq lettres : tapez-le, « Rejoindre », et c'est tout. Il peut aussi vous envoyer un lien ou vous montrer un QR code, qui font la même chose sans rien taper. L'en-tête affiche l'étape en cours (1/3, 2/3, 3/3), puis le code en vert une fois connecté.</p>
+<p>Votre fiche part chez le maître du destin et reste à jour en direct : il voit vos PV, vos statistiques, votre sac. Il ne peut pas la modifier, sauf vos PV quand vous prenez un coup. Vous le verrez alors arriver sur votre fiche.</p>
+<p>Ensuite, vous voyez le plateau, avec la caméra centrée sur votre jeton. Tant que le maître du destin ne l'a pas posé sur la carte, l'écran affiche de la neige « NO SIGNAL » : c'est normal, c'est lui qui vous fait entrer en scène.</p>
 <figure><img loading="lazy" src="guide/ply-table.webp" alt="La vue Table : le plateau centré sur votre jeton"></figure>
 <ul>
-<li><b>Montrer quelque chose</b> : cliquez ou glissez sur la carte, tout le monde voit votre pointeur, à votre couleur.</li>
-<li><b>Parler</b> : le bouton rond en bas à droite envoie un petit message, qui s'affiche en bulle au-dessus de votre jeton.</li>
-<li><b>Pas de veille</b> : le soleil dans l'en-tête empêche l'écran de s'éteindre pendant la partie (activé par défaut).</li>
-<li><b>Quitter</b> : la croix.</li>
+<li><b>Montrer quelque chose</b> : cliquez ou glissez sur la carte. Tout le monde voit votre pointeur, à votre couleur. Seul le maître du destin déplace les jetons.</li>
+<li><b>Parler</b> : le bouton rond en bas à droite ouvre une ligne de texte. Votre message s'affiche en bulle au-dessus de votre jeton, chez tous les joueurs.</li>
+<li><b>Lire les messages du maître du destin</b> : ils arrivent en bulle en haut de l'écran.</li>
+<li><b>Pas de veille</b> : le soleil dans l'en-tête empêche l'écran de s'éteindre pendant la partie. Il est vert quand c'est actif, ce qui est le cas par défaut.</li>
+<li><b>Quitter</b> : la croix. Votre jeton reste sur la carte du maître du destin, votre onglet passe hors ligne.</li>
 </ul>
+<p>Si la connexion saute (tunnel, wifi capricieux, téléphone en veille), l'appli se reconnecte toute seule, sans limite, et le maître du destin vous renvoie tout l'état de la partie. Vous ne perdez rien.</p>
 </section>
 </div>
 
 <div class="chap"><h2>Les options <span>Aventurier</span></h2>
 <p class="lead">Les réglages, en haut à droite (la petite roue).</p>
 <section class="s" id="a-sauvegarde"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3M8 21v-7h8v7"/></svg>Sauvegarder son personnage</h3>
-<p>Votre fiche se garde dans un <b>dossier</b> de votre ordinateur : un fichier <b>.adb</b> par personnage, plus un catalogue commun pour vos objets. Choisissez le dossier une fois, puis <kbd>Ctrl</kbd>+<kbd>S</kbd> réécrit la fiche. <kbd>Ctrl</kbd>+<kbd>Maj</kbd>+<kbd>S</kbd> enregistre ailleurs ou sous un autre nom.</p>
-<p>La <b>sauvegarde automatique</b> se règle dans les Paramètres (toutes les 30 s, 1 min…). Sur Firefox et Safari, qui ne savent pas écrire dans un dossier, la fiche se télécharge à la place.</p>
-<div class="tip warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9.5 17h-19z"/><path d="M12 10v4.5M12 17.5v.3"/></svg><div>Gardez votre fichier .adb sous la main : c'est lui qui vous permet de retrouver votre personnage sur un autre appareil, ou en partie locale chez le maître du destin.</div></div>
+<p>Votre personnage vit dans un <b>dossier</b> de votre ordinateur. On le choisit une fois (« Enregistrer dans un dossier… »), et l'appli s'en souvient. Dedans : un fichier <b>.adb</b> par personnage, et un fichier catalogue commun où vont tous les objets que vous créez.</p>
+<ul>
+<li><kbd>Ctrl</kbd>+<kbd>S</kbd> réécrit la fiche dans son dossier.</li>
+<li><kbd>Ctrl</kbd>+<kbd>Maj</kbd>+<kbd>S</kbd> enregistre ailleurs, ou sous un autre nom (pratique pour garder une version « avant la grosse bagarre »).</li>
+<li>« Ouvrir un dossier… » liste les personnages qu'il contient : un clic pour reprendre l'un d'eux.</li>
+<li>La <b>sauvegarde automatique</b> se règle dans les Paramètres : toutes les 30 secondes, toutes les minutes… La fiche est aussi gardée dans le navigateur.</li>
+</ul>
+<p>Sur Firefox et Safari, qui ne savent pas écrire dans un dossier, l'enregistrement télécharge le fichier .adb à la place.</p>
+<div class="tip warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9.5 17h-19z"/><path d="M12 10v4.5M12 17.5v.3"/></svg><div>Gardez votre fichier .adb sous la main : c'est lui qui vous permet de retrouver votre personnage sur un autre appareil, ou en partie locale chez le maître du destin. Pour le charger, passez par les Paramètres.</div></div>
 </section>
 <section class="s" id="a-reglages"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></svg>Les autres réglages</h3>
 <ul>
-<li><b>Empêcher la mise en veille de l'écran</b> : pratique quand la fiche reste ouverte sur la table toute la soirée.</li>
-<li><b>Installer</b> : Aldebaran devient une vraie appli, avec son icône, qui s'ouvre même sans Internet.</li>
-<li><b>Accueil</b> : revenir au choix Aventurier / Maître du destin.</li>
+<li><b>Empêcher la mise en veille de l'écran</b> : la fiche reste allumée toute la soirée, même posée sur la table. Pendant une partie connectée, le soleil de l'onglet Table s'en occupe déjà.</li>
+<li><b>Installer</b> : Aldebaran devient une vraie appli, avec son icône sur le bureau ou l'écran d'accueil, et elle s'ouvre même sans Internet. Sur iPhone, c'est dans le menu Partager de Safari, « Sur l'écran d'accueil ».</li>
+<li><b>Accueil</b> : revenir à l'écran de départ, pour passer côté maître du destin.</li>
+<li><b>Guide</b> : cette page.</li>
 </ul>
 </section>
-<section class="s" id="a-mobile"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.2"/><path d="M11 18.5h2"/></svg>Sur téléphone</h3>
-<p>Tout marche aussi au téléphone. En portrait, la fiche se lit de haut en bas et les onglets restent sur le bord droit. Tournez-le en <b>paysage</b> pendant la partie : la table prend tout l'écran, avec une fiche express à gauche (PV et statistiques, un clic pour lancer).</p>
-<figure class="duo"><img loading="lazy" src="guide/ply-mobile.webp" alt="La fiche sur téléphone, en portrait" style="max-width:300px"><img loading="lazy" src="guide/ply-paysage.webp" alt="La table sur téléphone, en paysage"><figcaption>En portrait, la fiche. En paysage, la table et la fiche express.</figcaption></figure>
+<section class="s" id="a-mobile"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.2"/><path d="M11 18.5h2"/></svg>Sur téléphone et tablette</h3>
+<p>Tout fonctionne aussi au doigt. En <b>portrait</b>, la fiche se lit de haut en bas et les onglets restent sur le bord droit.</p>
+<p>En <b>paysage</b>, pendant une partie, l'écran se réorganise pour jouer : la table prend toute la place, et une <b>fiche express</b> s'affiche à gauche, avec vos PV (− et +) et vos six statistiques. Un appui sur une statistique lance le jet. À droite, quelques boutons ouvrent la fiche complète, l'inventaire et le jet libre.</p>
+<figure><img loading="lazy" src="guide/ply-paysage.webp" alt="La table sur téléphone, en paysage, avec la fiche express"></figure>
+<p>Sur tablette en paysage, la table s'installe au centre, et un sélecteur Corps / Table permet de passer de l'un à l'autre.</p>
 </section>
 </div>
 
 <div class="chap"><h2>Ce que vous pouvez faire <span>Aventurier</span></h2>
 <p class="lead">Quelques situations de jeu, pas à pas.</p>
-<section class="s" id="a-creer"><h3>Créer un personnage en cinq minutes</h3>
+<section class="s" id="a-creer"><h3>Créer un personnage</h3>
 <ol class="steps">
-<li>Donnez-lui un nom et choisissez sa race.</li>
-<li>Répartissez ses statistiques avec le maître du destin.</li>
-<li>Ajoutez un portrait (un clic sur le rond).</li>
-<li>Remplissez son sac depuis le <b>Catalogue</b>, et équipez son arme.</li>
-<li><kbd>Ctrl</kbd>+<kbd>S</kbd> : choisissez un dossier, c'est enregistré.</li>
+<li>Donnez-lui un nom et choisissez sa race. Regardez la bulle de trait qui apparaît autour du corps : elle dit ce que la race apporte.</li>
+<li>Répartissez ses statistiques avec le maître du destin. Les compteurs (PV, charge, action) se calculent tout seuls.</li>
+<li>Ajoutez un portrait : un clic sur le rond, une image, un recadrage.</li>
+<li>Remplissez son sac depuis le <b>Catalogue</b>, en surveillant la charge, et équipez son arme dans ses mains.</li>
+<li><kbd>Ctrl</kbd>+<kbd>S</kbd> : choisissez un dossier. Le personnage est à l'abri.</li>
 </ol>
 </section>
 <section class="s" id="a-blesse"><h3>Prendre un coup, se soigner</h3>
-<p>Le maître du destin peut changer vos PV de son côté : vous le voyez arriver sur votre fiche. Si on vous casse un bras, cliquez sur le bras : la Dextérité est divisée par deux, et un second clic la rend quand c'est soigné.</p>
+<p>Quand vous êtes touché, baissez vos PV avec le −, ou laissez faire le maître du destin : s'il change vos PV de son côté, vous le voyez arriver sur votre fiche, avec un petit message.</p>
+<p>Si on vous casse un bras, cliquez sur le bras. La Dextérité est divisée par deux, le chiffre passe au rouge, et une bulle « Fracture » rejoint les effets. Le jour où c'est soigné, un second clic sur le bras (ou « Soigner » dans la bulle) rend tout.</p>
+<p>Pour un soin, utilisez l'objet : un clic sur son icône dans l'arc Équipement, puis « Utiliser ».</p>
 </section>
 <section class="s" id="a-coffre"><h3>Ouvrir un coffre, prendre un objet</h3>
-<p>Sur la table, certains objets sont cachés dans un coffre. Cliquez dessus : une bulle « Ouvrir ? » apparaît. Ouvrez-le, l'objet sort en flottant dans un halo de lumière.</p>
+<p>Sur la table, certains objets sont cachés dans un coffre. Cliquez dessus : une bulle « Ouvrir ? » apparaît. Ouvrez-le : l'objet sort du coffre en flottant, dans un halo de lumière, et tout le monde le voit.</p>
 <figure><img loading="lazy" src="guide/ply-coffre.webp" alt="Un coffre sur la table : Ouvrir ?"></figure>
-<p>Cliquez ensuite sur l'objet puis <b>Prendre</b> : il file droit dans votre inventaire. Si votre sac est plein, l'objet tremble en rouge avec « Plus de place ». Faites de la place, ou passez par la Quantum Bank.</p>
+<p>Cliquez ensuite sur l'objet, puis <b>Prendre</b> : il file droit dans votre inventaire et disparaît de la carte. Si votre sac est trop lourd, l'objet tremble en rouge avec « Plus de place » : allégez-vous (un objet au coffre de la Quantum Bank, par exemple), puis réessayez.</p>
 </section>
 <section class="s" id="a-parler"><h3>Se faire entendre à la table</h3>
-<p>Vos jets de dés s'affichent tout seuls en bulle au-dessus de votre jeton : l'icône du dé et votre nombre de réussites (le trophée), ou le pion quand c'est raté. Le maître du destin, lui, envoie des messages en haut de l'écran.</p>
-<figure class="sm"><img loading="lazy" src="guide/ply-bulles.webp" alt="Bulle de jet au-dessus du jeton et message du maître du destin"></figure>
+<p>Trois façons de communiquer, sans quitter la carte :</p>
+<ul>
+<li><b>Vos jets</b> s'affichent tout seuls en bulle au-dessus de votre jeton : l'icône du dé et votre nombre de réussites avec un trophée, ou un pion quand c'est raté.</li>
+<li><b>Vos messages</b> : le bouton rond en bas à droite, une phrase, Entrée. Elle s'affiche dans la même bulle.</li>
+<li><b>Votre pointeur</b> : cliquez sur la carte pour montrer la porte, le coffre, l'ennemi.</li>
+</ul>
+<p>Le maître du destin, lui, peut vous écrire en haut de l'écran : à toute la table, ou à vous seul.</p>
 </section>
 </div>
 </div>
@@ -230,96 +259,108 @@ nav.toc button{display:none;width:100%;border:0;background:none;font:600 13px Qu
 <!-- =====================================================================
      MAÎTRE DU DESTIN
      ===================================================================== -->
-<div class="role" id="r-mj" data-title="Maître du destin" data-lead="La table de jeu : une carte que vous dessinez, des MOBs, des trésors, des scènes qui s'enchaînent, et vos joueurs connectés depuis leur fiche.">
+<div class="role" id="r-mj" data-title="Maître du destin" data-lead="La table de jeu : une carte que vous dessinez en quelques gestes, des MOBs tirés du bestiaire, des trésors à trouver, des scènes qui s'enchaînent, et vos joueurs connectés depuis leur fiche.">
 
 <div class="chap"><h2>Les outils <span>MJ</span></h2>
-<p class="lead">Le plateau au centre, les outils à gauche, la partie en bas.</p>
+<p class="lead">Le plateau au centre, les outils de création à gauche, la partie en bas.</p>
 
 <section class="s" id="m-plateau"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>Le plateau</h3>
-<figure><img loading="lazy" src="guide/mj-plateau.webp" alt="Le plateau du maître du destin"><figcaption>Une scène complète : une rivière, un pont, une auberge, une forêt, des MOBs et deux joueurs.</figcaption></figure>
-<p>Le plateau est infini. Une case de la grille vaut un mètre, la taille d'un jeton.</p>
+<figure><img loading="lazy" src="guide/mj-plateau.webp" alt="Le plateau du maître du destin"><figcaption>Une scène complète : une rivière et son pont, une auberge avec un coffre, une forêt, des MOBs et deux personnages.</figcaption></figure>
+<p>Le plateau est infini et quadrillé. <b>Une case vaut un mètre</b>, la taille d'un jeton : c'est la même échelle partout, pour les dessins, les mesures et les cartes importées.</p>
 <ul>
-<li><b>Se déplacer</b> : glisser dans le vide (ou clic molette). Au doigt, glisser à un doigt, pincer pour zoomer.</li>
-<li><b>Zoomer</b> : la molette, vers le curseur. <kbd>0</kbd> recentre tout.</li>
-<li><b>Attirer l'attention</b> : un clic droit sur la carte lance un signal rouge que tous les joueurs voient.</li>
+<li><b>Se déplacer</b> : glisser dans le vide avec la souris, ou avec le clic molette. Au doigt, glisser à un doigt.</li>
+<li><b>Zoomer</b> : la molette, qui zoome vers le curseur ; au doigt, pincer. <kbd>0</kbd> recentre tout.</li>
+<li><b>Attirer l'attention</b> : un clic droit sur la carte fait pulser un signal rouge, que tous les joueurs voient.</li>
 </ul>
-<p>Dans la barre du haut : les flèches de scène et le bouton <b>scénario</b> à gauche ; à droite, <b>annuler / rétablir</b>, la <b>table en ligne</b>, la <b>vue joueur</b> (second écran), le plein écran et les paramètres.</p>
+<p><b>La barre du haut.</b> À gauche, les flèches pour passer d'une scène à l'autre, le compteur de scènes et le bouton <b>scénario</b>. À droite : annuler et rétablir, la <b>table en ligne</b> (pour connecter les joueurs), la <b>vue joueur</b> (une fenêtre pour un second écran), le plein écran, et les paramètres.</p>
+<p><b>La colonne de gauche</b> se lit en deux groupes. <b>CRÉA</b>, pour fabriquer la scène : Dessin, MOBs, Items, Fond. <b>JEU</b>, pour la mener : Notes, Jet libre, Butin, Map. Chaque bouton ouvre un volet qui glisse sous la colonne ; <kbd>Échap</kbd> le referme.</p>
 </section>
 
 <section class="s" id="m-dessin"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-4L16 5l3 3L8 19z"/><path d="M14 7l3 3"/></svg>Dessin <kbd>D</kbd></h3>
-<p>Le premier outil du groupe <b>CRÉA</b>. Tout en haut : la <b>Main</b> (déplacer sans dessiner), la <b>Mesure</b> <kbd>M</kbd>, la <b>Gomme</b>, et « Tout effacer ». Juste dessous, la <b>largeur</b> du tracé, en mètres.</p>
+<p>Le volet Dessin est votre boîte à crayons. Tout en haut, quatre outils de base : la <b>Main</b> (pour déplacer la vue sans rien dessiner), la <b>Mesure</b> <kbd>M</kbd> (on tire une ligne, la distance s'affiche en mètres, et les joueurs la voient aussi), la <b>Gomme</b> (on passe sur un tracé pour l'effacer) et « Tout effacer ». Juste dessous, la <b>largeur</b> du prochain tracé, en mètres.</p>
 <figure><img loading="lazy" src="guide/mj-dessin.webp" alt="Le volet Dessin"></figure>
+<p><b>Terrain.</b> On peint à main levée, d'un seul geste :</p>
 <ul>
-<li><b>Terrain</b> : chemin (tracé libre ou en ligne droite, de 1 à 5 m), eau, feuillage, prairie, désert, plancher et murs. On peint à main levée ; les murs se posent clic par clic, un clic sur le dernier point les termine.</li>
-<li><b>Ouvertures</b> : porte, porte secrète, escalier, pont. On les tire d'un bord à l'autre.</li>
-<li><b>Annotations</b> : du texte et des flèches.</li>
+<li><b>Chemin libre</b> suit votre main ; <b>Chemin droit</b> pose des segments clic par clic. Un chemin fait de 1 à 5 mètres de large.</li>
+<li><b>Eau</b> pour les rivières et les lacs (avec ses vaguelettes), <b>Feuillage</b> pour les forêts, <b>Prairie</b> et <b>Désert</b> pour les étendues.</li>
+<li><b>Plancher</b> pour les intérieurs, <b>Mur</b> pour les cloisons : les murs se posent clic par clic, et un clic sur le dernier point (ou Entrée) les termine.</li>
 </ul>
-<p>Plus bas, les <b>pictos</b>, rangés par famille : bâtiments, moderne, nature, architecture, lumières. Un clic pour choisir, un clic sur la carte pour poser. Ensuite, un picto se comporte comme un jeton : on le déplace, on l'agrandit, on le retire.</p>
-<figure><img loading="lazy" src="guide/mj-dessin-pictos.webp" alt="Les pictos du volet Dessin"></figure>
-<div class="tip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg><div>Certains pictos sont vivants : les arbres bougent un peu, les moulins et les éoliennes tournent, la fontaine coule, et les feux de camp crachent des braises.</div></div>
+<p><b>Ouvertures.</b> Porte, porte secrète, escalier et pont : on les tire d'un bord à l'autre, ils prennent la bonne orientation tout seuls. <b>Annotations</b> : du texte libre et des flèches, pour noter un nom de lieu ou montrer un chemin.</p>
+<p><b>Les pictos.</b> Plus bas, plus d'une centaine de dessins rangés par famille : bâtiments (église, moulin, auberge, tente…), moderne (immeubles, usine, éolienne…), nature, architecture (statues, fontaine, banc…) et lumières. Un clic pour en choisir un, un clic sur la carte pour le poser. Ensuite, un picto se comporte comme un jeton : on le déplace, on l'agrandit, on le retire. Certains sont vivants : les arbres bougent un peu, les moulins et les éoliennes tournent, la fontaine coule, et les feux crachent des braises.</p>
+<div class="tip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg><div>Sur le fond uni, les dessins prennent des tons bleu-gris clairs, lisibles sans fatiguer. Sur les fonds parchemin, herbe ou sable, ils gardent leur aspect « carte à l'encre ».</div></div>
 </section>
 
 <section class="s" id="m-mobs"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 3c-4.4 0-7.5 3-7.5 7 0 2.6 1.3 4.2 3 5v3h9v-3c1.7-.8 3-2.4 3-5 0-4-3.1-7-7.5-7z"/><circle cx="9" cy="11" r="1.5"/><circle cx="15" cy="11" r="1.5"/><path d="M10 18v3M14 18v3"/></svg>MOBs <kbd>J</kbd></h3>
-<p>Trois onglets. <b>Sur le plateau</b> liste tout ce qui vit dans la scène (joueurs, PNJ, MOBs) avec leurs PV : un clic centre la carte dessus, l'œil le cache aux joueurs.</p>
-<figure><img loading="lazy" src="guide/mj-mobs.webp" alt="MOBs : sur le plateau"></figure>
-<p>Le <b>Bestiaire</b> contient toutes les créatures du livre, rangées de la plus anodine à la plus terrible : <span class="chips"><span>Vermines <span class="stars">★☆☆☆☆</span></span><span>Prédateurs <span class="stars">★★☆☆☆</span></span><span>Colosses <span class="stars">★★★☆☆</span></span><span>Béhémoths <span class="stars">★★★★☆</span></span><span>Léviathans <span class="stars">★★★★★</span></span></span> Les chapitres se replient. <b>Glissez une créature sur la carte</b> pour l'invoquer.</p>
+<p>Les MOBs, ce sont les monstres et les créatures. Le volet a trois onglets.</p>
+<p><b>Sur le plateau</b> liste tout ce qui vit dans la scène, en trois chapitres : joueurs, PNJ, MOBs, avec leurs PV. Un clic sur une ligne centre la carte sur le jeton et le fait clignoter ; l'œil le cache aux joueurs ; la corbeille le retire. La barre de recherche filtre par nom.</p>
+<p>Le <b>Bestiaire</b> contient toutes les créatures du livre d'Aldebaran, avec leurs statistiques, leurs PV et leur image. Elles sont rangées de la plus anodine à la plus terrible :</p>
+<div class="chips"><span>Vermines <span class="stars">★☆☆☆☆</span></span><span>Prédateurs <span class="stars">★★☆☆☆</span></span><span>Colosses <span class="stars">★★★☆☆</span></span><span>Béhémoths <span class="stars">★★★★☆</span></span><span>Léviathans <span class="stars">★★★★★</span></span></div>
+<p>Les chapitres sont repliés au départ : un clic sur leur titre les ouvre. Pour invoquer une créature, <b>glissez-la sur la carte</b> à l'endroit voulu ; un simple clic ouvre sa fiche pour l'ajuster avant.</p>
 <figure><img loading="lazy" src="guide/mj-bestiaire.webp" alt="Le bestiaire"></figure>
-<p><b>Créer un MOB</b> ouvre la fiche vierge : nom, image, statistiques, PV, attaques. « Enregistrer au bestiaire » le garde pour la prochaine fois.</p>
+<p><b>Créer un MOB</b> ouvre une fiche vierge : nom, image ou pictogramme, les six statistiques, PV, points d'armure et d'action, attaques, notes. « Enregistrer au bestiaire » le garde pour vos prochaines séances, à côté de ceux du livre.</p>
 </section>
 
 <section class="s" id="m-fiche"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>La fiche d'un jeton</h3>
-<p>Un clic sur n'importe quel jeton ouvre sa petite fiche : les PV avec − et +, les statistiques (un clic lance les dés), les points, les notes. En haut, l'œil le cache aux joueurs, le crayon ouvre la fiche complète. En bas, la taille du jeton et « Retirer ».</p>
+<p>Un clic sur n'importe quel jeton (MOB, PNJ, joueur) ouvre sa petite fiche flottante, à côté de lui :</p>
+<ul>
+<li>les <b>PV</b>, avec − et + : la barre se vide et change de couleur. Pour un joueur connecté, le changement part directement sur sa fiche ;</li>
+<li>les six <b>statistiques</b> : un clic sur l'une d'elles lance les dés pour le MOB ;</li>
+<li>les points d'armure, d'action et de tourment, et les <b>notes</b> (pouvoirs, faiblesses, ce que vous voulez retenir) ;</li>
+<li>en haut, l'<b>œil</b> le cache aux joueurs, le <b>crayon</b> ouvre la fiche complète ;</li>
+<li>en bas, la <b>taille</b> du jeton, en mètres, et « Retirer ».</li>
+</ul>
 <figure class="sm"><img loading="lazy" src="guide/mj-fiche.webp" alt="La fiche flottante d'un MOB"></figure>
-<div class="keys"><kbd>Maj</kbd>+molette<span>agrandir ou réduire le jeton survolé</span><span>Glisser</span><span>déplacer ; pendant le glisser, une corbeille apparaît pour le retirer</span></div>
+<p>Pour déplacer un jeton, on le glisse ; pendant le glisser, une corbeille apparaît en bas à droite pour le retirer d'un geste. <kbd>Maj</kbd>+molette au-dessus d'un jeton l'agrandit ou le réduit.</p>
 </section>
 
 <section class="s" id="m-items"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M3.5 7.5L12 3l8.5 4.5v9L12 21l-8.5-4.5z"/><path d="M3.5 7.5L12 12l8.5-4.5M12 12v9"/></svg>Items <kbd>I</kbd></h3>
-<p>Le même principe pour les objets. <b>Sur le plateau</b> : ce qui traîne dans la scène. <b>Inventaire</b> : tout le catalogue de l'appli joueur, plus les objets des fiches de vos joueurs, classés par famille. Glissez un objet sur la carte pour le déposer.</p>
-<figure class="duo"><img loading="lazy" src="guide/mj-items.webp" alt="Items sur le plateau"><img loading="lazy" src="guide/mj-inventaire.webp" alt="Inventaire des items"><figcaption>Les objets de la scène, et l'inventaire complet rangé par famille.</figcaption></figure>
-<p><b>Créer un item</b> : un nom, une icône, une taille, une description. La case <b>Dans un contenant</b> le transforme en coffre aux yeux des joueurs.</p>
+<p>Le même principe que les MOBs, pour les objets à trouver.</p>
+<ul>
+<li><b>Sur le plateau</b> : les objets posés dans la scène, rangés par famille, avec pour chacun la case « dans un contenant », l'œil et la corbeille.</li>
+<li><b>Inventaire</b> : tout le catalogue de l'appli joueur (près de 200 objets), plus les objets trouvés sur les fiches de vos joueurs, classés par famille : corps à corps, armes à feu, armes à énergie, habits et armures, soins, drogues, divers, sacs, cyber. Glissez un objet sur la carte pour le déposer.</li>
+<li><b>Créer un item</b> : un nom, une icône (une grille d'icônes par famille, ou votre image), la taille du jeton et une description (effets, dégâts, poids, prix).</li>
+</ul>
 <figure><img loading="lazy" src="guide/mj-creer-item.webp" alt="Créer un item"></figure>
+<p>La case <b>Dans un contenant</b> change tout : aux yeux des joueurs, l'objet devient un coffre fermé. Vous, vous voyez toujours ce qu'il y a dedans.</p>
 </section>
 
 <section class="s" id="m-fond"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M3 7l6-3 6 3 6-3v13l-6 3-6-3-6 3z"/><path d="M9 4v13M15 7v13"/></svg>Fond de carte <kbd>F</kbd></h3>
+<p>Le volet Fond règle ce qu'il y a sous vos dessins.</p>
 <ul>
-<li><b>Fond</b> : couleur unie (le bleu-gris, idéal pour dessiner), parchemin, herbe, sable, terre.</li>
-<li><b>Ambiance</b> : jour ou <b>nuit</b> (brouillard de guerre), beau temps, pluie, orage.</li>
-<li><b>Plateau</b> : afficher la grille, recentrer.</li>
-<li><b>Image</b> : une carte du catalogue, ou la vôtre (importée ou déposée dans le volet).</li>
-<li><b>Orthophoto</b> : tapez un lieu réel, la vue aérienne devient votre carte, à l'échelle.</li>
+<li><b>Fond</b> : la couleur unie bleu-gris (le fond par défaut, le plus reposant pour dessiner), ou une texture : parchemin, herbe, sable, terre.</li>
+<li><b>Ambiance</b> : le premier bouton bascule entre <b>Jour</b> et <b>Nuit</b> (le brouillard de guerre, voir plus bas). Les autres règlent la météo : beau temps, pluie, orage, qui s'animent aussi chez les joueurs.</li>
+<li><b>Plateau</b> : afficher ou cacher la grille, recentrer la vue.</li>
+<li><b>Image</b> : une carte toute faite du catalogue, ou la vôtre : « Importer », ou glissez simplement une image dans le volet. Elle se cale à l'échelle d'un mètre par case.</li>
+<li><b>Orthophoto</b> : tapez un lieu réel (une ville, une adresse, des coordonnées), et la vue aérienne devient votre carte, à la bonne échelle. Idéal pour un scénario contemporain.</li>
 </ul>
-<figure><img loading="lazy" src="guide/mj-fond.webp" alt="Le volet Fond de carte"></figure>
 </section>
 
 <section class="s" id="m-jeu"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M9 3v18M12 8h4M12 12h4"/></svg>Le groupe JEU</h3>
-<p>Les outils de la partie elle-même :</p>
+<p>Les outils de la partie elle-même, dans le bas de la colonne de gauche :</p>
 <ul>
-<li><b>Notes MJ</b> : votre carnet secret. Les joueurs ne le voient jamais.</li>
-<li><b>Jet libre</b> : un jet rapide, nombre de dés et seuil.</li>
-<li><b>Butin</b> : choisissez la richesse du lieu (désertique, pauvre, moyen, cossu, riche, blindé) puis <b>Fouiller</b> : dix lignes de trouvailles sortent d'un coup.</li>
-<li><b>Map</b> : la carte du monde.</li>
+<li><b>Notes MJ</b> : votre carnet secret, sur une feuille lignée. Les noms à retenir, ce que sait le passeur, ce qu'il y a dans la cave. Les joueurs ne le voient jamais, et il est enregistré avec la campagne.</li>
+<li><b>Jet libre</b> : un jet rapide quand vous en avez besoin, nombre de dés et seuil, avec l'historique des derniers jets.</li>
+<li><b>Butin</b> : vos joueurs fouillent un endroit ? Choisissez sa richesse (désertique, pauvre, moyen, cossu, riche, blindé), puis <b>Fouiller</b>. Dix lignes de trouvailles sortent d'un coup : des Bastos, des objets communs, remarquables, rares ou convoités, ou rien du tout. À vous de raconter.</li>
+<li><b>Map</b> : la carte du monde, la même que celle des joueurs.</li>
 </ul>
-<figure class="duo"><img loading="lazy" src="guide/mj-butin.webp" alt="Le butin"><img loading="lazy" src="guide/mj-jet.webp" alt="Jet libre"><figcaption>Une fouille dans un lieu « moyen », et un jet libre à deux réussites.</figcaption></figure>
 </section>
 
 <section class="s" id="m-bas"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h10M7 21h10M8 3c0 5 8 5 8 9s-8 4-8 9M16 3c0 5-8 5-8 9"/></svg>Message, sabliers, initiative</h3>
-<p>Le bandeau du bas, de haut en bas :</p>
-<ul>
-<li><b>Message système</b> : tapez, Entrée, et la phrase s'affiche en haut de l'écran de tous les joueurs. Commencez par <b>@nom</b> pour l'envoyer à un seul joueur.</li>
-<li><b>Sabliers</b> : un compte à rebours nommé (« renforts », « effondrement »…), visible de tous.</li>
-<li><b>Initiative</b> : joueurs et MOBs y entrent dès qu'ils sont posés. <b>Mélanger</b>, puis <b>Tour suivant</b> <kbd>Espace</kbd> : le jeton actif est cerclé d'or. Glissez une pastille pour changer l'ordre.</li>
-</ul>
-<figure><img loading="lazy" src="guide/mj-bas.webp" alt="Le bandeau bas : message système et initiative"></figure>
-<figure class="sm"><img loading="lazy" src="guide/mj-sablier-dlg.webp" alt="Nouveau sablier"></figure>
+<p>Le bandeau du bas sert pendant la partie, de haut en bas.</p>
+<p><b>Le message système.</b> Tapez une phrase, Entrée : elle s'affiche dans une bulle en haut de l'écran de tous vos joueurs. Commencez par <b>@</b> suivi du nom d'un joueur (« @Kaëla tu entends un craquement ») pour qu'il soit le seul à le lire. Les débuts de nom suffisent.</p>
+<p><b>Les sabliers.</b> « Nouveau sablier » : un nom (« Renforts », « Effondrement ») et une durée en minutes. Le compte à rebours s'affiche en bas, et chez les joueurs. Un clic sur sa pastille le met en pause ou le supprime.</p>
+<p><b>L'initiative.</b> Joueurs et MOBs y entrent tout seuls dès qu'ils sont posés sur la carte, en pastilles avec leur portrait. <b>Mélanger</b> tire l'ordre au hasard, <b>Tour suivant</b> (ou <kbd>Espace</kbd>) passe au suivant : son jeton est cerclé d'or sur la carte. Glissez une pastille pour changer l'ordre ; un clic dessus centre la carte sur le jeton.</p>
 </section>
 
 <section class="s" id="m-scenario"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M6 3h9l4 4v14H6z"/><path d="M9 9h6M9 13h6M9 17h4"/></svg>Le scénario</h3>
-<p>Le bouton <b>scénario</b> en haut ouvre la liste des scènes. Une scène retient tout : le fond, le jour ou la nuit, les tracés, les MOBs, les objets, les lumières, et même la position des joueurs. On passe de l'une à l'autre avec les flèches du haut ; le titre s'affiche chez les joueurs.</p>
+<p>Une séance se découpe en <b>scènes</b> : le gué, l'auberge, la forêt. Le bouton <b>scénario</b>, en haut, ouvre la liste. Une scène retient tout : le fond, le jour ou la nuit, la météo, les tracés, les MOBs, les objets, les lumières, et la place des joueurs.</p>
 <figure><img loading="lazy" src="guide/mj-scenario.webp" alt="Le scénario et ses scènes"></figure>
 <ul>
-<li><b>Nouvelle scène</b> : en partant de la carte actuelle, ou d'une page vierge.</li>
-<li><b>Le cadenas</b> : une scène verrouillée est terminée. Vous pouvez vider le plateau, elle ne bougera plus. Un clic la déverrouille.</li>
-<li><b>PDF</b> : tout le scénario s'exporte, pour l'imprimer ou le relire.</li>
+<li><b>Nouvelle scène</b> propose deux départs : à partir de la carte actuelle (pour une variante, la même auberge en feu), ou d'une page vierge.</li>
+<li>Chaque scène a un titre et un texte : votre résumé, vos répliques, ce qui doit arriver. Sous le texte, un petit récapitulatif : jour ou nuit, nombre de MOBs, de jetons.</li>
+<li>On passe de l'une à l'autre avec les <b>flèches</b> de la barre du haut, ou en cliquant dans la liste. Le titre de la nouvelle scène s'affiche chez les joueurs. Leurs jetons suivent : ceux de la scène quittée retournent dans leurs onglets, ceux de la nouvelle reprennent leur place.</li>
+<li>Le <b>cadenas</b> verrouille une scène terminée : vous pouvez ensuite vider le plateau, elle ne sera plus modifiée. Un clic la déverrouille si vous devez y revenir.</li>
+<li>L'export <b>PDF</b> met tout le scénario sur papier, pour le relire ou le préparer à l'avance.</li>
 </ul>
 </section>
 </div>
@@ -327,13 +368,13 @@ nav.toc button{display:none;width:100%;border:0;background:none;font:600 13px Qu
 <div class="chap"><h2>Les options <span>MJ</span></h2>
 <p class="lead">Ce qui se règle une fois pour toutes.</p>
 <section class="s" id="m-param"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></svg>Paramètres</h3>
-<figure class="sm"><img loading="lazy" src="guide/mj-parametres.webp" alt="Les paramètres du maître du destin"></figure>
+<p><b>La sauvegarde.</b> Votre campagne, avec toutes ses scènes, son bestiaire et vos notes, tient dans un seul fichier, <b>campagne.adb</b>. Il se range dans le même dossier que les fiches de vos aventuriers : si vous avez déjà choisi un dossier côté Aventurier, il est repris tel quel.</p>
 <ul>
-<li><b>Sauvegarde</b> : votre campagne est un fichier <b>campagne.adb</b>, rangé dans le même dossier que les fiches de vos aventuriers. <kbd>Ctrl</kbd>+<kbd>S</kbd> l'enregistre ; « Ouvrir une campagne… » liste celles du dossier. La sauvegarde automatique se règle juste dessous.</li>
-<li><b>Empêcher la mise en veille</b> de l'écran.</li>
-<li><b>Partie locale</b> : le petit serveur pour jouer sur le même wifi, voir <a href="#e-local"><b>Jouer ensemble</b></a>.</li>
-<li><b>Installer</b> l'appli, et <b>effacer la campagne</b> en cours (le fichier enregistré n'est pas touché).</li>
+<li><kbd>Ctrl</kbd>+<kbd>S</kbd> enregistre, <kbd>Ctrl</kbd>+<kbd>Maj</kbd>+<kbd>S</kbd> choisit un autre dossier ou un autre nom (une campagne par fichier, si vous en menez plusieurs).</li>
+<li>« Ouvrir une campagne… » liste celles du dossier.</li>
+<li>La sauvegarde automatique (toutes les 30 s, 1 min, 2 min, 5 min) garde la campagne dans le navigateur et la réécrit dans le dossier. Le petit point sous les boutons dit si tout est enregistré.</li>
 </ul>
+<p><b>Le reste.</b> Empêcher la mise en veille de l'écran ; <b>Partie locale</b>, le petit serveur pour jouer sur le même wifi (voir <a href="#e-local"><b>Jouer ensemble</b></a>) ; <b>Installer</b> l'appli ; et <b>Effacer la campagne en cours</b>, qui remet la table à zéro après confirmation, sans toucher au fichier enregistré.</p>
 </section>
 <section class="s" id="m-touches"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="2.5" y="6" width="19" height="12" rx="2"/><path d="M6 10h1M10 10h1M14 10h1M18 10h0M7 14h10"/></svg>Raccourcis clavier</h3>
 <div class="keys">
@@ -343,7 +384,7 @@ nav.toc button{display:none;width:100%;border:0;background:none;font:600 13px Qu
 </div>
 </section>
 <section class="s" id="m-tablette"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="3.5" y="3" width="17" height="18" rx="2.2"/><path d="M11 18h2"/></svg>Sur tablette</h3>
-<p>La table s'adapte au doigt : boutons plus grands, barres flottantes. Glissez à un doigt pour vous déplacer, pincez pour zoomer.</p>
+<p>Sur une tablette, la table passe en mode tactile : boutons plus grands, scènes et réglages dans des barres flottantes, zoom en bas à droite. On se déplace à un doigt et on pince pour zoomer. Sur un téléphone en paysage, la même table tient dans l'écran, avec des volets qui se replient.</p>
 </section>
 </div>
 
@@ -351,34 +392,44 @@ nav.toc button{display:none;width:100%;border:0;background:none;font:600 13px Qu
 <p class="lead">Des recettes pour vos prochaines séances.</p>
 <section class="s" id="m-carte"><h3>Dessiner une carte en cinq minutes</h3>
 <ol class="steps">
-<li><kbd>D</kbd> pour le Dessin. Choisissez <b>Eau</b>, largeur 2 m, et tracez une rivière d'un geste.</li>
-<li><b>Chemin libre</b> pour la route, puis <b>Pont</b> tiré d'une rive à l'autre.</li>
-<li><b>Mur</b>, clic par clic, pour une maison ; une <b>Porte</b> sur un des murs.</li>
-<li><b>Feuillage</b> en quelques coups de pinceau pour une forêt, puis des arbres dans les pictos.</li>
-<li>Quelques pictos pour la vie : un puits, une tente, un moulin. <kbd>Échap</kbd>, c'est prêt.</li>
+<li><kbd>D</kbd> pour ouvrir le Dessin. Choisissez <b>Eau</b>, une largeur de 2 m, et tracez la rivière d'un seul geste, d'un bord à l'autre.</li>
+<li><b>Chemin libre</b>, 1 m, pour la route qui la traverse ; puis <b>Pont</b>, tiré d'une rive à l'autre.</li>
+<li><b>Mur</b>, clic par clic, pour l'auberge ; un clic sur le dernier point la ferme. Posez une <b>Porte</b> sur un des murs.</li>
+<li><b>Feuillage</b> en quelques coups de pinceau pour la forêt, puis quelques arbres dans les pictos par-dessus.</li>
+<li>Un puits, une tente, un moulin pour la vie du lieu. <kbd>Échap</kbd> : c'est prêt.</li>
 </ol>
-<p>Un raté ? <kbd>Ctrl</kbd>+<kbd>Z</kbd>, ou la flèche « annuler » en haut.</p>
+<p>Un raté ? <kbd>Ctrl</kbd>+<kbd>Z</kbd>, ou la flèche « annuler » en haut. La gomme efface un tracé précis.</p>
+</section>
+<section class="s" id="m-peupler"><h3>Peupler la scène</h3>
+<p><kbd>J</kbd>, onglet Bestiaire. Ouvrez le chapitre qui convient au danger du moment (des Prédateurs pour une embuscade, un Colosse pour finir la séance), et glissez les créatures sur la carte. Elles arrivent avec leurs statistiques et leurs PV, et entrent dans l'initiative. Pour un PNJ (le passeur, l'aubergiste), « Créer un MOB » suffit : donnez-lui un nom, quelques statistiques, et gardez-le au bestiaire s'il doit revenir.</p>
+<p>Vous préparez une surprise ? L'œil, dans la fiche du jeton ou dans la liste, le cache aux joueurs jusqu'au bon moment.</p>
 </section>
 <section class="s" id="m-tresor"><h3>Cacher un trésor dans un coffre</h3>
-<p>Dans <b>Items</b>, créez (ou glissez depuis l'inventaire) l'objet à cacher, et cochez <b>Dans un contenant</b>. Vous, vous voyez l'objet ; vos joueurs, eux, ne voient qu'un coffre. Quand l'un d'eux l'ouvre, vous êtes prévenu, et l'objet apparaît pour tout le monde. S'il le prend, il disparaît de la carte et rejoint son inventaire.</p>
+<ol class="steps">
+<li><kbd>I</kbd>, onglet Inventaire : trouvez l'objet (ou créez-le dans « Créer un item »), et glissez-le dans la pièce.</li>
+<li>Dans « Sur le plateau », cochez <b>Dans un contenant</b>.</li>
+<li>Vos joueurs ne voient qu'un coffre fermé. Quand l'un d'eux l'ouvre, vous êtes prévenu, et l'objet apparaît pour tout le monde.</li>
+<li>S'il le prend, l'objet disparaît de la carte et rejoint son inventaire, avec son poids et ses dés.</li>
+</ol>
 </section>
 <section class="s" id="m-nuit"><h3>Une scène de nuit</h3>
-<p>Dans <b>Fond de carte</b>, passez en <b>Nuit</b> : le brouillard de guerre couvre tout, sauf autour des joueurs et des sources de lumière. Vous, vous voyez à travers. Un MOB hors de la lumière devient un « ? » dans l'initiative des joueurs.</p>
+<p>Dans <b>Fond de carte</b>, passez en <b>Nuit</b>. Le brouillard de guerre couvre alors toute la carte, sauf autour des joueurs (chacun voit à quelques mètres) et des sources de lumière. Vous, vous voyez à travers, pour tout garder en main. Un MOB tapi dans le noir devient un « ? » dans l'initiative des joueurs : ils savent que quelque chose bouge, pas quoi.</p>
 <figure><img loading="lazy" src="guide/mj-nuit.webp" alt="La même scène de nuit, éclairée par un feu de camp, une torche et un lampadaire"></figure>
-<p>Les pictos de la famille <b>Lumières</b> éclairent : torche, brasero, feu de camp, lanterne, lampadaire, phare… Un clic dessus pour les régler : <b>Allumé / Éteint / Cassé</b> (il clignote), la couleur, la taille du halo. Le phare, lui, balaie la nuit d'un faisceau tournant.</p>
+<p>Les pictos de la famille <b>Lumières</b> percent le brouillard : torche, bougies, candélabre, brasero, feu de camp, lanterne, lustre, lampadaire, réverbère, projecteur, enseigne au néon, feu tricolore, lampions, guirlande, lucioles, cristal, et le phare. Les feux naturels vacillent ; le phare, lui, balaie la nuit d'un faisceau tournant.</p>
+<p>Un clic sur une lumière ouvre ses réglages : <b>Allumé / Éteint / Cassé</b> (une lumière cassée clignote et éclaire moins), la couleur sur un spectre (avec « Origine » pour revenir à sa couleur d'origine), et la taille du halo, en mètres.</p>
 <figure class="sm"><img loading="lazy" src="guide/mj-lumiere.webp" alt="Régler une lumière"></figure>
 </section>
 <section class="s" id="m-combat"><h3>Mener un combat</h3>
 <ol class="steps">
-<li>Glissez les MOBs du bestiaire sur la carte : ils entrent dans l'initiative.</li>
-<li><b>Mélanger</b>, puis <kbd>Espace</kbd> à chaque tour.</li>
-<li>Les jets des joueurs s'affichent en bulle au-dessus de leur jeton ; pour un MOB, un clic sur sa statistique dans sa fiche.</li>
-<li>Les PV se règlent dans la fiche du jeton ; pour un joueur, ils reviennent sur sa fiche.</li>
-<li>Besoin de tension ? Un <b>sablier</b> de 3 minutes avant l'arrivée des renforts.</li>
+<li>Posez les MOBs : ils entrent dans l'initiative, à côté des joueurs.</li>
+<li><b>Mélanger</b> pour tirer l'ordre, puis <kbd>Espace</kbd> à chaque tour. Le jeton actif est cerclé d'or chez tout le monde.</li>
+<li>Les joueurs lancent depuis leur fiche : leurs réussites s'affichent en bulle au-dessus de leur jeton. Pour un MOB, un clic sur sa statistique dans sa fiche.</li>
+<li>Les dégâts se règlent avec les − de la fiche du jeton. Pour un joueur, le changement part sur sa fiche.</li>
+<li>Besoin de pression ? Un <b>sablier</b> de 3 minutes avant l'arrivée des renforts, visible de tous.</li>
 </ol>
 </section>
 <section class="s" id="m-ecran"><h3>Un deuxième écran pour la table</h3>
-<p>Le bouton <b>vue joueur</b> ouvre une seconde fenêtre à glisser sur la télé ou un second écran. Elle suit la caméra, les jetons, les tracés et le brouillard, sans vos outils ni vos secrets.</p>
+<p>Vous jouez autour d'une table avec une télé ou un second écran ? Le bouton <b>vue joueur</b> ouvre une seconde fenêtre : glissez-la sur l'écran des joueurs et mettez-la en plein écran. Elle suit votre caméra, les jetons, les tracés, la mesure, les signaux et le brouillard, mais rien de vos outils, de vos notes ni des jetons cachés.</p>
 </section>
 </div>
 </div>
@@ -386,43 +437,50 @@ nav.toc button{display:none;width:100%;border:0;background:none;font:600 13px Qu
 <!-- =====================================================================
      JOUER ENSEMBLE
      ===================================================================== -->
-<div class="role" id="r-ensemble" data-title="Jouer ensemble" data-lead="Deux façons de relier les joueurs à la table : en ligne, depuis n'importe où, ou en partie locale, sur le même wifi, même sans Internet.">
+<div class="role" id="r-ensemble" data-title="Jouer ensemble" data-lead="Deux façons de relier les joueurs à la table : en ligne, depuis n'importe où, avec un code ; ou en partie locale, sur le même wifi, même sans Internet. Les deux peuvent fonctionner en même temps.">
 
 <div class="chap"><h2>En ligne <span>À distance</span></h2>
 <section class="s" id="e-ouvrir"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M2.5 9a14 14 0 0 1 19 0M5.5 12.3a9.5 9.5 0 0 1 13 0M8.7 15.6a5 5 0 0 1 6.6 0"/><circle cx="12" cy="19" r="1.2" fill="currentColor"/></svg>Ouvrir la table</h3>
-<p>Côté maître du destin : le bouton <b>table en ligne</b> en haut à droite, puis « Ouvrir la table ». Un <b>code de 5 lettres</b> s'affiche, le même d'une séance à l'autre, avec un lien et un QR code à partager.</p>
-<p>Côté joueur : onglet <b>Table</b> de la fiche, le code, « Rejoindre ». Ou plus simple : cliquer le lien, scanner le QR code.</p>
+<p><b>Côté maître du destin</b> : le bouton <b>table en ligne</b>, en haut à droite, puis « Ouvrir la table ». Un <b>code de cinq lettres</b> s'affiche en grand. C'est le même d'une séance à l'autre : vos joueurs peuvent le noter une fois pour toutes. La même fenêtre donne un lien à copier et un QR code à scanner. « Nouveau code » en change si besoin (les joueurs connectés devront alors reprendre le nouveau).</p>
+<p><b>Côté joueur</b> : l'onglet <b>Table</b> de la fiche, le code, « Rejoindre ». Ou plus simple : cliquer le lien, ou scanner le QR code avec le téléphone. Ça ouvre directement la fiche, déjà connectée.</p>
 <figure class="sm"><img loading="lazy" src="guide/mj-table.webp" alt="La fenêtre Table en ligne, avec le code et la partie locale"></figure>
+<p>La connexion se fait d'appareil à appareil. Rien n'est stocké sur un serveur : Internet sert seulement à se trouver.</p>
 </section>
 <section class="s" id="e-accueil"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.4"/><path d="M3 20c.8-3.6 3.2-5.5 6-5.5s5.2 1.9 6 5.5M15 14.6c2.6-.3 4.6 1.3 5.5 4.4"/></svg>Accueillir les joueurs</h3>
-<p>Chaque joueur connecté apparaît dans un <b>onglet</b> au-dessus du bandeau bas, avec son portrait. Son jeton n'arrive pas tout seul sur la carte : <b>glissez-le</b> depuis l'onglet à l'endroit voulu. C'est vous qui décidez quand il entre en scène.</p>
+<p>Chaque joueur connecté apparaît dans un <b>onglet</b>, au-dessus du bandeau bas, avec son portrait et un point vert. Son jeton n'arrive pas tout seul sur la carte : <b>glissez-le</b> depuis l'onglet à l'endroit voulu. C'est vous qui décidez quand il entre en scène ; d'ici là, il voit la neige « NO SIGNAL ».</p>
 <figure><img loading="lazy" src="guide/mj-joueurs.webp" alt="Les onglets des joueurs, et une bulle de jet au-dessus de Kaëla"></figure>
-<p>Un clic sur l'onglet ouvre <b>sa fiche</b>, à jour en direct, en lecture seule : seul le joueur la modifie.</p>
-<figure><img loading="lazy" src="guide/mj-fiche-joueur.webp" alt="La fiche d'un joueur consultée par le maître du destin"></figure>
-<p>Si un joueur perd sa connexion, l'appli le reconnecte d'elle-même, sans limite. S'il part vraiment, son onglet disparaît au bout de quelques secondes.</p>
-<div class="tip warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9.5 17h-19z"/><path d="M12 10v4.5M12 17.5v.3"/></svg><div>Si un joueur reste bloqué sur « Connexion… », c'est souvent son réseau (4G, box capricieuse). Qu'il essaie un autre réseau, en wifi au lieu de 4G par exemple. Les étapes affichées (1/3, 2/3, 3/3) disent où ça coince.</div></div>
+<p>Un clic sur l'onglet ouvre <b>sa fiche</b>, telle qu'il la voit, à jour en direct. Vous la consultez sans pouvoir la modifier : c'est le joueur qui tient son personnage. Son jeton suit sa fiche (nom, portrait, statistiques, PV), et ses jets s'affichent chez vous.</p>
+<p>Si un joueur perd la connexion, son appli se reconnecte d'elle-même, sans limite, et vous lui renvoyez automatiquement tout l'état de la partie. S'il part vraiment, son onglet passe hors ligne puis disparaît au bout de quelques secondes : pas de joueur fantôme.</p>
+<div class="tip warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9.5 17h-19z"/><path d="M12 10v4.5M12 17.5v.3"/></svg><div>Si un joueur reste bloqué sur « Connexion… », c'est presque toujours son réseau qui coince (certaines box, la 4G/5G). Les étapes affichées disent où : 2/3, c'est Internet ; 3/3, c'est le passage entre vos deux appareils. Qu'il essaie un autre réseau (wifi au lieu de 4G, ou l'inverse). Autour d'une même table, la partie locale règle le problème.</div></div>
 </section>
 </div>
 
 <div class="chap"><h2>Partie locale <span>Même wifi</span></h2>
-<p class="lead">Tout le monde autour de la même table ? Le petit serveur rend la connexion instantanée et indépendante d'Internet.</p>
-<section class="s" id="e-local"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="3.5" y="4" width="17" height="6.5" rx="1.6"/><rect x="3.5" y="13.5" width="17" height="6.5" rx="1.6"/><circle cx="7.5" cy="7.25" r=".9" fill="currentColor"/><circle cx="7.5" cy="16.75" r=".9" fill="currentColor"/></svg>Installer le serveur (PC du MJ, une fois)</h3>
+<p class="lead">Tout le monde dans la même pièce ? Un petit serveur, sur le PC du maître du destin, rend la connexion instantanée et indépendante d'Internet.</p>
+<section class="s" id="e-local"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="3.5" y="4" width="17" height="6.5" rx="1.6"/><rect x="3.5" y="13.5" width="17" height="6.5" rx="1.6"/><circle cx="7.5" cy="7.25" r=".9" fill="currentColor"/><circle cx="7.5" cy="16.75" r=".9" fill="currentColor"/></svg>Installer le serveur (une fois)</h3>
+<p>Le serveur ne s'installe que sur le <b>PC Windows du maître du destin</b>. Les joueurs n'installent rien : ils utilisent leur navigateur, comme d'habitude.</p>
 <ol class="steps">
-<li>Paramètres › <b>Partie locale</b> › <b>Télécharger le serveur</b>. Réservé au PC Windows du maître du destin ; les joueurs n'installent rien.</li>
-<li>Lancez <b>Aldebaran-Serveur.exe</b>. La première fois, Windows prévient qu'il ne connaît pas ce programme : « Informations complémentaires », puis « Exécuter quand même ».</li>
-<li>Le pare-feu demande l'accès au réseau : cochez <b>Réseaux privés</b> et autorisez.</li>
-<li>L'icône Aldebaran apparaît près de l'horloge, et la table s'ouvre dans le navigateur. S'il demande l'accès aux appareils du réseau local, répondez Autoriser.</li>
+<li>Paramètres › <b>Partie locale</b> › <b>Télécharger le serveur</b>.</li>
+<li>Ouvrez <b>Aldebaran-Serveur.exe</b> dans vos téléchargements. Windows prévient d'abord qu'il ne connaît pas ce programme : « Informations complémentaires », puis « Exécuter quand même ». C'est normal pour un petit logiciel gratuit, et ça n'arrive qu'une fois.</li>
+<li>Le serveur propose de s'<b>installer</b> : répondez Oui. Il se range dans votre dossier utilisateur et crée un raccourci <b>Aldebaran Serveur</b> sur le bureau et dans le menu Démarrer. Vous pouvez ensuite supprimer le fichier téléchargé.</li>
+<li>Le pare-feu demande l'accès au réseau : cochez <b>Réseaux privés</b> et autorisez. Sans ça, les joueurs ne pourraient pas le joindre.</li>
+<li>La page <b>Serveur local</b> s'ouvre dans le navigateur. C'est votre tableau de bord.</li>
 </ol>
 </section>
 <section class="s" id="e-jouer"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="4" y="4" width="6" height="6"/><rect x="14" y="4" width="6" height="6"/><rect x="4" y="14" width="6" height="6"/><path d="M14 14h2v2h-2zM18 18h2v2h-2zM18 14h2M14 18v2"/></svg>Chaque soirée</h3>
-<p>Lancez le serveur, ouvrez la table comme d'habitude. La fenêtre de la table affiche alors une section <b>Partie locale</b> avec un QR code : vos joueurs le scannent, et ils sont à la table. Pas de code à taper, pas d'attente. S'ils scannent avant que la table soit ouverte, ils patientent tout seuls.</p>
-<p>Le menu de l'icône (près de l'horloge) affiche l'adresse et le nombre de joueurs connectés, et permet d'arrêter le serveur.</p>
+<ol class="steps">
+<li>Double-cliquez sur <b>Aldebaran Serveur</b>. La page du serveur s'ouvre : elle affiche l'adresse pour les joueurs, un QR code, l'état de votre table et le nombre de joueurs connectés.</li>
+<li>Cliquez sur <b>Ouvrir la table du MJ</b>, et ouvrez la table comme d'habitude (bouton « table en ligne »). La table s'ouvre en ligne et en local en même temps.</li>
+<li>Vos joueurs scannent le QR code, affiché sur la page du serveur ou dans la fenêtre de la table. Ils arrivent directement sur leur fiche, connectés. S'ils scannent avant que la table soit ouverte, ils patientent tout seuls.</li>
+</ol>
+<p>Le serveur tourne en arrière-plan. Son icône est près de l'horloge de Windows (parfois cachée derrière la petite flèche ^) : son menu affiche l'adresse et les joueurs connectés, rouvre la page du serveur ou la table, et arrête le serveur. Fermer la page ne l'arrête pas.</p>
 <ul>
-<li>Le PC ne se met pas en veille tant que le serveur tourne.</li>
-<li>Si le serveur est coupé puis relancé, tout le monde se reconnecte tout seul.</li>
-<li>Les joueurs à distance peuvent toujours rejoindre avec le code, en même temps.</li>
+<li>Tant que le serveur tourne, le PC ne se met pas en veille.</li>
+<li>Si le serveur est coupé puis relancé en pleine partie, tout le monde se reconnecte tout seul en quelques secondes.</li>
+<li>Sans Internet, tout fonctionne quand même : seule la partie locale est ouverte.</li>
+<li>Des joueurs à distance peuvent rejoindre avec le code, en même temps que ceux du salon.</li>
 </ul>
-<div class="tip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg><div>Tout le monde doit être sur le <b>wifi principal</b> de la box, pas sur le wifi « invités » qui empêche les appareils de se voir. En partie locale, le joueur importe son fichier .adb la première fois pour retrouver son personnage. Et pendant la partie, mieux vaut désactiver la veille du téléphone dans ses réglages.</div></div>
+<div class="tip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg><div>Trois choses à savoir. Tout le monde doit être sur le <b>wifi principal</b> de la box, pas sur le wifi « invités » qui empêche les appareils de se voir. En partie locale, le navigateur des joueurs ne retrouve pas la fiche créée sur la version en ligne : ils importent leur fichier <b>.adb</b> la première fois. Et pendant la partie, mieux vaut désactiver la veille du téléphone dans ses réglages.</div></div>
 </section>
 </div>
 </div>
@@ -436,7 +494,16 @@ nav.toc button{display:none;width:100%;border:0;background:none;font:600 13px Qu
 (function(){
   const roles=['aventurier','mj','ensemble'];
   const toc=document.getElementById('toc');
-  let cur=null, spy=null;
+  let cur=null, forced=null, forcedAt=0, lastY=0;
+  function mark(id){ let on=null; toc.querySelectorAll('a').forEach(a=>{ const k=a.dataset.s===id; a.classList.toggle('on',k); if(k) on=a; });
+    if(on&&getComputedStyle(toc).position==='sticky'){ const r=on.getBoundingClientRect(), q=toc.getBoundingClientRect(); if(r.top<q.top||r.bottom>q.bottom) on.scrollIntoView({block:'nearest'}); } }
+  /* section active : la dernière dont le haut a passé l'en-tête ; un chapitre cliqué reste sélectionné même s'il ne peut pas monter jusqu'en haut (fin de page) */
+  function spyCalc(){ const R=document.getElementById('r-'+cur); if(!R) return; const secs=[...R.querySelectorAll('section.s')]; if(!secs.length) return;
+    let id=secs[0].id; secs.forEach(s=>{ if(s.getBoundingClientRect().top<=140) id=s.id; });
+    const y=window.scrollY, up=y<lastY-2; lastY=y;
+    if(forced){ const f=document.getElementById(forced), r=f&&f.getBoundingClientRect(); const fresh=Date.now()-forcedAt<1500; if(r&&(fresh||(!up&&r.top<innerHeight-60&&r.bottom>80))) id=forced; else forced=null; }
+    mark(id); }
+  addEventListener('scroll',()=>requestAnimationFrame(spyCalc),{passive:true});
   function show(role,anchor){
     if(!roles.includes(role)) role='aventurier';
     if(role!==cur){
@@ -454,9 +521,8 @@ nav.toc button{display:none;width:100%;border:0;background:none;font:600 13px Qu
       toc.innerHTML=h+'</div>';
       document.getElementById('tocb').onclick=()=>toc.classList.toggle('open');
       toc.querySelectorAll('a').forEach(a=>a.onclick=()=>toc.classList.remove('open'));
-      if(spy) spy.disconnect();
-      spy=new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting){ toc.querySelectorAll('a').forEach(a=>a.classList.toggle('on',a.dataset.s===e.target.id)); } }),{rootMargin:'-90px 0px -65% 0px'});
-      R.querySelectorAll('section.s').forEach(s=>spy.observe(s));
+      toc.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{ forced=a.dataset.s; forcedAt=Date.now(); mark(forced); }));
+      spyCalc();
     }
     if(anchor){ const el=document.getElementById(anchor); if(el) setTimeout(()=>el.scrollIntoView(),0); } else window.scrollTo(0,0);
   }

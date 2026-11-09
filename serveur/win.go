@@ -81,6 +81,7 @@ func onReady() {
 	who := systray.AddMenuItem("Aucun joueur connecté", "")
 	who.Disable()
 	systray.AddSeparator()
+	st := systray.AddMenuItem("Ouvrir la page du serveur", "Adresse, QR code et joueurs connectés")
 	open := systray.AddMenuItem("Ouvrir la table du MJ", "Ouvre l'appli Aldebaran dans le navigateur")
 	lg := systray.AddMenuItem("Journal du serveur", "Ouvre le fichier journal")
 	systray.AddSeparator()
@@ -111,11 +112,13 @@ func onReady() {
 		}
 	}()
 
-	openBrowser(mjLink())
+	openBrowser(statusLink())
 
 	go func() {
 		for {
 			select {
+			case <-st.ClickedCh:
+				openBrowser(statusLink())
 			case <-open.ClickedCh:
 				openBrowser(mjLink())
 			case <-lg.ClickedCh:

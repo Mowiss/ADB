@@ -24,3 +24,5 @@ func runUI() {
 	}
 	select {}
 }
+
+func maybeInstall() bool { return false }

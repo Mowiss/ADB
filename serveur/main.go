@@ -41,6 +41,9 @@ var siteFS embed.FS
 //go:embed icon.ico
 var iconICO []byte
 
+//go:embed status.html
+var statusHTML []byte
+
 var cacheDir string
 
 /* ---------------- relais (WebSocket) ---------------- */
@@ -72,15 +75,17 @@ func (h *hub) players() int {
 	}
 	return n
 }
-func (h *hub) mjOpen() bool {
+
+// code de la table ouverte par le MJ (vide si aucune)
+func (h *hub) mjCode() string {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	for id := range h.m {
 		if strings.HasPrefix(id, "aldebaran-") {
-			return true
+			return strings.ToUpper(strings.TrimPrefix(id, "aldebaran-"))
 		}
 	}
-	return false
+	return ""
 }
 
 func (h *hub) sendTo(c *client, b []byte) {
@@ -312,7 +317,7 @@ func infoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "no-store")
-	json.NewEncoder(w).Encode(map[string]any{"app": AppName, "v": Version, "port": Port, "ip": ip, "ips": ips, "players": H.players()})
+	json.NewEncoder(w).Encode(map[string]any{"app": AppName, "v": Version, "port": Port, "ip": ip, "ips": ips, "players": H.players(), "mj": H.mjCode(), "mjurl": mjLink()})
 }
 
 func qrHandler(w http.ResponseWriter, r *http.Request) {
@@ -473,6 +478,21 @@ func startServer() error {
 	mux.HandleFunc("/ws", wsHandler)
 	mux.HandleFunc("/info", infoHandler)
 	mux.HandleFunc("/qr.svg", qrHandler)
+	mux.HandleFunc("/serveur", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Header().Set("Cache-Control", "no-store")
+		w.Write(statusHTML)
+	})
+	mux.HandleFunc("/stop", func(w http.ResponseWriter, r *http.Request) {
+		host, _, _ := net.SplitHostPort(r.RemoteAddr)
+		if r.Method != http.MethodPost || !net.ParseIP(host).IsLoopback() {
+			http.Error(w, "non", 403)
+			return
+		}
+		io.WriteString(w, "ok")
+		logf("arrêt demandé depuis la page d'état")
+		go func() { time.Sleep(300 * time.Millisecond); os.Exit(0) }()
+	})
 	mux.HandleFunc("/", fileHandler)
 	ln, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%d", Port))
 	if err != nil {
@@ -517,6 +537,8 @@ func appSeen(a string) {
 	}
 }
 
+func statusLink() string { return fmt.Sprintf("http://localhost:%d/serveur", Port) }
+
 func mjLink() string {
 	liveMu.Lock()
 	b := liveBase
@@ -534,7 +556,10 @@ func main() {
 	cacheDir = dataDir()
 	setupLog()
 	if alreadyRunning() {
-		openBrowser(mjLink())
+		openBrowser(statusLink())
+		return
+	}
+	if maybeInstall() {
 		return
 	}
 	if err := startServer(); err != nil {

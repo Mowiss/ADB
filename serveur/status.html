@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aldebaran Serveur</title>
+<link rel="icon" href="/favicon.png">
+<style>
+:root{--ink:#2f3340;--soft:#6b7080;--rule:#e3e5ea;--ok:#2a9d4b;--warn:#d4a017;--bad:#c0392b}
+*{box-sizing:border-box}
+body{margin:0;background:#fff;color:var(--ink);font:500 15px/1.6 Quicksand,'Segoe UI',system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column}
+.bands{position:fixed;inset:0;pointer-events:none;background:linear-gradient(166deg,transparent 0 62%,rgba(246,214,90,.26) 62% 67%,transparent 67% 68%,rgba(142,195,236,.26) 68% 73%,transparent 73% 74%,rgba(159,213,154,.26) 74% 79%,transparent 79% 80%,rgba(244,160,160,.22) 80% 85%,transparent 85% 86%,rgba(190,170,240,.24) 86% 91%,transparent 91%)}
+main{position:relative;max-width:760px;width:100%;margin:0 auto;padding:40px 20px 60px}
+.brand{font-family:'Josefin Sans','Segoe UI',sans-serif;letter-spacing:.32em;font-size:15px;display:flex;align-items:center;gap:10px;color:#1f2230}
+.brand i{width:8px;height:8px;border-radius:50%;background:#d33}
+h1{font-family:'Josefin Sans','Segoe UI',sans-serif;font-weight:300;letter-spacing:.2em;text-transform:uppercase;font-size:30px;margin:26px 0 6px;color:#1f2230}
+.pill{display:inline-flex;align-items:center;gap:8px;font-weight:700;font-size:13px;border-radius:20px;padding:4px 12px;background:#eef8f1;color:var(--ok)}
+.pill i{width:8px;height:8px;border-radius:50%;background:currentColor}
+.pill.off{background:#fdeeee;color:var(--bad)}
+.card{background:#fff;border:1px solid var(--rule);border-radius:14px;padding:20px 22px;margin-top:18px;box-shadow:0 6px 20px rgba(20,24,40,.05)}
+.card h2{font:700 12px Quicksand,'Segoe UI',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--soft);margin:0 0 12px}
+.join{display:grid;grid-template-columns:180px 1fr;gap:22px;align-items:center}
+.join img{width:180px;height:180px;border-radius:10px;border:1px solid var(--rule)}
+.addr{font:700 20px 'Segoe UI',system-ui,sans-serif;color:#1f2230;word-break:break-all}
+.soft{color:var(--soft);font-size:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+button,a.btn{font:700 14px Quicksand,'Segoe UI',sans-serif;border-radius:10px;padding:10px 16px;border:1px solid var(--ink);background:var(--ink);color:#fff;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:8px}
+button.ghost{background:#fff;color:var(--ink);border-color:var(--rule)}
+button.danger{background:#fff;color:var(--bad);border-color:#f0c9c4}
+.stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.stat b{display:block;font-size:26px;color:#1f2230;font-weight:700}
+ul{margin:6px 0 0;padding-left:18px}li{margin:3px 0}
+select{font:600 13px Quicksand,'Segoe UI',sans-serif;border:1px solid var(--rule);border-radius:8px;padding:4px 8px;margin-top:8px}
+@media(max-width:600px){.join{grid-template-columns:1fr}.join img{margin:0 auto}}
+</style>
+</head>
+<body><div class="bands"></div>
+<main>
+<div class="brand"><i></i>ALDEBARAN</div>
+<h1>Serveur local</h1>
+<span class="pill" id="pill"><i></i><span id="st">En marche</span></span>
+
+<div class="card">
+<h2>Pour les joueurs</h2>
+<div class="join">
+<img id="qr" alt="QR code pour rejoindre la partie">
+<div>
+<div class="addr" id="addr">…</div>
+<div class="soft" id="hint">Les joueurs scannent ce QR code, ou tapent cette adresse dans leur navigateur. Ils doivent être sur le même wifi que ce PC.</div>
+<select id="ips" hidden title="Carte réseau"></select>
+<div class="row"><button class="ghost" type="button" id="copy">Copier l'adresse</button></div>
+</div>
+</div>
+</div>
+
+<div class="card">
+<h2>La partie</h2>
+<div class="stats">
+<div class="stat"><b id="tbl">—</b><span class="soft">table du maître du destin</span></div>
+<div class="stat"><b id="np">0</b><span class="soft">joueur(s) connecté(s)</span></div>
+</div>
+<div class="row"><a class="btn" id="open" href="#" target="_blank" rel="noopener">Ouvrir la table du MJ</a></div>
+<p class="soft" style="margin:12px 0 0">Dans l'appli, ouvrez la table (bouton « table en ligne » en haut à droite) : elle s'ouvre aussi ici, et le QR code ci-dessus mène directement à votre table.</p>
+</div>
+
+<div class="card">
+<h2>Bon à savoir</h2>
+<ul class="soft">
+<li>Le serveur tourne en arrière-plan. Son icône est près de l'horloge de Windows (parfois cachée derrière la petite flèche ^).</li>
+<li>Vous pouvez fermer cette page : le serveur continue. Pour la rouvrir, double-cliquez sur le raccourci « Aldebaran Serveur ».</li>
+<li>Tant qu'il tourne, le PC ne se met pas en veille.</li>
+</ul>
+<div class="row"><button class="danger" type="button" id="stop">Arrêter le serveur</button></div>
+</div>
+</main>
+<script>
+let info=null, ip=null;
+const $=id=>document.getElementById(id);
+function link(){ if(!info||!ip) return ''; return `http://${ip}:${info.port}/`+(info.mj?`?table=${info.mj}`:''); }
+function draw(){
+  if(!info){ $('pill').className='pill off'; $('st').textContent='Arrêté'; return; }
+  $('pill').className='pill'; $('st').textContent='En marche';
+  const ips=info.ips||[]; if(!ip||!ips.includes(ip)) ip=ips[0]||null;
+  const s=$('ips'); s.hidden=ips.length<2; s.innerHTML=ips.map(x=>`<option${x===ip?' selected':''}>${x}</option>`).join('');
+  const L=link();
+  if(L){ $('addr').textContent=L; const q='/qr.svg?t='+encodeURIComponent(L); $('qr').style.visibility=''; $('copy').hidden=false; if($('qr').dataset.q!==q){ $('qr').src=q; $('qr').dataset.q=q; } $('hint').textContent='Les joueurs scannent ce QR code, ou tapent cette adresse dans leur navigateur. Ils doivent être sur le même wifi que ce PC.'; }
+  else { $('addr').textContent='Aucun réseau'; $('qr').style.visibility='hidden'; $('copy').hidden=true; $('hint').textContent='Ce PC n\'est connecté à aucun wifi ou réseau local.'; }
+  $('tbl').textContent=info.mj?info.mj:'pas encore ouverte'; $('tbl').style.fontSize=info.mj?'26px':'17px';
+  $('np').textContent=info.players||0; $('open').href=info.mjurl||'#';
+}
+async function poll(){ try{ const r=await fetch('/info',{cache:'no-store'}); info=await r.json(); }catch(e){ info=null; } draw(); }
+$('ips').onchange=e=>{ ip=e.target.value; draw(); };
+$('copy').onclick=()=>{ const L=link(); if(!L) return; (navigator.clipboard?navigator.clipboard.writeText(L):Promise.reject()).then(()=>{ $('copy').textContent='Adresse copiée'; setTimeout(()=>$('copy').textContent='Copier l\'adresse',1500); }).catch(()=>{}); };
+$('stop').onclick=async()=>{ const n=info&&info.players||0;
+  if(!confirm(n?`${n} joueur(s) connecté(s). Arrêter quand même le serveur ? La partie locale s'arrêtera pour tout le monde.`:'Arrêter le serveur local ?')) return;
+  try{ await fetch('/stop',{method:'POST'}); }catch(e){} info=null; draw(); };
+poll(); setInterval(poll,2000);
+</script>
+</body>
+</html>

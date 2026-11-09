@@ -10,6 +10,7 @@ replace rsc.io/qr => github.com/rsc/qr v0.2.0
 
 require (
 	fyne.io/systray v0.0.0-00010101000000-000000000000
+	github.com/go-ole/go-ole v1.3.0
 	github.com/gorilla/websocket v1.5.3
 	rsc.io/qr v0.0.0-00010101000000-000000000000
 )
