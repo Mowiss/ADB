@@ -3115,6 +3115,20 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 /* frénésie : symboles de colère qui palpitent */
 .tk .fx-colere i{position:absolute;line-height:1;font-style:normal;transform:translate(-50%,-50%);animation:fxAnger .85s ease-in-out var(--t,0s) infinite;z-index:2}
 @keyframes fxAnger{0%,100%{transform:translate(-50%,-50%) scale(.85);opacity:.85}40%{transform:translate(-50%,-50%) scale(1.25);opacity:1}}
+
+.tk .fx-bougies i.star{font-size:12px}
+.tk .fx-eau i.out{animation-name:fxSplash;animation-timing-function:ease-out;transform:translate(-50%,-50%)}
+@keyframes fxSplash{0%{transform:translate(-50%,-50%) scale(.2);opacity:0}20%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{transform:translate(calc(-50% + var(--x)),calc(-50% + var(--y))) scale(.7);opacity:0}}
+.tk .fx-malad i.p{width:30px;height:30px;margin:-15px 0 0 -15px}
+.tk .fx-malad i.p{animation-name:fxFart}
+@keyframes fxFart{0%{transform:translate(0,0) scale(.3);opacity:0}15%{opacity:.95}100%{transform:translate(var(--x,30px),var(--y,0px)) scale(2.4);opacity:0}}
+.tk .fx-malad .flies{position:absolute;left:50%;top:50%;width:0;height:0;z-index:3}
+.tk .fx-malad .flies b{position:absolute;left:0;top:0;width:5px;height:5px;margin:-2.5px;border-radius:50%;background:#121316;animation:fxFlyA var(--d,1.4s) ease-in-out var(--t,0s) infinite alternate}
+.tk .fx-malad .flies b:nth-child(2n){animation-name:fxFlyB}.tk .fx-malad .flies b:nth-child(3n){animation-name:fxFlyC}
+.tk .fx-malad .flies b::before,.tk .fx-malad .flies b::after{content:"";position:absolute;top:-3px;width:4px;height:3px;border-radius:50%;background:rgba(255,255,255,.75);animation:fxBuzz .08s linear infinite alternate}
+.tk .fx-malad .flies b::before{left:-3px}.tk .fx-malad .flies b::after{left:3px}
+.tk .fx-colere i.out{opacity:0;animation:fxPuffOut 1.9s ease-out var(--t,0s) infinite;transform:translate(-50%,-50%) scaleX(var(--sx,1))}
+@keyframes fxPuffOut{0%{transform:translate(-50%,-50%) scaleX(var(--sx,1)) scale(.3);opacity:0}15%{opacity:1}100%{transform:translate(calc(-50% + var(--x)),calc(-50% + var(--y))) scaleX(var(--sx,1)) scale(1.3);opacity:0}}
 /* bande d'états dans la fiche */
 #card.hasst{padding-right:54px;min-height:464px;width:334px}
 #card .stband{position:absolute;right:10px;top:12px;display:flex;flex-direction:column;gap:4px}
@@ -3507,16 +3521,18 @@ function stHTML(t){ const L=effSt(t); if(!L.length) return ''; const r=rnd(hashS
   if(on('brulure')){ h+='<div class="fx fx-feu">'; [[6,58,30,0],[60,54,40,.25],[66,22,22,.5],[16,30,18,.7]].forEach(([x,y,z,t])=>{ h+=`<i class="big" style="left:${x}px;top:${y}px;font-size:${z}px;--t:-${t}s">🔥</i>`; });
     for(let i=0;i<8;i++){ const x=8+r()*56, y=20+r()*44; h+=`<i class="sm" style="left:${x.toFixed(1)}px;top:${y.toFixed(1)}px;--x:${(-10+r()*20).toFixed(0)}px;--d:${(1.1+r()*1).toFixed(2)}s;--t:-${(r()*2).toFixed(2)}s;font-size:${(10+r()*8).toFixed(0)}px">🔥</i>`; } h+='</div>'; }
   if(on('saignement')){ h+='<div class="fx fx-sang">'; for(let i=0;i<4;i++){ const x=14+r()*44, y=6+r()*22; h+=`<i style="left:${x.toFixed(1)}px;top:${y.toFixed(1)}px;--y:${(52-y+r()*8).toFixed(0)}px;--d:${(2.4+r()*1.4).toFixed(2)}s;--t:-${(i*.8+r()*.4).toFixed(2)}s;font-size:${(14+r()*8).toFixed(0)}px">🩸</i>`; } h+='</div>'; }
-  if(on('etourdi')){ h+='<div class="fx fx-bougies">'; for(let i=0;i<5;i++) h+=`<i style="--t:-${(i*3/5).toFixed(2)}s">🕯️</i>`; h+='</div>'; }
+  if(on('etourdi')){ h+='<div class="fx fx-bougies">'; for(let i=0;i<6;i++) h+=`<i class="${i%2?'star':''}" style="--t:-${(i*3/6).toFixed(2)}s">${i%2?'⭐':'🕯️'}</i>`; h+='</div>'; }
   if(on('hypostasie')){ h+='<div class="fx fx-brume">'; [[-2,40,30,1.5,0],[74,50,30,2.5,0],[30,72,34,3.5,0],[14,46,50,0,1],[40,48,56,1,1],[26,62,60,2,1],[58,38,44,3,1],[36,32,40,.5,1],[56,64,46,1.7,1]].forEach(([x,y,z,t,d])=>{ h+=`<i class="${d?'d':'g'}" style="left:${x}px;top:${y}px;width:${z}px;height:${z*.8}px;--t:-${t}s"></i>`; }); h+='</div>'; }
-  if(on('pastop')){ h+='<div class="fx fx-sueur">'; for(let i=0;i<8;i++){ const a=Math.PI*(1.1+r()*.8), x=36+Math.cos(a)*(18+r()*12), y=36+Math.sin(a)*(14+r()*12); h+=`<i style="left:${x.toFixed(1)}px;top:${y.toFixed(1)}px;--d:${(2+r()*1.6).toFixed(2)}s;--t:-${(r()*3).toFixed(2)}s"></i>`; } h+='</div>'; }
+  if(on('pastop')){ h+='<div class="fx fx-sang fx-eau">'; for(let i=0;i<4;i++){ const x=14+r()*44, y=6+r()*22; h+=`<i style="left:${x.toFixed(1)}px;top:${y.toFixed(1)}px;--y:${(52-y+r()*8).toFixed(0)}px;--d:${(2.4+r()*1.4).toFixed(2)}s;--t:-${(i*.8+r()*.4).toFixed(2)}s;font-size:${(13+r()*7).toFixed(0)}px">💧</i>`; }
+    for(let i=0;i<3;i++){ const a=-Math.PI*(.15+r()*.7)+(i===2?Math.PI*.9:0), x=36+Math.cos(a)*30, y=36+Math.sin(a)*30; h+=`<i class="out" style="left:${x.toFixed(1)}px;top:${y.toFixed(1)}px;--x:${(Math.cos(a)*34).toFixed(0)}px;--y:${(Math.sin(a)*34).toFixed(0)}px;--d:${(1.6+r()).toFixed(2)}s;--t:-${(r()*2).toFixed(2)}s;font-size:${(16+r()*6).toFixed(0)}px">💦</i>`; } h+='</div>'; }
   if(on('entrave')){ const chain=(x1,y1,x2,y2)=>{ const n=9, dx=(x2-x1)/n, dy=(y2-y1)/n, ang=Math.atan2(dy,dx)*180/Math.PI; let g='';
       for(let i=0;i<=n;i++){ const cx=x1+dx*i, cy=y1+dy*i; g+=i%2?`<rect x="${(cx-5.5).toFixed(1)}" y="${(cy-1.6).toFixed(1)}" width="11" height="3.2" rx="1.6" transform="rotate(${ang.toFixed(0)} ${cx.toFixed(1)} ${cy.toFixed(1)})" fill="#8b919e" stroke="#2e3138" stroke-width="1"/>`
         :`<rect x="${(cx-6).toFixed(1)}" y="${(cy-3.8).toFixed(1)}" width="12" height="7.6" rx="3.8" transform="rotate(${ang.toFixed(0)} ${cx.toFixed(1)} ${cy.toFixed(1)})" fill="none" stroke="#2e3138" stroke-width="3.4"/><rect x="${(cx-6).toFixed(1)}" y="${(cy-3.8).toFixed(1)}" width="12" height="7.6" rx="3.8" transform="rotate(${ang.toFixed(0)} ${cx.toFixed(1)} ${cy.toFixed(1)})" fill="none" stroke="#b9bec9" stroke-width="1.6"/>`; } return g; };
     h+=`<div class="fx fx-chaine"><svg viewBox="0 0 100 100"><g>${chain(2,30,98,64)}</g><g>${chain(4,70,96,24)}</g></svg></div>`; }
-  if(on('maladie')){ h+='<div class="fx fx-malad">'; for(let i=0;i<5;i++){ const x=22+r()*28, y=58+r()*10; h+=`<i class="p" style="left:${x.toFixed(1)}px;top:${y.toFixed(1)}px;--x:${(-14+r()*28).toFixed(0)}px;--d:${(1.8+r()*1.4).toFixed(2)}s;--t:-${(r()*2.5).toFixed(2)}s"></i>`; }
-    for(let i=0;i<3;i++) h+=`<span class="orb" style="--d:${(1.4+r()*1.4).toFixed(2)}s;--t:-${(r()*2).toFixed(2)}s;${i%2?'animation-direction:reverse;':''}"><i style="--r:${(40+r()*10).toFixed(0)}px"></i></span>`; h+='</div>'; }
-  if(on('frenesie')){ h+='<div class="fx fx-colere">'; [[18,16,22,0],[56,32,26,.3],[50,60,20,.55],[14,52,14,.15]].forEach(([x,y,z,t])=>{ h+=`<i style="left:${x}px;top:${y}px;font-size:${z}px;--t:-${t}s">💢</i>`; }); h+='</div>'; }
+  if(on('maladie')){ h+='<div class="fx fx-malad">'; for(let i=0;i<6;i++){ const side=i%2?1:-1, x=36+side*(14+r()*14), y=56+r()*12; h+=`<i class="p" style="left:${x.toFixed(1)}px;top:${y.toFixed(1)}px;--x:${(side*(34+r()*30)).toFixed(0)}px;--y:${(-6+r()*24).toFixed(0)}px;--d:${(1.8+r()*1.4).toFixed(2)}s;--t:-${(r()*2.5).toFixed(2)}s"></i>`; }
+    const F=()=>((r()<.5?-1:1)*(34+r()*22)).toFixed(0)+'px'; h+='<span class="flies">'; for(let i=0;i<6;i++) h+=`<b style="--x1:${F()};--y1:${F()};--x2:${F()};--y2:${F()};--x3:${F()};--y3:${F()};--x4:${F()};--y4:${F()};--d:${(.9+r()*1.2).toFixed(2)}s;--t:-${(r()*2).toFixed(2)}s"></b>`; h+='</span></div>'; }
+  if(on('frenesie')){ h+='<div class="fx fx-colere">'; [[18,16,22,0],[56,32,26,.3],[50,60,20,.55],[14,52,14,.15]].forEach(([x,y,z,t])=>{ h+=`<i style="left:${x}px;top:${y}px;font-size:${z}px;--t:-${t}s">💢</i>`; });
+    [[8,30,-1,0],[64,22,1,.7],[62,58,1,1.3],[10,60,-1,1.9]].forEach(([x,y,d,t])=>{ h+=`<i class="out" style="left:${x}px;top:${y}px;--x:${d*36}px;--y:-${8+r()*14|0}px;--t:-${t}s;--sx:${d}">💨</i>`; }); h+='</div>'; }
   if(on('fracture')) h+='<div class="fx fx-fract"><svg viewBox="0 0 72 72"><path d="M34 -2L36 14 30 24 40 36 34 48 40 60 36 74" stroke="#14151a" stroke-width="2.6"/><path d="M35 -2L37 14 31 24 41 36 35 48 41 60 37 74" stroke="rgba(255,255,255,.8)" stroke-width=".9"/><path d="M40 36l14-6 8 3M34 48l-14 6-7-2M30 24l-12-4" stroke="#14151a" stroke-width="1.5"/></svg></div>';
   return h; }
 const ST_PLY={brulure:'burn',saignement:'bleed',etourdi:'stun',hypostasie:'hypoesthesia',pastop:'pasTop',entrave:'snare',maladie:'sick',frenesie:'frenzy',pompette:'pompette1',pinte:'pompette2',eclate:'pompette3'};
@@ -3530,11 +3546,12 @@ function splatBurst(t){ const w=document.createElement('div'); w.className='spla
   w.innerHTML=h; $('world').appendChild(w); setTimeout(()=>w.remove(),900); }
 function addBlood(b){ (S.blood=S.blood||[]).push(b); if(S.blood.length>500) S.blood.splice(0,S.blood.length-500); renderBlood(); markDirty(); syncLater(); }
 function splat(t){ splatBurst(t); if(!isPlayer) addBlood({k:'s',x:Math.round(t.x),y:Math.round(t.y),r:Math.round(34*(t.s||1)),n:hashStr(t.id+Date.now())%100000}); }
-function bleedTrail(t){ if(isPlayer||!effSt(t).includes('saignement')) return; const p=BLEED.get(t.id);
-  if(!p){ BLEED.set(t.id,[t.x,t.y]); return; } if(Math.hypot(t.x-p[0],t.y-p[1])<38) return; BLEED.set(t.id,[t.x,t.y]);
-  addBlood({k:'d',x:Math.round(t.x+(Math.random()-.5)*20),y:Math.round(t.y+(Math.random()-.5)*20),r:3+Math.round(Math.random()*4),n:(Math.random()*1e5)|0}); }
-function bloodShape(b){ const r=rnd(b.n||1), col=b.k==='s'?'#7c0b0e':'#8a0f12';
-  if(b.k==='d'){ let h=`<circle cx="${b.x}" cy="${b.y}" r="${b.r}" fill="${col}" opacity=".85"/>`; for(let i=0;i<2;i++){ const a=r()*6.28, d=b.r*(1.4+r()); h+=`<circle cx="${(b.x+Math.cos(a)*d).toFixed(1)}" cy="${(b.y+Math.sin(a)*d).toFixed(1)}" r="${(b.r*(.25+r()*.3)).toFixed(1)}" fill="${col}" opacity=".8"/>`; } return h; }
+function bleedTrail(t){ if(isPlayer) return; const E=effSt(t); if(E.includes('maladie')) trail(t,'m'); if(!E.includes('saignement')) return; trail(t,'d'); }
+function trail(t,k){ const id=t.id+k, p=BLEED.get(id);
+  if(!p){ BLEED.set(id,[t.x,t.y]); return; } if(Math.hypot(t.x-p[0],t.y-p[1])<38) return; BLEED.set(id,[t.x,t.y]);
+  addBlood({k,x:Math.round(t.x+(Math.random()-.5)*20),y:Math.round(t.y+(Math.random()-.5)*20),r:3+Math.round(Math.random()*4),n:(Math.random()*1e5)|0}); }
+function bloodShape(b){ const r=rnd(b.n||1), col=b.k==='s'?'#7c0b0e':b.k==='m'?'#5a3a17':'#8a0f12';
+  if(b.k==='d'||b.k==='m'){ let h=`<circle cx="${b.x}" cy="${b.y}" r="${b.r}" fill="${col}" opacity=".85"/>`; for(let i=0;i<2;i++){ const a=r()*6.28, d=b.r*(1.4+r()); h+=`<circle cx="${(b.x+Math.cos(a)*d).toFixed(1)}" cy="${(b.y+Math.sin(a)*d).toFixed(1)}" r="${(b.r*(.25+r()*.3)).toFixed(1)}" fill="${col}" opacity=".8"/>`; } return h; }
   const R=b.r, pts=[]; const n=14; for(let i=0;i<n;i++){ const a=i/n*Math.PI*2, rr=R*(.55+r()*.5); pts.push([b.x+Math.cos(a)*rr,b.y+Math.sin(a)*rr]); }
   let d='M'+pts.map(p=>p[0].toFixed(1)+' '+p[1].toFixed(1)).join('L')+'Z', h=`<path d="${d}" fill="${col}" opacity=".88" stroke="${col}" stroke-width="${(R*.25).toFixed(1)}" stroke-linejoin="round"/>`;
   for(let i=0;i<16;i++){ const a=r()*Math.PI*2, dd=R*(1+r()*1.6), rr=R*(.05+r()*.16), x=b.x+Math.cos(a)*dd, y=b.y+Math.sin(a)*dd;
