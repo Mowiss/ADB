@@ -1876,6 +1876,8 @@ function renderEngin(){
   $('eg-opp').onchange=e=>{ engOpp=+e.target.value; renderEngin(); };
   if($('eg-spend')) $('eg-spend').onchange=e=>{ engSpend=+e.target.value; };
   B.querySelectorAll('[data-st]').forEach(b=>b.onclick=()=>{ const k=b.dataset.st, S=ENG_ST[k], d=+b.dataset.d;
+    if(k==='integ'&&v.integ+d<=0){ openDialog(`<h3>Intégrité à zéro</h3><p>« ${esc(v.name||'Le véhicule')} » explose : il disparaît de la fiche, et tout ce qu'il y a dans sa soute est détruit.</p><div class="actions"><button class="btn ghost" type="button" data-close>Annuler</button><button class="btn danger" type="button" id="vb-ok">Exploser</button></div>`);
+      $('vb-ok').onclick=()=>{ C.lastBoom=v.id; C.vehicle=null; dlg.close(); markDirty(); renderEngin(); toast(`💥 ${v.name||'Le véhicule'} a explosé`); }; return; }
     if(k==='integ') v.integ=Math.max(0,Math.min(v.integMax,v.integ+d)); else v[k]=Math.max(S.min,Math.min(S.max,(+v[k]||0)+d)); up(); renderEngin(); });
   B.querySelector('[data-imax]').onclick=()=>{ openDialog(`<h3>Intégrité maximale</h3><div class="stepper" style="max-width:160px;margin:0 auto"><button type="button" id="im-m">−</button><input id="im-v" inputmode="numeric" value="${v.integMax}" aria-label="Intégrité maximale"><button type="button" id="im-p">+</button></div><div class="actions"><button class="btn ghost" type="button" data-close>Annuler</button><button class="btn" type="button" id="im-ok">Valider</button></div>`);
     $('im-m').onclick=()=>$('im-v').value=Math.max(1,(+$('im-v').value||1)-1); $('im-p').onclick=()=>$('im-v').value=Math.min(99,(+$('im-v').value||0)+1);
@@ -2243,6 +2245,7 @@ setInterval(()=>{ if(NETP.want&&netOpen()&&Date.now()-(NETP.seen||Date.now())>15
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&NETP.want&&!netOpen()){ NETP.retry=0; tbRetry(); } });
 function tbIn(d){ if(!d||typeof d!=='object') return;
   if(d.t==='vinteg'){ const v=Math.round(+d.v); if(C.vehicle&&Number.isFinite(v)&&v!==C.vehicle.integ){ C.vehicle.integ=Math.max(0,Math.min(C.vehicle.integMax,v)); if($('engin').classList.contains('open')) renderEngin(); markDirty(); toast(`Intégrité du véhicule : ${C.vehicle.integ}`); } return; }
+  if(d.t==='vboom'){ if(C.vehicle&&(!d.vid||C.vehicle.id===d.vid)){ const n=C.vehicle.name||'Votre véhicule'; C.lastBoom=C.vehicle.id; C.vehicle=null; if($('engin').classList.contains('open')) renderEngin(); markDirty(); toast(`💥 ${n} a explosé : la soute est perdue`); } return; }
   if(d.t==='pv'){ const v=Math.round(+d.v); if(Number.isFinite(v)&&v!==C.pv){ C.pv=v; renderAll(); markDirty(); toast(`PV : ${v} (maître du destin)`); } return; }
   if(d.t==='given'&&d.item){ const it=Object.assign(JSON.parse(JSON.stringify(d.item)),{id:Date.now()});
     if(d.g==='cyb'){ it.bodyPart=''; C.cybernetics.unshift(it); } else { it.zone=''; it.equipped=false; C.inventory.unshift(it); }
@@ -3325,6 +3328,19 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 #blood{position:absolute;left:0;top:0;width:1px;height:1px;overflow:visible;pointer-events:none;z-index:2}
 .splat{position:absolute;left:0;top:0;width:0;height:0;pointer-events:none;z-index:4}
 .splat i{position:absolute;width:var(--w,6px);height:var(--w,6px);margin:calc(var(--w,6px)/-2);border-radius:50%;background:#a10f12;animation:fxSplat .55s cubic-bezier(.15,.8,.3,1) forwards}
+.tk .vfx{position:absolute;inset:0;pointer-events:none;z-index:2}
+.vfx .sm{position:absolute;left:50%;top:15%;font-size:calc(24px*var(--s,1));line-height:1;color:#c3c7cf;text-shadow:0 0 8px rgba(255,255,255,.7);opacity:0;animation:vSmoke 2.6s ease-out infinite}
+.vfx.burn .sm{color:#3b3d44;text-shadow:0 0 6px rgba(0,0,0,.4)}
+.vfx .fi{position:absolute;font-size:calc(19px*var(--s,1));line-height:1;transform-origin:50% 100%;animation:vFire .55s ease-in-out infinite alternate}
+@keyframes vSmoke{0%{transform:translate(-50%,0) scale(.45);opacity:0}15%{opacity:.95}100%{transform:translate(calc(-50% + var(--dx)),calc(-70px*var(--s,1))) scale(1.7);opacity:0}}
+@keyframes vFire{0%{transform:scale(.85,.9) rotate(-6deg)}100%{transform:scale(1.1,1.25) rotate(5deg)}}
+.boom{position:absolute;left:0;top:0;width:0;height:0;pointer-events:none;z-index:7}
+.boom .bc{position:absolute;left:0;top:0;width:calc(240px*var(--s,1));height:calc(240px*var(--s,1));margin:calc(-120px*var(--s,1));border-radius:50%;background:radial-gradient(circle,#fff6c8 0,#ffb02e 30%,#ff4a12 55%,rgba(60,20,10,.0) 72%);animation:boomC .9s ease-out forwards}
+.boom .be{position:absolute;left:0;top:0;font-size:calc(90px*var(--s,1));line-height:1;transform:translate(-50%,-50%);animation:boomE 1.1s cubic-bezier(.2,1.6,.4,1) forwards}
+.boom i{position:absolute;left:0;top:0;font-style:normal;font-size:calc(22px*var(--s,1));animation:boomP 1.2s cubic-bezier(.15,.8,.3,1) forwards}
+@keyframes boomC{0%{transform:scale(.1);opacity:1}60%{opacity:.9}100%{transform:scale(1.4);opacity:0}}
+@keyframes boomE{0%{transform:translate(-50%,-50%) scale(.2);opacity:1}40%{transform:translate(-50%,-50%) scale(1.3)}100%{transform:translate(-50%,-50%) scale(1.6);opacity:0}}
+@keyframes boomP{0%{transform:translate(-50%,-50%) scale(.4);opacity:1}100%{transform:translate(calc(-50% + var(--x)),calc(-50% + var(--y))) scale(1.2);opacity:0}}
 @keyframes fxSplat{0%{transform:translate(0,0) scale(.4);opacity:1}100%{transform:translate(var(--x),var(--y)) scale(1);opacity:0}}
 /* lucioles : nuée de points lumineux */
 .tk.flies .face{opacity:0}
@@ -3336,7 +3352,7 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 @keyframes fxFlyB{0%{transform:translate(var(--x2),var(--y3))}33%{transform:translate(var(--x4),var(--y1))}66%{transform:translate(var(--x1),var(--y4))}100%{transform:translate(var(--x3),var(--y2))}}
 @keyframes fxFlyC{0%{transform:translate(var(--x3),var(--y4))}33%{transform:translate(var(--x1),var(--y2))}66%{transform:translate(var(--x4),var(--y3))}100%{transform:translate(var(--x2),var(--y1))}}
 @keyframes fxGlow{0%{opacity:.15}60%{opacity:1}100%{opacity:.5}}
-@media (prefers-reduced-motion:reduce){.tk .swarm b,.splat i{animation:none}}
+@media (prefers-reduced-motion:reduce){.tk .swarm b,.splat i,.vfx .sm,.vfx .fi{animation:none}}
 /* brouillard : jetons cachés dans les zones découvertes mais non vues */
 .player .tk.unseen{visibility:hidden}
 .fogpaint{cursor:crosshair}
@@ -3744,7 +3760,7 @@ function bleedTrail(t){ if(isPlayer) return; const E=effSt(t); if(E.includes('ma
 function trail(t,k){ const id=t.id+k, p=BLEED.get(id);
   if(!p){ BLEED.set(id,[t.x,t.y]); return; } if(Math.hypot(t.x-p[0],t.y-p[1])<38) return; BLEED.set(id,[t.x,t.y]);
   addBlood({k,x:Math.round(t.x+(Math.random()-.5)*20),y:Math.round(t.y+(Math.random()-.5)*20),r:3+Math.round(Math.random()*4),n:(Math.random()*1e5)|0}); }
-function bloodShape(b){ const r=rnd(b.n||1), col=b.k==='s'?'#7c0b0e':b.k==='m'?'#5a3a17':'#8a0f12';
+function bloodShape(b){ const r=rnd(b.n||1), col=b.k==='s'?'#7c0b0e':b.k==='b'?'#141210':b.k==='m'?'#5a3a17':'#8a0f12';
   if(b.k==='d'||b.k==='m'){ let h=`<circle cx="${b.x}" cy="${b.y}" r="${b.r}" fill="${col}" opacity=".85"/>`; for(let i=0;i<2;i++){ const a=r()*6.28, d=b.r*(1.4+r()); h+=`<circle cx="${(b.x+Math.cos(a)*d).toFixed(1)}" cy="${(b.y+Math.sin(a)*d).toFixed(1)}" r="${(b.r*(.25+r()*.3)).toFixed(1)}" fill="${col}" opacity=".8"/>`; } return h; }
   const R=b.r, pts=[]; const n=14; for(let i=0;i<n;i++){ const a=i/n*Math.PI*2, rr=R*(.55+r()*.5); pts.push([b.x+Math.cos(a)*rr,b.y+Math.sin(a)*rr]); }
   let d='M'+pts.map(p=>p[0].toFixed(1)+' '+p[1].toFixed(1)).join('L')+'Z', h=`<path d="${d}" fill="${col}" opacity=".88" stroke="${col}" stroke-width="${(R*.25).toFixed(1)}" stroke-linejoin="round"/>`;
@@ -3789,7 +3805,7 @@ function tokenEl(t){
   if(isPlayer&&ME&&t.owner===ME&&!el._mine){ el._mine=1; bindMine(el); }
   el.style.left=t.x+'px'; el.style.top=t.y+'px'; el.style.setProperty('--s',t.s||1);
   el.innerHTML=tokenHTML(t);
-  if(t.kind==='vehicle'){ const n=S.tokens.filter(p=>p.inveh===t.id).length, b=document.createElement('span'); b.className='vpax'; b.textContent=`${n}/${(t.veh&&t.veh.seats)||0}`; el.appendChild(b); }
+  if(t.kind==='vehicle'){ const n=S.tokens.filter(p=>p.inveh===t.id).length, b=document.createElement('span'); b.className='vpax'; b.textContent=`${n}/${(t.veh&&t.veh.seats)||0}`; el.appendChild(b); el.insertAdjacentHTML('beforeend',vehFxHTML(t)); }
   return el;
 }
 function renderTokens(){
@@ -3990,6 +4006,21 @@ const SEL=new Set(); let rselAt=0;
 const VEH_CAT=[{"cid": "v-velo", "name": "Vélo", "kind": "Deux-roues", "factor": 1, "arm": 0, "mot": 1, "seats": 1, "integMax": 4, "price": 150, "desc": "Silencieux, ne consomme rien. On pédale."}, {"cid": "v-hoverboard", "name": "Hoverboard", "kind": "Planche antigrav", "factor": 1, "arm": 0, "mot": 2, "seats": 1, "integMax": 3, "price": 400, "desc": "Flotte à 20 cm du sol. Craint l'eau."}, {"cid": "v-rat", "name": "Rat de selle", "kind": "Monture", "factor": 1, "arm": 1, "mot": 2, "seats": 2, "integMax": 8, "price": 600, "desc": "Monture vivante : mord quand on l'énerve."}, {"cid": "v-moto", "name": "Moto", "kind": "Deux-roues motorisé", "factor": 2, "arm": 0, "mot": 3, "seats": 2, "integMax": 8, "price": 1500, "desc": "Rapide et maniable, peu de soute."}, {"cid": "v-buggy", "name": "Buggy des sables", "kind": "Tout-terrain", "factor": 2, "arm": 1, "mot": 3, "seats": 2, "integMax": 10, "price": 2500, "desc": "Passe partout dans les déserts de Wastcity."}, {"cid": "v-jeep", "name": "Jeep", "kind": "Tout-terrain", "factor": 2, "arm": 2, "mot": 2, "seats": 4, "integMax": 14, "price": 4000, "desc": "Mitrailleuse de toit, quatre places."}, {"cid": "v-glisseur", "name": "Aéroglisseur", "kind": "Glisseur", "factor": 2, "arm": 0, "mot": 3, "seats": 4, "integMax": 10, "price": 5000, "desc": "Terre, eau, marais : glisse sur tout."}, {"cid": "v-camion", "name": "Camion blindé", "kind": "Poids lourd", "factor": 2, "arm": 3, "mot": 1, "seats": 8, "integMax": 25, "price": 9000, "desc": "Lent, increvable, grosse soute."}, {"cid": "v-helico", "name": "Hélico de transport", "kind": "Aéronef", "factor": 3, "arm": 2, "mot": 3, "seats": 6, "integMax": 18, "price": 15000, "desc": "Six places, treuil, mitrailleuse latérale."}, {"cid": "v-chasseur", "name": "Chasseur atmosphérique", "kind": "Aéronef", "factor": 3, "arm": 5, "mot": 4, "seats": 1, "integMax": 14, "price": 22000, "desc": "Monoplace armé jusqu'aux dents."}, {"cid": "v-navette", "name": "Navette spatiale", "kind": "Astronef", "factor": 4, "arm": 1, "mot": 3, "seats": 6, "integMax": 20, "price": 40000, "desc": "Orbite, atterrissage, cargo léger."}, {"cid": "v-croiseur", "name": "Astronef de combat", "kind": "Astronef", "factor": 4, "arm": 5, "mot": 4, "seats": 4, "integMax": 30, "price": 80000, "desc": "Tourelles, blindage, quatre postes."}];
 const vehAt=p=>S.tokens.find(v=>v.kind==='vehicle'&&v.id!==p.id&&Math.hypot(v.x-p.x,v.y-p.y)<40*(v.s||1)+12);
 const paxOf=v=>S.tokens.filter(p=>p.inveh===v.id);
+const vehR=t=>{ const V=t.veh||{}; return V.integMax?V.integ/V.integMax:(V.r??1); };
+function vehFxHTML(t){ const r=vehR(t); if(r>.5) return ''; const fire=r<=.3; let h=`<div class="vfx${fire?' burn':''}">`;
+  for(let i=0;i<(fire?4:3);i++) h+=`<span class="sm" style="--dx:${[-18,14,-6,22][i]}px;animation-delay:${(i*2.6/(fire?4:3)).toFixed(2)}s">☁︎</span>`;
+  if(fire) [[18,22],[62,14],[40,48],[72,52]].forEach(([x,y],i)=>h+=`<span class="fi" style="left:${x}%;top:${y}%;margin:-12px 0 0 -10px;animation-delay:${(i*.17).toFixed(2)}s">🔥</span>`);
+  return h+'</div>'; }
+function boomFx(x,y,s){ const w=document.createElement('div'); w.className='boom'; w.style.left=x+'px'; w.style.top=y+'px'; w.style.setProperty('--s',s||1.6); const r=rnd(Date.now()|0);
+  let h='<div class="bc"></div><div class="be">💥</div>'; for(let i=0;i<14;i++){ const a=r()*Math.PI*2, d=(70+r()*110)*(s||1.6)/1.6; h+=`<i style="--x:${(Math.cos(a)*d).toFixed(0)}px;--y:${(Math.sin(a)*d).toFixed(0)}px;animation-delay:${(r()*.15).toFixed(2)}s">${r()<.6?'🔥':'💨'}</i>`; }
+  w.innerHTML=h; $('world').appendChild(w); setTimeout(()=>w.remove(),1500); }
+/* intégrité à zéro : le véhicule explose, éjecte ses passagers, laisse une trace noire ; sa soute est perdue */
+function vehBoom(t){ const P=paxOf(t), n=P.length; P.forEach((p,i)=>{ const a=i/Math.max(1,n)*Math.PI*2+.3, r=80*(t.s||1)+40; p.inveh=null; p.x=bx(Math.round(t.x+Math.cos(a)*r),p); p.y=by(Math.round(t.y+Math.sin(a)*r),p); });
+  boomFx(t.x,t.y,t.s); send({t:'boom',x:t.x,y:t.y,s:t.s||1.6});
+  addBlood({k:'b',x:Math.round(t.x),y:Math.round(t.y),r:Math.round(46*(t.s||1.6)),n:hashStr(t.id+Date.now())%100000});
+  S.tokens=S.tokens.filter(x=>x!==t); S.order=S.order.filter(x=>x!==t.id); if(cardId===t.id) closeCard(); SEL.delete(t.id);
+  if(t.owner&&typeof netTo==='function') netTo(t.owner,{t:'vboom',vid:t.veh&&t.veh.vid});
+  renderTokens(); renderFoW(); markDirty(); sync(); toast(`💥 ${t.name||'Le véhicule'} explose${n?` : ${n} passager${n>1?'s':''} éjecté${n>1?'s':''}`:''}`); }
 function boardVeh(p,v){ const n=paxOf(v).length, max=(v.veh&&v.veh.seats)||0; if(n>=max){ toast(`${v.name||'Véhicule'} : plus de place (${max})`,true); return false; }
   p.inveh=v.id; p.x=v.x; p.y=v.y; SEL.delete(p.id); tokenEl(p); tokenEl(v); if(cardId===p.id) closeCard(); if(cardId===v.id) renderCard(); toast(`${p.name||'Aventurier'} monte dans ${v.name||'le véhicule'}`); return true; }
 function ejectVeh(p,v,i){ const a=(i||0)*1.3+.4, r=60*(v.s||1)+30; p.inveh=null; p.x=bx(Math.round(v.x+Math.cos(a)*r),p); p.y=by(Math.round(v.y+Math.sin(a)*r),p); tokenEl(p); tokenEl(v); }
@@ -3997,6 +4028,8 @@ function ejectAll(v){ paxOf(v).forEach((p,i)=>ejectVeh(p,v,i)); }
 function vehToken(x,owner){ const veh={cid:x.cid||'',kind:x.kind||'',factor:+x.factor||2,arm:+x.arm||0,mot:+x.mot||0,seats:+x.seats||1,integ:+(x.integ??x.integMax)||1,integMax:+x.integMax||1,vid:x.id||null};
   return {type:'prop',kind:'vehicle',ico:'car',name:x.name||'Véhicule',veh,owner:owner||null,s:1.6,note:x.desc||''}; }
 function vehFromSheet(pid,sh){ const t=S.tokens.find(x=>x.kind==='vehicle'&&x.owner===pid); if(!t) return; const v=sh&&sh.full&&sh.full.vehicle;
+  if(v&&v.id===t.veh.vid&&+v.integ<=0){ vehBoom(t); return; }
+  if(!v&&sh.full.lastBoom&&sh.full.lastBoom===t.veh.vid){ vehBoom(t); return; }
   if(!v||(t.veh.vid&&v.id!==t.veh.vid)){ ejectAll(t); S.tokens=S.tokens.filter(x=>x!==t); if(cardId===t.id) closeCard(); renderTokens(); renderFoW(); markDirty(); sync(); return; }
   const n=vehToken(v,pid); t.name=n.name; t.veh=n.veh; tokenEl(t); if(cardId===t.id) renderCard(); }
 function selPaint(){ document.querySelectorAll('.tk').forEach(el=>el.classList.toggle('sel',SEL.has(el.dataset.id))); }
@@ -4078,7 +4111,7 @@ function renderCard(){
   c.onclick=e=>{ const b=e.target.closest('button'); if(!b) return; if(performance.now()-cardAt<450) return;
     if(b.dataset.st){ toggleSt(t,b.dataset.st); return; }
     if(b.dataset.eject){ const p=tok(b.dataset.eject); if(p){ ejectVeh(p,t,paxOf(t).length); renderCard(); markDirty(); sync(); } return; }
-    if(b.dataset.vi){ const V=t.veh; V.integ=clamp(V.integ+(+b.dataset.vi),0,V.integMax); renderCard(); markDirty(); sync(); if(t.owner) netTo(t.owner,{t:'vinteg',v:V.integ}); return; }
+    if(b.dataset.vi){ const V=t.veh; V.integ=clamp(V.integ+(+b.dataset.vi),0,V.integMax); if(V.integ<=0){ vehBoom(t); return; } tokenEl(t); renderCard(); markDirty(); sync(); if(t.owner) netTo(t.owner,{t:'vinteg',v:V.integ}); return; }
     if(b.dataset.a==='close') closeCard();
     else if(b.dataset.a==='hide'){ t.hidden=!t.hidden; tokenEl(t); renderCard(); renderTracker(); renderFoW(); markDirty(); sync(); toast(t.hidden?'Caché aux joueurs':'Visible des joueurs'); }
     else if(b.dataset.a==='edit'){ entityDialog(t.type,t); }
@@ -6332,7 +6365,7 @@ function send(m){ if(isPlayer) return; m.n=Date.now()*100+(seq++%100); m.from='m
   if(bc) try{ bc.postMessage(m); }catch(e){}
   if(bc&&m.t!=='state') return;   // le canal direct suffit ; le stockage local ne garde que l'état complet
   try{ localStorage.setItem(LS_SYNC,JSON.stringify(m)); }catch(e){ if(m.t==='state'){ const lite={...m,bg:m.bg&&m.bg.length>1.5e6?'':m.bg}; try{ localStorage.setItem(LS_SYNC,JSON.stringify(lite)); }catch(e2){} } } }
-function publicState(){ const pub=t=>({id:t.id,type:t.type,name:t.name,hp:t.hp,hpMax:t.hpMax,img:t.img,ico:t.ico,emo:t.emo,x:t.x,y:t.y,s:t.s,r:t.r,owner:t.owner||null,note:t.type==='prop'&&t.note?' ':'',kind:t.kind==='deco'?'deco':t.kind==='vehicle'?'vehicle':undefined,inveh:t.inveh||undefined,veh:t.kind==='vehicle'?{seats:(t.veh||{}).seats||0}:undefined,stamp:t.stamp||undefined,st:(ALIVE(t)&&effSt(t).length)?effSt(t):undefined,lit:t.lit===false?false:undefined,ls:t.ls,lh:t.lh,lr:t.lr});
+function publicState(){ const pub=t=>({id:t.id,type:t.type,name:t.name,hp:t.hp,hpMax:t.hpMax,img:t.img,ico:t.ico,emo:t.emo,x:t.x,y:t.y,s:t.s,r:t.r,owner:t.owner||null,note:t.type==='prop'&&t.note?' ':'',kind:t.kind==='deco'?'deco':t.kind==='vehicle'?'vehicle':undefined,inveh:t.inveh||undefined,veh:t.kind==='vehicle'?{seats:(t.veh||{}).seats||0,r:Math.round(vehR(t)*100)/100}:undefined,stamp:t.stamp||undefined,st:(ALIVE(t)&&effSt(t).length)?effSt(t):undefined,lit:t.lit===false?false:undefined,ls:t.ls,lh:t.lh,lr:t.lr});
   return {t:'state',bg:S.bg,bgKind:S.bgKind||'',bgW:S.bgW||0,bgH:S.bgH||0,geo:S.geo||null,light:S.light,weather:S.weather||'',ground:S.ground||null,grid:S.grid,drawings:S.drawings,seen:S.seen||{},blood:S.blood||[],tokens:S.tokens.filter(t=>!t.hidden).map(t=>t.kind==='item'&&!t.inbox?Object.assign(pub(t),{item:1,g:t.g||'misc',data:itemData(t)}):t.inbox?{id:t.id,type:'prop',name:'',ico:'chest',img:null,x:t.x,y:t.y,s:Math.max(1,t.s||1),box:1,note:''}:pub(t)),order:S.order.filter(id=>{ const t=tok(id); return t&&!t.hidden; }),turn:turnIdForPlayers(),view:viewMsg()}; }
 function turnIdForPlayers(){ const L=orderToks(), c=L[S.turn]; return c&&!c.hidden?c.id:null; }
 let syncRaf=0; function sync(){ if(isPlayer||syncRaf) return; syncRaf=requestAnimationFrame(()=>{ syncRaf=0; send(publicState()); }); }
@@ -6359,6 +6392,7 @@ function receive(m){ if(!m) return;
     renderAllBoard(); if(NETVIEW) followMe(); else if(m.view) setPlayerView(m.view); }
   else if(m.t==='opened'){ reveal(m.id,m.item||{},m.by); }
   else if(m.t==='roll') bubble(m.pid,rollHTML(m.succ,m.dn),'',m.who);
+  else if(m.t==='boom') boomFx(m.x,m.y,m.s);
   else if(m.t==='say') bubble(m.pid,(m.priv?`<span><small class="to">${m.pid===ME?'→ '+esc(m.to||''):'Message privé'}</small>${esc(m.text||'')}</span>`:esc(m.text||'')),'say'+(m.priv?' priv':''),m.who);
   else if(m.t==='sys') sysMsg(m.text,false);
   else if(m.t==='view'){ if(!NETVIEW) setPlayerView(m); }
