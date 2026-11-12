@@ -2242,7 +2242,10 @@ function sheetImg(){ const key=(C.photo||'').length+'|'+(C.photo||'').slice(-64)
       if(pc&&pc.w) x.drawImage(im,-pc.l*128,-pc.t*128,pc.w*128,pc.h*128); else { const s=Math.min(im.width,im.height); x.drawImage(im,(im.width-s)/2,(im.height-s)/2,s,s,0,0,128,128); }
       netImgKey=key; netImg=cv.toDataURL('image/webp',.82); res(netImg); };
     im.onerror=()=>res(null); im.src=C.photo; }); }
-async function sheetData(){ const D=derive(C); return {name:(C.name||'').trim()||'Aventurier',stats:D.r,pvMax:D.pvMax,pv:C.pv,img:await sheetImg(),full:JSON.parse(JSON.stringify(C))}; }
+async function sheetData(){ const D=derive(C), full=JSON.parse(JSON.stringify(C)); delete full.photo; return {name:(C.name||'').trim()||'Aventurier',stats:D.r,pvMax:D.pvMax,pv:C.pv,img:await sheetImg(),full}; }
+/* gros messages découpés (WebRTC perd ou refuse les paquets trop gros) */
+let ckSeq=0;
+function csend(c,o){ const j=JSON.stringify(o); if(j.length<14000){ c.send(o); return; } const id='p'+(++ckSeq).toString(36)+Date.now().toString(36), N=12000, n=Math.ceil(j.length/N); for(let i=0;i<n;i++) c.send({t:'ck',id,i,n,s:j.slice(i*N,(i+1)*N)}); }
 const netOpen=()=>NETP.conn&&NETP.conn.open;
 
 async function tbJoin(code){
@@ -2281,7 +2284,8 @@ function tbConnect(){
   const late=setTimeout(()=>{ if(NETP.conn!==c||c.open) return; if(NETP.retry>0){ NETP.conn=null; try{ c.close(); }catch(e){} tbRetry(); return; } NETP.want=false; NETP.conn=null; try{ c.close(); }catch(e){}
     tbStatus('off','Hors ligne'); tbShowJoin();
     tbMsg('La table est trouvée, mais la connexion n\'aboutit pas (étape 3/3) : votre réseau la bloque (fréquent en 4G/5G). Rechargez l\'appli et réessayez ; sinon, demandez au maître du destin d\'activer son serveur relais puis de vous renvoyer le lien ou le QR code.'); },adbLocalPage()?8000:35000);
-  c.on('open',async()=>{ clearTimeout(late); NETP.retry=0; NETP.seen=Date.now(); c.send({t:'join',pid:NETP.pid,sheet:await sheetData()}); tbStatus('on',NETP.code); tbLive(); });
+  c.on('open',async()=>{ clearTimeout(late); NETP.retry=0; NETP.seen=Date.now(); csend(c,{t:'join',pid:NETP.pid,sheet:await sheetData()}); tbStatus('on',NETP.code); tbLive();
+    setTimeout(()=>{ if(NETP.conn!==c||!c.open) return; const st=NETP.last.state; try{ c.send({t:'diag',st:st?1:0,me:st&&(st.tokens||[]).some(t=>t.owner===NETP.pid)?1:0}); }catch(e){} },9000); });
   c.on('data',d=>{ NETP.seen=Date.now(); if(d&&d.t==='hb'){ try{ c.send({t:'hb'}); }catch(e){} return; } tbIn(d); });
   c.on('close',()=>{ if(NETP.conn!==c) return; NETP.conn=null;
     if(NETP.want) tbRetry(); });
@@ -2294,7 +2298,11 @@ function tbRetry(){ if(!NETP.want) return; NETP.retry++; const wait=Math.min(100
     NETP.conn=null; tbConnect(); },wait); }
 setInterval(()=>{ if(NETP.want&&netOpen()&&Date.now()-(NETP.seen||Date.now())>15000){ const c=NETP.conn; NETP.conn=null; try{ c.close(); }catch(e){} tbRetry(); } },3000);
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&NETP.want&&!netOpen()){ NETP.retry=0; tbRetry(); } });
+const CK=new Map();
 function tbIn(d){ if(!d||typeof d!=='object') return;
+  if(d.t==='ck'){ let e=CK.get(d.id); if(!e){ e={n:d.n,p:[],got:0,at:Date.now()}; CK.set(d.id,e); } if(e.p[d.i]==null){ e.p[d.i]=d.s; e.got++; }
+    if(e.got>=e.n){ CK.delete(d.id); let o=null; try{ o=JSON.parse(e.p.join('')); }catch(x){} if(o) tbIn(o); }
+    CK.forEach((v,k)=>{ if(Date.now()-v.at>60000) CK.delete(k); }); return; }
   if(d.t==='sys'&&d.vib){ try{ navigator.vibrate&&navigator.vibrate([300,120,300,120,500]); }catch(e){} }
   if(d.t==='vinteg'){ const v=Math.round(+d.v); if(C.vehicle&&Number.isFinite(v)&&v!==C.vehicle.integ){ C.vehicle.integ=Math.max(0,Math.min(C.vehicle.integMax,v)); if($('engin').classList.contains('open')) renderEngin(); markDirty(); toast(`Intégrité du véhicule : ${C.vehicle.integ}`); } return; }
   if(d.t==='frac'&&FRACTURE_STAT[d.zone]){ const has=C.fractures.includes(d.zone); if(d.on&&!has) C.fractures.push(d.zone); if(!d.on&&has) C.fractures.splice(C.fractures.indexOf(d.zone),1); clampPv(); renderAll(); markDirty(); toast(`Fracture ${d.zone} : ${d.on?'infligée':'soignée'} par le maître du destin`); return; }
@@ -2343,7 +2351,7 @@ function tbLeave(){ NETP.want=false; const c=NETP.conn, p=NETP.peer; NETP.conn=n
 let netSheetT=0;
 const _netMarkDirty=markDirty;
 markDirty=function(){ _netMarkDirty.apply(this,arguments); vehToFrame(); if(!netOpen()) return; clearTimeout(netSheetT);
-  netSheetT=setTimeout(async()=>{ if(netOpen()) NETP.conn.send({t:'sheet',sheet:await sheetData()}); },700); };
+  netSheetT=setTimeout(async()=>{ if(netOpen()) csend(NETP.conn,{t:'sheet',sheet:await sheetData()}); },700); };
 const _netLogRoll=logRoll;
 logRoll=function(label,rolls,th,succ){ _netLogRoll.apply(this,arguments); if(netOpen()) NETP.conn.send({t:'roll',label:String(label),rolls:[...(rolls||[])],th,succ}); };
 
@@ -7284,9 +7292,13 @@ const bgId=bg=>bg?bg.length+':'+bg.slice(-48):'';
 const players=()=>[...NET.conns].filter(c=>c.pid);
 
 /* envoi : le fond de carte ne part qu'une fois par joueur (et quand il change) */
+/* gros messages (état de la table, fond, portraits) découpés en morceaux : WebRTC refuse ou perd les paquets trop gros */
+let ckSeq=0;
+function csend(c,o){ const j=JSON.stringify(o); if(j.length<14000){ c.send(o); return; } const id=(++ckSeq).toString(36)+Date.now().toString(36), N=12000, n=Math.ceil(j.length/N);
+  for(let i=0;i<n;i++) c.send({t:'ck',id,i,n,s:j.slice(i*N,(i+1)*N)}); }
 function netSendTo(c,m){ if(!c.open) return; try{
-  if(m.t==='state'){ const id=bgId(m.bg); if(c.bgId!==id){ c.send({t:'bg',data:m.bg||'',kind:m.bgKind||''}); c.bgId=id; } const o=Object.assign({},m); delete o.bg; c.send(o); }
-  else c.send(m); }catch(e){} }
+  if(m.t==='state'){ const id=bgId(m.bg); if(c.bgId!==id){ csend(c,{t:'bg',data:m.bg||'',kind:m.bgKind||''}); c.bgId=id; } const o=Object.assign({},m); delete o.bg; csend(c,o); }
+  else csend(c,m); }catch(e){ console.warn('envoi au joueur impossible',e); } }
 function netSend(m){ if(!NET.conns.size) return; NET.conns.forEach(c=>{ if(c.pid) netSendTo(c,m); }); }
 const PL=new Map();   // joueurs de la séance : pid → {pid,name,sheet,online}
 function netTo(pid,m){ NET.conns.forEach(c=>{ if(c.pid===pid) netSendTo(c,m); }); }
@@ -7336,6 +7348,7 @@ function closeTable(){ const p=NET.peer, lp=NET.lpeer; NET.peer=null; NET.lpeer=
 
 /* messages reçus des joueurs */
 function netIn(c,d){ if(!d||typeof d!=='object') return;
+  if(d.t==='ck'){ const K=c.ck||(c.ck=new Map()); let e=K.get(d.id); if(!e){ e={n:d.n,p:[],got:0}; K.set(d.id,e); } if(e.p[d.i]==null){ e.p[d.i]=d.s; e.got++; } if(e.got>=e.n){ K.delete(d.id); let o=null; try{ o=JSON.parse(e.p.join('')); }catch(x){} if(o) netIn(c,o); } return; }
   if(d.t==='join'||d.t==='sheet'){ if(d.t==='join'){ c.pid=String(d.pid||c.peer); NET.conns.forEach(x=>{ if(x!==c&&x.pid===c.pid){ NET.conns.delete(x); try{ x.close(); }catch(e){} } }); clearTimeout((PL.get(c.pid)||{}).bye); } if(!c.pid) return;
     const sh=d.sheet||{}, first=!PL.has(c.pid)||!PL.get(c.pid).online;
     const P=Object.assign(PL.get(c.pid)||{pid:c.pid},{name:String(sh.name||'Aventurier').slice(0,40),sheet:sh,online:true});
@@ -7365,6 +7378,7 @@ function netIn(c,d){ if(!d||typeof d!=='object') return;
     const item=x.veh?null:objClean(x.data); if(item) delete item.price;
     netTo(c.pid,{t:'bought',price,g:x.g,item,veh:x.veh?Object.fromEntries(Object.entries(x.veh).filter(([k])=>k!=='price')):null});
     toast(`${c.name} achète ${x.data.name} (${price.toLocaleString('fr-FR')} ₿)`); markDirty(); sync(); if($('litem').classList.contains('open')&&IP.sec==='shop') renderItemPanel(); if(cardId===sh.id) renderCard(); }
+  else if(d.t==='diag'&&c.pid){ const own=S.tokens.some(x=>x.owner===c.pid&&x.type==='player'); if(!d.st) toast(`${c.name} n'a pas encore reçu la table (connexion lente ?)`,true); else if(own&&!d.me) toast(`${c.name} a reçu la table mais pas son jeton : réessayez`,true); }
   else if(d.t==='veh'&&c.pid){ const P=PL.get(c.pid), v=P&&P.sheet&&P.sheet.full&&P.sheet.full.vehicle, cur=S.tokens.find(x=>x.kind==='vehicle'&&x.owner===c.pid);
     if(cur){ removeToken(cur.id); toast(`${c.name} renvoie son véhicule`); return; }
     if(!v){ return; } const me=S.tokens.find(x=>x.owner===c.pid&&x.type==='player'), t=vehToken(v,c.pid);
@@ -7392,6 +7406,7 @@ function tokenData(sh){ sh=sh||{}; const st={}; STATS.forEach(s=>st[s]=Math.max(
   const PK={burn:'brulure',bleed:'saignement',stun:'etourdi',hypoesthesia:'hypostasie',pasTop:'pastop',snare:'entrave',sick:'maladie',frenzy:'frenesie',pompette1:'pompette',pompette2:'pinte',pompette3:'eclate'};
   (F.effects||[]).forEach(e=>{ const k=PK[e&&e.key]; if(k&&!ast.includes(k)) ast.push(k); }); data.ast=ast;
   return data; }
+const spFull=P=>{ const f=Object.assign({},(P.sheet&&P.sheet.full)||{}); if(!f.photo&&P.sheet&&P.sheet.img){ f.photo=P.sheet.img; delete f.photoCrop; } return f; };
 function claimToken(pid,sh,t){ Object.assign(t,tokenData(sh),{owner:pid}); tokenEl(t); renderTracker(); if(cardId===t.id) renderCard(); markDirty(); sync(); }
 
 /* onglets des joueurs au-dessus du bandeau bas */
@@ -7430,12 +7445,12 @@ function toggleSheet(pid){ if(sheetPid===pid){ closeSheet(); return; } sheetPid=
   const sp=$('sheetpanel'), html=window.__ADB_APPS&&window.__ADB_APPS.ply;
   $('sp-name').textContent=P.name; spTok(P); sp.hidden=false;
   if(!html){ $('sp-body').innerHTML='<p class="meta" style="padding:20px">La fiche n\'est pas disponible dans cette version.</p>'; renderPtabs(); return; }
-  const data=JSON.stringify((P.sheet&&P.sheet.full)||{}).replace(/</g,'\\u003c');
+  const data=JSON.stringify(spFull(P)).replace(/</g,'\\u003c');
   $('sp-body').innerHTML=''; const f=document.createElement('iframe'); f.title='Fiche de '+P.name;
   f.srcdoc=html.replace('<head>','<head><script>window.__ADB_SHEET_VIEW=1;window.__ADB_SHEET_DATA='+data+'<'+'/script>'); $('sp-body').appendChild(f);
   renderPtabs(); }
 function sheetRefresh(){ const P=PL.get(sheetPid), f=$('sp-body').querySelector('iframe'); if(!P||!f||!f.contentWindow) return;
-  $('sp-name').textContent=P.name; spTok(P); f.contentWindow.postMessage({__adbSheet:(P.sheet&&P.sheet.full)||{}},'*'); }
+  $('sp-name').textContent=P.name; spTok(P); f.contentWindow.postMessage({__adbSheet:spFull(P)},'*'); }
 function spTok(P){ const img=P.sheet&&P.sheet.img; $('sp-tok').innerHTML=img?`<img src="${img}" alt="">`:`<span class="ini">${esc((P.name||'?').trim().split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase())}</span>`; }
 function closeSheet(){ sheetPid=null; $('sheetpanel').hidden=true; $('sp-body').innerHTML=''; renderPtabs(); }
 
