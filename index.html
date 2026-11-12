@@ -2913,8 +2913,9 @@ dialog::backdrop{background:rgba(47,51,64,.42)}
 .btn.danger{background:var(--danger);border-color:var(--danger)}
 .btn.sc-blue{background:var(--c-res);border-color:var(--c-res)}
 .btn.sc-yel{background:#e0b11c;border-color:#e0b11c;color:#2f2600}
-.scacts{flex-wrap:wrap}.scacts .btn{flex:1 1 auto;padding:9px 10px}
-.dfoot.scacts+.dfoot{margin-top:8px;padding-top:0;border-top:0}
+.scb{width:34px;height:34px;border-radius:9px;border:0;display:grid;place-items:center;padding:0;color:#fff;cursor:pointer}.scb svg{width:18px;height:18px}
+.scb.sc-blue{background:var(--c-res)}.scb.sc-yel{background:#e0b11c;color:#2f2600}.scb.sc-red{background:var(--danger)}.scb:hover{filter:brightness(1.08)}
+.shead .scdel{width:26px;height:26px;border:0;background:none;color:var(--ink-soft);display:grid;place-items:center;padding:0;cursor:pointer;border-radius:7px}.shead .scdel:hover{color:var(--danger);background:var(--faint)}.shead .scdel svg{width:16px;height:16px}
 .btn:disabled{opacity:.5;cursor:default}
 .actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;align-items:center}
 .subttl{font-family:var(--f-title);font-size:14px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-strong);margin:4px 0 -4px}
@@ -3248,10 +3249,9 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 <aside class="drawer ldrawer" id="ldraw" style="--tc:var(--c-sav)" aria-label="Dessin"><header><h3>Dessin</h3></header><div class="dscroll" id="ldraw-body"></div></aside>
 <aside class="drawer ldrawer" id="lbest" style="--tc:var(--danger)" aria-label="Bestiaire"><header><h3>Bestiaire</h3></header><div class="dscroll" id="lbest-body"></div></aside>
 <aside class="drawer ldrawer" id="scenario" style="--tc:var(--c-per)" aria-label="Scénario">
-  <header><h3>Scénario</h3><span class="spacer"></span><button class="ib" type="button" id="sc-pdf" title="Exporter le scénario (PDF)"></button></header>
+  <header><h3>Scénario</h3><span class="spacer"></span><button class="ib" type="button" id="sc-save" title="Enregistrer le scénario (.adb) — à recharger en glissant le fichier dans la fenêtre"></button><button class="ib" type="button" id="sc-pdf" title="Exporter le scénario (PDF)"></button></header>
   <div class="dscroll" id="scenes"></div>
-  <div class="dfoot scacts"><button class="btn sc-blue" type="button" id="sc-new"></button><button class="btn sc-yel" type="button" id="sc-clean" title="Retire tracés, pictos, MOBs, PNJ, objets, sang et brouillard de la scène (le fond et les joueurs restent)"></button><button class="btn danger" type="button" id="sc-wipe" title="Remet toute la campagne à zéro"></button></div>
-  <div class="dfoot"><button class="btn ghost" type="button" id="sc-del" title="Supprimer la scène active"></button><span class="spacer"></span><button class="nb" type="button" id="sc-up" title="Scène précédente"></button><button class="nb" type="button" id="sc-down" title="Scène suivante"></button></div>
+  <div class="dfoot"><button class="scb sc-blue" type="button" id="sc-new" title="Nouvelle scène"></button><button class="scb sc-yel" type="button" id="sc-clean" title="Nettoyer la table : retire tracés, pictos, MOBs, PNJ, objets, sang et brouillard de la scène (le fond et les joueurs restent)"></button><button class="scb sc-red" type="button" id="sc-wipe" title="Effacer la campagne"></button><span class="spacer"></span><button class="nb" type="button" id="sc-up" title="Scène précédente"></button><button class="nb" type="button" id="sc-down" title="Scène suivante"></button></div>
 </aside>
 <aside class="drawer ldrawer" id="notes" style="--tc:var(--c-cha)" aria-label="Notes du MJ">
   <header><h3>Notes MJ</h3></header>
@@ -6010,11 +6010,12 @@ const lockBtn=sc=>`<button type="button" class="slock${sc.locked?' on':''}" data
 function renderScenes(){
   const box=$('scenes');
   box.innerHTML=S.scenes.length?S.scenes.map((sc,i)=>{ const on=i===S.scene, k=sceneCounts(sc,on), light=on?S.light:sc.light!==false, bg=on?S.bg:sc.bg;
-    return `<div class="scn ${on?'on':''}" data-i="${i}">${on?`<div class="sb" style="padding-top:12px"><div class="shead"><span class="cap" style="color:var(--c-per)">Scène ${i+1} · en jeu</span>${lockBtn(sc)}</div><input class="stt" value="${esc(sc.title)}" placeholder="Titre de la scène"><textarea placeholder="Description, déroulé, répliques…">${esc(sc.content||'')}</textarea>
+    return `<div class="scn ${on?'on':''}" data-i="${i}">${on?`<div class="sb" style="padding-top:12px"><div class="shead"><span class="cap" style="color:var(--c-per)">Scène ${i+1} · en jeu</span><span class="spacer"></span><button class="scdel" type="button" data-scdel title="Supprimer cette scène">${IB('bin')}</button>${lockBtn(sc)}</div><input class="stt" value="${esc(sc.title)}" placeholder="Titre de la scène"><textarea placeholder="Description, déroulé, répliques…">${esc(sc.content||'')}</textarea>
       <div class="meta2"><span>${IB(light?'sun':'moon')}${light?'Jour':'Nuit'}</span>${bg?`<span>${IB('image')}Fond</span>`:''}${k.m?`<span style="color:var(--danger)">${IB('skull')}${k.m}</span>`:''}${k.p?`<span style="color:var(--brown)">${IB('box')}${k.p}</span>`:''}</div></div>`
       :`<div class="shrow"><button class="sh" type="button"><i>${i+1}</i><b>${esc(sc.title||'Sans titre')}</b>${IB(light?'sun':'moon')}</button>${lockBtn(sc)}</div>`}</div>`; }).join('')
     :`<div class="empty">Aucune scène.<br>Une scène garde le fond de carte, la nuit, les tracés, les monstres et les décors : on passe de l'une à l'autre d'un clic, depuis ce volet ou la barre du haut.</div>`;
   box.querySelectorAll('.scn:not(.on) .sh').forEach(b=>b.onclick=()=>gotoScene(+b.closest('.scn').dataset.i));
+  box.querySelectorAll('[data-scdel]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); deleteScene(); });
   box.querySelectorAll('[data-lock]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); const i=+b.closest('.scn').dataset.i, sc=S.scenes[i];
     if(!sc.locked){ if(i===S.scene) snapshot(); sc.locked=true; toast(`Scène ${i+1} terminée : verrouillée, le plateau ne la modifie plus`); }
     else { sc.locked=false; toast(`Scène ${i+1} déverrouillée`); } markDirty(); renderScenes(); });
@@ -6022,7 +6023,7 @@ function renderScenes(){
   if(on){ const sc=S.scenes[S.scene], ti=on.querySelector('.stt'), ta=on.querySelector('textarea');
     ti.oninput=()=>{ sc.title=ti.value; renderSceneNav(); markDirty(); };
     ta.oninput=()=>{ sc.content=ta.value; markDirty(); }; }
-  $('sc-del').disabled=S.scene<0; $('sc-up').disabled=S.scene<=0; $('sc-down').disabled=S.scene<0||S.scene>=S.scenes.length-1;
+  $('sc-up').disabled=S.scene<=0; $('sc-down').disabled=S.scene<0||S.scene>=S.scenes.length-1;
   renderSceneNav();
 }
 function renderSceneNav(){ const sc=S.scenes[S.scene], b=$('sc-title');
@@ -6239,8 +6240,23 @@ async function openPicker(){
   $('file-open').click();
 }
 $('file-open').onchange=async e=>{ const f=e.target.files[0]; e.target.value=''; if(f) loadText(await f.text(),null,f.name); };
+/* scénario seul (.adb) : enregistré depuis le volet Scénario, rechargé en glissant le fichier dans la fenêtre */
+function saveScenario(){ if(!S.scenes.length){ toast('Aucune scène à enregistrer'); return; } snapshot();
+  const t=(S.scenes[0].title||'scenario').trim(), name='scenario-'+t.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/gi,'-').replace(/^-|-$/g,'').toLowerCase().slice(0,40)+'.adb';
+  const data=JSON.stringify({app:'aldebaran',kind:'scenario',v:1,saved:new Date().toISOString(),title:t,scenes:S.scenes});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([data],{type:'application/json'})); a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+  toast(`Scénario enregistré : ${name}`); }
+function importScenario(o){ const L=(o.scenes||[]).filter(x=>x&&typeof x==='object'); if(!L.length){ toast('Ce scénario ne contient aucune scène',true); return; }
+  const n=L.length, done=rep=>{ snapshot(); const fresh=clone(L); fresh.forEach(sc=>{ sc.locked=false; });
+    if(rep){ S.tokens=S.tokens.filter(t=>!t.scene); S.order=S.order.filter(id=>tok(id)); S.scenes=fresh; S.scene=-1; loadScene(0); }
+    else { const at=S.scenes.length; S.scenes.push(...fresh); loadScene(at); }
+    renderScenes(); markDirty(); toast(`${n} scène${n>1?'s':''} chargée${n>1?'s':''}`); };
+  if(!S.scenes.length){ done(true); return; }
+  openDialog(`<h3>Charger un scénario</h3><p>« ${esc(o.title||'Scénario')} » contient ${n} scène${n>1?'s':''}.</p><div class="actions"><button class="btn ghost" type="button" data-close>Annuler</button><button class="btn ghost" type="button" id="sci-add">Ajouter à la suite</button><button class="btn" type="button" id="sci-rep">Remplacer les scènes</button></div>`);
+  $('sci-add').onclick=()=>{ dlg.close(); done(false); }; $('sci-rep').onclick=()=>{ dlg.close(); done(true); }; }
 function loadText(txt,handle,name){
   let o; try{ o=JSON.parse(txt); }catch(e){ toast('Fichier illisible',true); return; }
+  if(o&&o.kind==='scenario'){ importScenario(o); return; }
   if(o&&o.kind==='joueur'&&o.character){ playerFromAdb(o); return; }
   if(!o||o.kind!=='mj'||!o.table){ toast('Ce fichier n\'est pas une table MJ Aldebaran',true); return; }
   S=Object.assign(blankTable(),o.table); setFile(name||null); setTimeout(histInit,0);
@@ -6363,7 +6379,7 @@ function wire(){ wireTouch(); $('b-undo').innerHTML=IB('undo'); $('b-redo').inne
   $('rb-notes').innerHTML=IB('note'); $('rb-roll').innerHTML=D10ICO; $('rb-loot').innerHTML=IB('coins'); $('rb-map').innerHTML=IB('map'); $('scn-ico').innerHTML=IB('scroll',1.5);
   document.querySelectorAll('[data-left]').forEach(b=>b.onclick=()=>openLeft(b.dataset.left));
   $('b-shuffle').innerHTML=IB('shuffle'); $('b-next').innerHTML=IB('next'); $('b-timer').innerHTML=IB('hourglass');
-  $('bin').innerHTML=IB('bin'); $('sc-pdf').innerHTML=IB('print'); $('sc-new').innerHTML=IB('clap')+'Nouvelle scène'; $('sc-clean').innerHTML=IB('eraser')+'Nettoyer la table'; $('sc-wipe').innerHTML=IB('bin')+'Effacer la campagne'; $('sc-del').innerHTML=IB('bin')+'Supprimer';
+  $('bin').innerHTML=IB('bin'); $('sc-pdf').innerHTML=IB('print'); $('sc-new').innerHTML=IB('plus'); $('sc-clean').innerHTML=IB('eraser'); $('sc-wipe').innerHTML=IB('bin'); $('sc-save').innerHTML=IB('save');
   const VT={scenario:IB('scroll'),notes:IB('note'),roller:D10ICO,loot:IB('coins'),fond:IB('planet'),mapdrw:IB('map')};
   document.querySelectorAll('.vtab').forEach(b=>{ b.insertAdjacentHTML('afterbegin',VT[b.dataset.drawer]); b.title=b.textContent.trim(); b.onclick=()=>openDrawer(b.dataset.drawer); });
   document.querySelectorAll('svg.ttl text').forEach(t=>{ const s=t.textContent; t.innerHTML=[...s].map(ch=>`<tspan>${ch===' '?'&#160;':esc(ch)}</tspan>`).join(''); });
@@ -6389,6 +6405,8 @@ function wire(){ wireTouch(); $('b-undo').innerHTML=IB('undo'); $('b-redo').inne
   board.addEventListener('contextmenu',e=>{ e.preventDefault(); if(e.target.closest('.tk')||e.target.closest('#card')) return; const [x,y]=toWorld(e.clientX,e.clientY); ping(x,y); send({t:'ping',x,y}); });
   bindFondDrop();
   board.addEventListener('dragover',e=>e.preventDefault());
+  if(!isPlayer){ window.addEventListener('dragover',e=>{ if([...(e.dataTransfer&&e.dataTransfer.types||[])].includes('Files')) e.preventDefault(); });
+    window.addEventListener('drop',async e=>{ const f=e.dataTransfer&&e.dataTransfer.files[0]; if(!f||!/\.adb$/i.test(f.name)||e.defaultPrevented) return; e.preventDefault(); loadText(await f.text(),null,f.name); }); }
   board.addEventListener('drop',async e=>{ e.preventDefault(); const f=e.dataTransfer.files[0]; if(!f) return;
     if(/\.adb$|\.json$/i.test(f.name)){ loadText(await f.text(),null,f.name); return; }
     if(isImgFile(f)) setBackground(f); });
@@ -6400,7 +6418,7 @@ function wire(){ wireTouch(); $('b-undo').innerHTML=IB('undo'); $('b-redo').inne
   $('b-full').onclick=()=>{ if(!document.fullscreenElement) document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); else document.exitFullscreen(); };
   $('sc-prev').onclick=()=>gotoScene(S.scene-1); $('sc-next').onclick=()=>gotoScene(S.scene+1); $('sc-num').onclick=()=>openDrawer('scenario',true);
   // scénario
-  $('sc-new').onclick=newSceneDialog; $('sc-clean').onclick=cleanTable; $('sc-wipe').onclick=newTable; $('sc-del').onclick=deleteScene; $('sc-up').onclick=()=>gotoScene(S.scene-1); $('sc-down').onclick=()=>gotoScene(S.scene+1); $('sc-pdf').onclick=exportScenario;
+  $('sc-new').onclick=newSceneDialog; $('sc-clean').onclick=cleanTable; $('sc-wipe').onclick=newTable; $('sc-save').onclick=saveScenario; $('sc-up').onclick=()=>gotoScene(S.scene-1); $('sc-down').onclick=()=>gotoScene(S.scene+1); $('sc-pdf').onclick=exportScenario;
   $('notes-in').oninput=e=>{ S.notes=e.target.value; markDirty(); };
   // initiative
   $('b-shuffle').onclick=()=>{ const ids=orderToks().map(t=>t.id); for(let i=ids.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [ids[i],ids[j]]=[ids[j],ids[i]]; }
