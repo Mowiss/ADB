@@ -7340,7 +7340,11 @@ function netIn(c,d){ if(!d||typeof d!=='object') return;
     const sh=d.sheet||{}, first=!PL.has(c.pid)||!PL.get(c.pid).online;
     const P=Object.assign(PL.get(c.pid)||{pid:c.pid},{name:String(sh.name||'Aventurier').slice(0,40),sheet:sh,online:true});
     PL.set(c.pid,P); c.name=P.name;
-    const t=S.tokens.find(x=>x.owner===c.pid&&x.kind!=='vehicle'); if(t) claimToken(c.pid,sh,t); vehFromSheet(c.pid,sh);
+    let t=S.tokens.find(x=>x.owner===c.pid&&x.kind!=='vehicle');
+    /* même aventurier revenu sous un autre identifiant (autre appareil, autre adresse) : on lui rend son jeton */
+    if(!t&&sh.name){ const k=normTxt(String(sh.name).trim()); t=S.tokens.find(x=>x.type==='player'&&x.owner!==c.pid&&normTxt(String(x.name||'').trim())===k&&!(x.owner&&PL.get(x.owner)&&PL.get(x.owner).online));
+      if(t){ const old=t.owner; if(old&&PL.has(old)&&!PL.get(old).online) PL.delete(old); S.tokens.forEach(v=>{ if(v.kind==='vehicle'&&v.owner===old) v.owner=c.pid; }); } }
+    if(t) claimToken(c.pid,sh,t); vehFromSheet(c.pid,sh);
     if(first&&d.t==='join') toast(`${P.name} rejoint la table : glissez son jeton depuis son onglet`);
     renderPtabs(); if(sheetPid===c.pid) sheetRefresh(); netStatus(NET.status);
     if(d.t==='join'){ c.bgId=null; const st=publicState(); st.n=Date.now()*100+(seq++%100); st.from='mj'; netSendTo(c,st); } }
