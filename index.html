@@ -3090,6 +3090,31 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 @keyframes fxCrack{to{stroke-dashoffset:0}}
 .tk.st-fracture .face{clip-path:polygon(0 0,46% 0,50% 20%,42% 33%,56% 50%,47% 66%,55% 83%,50% 100%,0 100%,0 0,100% 0,100% 100%,52% 100%,57% 83%,49% 66%,58% 50%,44% 33%,52% 20%,48% 0)}
 @media (prefers-reduced-motion:reduce){.tk .fx,.tk .fx *,.tk.st-frenesie .face,.tk.st-pompette .face,.tk.st-pinte .face,.tk.st-eclate .face{animation:none!important}}
+
+/* feu : grosses flammes et flammèches qui montent */
+.tk .fx-feu i{position:absolute;line-height:1;transform:translate(-50%,-85%);font-style:normal}
+.tk .fx-feu i.big{animation:fxBig .5s ease-in-out var(--t,0s) infinite alternate;transform-origin:50% 90%;z-index:2}
+@keyframes fxBig{0%{transform:translate(-50%,-85%) scale(.92,.9) rotate(-4deg)}100%{transform:translate(-50%,-92%) scale(1.06,1.14) rotate(4deg)}}
+.tk .fx-feu i.sm{opacity:0;animation:fxRise var(--d,1.4s) ease-out var(--t,0s) infinite;z-index:2}
+@keyframes fxRise{0%{transform:translate(-50%,-85%) scale(.3);opacity:0}15%{transform:translate(-50%,-85%) scale(1);opacity:1}100%{transform:translate(calc(-50% + var(--x,0px)),-300%) scale(.15);opacity:0}}
+/* sang : la goutte grossit puis coule */
+.tk .fx-sang i{position:absolute;line-height:1;font-style:normal;transform:translate(-50%,-50%) scale(0);opacity:0;animation:fxBleed var(--d,3s) ease-in var(--t,0s) infinite;z-index:2}
+@keyframes fxBleed{0%{transform:translate(-50%,-50%) scale(.1);opacity:0}10%{opacity:1}45%{transform:translate(-50%,-50%) scale(1);opacity:1}90%{transform:translate(-50%,calc(-50% + var(--y,40px))) scale(.85,1.15);opacity:1}100%{transform:translate(-50%,calc(-50% + var(--y,40px))) scale(.6);opacity:0}}
+/* étourdissement : des bougies tournent autour de la pastille, en perspective */
+.tk .fx-bougies svg{position:absolute;left:-20px;top:-20px;width:112px;height:112px;overflow:visible}
+.tk .fx-bougies svg path{fill:none;stroke:rgba(255,255,255,.85);stroke-width:1.4}
+.tk .fx-bougies .orb-b{z-index:-1}.tk .fx-bougies .orb-f{z-index:3}
+.tk .fx-bougies i{position:absolute;left:0;top:0;font-size:15px;line-height:1;font-style:normal;offset-path:path('M-14 26a50 12 0 0 0 100 0a50 12 0 0 0 -100 0');offset-rotate:0deg;offset-anchor:50% 85%;animation:fxOrbit 3s linear var(--t,0s) infinite}
+@keyframes fxOrbit{0%{offset-distance:0%;transform:scale(.8);z-index:3}25%{transform:scale(1.25);z-index:3}49.9%{transform:scale(.8);z-index:3}50%{offset-distance:50%;z-index:-1}75%{transform:scale(.5);z-index:-1}99.9%{z-index:-1}100%{offset-distance:100%;transform:scale(.8);z-index:-1}}
+/* hypoesthésie : un épais brouillard noir */
+.tk .fx.fx-brume{z-index:3}
+.tk .fx-brume i{position:absolute;border-radius:50%;transform:translate(-50%,-50%);font-style:normal;animation:fxFog 5s ease-in-out var(--t,0s) infinite alternate;z-index:2}
+.tk .fx-brume i.d{background:radial-gradient(closest-side,#040405,rgba(6,6,8,.96) 55%,rgba(10,10,12,0));filter:blur(2.5px)}
+.tk .fx-brume i.g{background:radial-gradient(closest-side,rgba(150,150,156,.55),rgba(110,110,116,.3) 50%,rgba(90,90,96,0));filter:blur(4px)}
+@keyframes fxFog{0%{transform:translate(-58%,-50%) scale(1)}50%{transform:translate(-44%,-56%) scale(1.15)}100%{transform:translate(-52%,-46%) scale(.95)}}
+/* frénésie : symboles de colère qui palpitent */
+.tk .fx-colere i{position:absolute;line-height:1;font-style:normal;transform:translate(-50%,-50%);animation:fxAnger .85s ease-in-out var(--t,0s) infinite;z-index:2}
+@keyframes fxAnger{0%,100%{transform:translate(-50%,-50%) scale(.85);opacity:.85}40%{transform:translate(-50%,-50%) scale(1.25);opacity:1}}
 /* bande d'états dans la fiche */
 #card.hasst{padding-right:54px;min-height:464px;width:334px}
 #card .stband{position:absolute;right:10px;top:12px;display:flex;flex-direction:column;gap:4px}
@@ -3462,11 +3487,11 @@ const STATUS=[
   ['brulure','Brûlure','#e8641c','<path d="M12 3c3 4 6 6.5 6 10.5A6 6 0 0 1 6 13.5c0-2.5 1.5-4 3-5.5.5 2 1.5 3 3 3-1-3 0-5.5 0-8z"/>'],
   ['saignement','Saignement','#b0141a','<path d="M12 3.5c3 4 5.5 7 5.5 10a5.5 5.5 0 0 1-11 0c0-3 2.5-6 5.5-10z"/>'],
   ['etourdi','Étourdissement','#c9a227','<path d="M12 12a1.5 1.5 0 1 1 1.5-1.5 3 3 0 1 1-3-3 4.5 4.5 0 1 1-4.5 4.5 6 6 0 1 1 6 6"/>'],
-  ['hypostasie','Hypoesthésie','#3a3d46','<path d="M4 8h10M6.5 12h13M4 16h11"/><path d="M14 8a2.5 2.5 0 1 0-2.5-2.5M19.5 12a2 2 0 1 1 0 4"/>'],
+  ['hypostasie','Hypoesthésie','#3a3d46','<path d="M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z"/><path d="M12 9.5a2.5 2.5 0 1 0 2.5 2.5M4 20L20 4"/>'],
   ['pastop','Pas top top','#3d8fd0','<path d="M8 4c1.6 2.2 2.6 3.6 2.6 5a2.6 2.6 0 0 1-5.2 0c0-1.4 1-2.8 2.6-5zM16 10c1.6 2.2 2.6 3.6 2.6 5a2.6 2.6 0 0 1-5.2 0c0-1.4 1-2.8 2.6-5z"/>'],
   ['entrave','Entravé','#7a8090','<path d="M9.5 14.5l5-5M7.5 11.5l-2 2a3.5 3.5 0 0 0 5 5l2-2M16.5 12.5l2-2a3.5 3.5 0 0 0-5-5l-2 2"/>'],
   ['maladie','Maladie','#5e9c2a','<path d="M6.5 17a3 3 0 0 1 .6-5.9A4.5 4.5 0 0 1 15.6 9a3.4 3.4 0 0 1 2.6 6.4A2.6 2.6 0 0 1 16 17z"/><circle cx="18.5" cy="5" r=".9" fill="currentColor"/><circle cx="21" cy="8" r=".7" fill="currentColor"/>'],
-  ['frenesie','Frénésie','#c0392b','<path d="M12 3v6l-4.5 3M12 9l4.5 3M7.5 12l-1 6M16.5 12l1.5 5M12 9v12M7 15l-3 1M17 14.5l3 .5"/>'],
+  ['frenesie','Frénésie','#c0392b','<path d="M9 3.5v3a2.5 2.5 0 0 1-2.5 2.5h-3M15 3.5v3a2.5 2.5 0 0 0 2.5 2.5h3M9 20.5v-3A2.5 2.5 0 0 0 6.5 15h-3M15 20.5v-3a2.5 2.5 0 0 1 2.5-2.5h3"/>'],
   ['pompette','Pompette','#c2307e','<path d="M7 3h10l-1.6 7a3.4 3.4 0 0 1-6.8 0zM12 13.4V20M8.5 20h7M7.6 6.5h8.8"/>'],
   ['pinte','Pinté','#a0268f','<path d="M5.5 6h9.5v13.5H5.5zM15 9h2.4a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H15M5.5 9.5H15M8.5 6V4.5M12 6V4"/>'],
   ['eclate','Éclaté','#6d1f7a','<path d="M10 3h4v4l2 3v10.5H8V10l2-3zM8 14h8"/><path d="M4 6l2 1M3.5 10.5l2-.2M20 6l-2 1M20.5 10.5l-2-.2"/>'],
@@ -3479,11 +3504,11 @@ function stClasses(t){ return effSt(t).map(k=>' st-'+k).join(''); }
 const rnd=seed=>{ let a=seed>>>0; return ()=>{ a=(a+0x6D2B79F5)>>>0; let x=Math.imul(a^a>>>15,1|a); x^=x+Math.imul(x^x>>>7,61|x); return ((x^x>>>14)>>>0)/4294967296; }; };
 function stHTML(t){ const L=effSt(t); if(!L.length) return ''; const r=rnd(hashStr(t.id)); let h='';
   const on=k=>L.includes(k);
-  if(on('brulure')){ h+='<div class="fx fx-brulure">'; for(let i=0;i<9;i++){ const a=Math.PI*(-.08+i/8*1.16), x=36+Math.cos(a)*34, y=36+Math.sin(a)*32; h+=`<i style="left:${x.toFixed(1)}px;top:${y.toFixed(1)}px;--d:${(.45+r()*.4).toFixed(2)}s;--t:-${(r()).toFixed(2)}s"></i>`; } h+='</div>'; }
-  if(on('saignement')){ h+='<div class="fx fx-saign">'; for(let i=0;i<5;i++){ const x=14+r()*44, y=44+r()*20; h+=`<i style="left:${x.toFixed(1)}px;top:${y.toFixed(1)}px;--d:${(1.2+r()*1.2).toFixed(2)}s;--t:-${(r()*2).toFixed(2)}s"></i>`; } h+='</div>'; }
-  if(on('etourdi')){ const sp='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 12a1.5 1.5 0 1 1 1.5-1.5 3 3 0 1 1-3-3 4.5 4.5 0 1 1-4.5 4.5 6 6 0 1 1 6 6"/></svg>';
-    h+='<div class="fx fx-etourdi">'+[0,1,2].map(i=>{ const a=-Math.PI/2+i*2*Math.PI/3; return sp.replace('<svg ',`<svg style="left:${(60+Math.cos(a)*52).toFixed(1)}px;top:${(60+Math.sin(a)*52).toFixed(1)}px" `); }).join('')+'</div>'; }
-  if(on('hypostasie')) h+='<div class="fx fx-hypo"></div>';
+  if(on('brulure')){ h+='<div class="fx fx-feu">'; [[6,58,30,0],[60,54,40,.25],[66,22,22,.5],[16,30,18,.7]].forEach(([x,y,z,t])=>{ h+=`<i class="big" style="left:${x}px;top:${y}px;font-size:${z}px;--t:-${t}s">🔥</i>`; });
+    for(let i=0;i<8;i++){ const x=8+r()*56, y=20+r()*44; h+=`<i class="sm" style="left:${x.toFixed(1)}px;top:${y.toFixed(1)}px;--x:${(-10+r()*20).toFixed(0)}px;--d:${(1.1+r()*1).toFixed(2)}s;--t:-${(r()*2).toFixed(2)}s;font-size:${(10+r()*8).toFixed(0)}px">🔥</i>`; } h+='</div>'; }
+  if(on('saignement')){ h+='<div class="fx fx-sang">'; for(let i=0;i<4;i++){ const x=14+r()*44, y=6+r()*22; h+=`<i style="left:${x.toFixed(1)}px;top:${y.toFixed(1)}px;--y:${(52-y+r()*8).toFixed(0)}px;--d:${(2.4+r()*1.4).toFixed(2)}s;--t:-${(i*.8+r()*.4).toFixed(2)}s;font-size:${(14+r()*8).toFixed(0)}px">🩸</i>`; } h+='</div>'; }
+  if(on('etourdi')){ h+='<div class="fx fx-bougies">'; for(let i=0;i<5;i++) h+=`<i style="--t:-${(i*3/5).toFixed(2)}s">🕯️</i>`; h+='</div>'; }
+  if(on('hypostasie')){ h+='<div class="fx fx-brume">'; [[-2,40,30,1.5,0],[74,50,30,2.5,0],[30,72,34,3.5,0],[14,46,50,0,1],[40,48,56,1,1],[26,62,60,2,1],[58,38,44,3,1],[36,32,40,.5,1],[56,64,46,1.7,1]].forEach(([x,y,z,t,d])=>{ h+=`<i class="${d?'d':'g'}" style="left:${x}px;top:${y}px;width:${z}px;height:${z*.8}px;--t:-${t}s"></i>`; }); h+='</div>'; }
   if(on('pastop')){ h+='<div class="fx fx-sueur">'; for(let i=0;i<8;i++){ const a=Math.PI*(1.1+r()*.8), x=36+Math.cos(a)*(18+r()*12), y=36+Math.sin(a)*(14+r()*12); h+=`<i style="left:${x.toFixed(1)}px;top:${y.toFixed(1)}px;--d:${(2+r()*1.6).toFixed(2)}s;--t:-${(r()*3).toFixed(2)}s"></i>`; } h+='</div>'; }
   if(on('entrave')){ const chain=(x1,y1,x2,y2)=>{ const n=9, dx=(x2-x1)/n, dy=(y2-y1)/n, ang=Math.atan2(dy,dx)*180/Math.PI; let g='';
       for(let i=0;i<=n;i++){ const cx=x1+dx*i, cy=y1+dy*i; g+=i%2?`<rect x="${(cx-5.5).toFixed(1)}" y="${(cy-1.6).toFixed(1)}" width="11" height="3.2" rx="1.6" transform="rotate(${ang.toFixed(0)} ${cx.toFixed(1)} ${cy.toFixed(1)})" fill="#8b919e" stroke="#2e3138" stroke-width="1"/>`
@@ -3491,7 +3516,7 @@ function stHTML(t){ const L=effSt(t); if(!L.length) return ''; const r=rnd(hashS
     h+=`<div class="fx fx-chaine"><svg viewBox="0 0 100 100"><g>${chain(2,30,98,64)}</g><g>${chain(4,70,96,24)}</g></svg></div>`; }
   if(on('maladie')){ h+='<div class="fx fx-malad">'; for(let i=0;i<5;i++){ const x=22+r()*28, y=58+r()*10; h+=`<i class="p" style="left:${x.toFixed(1)}px;top:${y.toFixed(1)}px;--x:${(-14+r()*28).toFixed(0)}px;--d:${(1.8+r()*1.4).toFixed(2)}s;--t:-${(r()*2.5).toFixed(2)}s"></i>`; }
     for(let i=0;i<3;i++) h+=`<span class="orb" style="--d:${(1.4+r()*1.4).toFixed(2)}s;--t:-${(r()*2).toFixed(2)}s;${i%2?'animation-direction:reverse;':''}"><i style="--r:${(40+r()*10).toFixed(0)}px"></i></span>`; h+='</div>'; }
-  if(on('frenesie')) h+='<div class="fx fx-veines"><svg viewBox="0 0 72 72" fill="none" stroke="#e0151b" stroke-linecap="round" stroke-linejoin="round"><path d="M2 30c8 2 12 6 15 4s6-8 11-6M17 34c1 6-2 10 1 14s9 4 11 9M28 28c4-3 9-2 12 2" stroke-width="2.8"/><path d="M70 40c-8-1-12-6-16-3s-4 9-10 9M54 37c-2-6 1-11-2-15s-9-3-12-8M44 46c2 5 0 10 4 14" stroke-width="2.8"/><path d="M17 34l-6 6M54 37l7-6M29 57l-3 9M48 60l2 9" stroke-width="1.1"/></svg></div>';
+  if(on('frenesie')){ h+='<div class="fx fx-colere">'; [[18,16,22,0],[56,32,26,.3],[50,60,20,.55],[14,52,14,.15]].forEach(([x,y,z,t])=>{ h+=`<i style="left:${x}px;top:${y}px;font-size:${z}px;--t:-${t}s">💢</i>`; }); h+='</div>'; }
   if(on('fracture')) h+='<div class="fx fx-fract"><svg viewBox="0 0 72 72"><path d="M34 -2L36 14 30 24 40 36 34 48 40 60 36 74" stroke="#14151a" stroke-width="2.6"/><path d="M35 -2L37 14 31 24 41 36 35 48 41 60 37 74" stroke="rgba(255,255,255,.8)" stroke-width=".9"/><path d="M40 36l14-6 8 3M34 48l-14 6-7-2M30 24l-12-4" stroke="#14151a" stroke-width="1.5"/></svg></div>';
   return h; }
 const ST_PLY={brulure:'burn',saignement:'bleed',etourdi:'stun',hypostasie:'hypoesthesia',pastop:'pasTop',entrave:'snare',maladie:'sick',frenesie:'frenzy',pompette:'pompette1',pinte:'pompette2',eclate:'pompette3'};
