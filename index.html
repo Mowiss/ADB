@@ -2541,17 +2541,22 @@ html.pland:not(.player){--bar:0px;--bot:0px;--rail:56px;--tabs:60px}
 .np i{width:8px;height:8px;border-radius:50%;background:var(--ok)}
 .np b{flex:1;color:var(--ink-strong)}
 .np small{font-size:11.5px;color:var(--ink-soft)}
-.ptabs{position:fixed;left:calc(var(--rail) + 16px);right:calc(var(--tabs) + 16px);bottom:calc(var(--bot) + var(--tim) - 1px);z-index:13;display:flex;gap:6px;align-items:flex-end;pointer-events:none;overflow:hidden}
-.ptab{pointer-events:auto;display:flex;align-items:center;gap:8px;background:var(--paper);border:1px solid var(--rule);border-bottom:0;border-radius:12px 12px 0 0;padding:5px 12px 5px 6px;cursor:grab;touch-action:none;user-select:none;position:relative;flex:none}
-.ptab::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--paper)}
-.ptab b{font-size:12px;font-weight:700;color:var(--ink-strong);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ptabs{position:fixed;right:0;top:calc(var(--bar) + 12px);z-index:13;display:flex;flex-direction:column;align-items:flex-end;gap:10px;pointer-events:none;max-height:calc(100vh - var(--bar) - var(--bot) - var(--tim) - 24px);overflow:visible}
+.ptab{pointer-events:auto;display:flex;align-items:center;background:var(--paper);border:1px solid var(--rule);border-right:0;border-radius:40px 0 0 40px;padding:4px;cursor:grab;touch-action:none;user-select:none;position:relative;flex:none;box-shadow:0 6px 18px rgba(20,24,40,.22)}
+.ptab .pt-tok{width:58px;height:58px;border-width:2px;position:relative;overflow:visible}
+.ptab .pt-tok img{border-radius:50%}
+.ptab .pt-tok .ini{font-size:18px}
+.pt-info{display:flex;flex-direction:column;justify-content:center;max-width:0;opacity:0;overflow:hidden;white-space:nowrap;padding:0;transition:max-width .28s ease,opacity .2s ease,padding .28s ease}
+.ptab:hover .pt-info,.ptab:focus-within .pt-info{max-width:240px;opacity:1;padding:0 18px 0 16px}
+.pt-info b{font-family:var(--f-title);font-weight:400;font-size:15px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-strong);line-height:1.35}
+.pt-info span{font-family:var(--f-title);font-weight:300;font-size:14px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink);line-height:1.35}
 .pt-tok{width:32px;height:32px;border-radius:50%;border:1.6px dashed var(--c-res);display:grid;place-items:center;overflow:hidden;color:var(--c-res);flex:none;background:var(--paper)}
 .pt-tok.placed{border-style:solid}
 .pt-tok img{width:100%;height:100%;object-fit:cover;pointer-events:none}
 .pt-tok .ini,.pt-ghost .ini{font-family:var(--f-title);font-size:13px;padding-top:2px}
-.pt-dot{width:7px;height:7px;border-radius:50%;background:var(--ok)}
-.ptab.off{opacity:.55}.ptab.off .pt-dot{background:var(--rule)}
-.ptab.on{border-color:var(--c-res)}.ptab.on b{color:var(--c-res)}
+.pt-dot{position:absolute;top:2px;right:1px;width:11px;height:11px;border-radius:50%;background:var(--ok);border:2px solid var(--paper)}
+.ptab.off{opacity:.6}.ptab.off .pt-dot{background:var(--rule)}
+.ptab.on{border-color:var(--c-res)}
 .pt-ghost{position:fixed;z-index:60;width:60px;height:60px;margin:-30px 0 0 -30px;border-radius:50%;border:1.6px solid var(--c-res);background:var(--paper);overflow:hidden;display:grid;place-items:center;pointer-events:none;opacity:.6;color:var(--c-res)}
 .pt-ghost.ok{opacity:1}
 .pt-ghost img{width:100%;height:100%;object-fit:cover}
@@ -2562,8 +2567,8 @@ html.pland:not(.player){--bar:0px;--bot:0px;--rail:56px;--tabs:60px}
 .sp-tab .cap{white-space:nowrap}
 .sp-tab .ib{width:24px;height:24px;border:0}
 #sp-body{flex:1;min-height:0;overflow:hidden;border-radius:0 13px 0 0}#sp-body iframe{width:100%;height:100%;border:0;display:block}
-.ptab.on{display:none}
 .player .ptabs,.player #sheetpanel,.booting .ptabs{display:none!important}
+.pland .ptabs{top:64px}.pland .ptab .pt-tok{width:44px;height:44px}
 .nrelay{border-top:1px solid var(--rule);padding-top:10px}
 .nrelay summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--ink);list-style:none}
 .nrelay summary::-webkit-details-marker{display:none}
@@ -5868,7 +5873,7 @@ function receive(m){ if(!m) return;
   if(m.t==='bg'){ S.bg=m.data||''; S.bgKind=m.kind||''; renderBoard(); return; }
   if(m.t==='full'){ noRoom(m.id); return; }
   if(m.t==='sys'&&m.priv){ sysMsg(m.text,true); return; }
-  if(m.t==='closed'){ $('pwait').textContent='Le maître du destin a fermé la table'; $('pwait').classList.remove('gone'); return; }
+  if(m.t==='closed'){ $('pwait').classList.add('gone'); S.tokens=[]; S.order=[]; renderAllBoard(); followMe(); return; }   /* table fermée : NO SIGNAL */
   if(m.from!=='mj'||m.n<=lastSeq) return; lastSeq=m.n;
   if(m.t==='state'){ $('pwait').classList.add('gone');
     if(m.bg!==undefined) S.bg=m.bg;
@@ -6499,7 +6504,7 @@ async function openTable(){
     else if(e.type==='browser-incompatible'){ toast('Ce navigateur ne gère pas la connexion directe (WebRTC)',true); closeTable(); }
     else if(e.type!=='peer-unavailable') toast('Réseau : '+e.type,true); });
 }
-function closeTable(){ const p=NET.peer, lp=NET.lpeer; NET.peer=null; NET.lpeer=null; NET.lon=false; if(lp) setTimeout(()=>{ try{ lp.destroy(); }catch(e){} },100); PL.forEach(P=>P.online=false); setTimeout(renderPtabs); NET.conns.forEach(c=>{ try{ c.send({t:'closed'}); c.close(); }catch(e){} }); NET.conns.clear(); if(p) try{ p.destroy(); }catch(e){} netStatus('off'); }
+function closeTable(){ const p=NET.peer, lp=NET.lpeer; NET.peer=null; NET.lpeer=null; NET.lon=false; if(lp) setTimeout(()=>{ try{ lp.destroy(); }catch(e){} },100); PL.forEach(P=>clearTimeout(P.bye)); PL.clear(); if(sheetPid) closeSheet(); setTimeout(renderPtabs); NET.conns.forEach(c=>{ try{ c.send({t:'closed'}); setTimeout(()=>{ try{ c.close(); }catch(e){} },300); }catch(e){} }); NET.pending.clear(); NET.conns.clear(); if(p) try{ p.destroy(); }catch(e){} netStatus('off'); }
 
 /* messages reçus des joueurs */
 function netIn(c,d){ if(!d||typeof d!=='object') return;
@@ -6537,11 +6542,14 @@ function claimToken(pid,sh,t){ Object.assign(t,tokenData(sh),{owner:pid}); token
 
 /* onglets des joueurs au-dessus du bandeau bas */
 let ptDrag=false, ptDirty=false;
+const RACE_LBL={humain:'Humain',troll:'Troll',elfe:'Elfe',demon:'Démon',droide:'Droïde',trifide:'Trifide'};
 function renderPtabs(){ const box=$('ptabs'); if(!box) return; if(ptDrag){ ptDirty=true; return; }
   box.innerHTML=[...PL.values()].map(P=>{ const placed=S.tokens.some(t=>t.owner===P.pid), img=P.sheet&&P.sheet.img;
     const ini=esc((P.name||'?').trim().split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase());
-    return `<div class="ptab${P.online?'':' off'}${sheetPid===P.pid?' on':''}" data-pid="${esc(P.pid)}" title="${esc(P.name)} — glisser le jeton sur la table · clic : la fiche">
-      <span class="pt-tok${placed?' placed':''}">${img?`<img src="${img}" alt="" draggable="false">`:`<span class="ini">${ini}</span>`}</span><b>${esc(P.name)}</b><i class="pt-dot"></i></div>`; }).join('');
+    const F=(P.sheet&&P.sheet.full)||{}, st=F.stats||(P.sheet&&P.sheet.stats)||{}, pow=Object.values(st).reduce((a,v)=>a+(+v||0),0), race=RACE_LBL[F.race]||F.race||'';
+    return `<div class="ptab${P.online?'':' off'}${sheetPid===P.pid?' on':''}" data-pid="${esc(P.pid)}" aria-label="${esc(P.name)} : glisser le jeton sur la table, clic pour la fiche">
+      <span class="pt-tok${placed?' placed':''}">${img?`<img src="${img}" alt="" draggable="false">`:`<span class="ini">${ini}</span>`}<i class="pt-dot"></i></span>
+      <span class="pt-info"><b>${esc(P.name)}</b>${race?`<span>${esc(race)}</span>`:''}<span>Power : ${pow}</span></span></div>`; }).join('');
   box.querySelectorAll('.ptab').forEach(bindPtab); }
 function bindPtab(el){ el.addEventListener('pointerdown',e=>{ if(e.button!==0) return; e.preventDefault();
   const pid=el.dataset.pid, P=PL.get(pid); if(!P) return; const sx=e.clientX, sy=e.clientY; let ghost=null;
