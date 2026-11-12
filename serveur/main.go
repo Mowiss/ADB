@@ -44,6 +44,9 @@ var iconICO []byte
 //go:embed status.html
 var statusHTML []byte
 
+//go:embed serveur-icon.png
+var statusIcon []byte
+
 var cacheDir string
 
 /* ---------------- relais (WebSocket) ---------------- */
@@ -504,6 +507,10 @@ func startServer() error {
 	mux.HandleFunc("/ws", wsHandler)
 	mux.HandleFunc("/info", infoHandler)
 	mux.HandleFunc("/qr.svg", qrHandler)
+	mux.HandleFunc("/serveur-icon.png", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "image/png")
+		w.Write(statusIcon)
+	})
 	mux.HandleFunc("/serveur", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Header().Set("Cache-Control", "no-store")
