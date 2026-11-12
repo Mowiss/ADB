@@ -3126,6 +3126,8 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 .tk .fx-malad .flies b::before,.tk .fx-malad .flies b::after{content:"";position:absolute;top:-3px;width:4px;height:3px;border-radius:50%;background:rgba(255,255,255,.75);animation:fxBuzz .08s linear infinite alternate}
 .tk .fx-malad .flies b::before{left:-3px}.tk .fx-malad .flies b::after{left:3px}
 .tk .fx i.out{position:absolute;left:36px;top:36px;line-height:1;font-style:normal;z-index:-1;opacity:0;animation:fxOut var(--d,2s) ease-out var(--t,0s) infinite}
+/* un seul passage pour les 💨 */
+.tk .fx i.out.puff{animation:none;opacity:0}.tk .fx i.out.puff.go{animation:fxOut 1.6s ease-out forwards}
 @keyframes fxOut{0%{transform:translate(-50%,-50%) rotate(var(--a)) translateX(0) rotate(var(--o)) scale(.5);opacity:1}70%{opacity:1}100%{transform:translate(-50%,-50%) rotate(var(--a)) translateX(var(--dist,60px)) rotate(var(--o)) scale(1.15);opacity:0}}
 /* bande d'états dans la fiche */
 #card.hasst{padding-right:54px;min-height:464px;width:334px}
@@ -3507,7 +3509,7 @@ const STATUS=[
   ['pompette','Pompette','#c2307e','<path d="M7 3h10l-1.6 7a3.4 3.4 0 0 1-6.8 0zM12 13.4V20M8.5 20h7M7.6 6.5h8.8"/>'],
   ['pinte','Pinté','#a0268f','<path d="M5.5 6h9.5v13.5H5.5zM15 9h2.4a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H15M5.5 9.5H15M8.5 6V4.5M12 6V4"/>'],
   ['eclate','Éclaté','#6d1f7a','<path d="M10 3h4v4l2 3v10.5H8V10l2-3zM8 14h8"/><path d="M4 6l2 1M3.5 10.5l2-.2M20 6l-2 1M20.5 10.5l-2-.2"/>'],
-  ['fracture','Fracture','#5a4636','<path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 3l-1.2 4.6 2.6 3-2 4 3 2.2-.8 4.2"/>']
+  ['fracture','Fracture','#5a4636','<path d="M17 10c.7-.7 1.69 0 2.5 0a2.5 2.5 0 1 0 0-5 .5.5 0 0 1-.5-.5 2.5 2.5 0 1 0-5 0c0 .81.7 1.8 0 2.5l-7 7c-.7.7-1.69 0-2.5 0a2.5 2.5 0 0 0 0 5c.28 0 .5.22.5.5a2.5 2.5 0 1 0 5 0c0-.81-.7-1.8 0-2.5z"/>']
 ];
 const ST_DRUNK=['pompette','pinte','eclate'];
 /* états effectifs : ceux posés par le MJ + ceux qui découlent de la fiche du joueur */
@@ -3530,13 +3532,15 @@ function stHTML(t){ const L=effSt(t); if(!L.length) return ''; const r=rnd(hashS
   if(on('maladie')){ h+='<div class="fx fx-malad">'; for(let i=0;i<6;i++){ const side=i%2?1:-1, x=36+side*(14+r()*14), y=56+r()*12; h+=`<i class="p" style="left:${x.toFixed(1)}px;top:${y.toFixed(1)}px;--x:${(side*(34+r()*30)).toFixed(0)}px;--y:${(-6+r()*24).toFixed(0)}px;--d:${(1.8+r()*1.4).toFixed(2)}s;--t:-${(r()*2.5).toFixed(2)}s"></i>`; }
     const F=()=>((r()<.5?-1:1)*(34+r()*22)).toFixed(0)+'px'; h+='<span class="flies">'; for(let i=0;i<6;i++) h+=`<b style="--x1:${F()};--y1:${F()};--x2:${F()};--y2:${F()};--x3:${F()};--y3:${F()};--x4:${F()};--y4:${F()};--d:${(.9+r()*1.2).toFixed(2)}s;--t:-${(r()*2).toFixed(2)}s"></b>`; h+='</span></div>'; }
   if(on('frenesie')){ h+='<div class="fx fx-colere">'; [[18,16,22,0],[56,32,26,.3],[50,60,20,.55],[14,52,14,.15]].forEach(([x,y,z,t])=>{ h+=`<i style="left:${x}px;top:${y}px;font-size:${z}px;--t:-${t}s">💢</i>`; });
-    for(let i=0;i<6;i++){ const a=i*60+r()*30; h+=`<i class="out" style="--a:${a.toFixed(0)}deg;--o:0deg;--t:-${(i*.33).toFixed(2)}s;--d:2s;--dist:${(58+r()*14).toFixed(0)}px;font-size:${(18+r()*6).toFixed(0)}px">💨</i>`; } h+='</div>'; }
+    h+=`<i class="out puff" style="--a:${(r()*360).toFixed(0)}deg;--o:0deg;--dist:64px;font-size:21px">💨</i>`; h+='</div>'; }
   if(on('fracture')) h+='<div class="fx fx-fract"><svg viewBox="0 0 72 72"><path d="M34 -2L36 14 30 24 40 36 34 48 40 60 36 74" stroke="#14151a" stroke-width="2.6"/><path d="M35 -2L37 14 31 24 41 36 35 48 41 60 37 74" stroke="rgba(255,255,255,.8)" stroke-width=".9"/><path d="M40 36l14-6 8 3M34 48l-14 6-7-2M30 24l-12-4" stroke="#14151a" stroke-width="1.5"/></svg></div>';
   return h; }
 const ST_PLY={brulure:'burn',saignement:'bleed',etourdi:'stun',hypostasie:'hypoesthesia',pastop:'pasTop',entrave:'snare',maladie:'sick',frenesie:'frenzy',pompette:'pompette1',pinte:'pompette2',eclate:'pompette3'};
 function toggleSt(t,k){ if(t.type==='player'&&t.owner&&ST_PLY[k]&&typeof netTo==='function'&&PL.get(t.owner)&&PL.get(t.owner).online){ const on=!effSt(t).includes(k); netTo(t.owner,{t:'fx',key:ST_PLY[k],on}); toast(on?'État envoyé sur sa fiche':'État retiré de sa fiche'); return; }
   const L=new Set(t.st||[]); if(L.has(k)) L.delete(k); else { if(ST_DRUNK.includes(k)) ST_DRUNK.forEach(d=>L.delete(d)); L.add(k); }
   t.st=[...L]; if(!t.st.length) delete t.st; tokenEl(t); renderCard(); markDirty(); sync(); }
+/* frénésie : un 💨 toutes les 2 secondes, dans une direction au hasard */
+setInterval(()=>{ document.querySelectorAll('.tk.st-frenesie .puff').forEach(el=>{ el.style.setProperty('--a',(Math.random()*360|0)+'deg'); el.classList.remove('go'); void el.offsetWidth; el.classList.add('go'); }); },2000);
 /* ===== Sang : gerbe à la mort, traces du saignement ===== */
 const HPPREV=new Map(), BLEED=new Map();
 function splatBurst(t){ const w=document.createElement('div'); w.className='splat'; w.style.left=t.x+'px'; w.style.top=t.y+'px'; const sc=t.s||1, r=rnd(Date.now()|0);
