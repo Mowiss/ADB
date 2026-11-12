@@ -212,7 +212,8 @@ body{overflow-x:clip}
 .eg-row .del{width:26px;height:26px;border:0;background:none;color:var(--ink-soft);padding:0}.eg-row .del:hover{color:var(--danger)}.eg-row .del svg{width:15px;height:15px}
 .eg-cap{font-size:12px;color:var(--ink-soft);font-weight:700}.eg-cap.over{color:var(--danger)}
 .eg-empty{border:1px dashed var(--rule);border-radius:12px;padding:26px 18px;text-align:center;color:var(--ink-soft);font-size:13px}
-.eg-foot{display:flex;justify-content:flex-end}
+.eg-foot{display:flex;justify-content:space-between;gap:10px}
+.eg-cat{max-height:none}
 /* Onglets verticaux collés au bord droit ; ils suivent le volet ouvert */
 .vtabs{position:fixed;right:0;top:calc(var(--bar) + env(safe-area-inset-top,0px));bottom:0;width:40px;z-index:41;display:flex;flex-direction:column;gap:4px;padding:14px 0 calc(14px + env(safe-area-inset-bottom,0px));background:var(--paper);border-left:1px solid var(--rule);overflow-y:auto}
 .vtab{display:flex;flex-direction:column;align-items:center;gap:7px;width:40px;padding:10px 0;border:0;border-left:3px solid transparent;border-radius:0;flex:none;background:var(--paper);color:var(--ink);cursor:pointer}
@@ -810,7 +811,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}input[type=num
   </div></aside>
 
 <aside class="drawer bank-drawer" id="engin" style="--tc:#e0761f" aria-label="Engin">
-  <header><h3>Engin</h3><span class="spacer"></span><button class="btn ghost" type="button" id="eng-add">Nouveau véhicule</button></header>
+  <header><h3>Engin</h3><span class="spacer"></span></header>
   <div class="engin" id="eng-body"></div>
 </aside>
 <aside class="drawer bank-drawer" id="bank" style="--tc:var(--c-res)" aria-label="Bank">
@@ -822,6 +823,8 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}input[type=num
     <div class="bk-head"><div class="subttl">Objets en coffre</div><button class="sq-add droptgt" type="button" id="bank-invdrop" title="Lâcher ici pour remettre dans l'inventaire" aria-label="Remettre dans l'inventaire" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 9.5L12 13l8.5-3.5"/><path d="M3.5 9.5V18l8.5 3.5 8.5-3.5V9.5"/><path d="M12 13v8.5"/><path d="M3.5 9.5L1.5 6 10 2.8l2 3.6M20.5 9.5l2-3.5L14 2.8l-2 3.6"/><path d="M12 6.4L3.5 9.5M12 6.4l8.5 3.1"/></svg></button></div>
     <p class="meta bk-hint">Pour déposer un objet, glissez-le depuis l'inventaire sur l'icône du coffre (ou sur cet onglet). Pour le récupérer, glissez-le ici sur l'icône de l'inventaire. Au coffre, il ne pèse plus sur la charge.</p>
     <div class="bk-list" id="bank-list"></div>
+    <div class="bk-head"><div class="subttl">Garage</div></div>
+    <div class="bk-list" id="bank-veh"></div>
   </div>
 </aside>
 
@@ -974,7 +977,9 @@ function normalize(ch){
   }
   // mains : les anciennes armes « équipées » prennent une main
   const used=new Set();
-  if(!Array.isArray(c.vehicles)) c.vehicles=[];
+  if(!Array.isArray(c.bankVehicles)) c.bankVehicles=[];
+  if(Array.isArray(c.vehicles)){ if(!c.vehicle&&c.vehicles[0]) c.vehicle=c.vehicles[0]; c.vehicles.slice(1).forEach(v=>c.bankVehicles.push(v)); delete c.vehicles; }
+  if(!c.vehicle) c.vehicle=null; [c.vehicle,...c.bankVehicles].forEach(v=>{ if(v) v.hold=(v.hold||[]).map(h=>h.pc!==undefined&&h.weight===undefined?{id:h.id,name:h.name,itemType:'misc',weight:+h.pc||0,specialAbility:h.note||'',zone:'',stat:'',diceBonus:0,successThreshold:8,armorPoints:0,bastosCost:'-'}:h); });
   if(!Array.isArray(c.bankInventory)) c.bankInventory=[]; c.bankBastos=+c.bankBastos||0;
   c.inventory.forEach(it=>{ if(!it.itemType) it.itemType='misc'; if(it.zone===undefined) it.zone='';
     if(isWeapon(it)&&it.equipped&&!it.zone){ if((it.hands||1)===2&&!used.size){ it.zone='Mains'; used.add('Main G');used.add('Main D'); } else { const h=HANDS.find(x=>!used.has(x)); if(h){ it.zone=h; used.add(h);} } }
@@ -1740,17 +1745,19 @@ function fxDialog(edit){
 }
 document.addEventListener('click',e=>{ if(e.target.closest('#b-addfx')) fxDialog(); });
 /* Ajouter : deux choix seulement — le catalogue, ou créer un objet (puis choix du type) */
-$('b-additem').onclick=()=>{
+function addDialog(target){ ADD_T=target||null;
   const nCat=catAll().length;
-  openDialog(`<h3>Ajouter</h3><div class="addgrid"><button type="button" class="cat-tile" id="open-cat">${svgI('book','#fff')}<b>Catalogue</b><span>${nCat} objet${nCat>1?'s':''} prêts à l'emploi</span></button><button type="button" id="open-new">${svgI('pen')}<b>Créer un objet</b><span>Arme, armure, soin, cybernétique…</span></button></div><div class="actions"><button class="btn ghost" type="button" data-close>Annuler</button></div>`);
+  openDialog(`<h3>${ADD_T==='hold'?'Ajouter à la soute':'Ajouter'}</h3><div class="addgrid"><button type="button" class="cat-tile" id="open-cat">${svgI('book','#fff')}<b>Catalogue</b><span>${nCat} objet${nCat>1?'s':''} prêts à l'emploi</span></button><button type="button" id="open-new">${svgI('pen')}<b>Créer un objet</b><span>Arme, armure, soin, cybernétique…</span></button></div><div class="actions"><button class="btn ghost" type="button" data-close>Annuler</button></div>`);
   $('open-cat').onclick=()=>catDialog();
   $('open-new').onclick=()=>newItemDialog();
-};
+}
+$('b-additem').onclick=()=>addDialog(null);
 function newItemDialog(){
   const grid=(T)=>Object.entries(T).map(([k,t])=>`<button type="button" data-newtype="${k}">${svgI(t.ico,t.col)}<b>${t.label}</b><span>${t.hint}</span></button>`).join('');
   openDialog(`<h3>Créer un objet</h3><div class="subttl">Équipement</div><div class="typegrid">${grid(ITEM_TYPES)}</div><div class="subttl">Cybernétique &amp; mutations</div><div class="typegrid">${grid(CYB_TYPES)}</div><div class="actions"><button class="btn ghost" type="button" id="new-back">Retour</button><button class="btn ghost" type="button" data-close>Annuler</button></div>`);
-  $('new-back').onclick=()=>$('b-additem').onclick();
+  $('new-back').onclick=()=>addDialog(ADD_T);
   $('dlg-body').querySelectorAll('[data-newtype]').forEach(b=>b.onclick=()=>{ const k=b.dataset.newtype; let id=Date.now();
+    if(ADD_T==='hold'){ const T=ITEM_TYPES[k]||null, w=T&&!!T.w; if(CYB_TYPES[k]) toHold({id,name:CYB_TYPES[k].label,_col:'cyb',bodyPart:'',type:k,ability:'',stat:'',diceBonus:0,successThreshold:8,weight:0}); else toHold({id,name:w?'Nouvelle arme':k==='backpack'?'Sac à dos':k==='armor'?'Nouvelle armure':k==='care'?'Nouveau soin':k==='drug'?'Nouvelle drogue':'Nouvel objet',itemType:w?'weapon':T.cat?'misc':k,hands:w?T.h:null,...(w?{cat:T.w}:T.cat?{cat:T.cat}:{}),equipped:false,zone:'',stat:w?'DEX':'',diceBonus:0,successThreshold:8,weight:1,armorPoints:0,bastosCost:'-',specialAbility:''}); setTimeout(()=>{ const L=$('eng-body').querySelectorAll('.eg-row input[data-f="name"]'); const n=L[L.length-1]; if(n){ n.focus(); n.select(); } },60); return; }
     if(CYB_TYPES[k]) C.cybernetics.unshift({id,name:CYB_TYPES[k].label,bodyPart:'',type:k,ability:'',stat:'',diceBonus:0,successThreshold:8});
     else { const T=ITEM_TYPES[k], w=!!T.w; C.inventory.unshift({id,name:w?'Nouvelle arme':k==='backpack'?'Sac à dos':k==='armor'?'Nouvelle armure':k==='care'?'Nouveau soin':k==='drug'?'Nouvelle drogue':'Nouvel objet',itemType:w?'weapon':T.cat?'misc':k,hands:w?T.h:null,...(w?{cat:T.w}:T.cat?{cat:T.cat}:{}),equipped:false,zone:'',stat:w?'DEX':'',diceBonus:0,successThreshold:8,weight:0,armorPoints:0,bastosCost:'-',specialAbility:''}); }
     dlg.close(); renderCards(); renderDerived(); markDirty(); const n=document.querySelector(`.row[data-id="${id}"] .nm`); if(n){ n.focus(); n.select(); } });
@@ -1767,7 +1774,7 @@ function catMeta(x){ const d=x.data, m=[];
 function catDialog(){
   const all=catAll(), has=new Set(all.map(catGroup)), groups=[['all','Tout'],...CAT_G.filter(([k])=>has.has(k))];
   if(catFilter!=='all'&&!has.has(catFilter)) catFilter='all';
-  openDialog(`<h3>Catalogue</h3><p class="meta" style="text-align:left;margin:0">Objets de base d'ALDEBARAN (fixes) et tous ceux créés dans vos fiches. Un clic en ajoute un exemplaire à l'inventaire.</p>
+  openDialog(`<h3>Catalogue</h3><p class="meta" style="text-align:left;margin:0">Objets de base d'ALDEBARAN (fixes) et tous ceux créés dans vos fiches. Un clic en ajoute un exemplaire ${ADD_T==='hold'?'dans la soute':'à l\'inventaire'}.</p>
     <input class="line-in" type="search" id="cat-q" placeholder="Rechercher…" value="${esc(catQ)}">
     <div class="cat-f">${groups.map(([k,l])=>`<button type="button" data-cf="${k}" class="${catFilter===k?'on':''}" title="${l}" aria-label="${l}" style="--fc:${CAT_GI[k][1]}">${svgI(CAT_GI[k][0])}</button>`).join('')}</div>
     <div class="cat-list" id="cat-list"></div>
@@ -1794,6 +1801,7 @@ function catDialog(){
       if(x){ x.del=true; x.at=Date.now(); x.data={name:x.data.name}; catDirty(); dirty=true; updateSaveState(); } draw(); return; }
     const add=e.target.closest('[data-catadd]'); if(!add) return; const x=catAll().find(y=>y.cid===add.dataset.catadd); if(!x) return;
     const it=Object.assign(JSON.parse(JSON.stringify(x.data)),{id:Date.now(),cid:x.cid});
+    if(ADD_T==='hold'){ if(x.col==='cyb') it._col='cyb'; toHold(it); return; }
     if(x.col==='cyb'){ it.bodyPart=''; C.cybernetics.unshift(it); } else { it.zone=''; it.equipped=false; C.inventory.unshift(it); }
     dlg.close(); renderCards(); renderDerived(); markDirty(); toast(`${it.name||'Objet'} ajouté`);
     const r=document.querySelector(`.row[data-id="${it.id}"]`); if(r){ r.scrollIntoView({block:'nearest',behavior:'smooth'}); r.animate([{background:'rgba(201,166,70,.25)'},{background:'transparent'}],{duration:1400}); } };
@@ -1818,27 +1826,39 @@ function openDrawer(id){ const was=id&&$(id).classList.contains('open');
   document.querySelectorAll('.vtab').forEach(t=>{ t.classList.toggle('on',t.dataset.drawer===cur); t.setAttribute('aria-expanded',t.dataset.drawer===cur); }); }
 document.querySelectorAll('.vtab').forEach(t=>t.onclick=()=>openDrawer(t.dataset.drawer));
 document.addEventListener('click',e=>{ if(e.target.closest('[data-closedrawer]')) openDrawer(null); });
-/* Engin : véhicules du personnage (règles « Pilotage » : armement, moteur, places, intégrité, facteur) */
+/* Engin : LE véhicule du personnage (règles « Pilotage » : armement, moteur, places, intégrité, facteur) ; les autres attendent au garage de la banque */
+const VEH_CAT=[{"cid": "v-velo", "name": "Vélo", "kind": "Deux-roues", "factor": 1, "arm": 0, "mot": 1, "seats": 1, "integMax": 4, "price": 150, "desc": "Silencieux, ne consomme rien. On pédale."}, {"cid": "v-hoverboard", "name": "Hoverboard", "kind": "Planche antigrav", "factor": 1, "arm": 0, "mot": 2, "seats": 1, "integMax": 3, "price": 400, "desc": "Flotte à 20 cm du sol. Craint l'eau."}, {"cid": "v-rat", "name": "Rat de selle", "kind": "Monture", "factor": 1, "arm": 1, "mot": 2, "seats": 2, "integMax": 8, "price": 600, "desc": "Monture vivante : mord quand on l'énerve."}, {"cid": "v-moto", "name": "Moto", "kind": "Deux-roues motorisé", "factor": 2, "arm": 0, "mot": 3, "seats": 2, "integMax": 8, "price": 1500, "desc": "Rapide et maniable, peu de soute."}, {"cid": "v-buggy", "name": "Buggy des sables", "kind": "Tout-terrain", "factor": 2, "arm": 1, "mot": 3, "seats": 2, "integMax": 10, "price": 2500, "desc": "Passe partout dans les déserts de Wastcity."}, {"cid": "v-jeep", "name": "Jeep", "kind": "Tout-terrain", "factor": 2, "arm": 2, "mot": 2, "seats": 4, "integMax": 14, "price": 4000, "desc": "Mitrailleuse de toit, quatre places."}, {"cid": "v-glisseur", "name": "Aéroglisseur", "kind": "Glisseur", "factor": 2, "arm": 0, "mot": 3, "seats": 4, "integMax": 10, "price": 5000, "desc": "Terre, eau, marais : glisse sur tout."}, {"cid": "v-camion", "name": "Camion blindé", "kind": "Poids lourd", "factor": 2, "arm": 3, "mot": 1, "seats": 8, "integMax": 25, "price": 9000, "desc": "Lent, increvable, grosse soute."}, {"cid": "v-helico", "name": "Hélico de transport", "kind": "Aéronef", "factor": 3, "arm": 2, "mot": 3, "seats": 6, "integMax": 18, "price": 15000, "desc": "Six places, treuil, mitrailleuse latérale."}, {"cid": "v-chasseur", "name": "Chasseur atmosphérique", "kind": "Aéronef", "factor": 3, "arm": 5, "mot": 4, "seats": 1, "integMax": 14, "price": 22000, "desc": "Monoplace armé jusqu'aux dents."}, {"cid": "v-navette", "name": "Navette spatiale", "kind": "Astronef", "factor": 4, "arm": 1, "mot": 3, "seats": 6, "integMax": 20, "price": 40000, "desc": "Orbite, atterrissage, cargo léger."}, {"cid": "v-croiseur", "name": "Astronef de combat", "kind": "Astronef", "factor": 4, "arm": 5, "mot": 4, "seats": 4, "integMax": 30, "price": 80000, "desc": "Tourelles, blindage, quatre postes."}];
+const LS_VEH='aldebaran.vehicules';
 const ENG_FACT=[[1,'1 · À pied, vélo, monture'],[2,'2 · Véhicule terrestre'],[3,'3 · Aéronef'],[4,'4 · Vaisseau spatial']];
 const ENG_ST={
   arm:{lbl:'Armement',col:'var(--c-sav)',ico:'<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>',min:0,max:30},
   mot:{lbl:'Moteur',col:'#e0761f',ico:'<path d="M5 19h14"/><path d="M7 19l1.5-9h7L17 19"/><path d="M9.5 10V6.5L12 4l2.5 2.5V10"/><path d="M10 14h4"/>',min:0,max:30},
   seats:{lbl:'Places',col:'var(--c-res)',ico:'<path d="M7 4v9c0 1 .8 2 2 2h7"/><path d="M7 13h8.5c.8 0 1.5.7 1.5 1.5V20"/><path d="M9 15v5"/>',min:0,max:60},
   integ:{lbl:'Intégrité',col:'var(--ok)',ico:'<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/><path d="M9 11h6M12 8v6"/>',min:0,max:99}};
-const vehNew=()=>({id:Date.now(),name:'',kind:'',factor:2,arm:0,mot:2,seats:2,integ:10,integMax:10,hold:[]});
-let engCur=null, engOpp=0, engSpend=0;
-function curVeh(){ const V=C.vehicles||(C.vehicles=[]); let v=V.find(x=>x.id===engCur); if(!v) v=V[0]; engCur=v?v.id:null; return v; }
-function engHoldPC(v){ return v.hold.reduce((a,h)=>a+(+h.pc||0),0); }
+const CAR_ICO='<path d="M3 15.5v-3.2l2.2-4.6c.3-.6.9-1 1.6-1h10.4c.7 0 1.3.4 1.6 1l2.2 4.6v3.2c0 .6-.4 1-1 1H4c-.6 0-1-.4-1-1z"/><path d="M3.4 12h17.2"/><circle cx="7" cy="16.5" r="2"/><circle cx="17" cy="16.5" r="2"/>'; IC.carv=CAR_ICO;
+const vehFrom=x=>({id:Date.now(),cid:x.cid||'',name:x.name||'',kind:x.kind||'',factor:+x.factor||2,arm:+x.arm||0,mot:+x.mot||0,seats:+x.seats||1,integ:+(x.integ??x.integMax)||1,integMax:+x.integMax||1,desc:x.desc||'',hold:[]});
+const vehCatMine=()=>{ try{ const L=JSON.parse(ls.get(LS_VEH)||'[]'); return Array.isArray(L)?L:[]; }catch(e){ return []; } };
+function vehCatSave(v){ if(!v||!(v.name||'').trim()||VEH_CAT.some(b=>b.name===v.name&&b.factor===v.factor&&b.arm===v.arm&&b.mot===v.mot&&b.seats===v.seats&&b.integMax===v.integMax)) return;
+  const L=vehCatMine().filter(x=>x.cid!=='u-'+v.id); L.unshift({cid:'u-'+v.id,name:v.name,kind:v.kind,factor:v.factor,arm:v.arm,mot:v.mot,seats:v.seats,integMax:v.integMax,desc:v.desc||''}); ls.set(LS_VEH,JSON.stringify(L.slice(0,60))); }
+let engOpp=0, engSpend=0, ADD_T=null, vcT=0;
+const holdPC=v=>v.hold.reduce((a,h)=>a+(+h.weight||0),0);
+const facLbl=f=>(ENG_FACT.find(x=>x[0]===+f)||[0,''])[1].replace(/^\d · /,'');
+function vehMeta(x){ return `Facteur ${x.factor} · ${facLbl(x.factor)} · moteur ${x.mot} · armement ${x.arm} · ${x.seats} place${x.seats>1?'s':''} · intégrité ${x.integMax}`; }
+function engPick(){ const B=$('eng-body'), mine=vehCatMine();
+  const row=(x,u)=>`<div class="cat-it"><button type="button" class="cat-add" data-vc="${esc(x.cid)}">${svgI('carv','#e0761f')}<span class="t"><b>${esc(x.name)}</b><i>${esc(vehMeta(x))}${x.price?` · ${x.price.toLocaleString('fr-FR')} ₿`:''}</i>${x.desc?`<em>${esc(x.desc)}</em>`:''}</span></button>${u?`<button type="button" class="cat-del" data-vdel="${esc(x.cid)}" title="Retirer du catalogue">×</button>`:''}</div>`;
+  B.innerHTML=`<div class="eg-empty">Aucun véhicule.${C.bankVehicles.length?` ${C.bankVehicles.length} au garage (Bank).`:''}<br><br><button class="btn" type="button" id="eng-new">Créer un véhicule</button></div>
+    <div class="subttl">Catalogue</div><div class="cat-list eg-cat">${mine.length?`<div class="cat-h" style="--fc:#e0761f">Mes véhicules</div>${mine.map(x=>row(x,1)).join('')}<div class="cat-h" style="--fc:#e0761f">Aldebaran</div>`:''}${VEH_CAT.map(x=>row(x,0)).join('')}</div>`;
+  $('eng-new').onclick=()=>{ C.vehicle=vehFrom({name:'',factor:2,mot:2,seats:2,integMax:10}); markDirty(); renderEngin(); setTimeout(()=>{ const n=$('eg-name'); if(n) n.focus(); },30); };
+  B.querySelectorAll('[data-vc]').forEach(b=>b.onclick=()=>{ const x=[...VEH_CAT,...vehCatMine()].find(y=>y.cid===b.dataset.vc); if(!x) return; C.vehicle=vehFrom(x); markDirty(); renderEngin(); toast(`${x.name} : en route !`); });
+  B.querySelectorAll('[data-vdel]').forEach(b=>b.onclick=()=>{ ls.set(LS_VEH,JSON.stringify(vehCatMine().filter(x=>x.cid!==b.dataset.vdel))); engPick(); }); }
 function renderEngin(){
-  const B=$('eng-body'), V=C.vehicles||(C.vehicles=[]), v=curVeh();
-  $('eng-add').hidden=!V.length;
-  if(!v){ B.innerHTML=`<div class="eg-empty">Aucun véhicule.<br><br><button class="btn" type="button" id="eng-first">Ajouter un véhicule</button></div>`; $('eng-first').onclick=engAdd; return; }
+  const B=$('eng-body'), v=C.vehicle;
+  if(!v){ engPick(); return; }
   const D=derive(C), dex=D.r.DEX||0, per=D.r.PER||0, diff=engOpp?Math.max(0,v.factor-engOpp):0, fb=Math.min(10,diff*5), boom=diff>=3, astro=v.factor>=4;
-  const cap=(+v.seats||0)*5, used=engHoldPC(v);
+  const cap=(+v.seats||0)*5, used=holdPC(v);
   const st=k=>{ const S=ENG_ST[k]; const val=k==='integ'?`<b>${v.integ}</b><small>/ ${v.integMax}</small>`:`<b>${v[k]}</b>`;
     return `<div class="eg-st ${k}" style="--sc:${S.col}"><svg class="ic" viewBox="0 0 24 24">${S.ico}</svg><span class="cap">${S.lbl}</span><div class="val"><button type="button" data-st="${k}" data-d="-1" aria-label="Moins">−</button>${val}<button type="button" data-st="${k}" data-d="1" aria-label="Plus">+</button></div>${k==='integ'?`<div class="eg-bar"><i style="width:${v.integMax?Math.round(100*v.integ/v.integMax):0}%"></i></div><button type="button" data-imax style="width:auto;height:auto;border:0;font-size:10.5px;color:var(--ink-soft)" title="Régler l'intégrité maximale">max ${v.integMax}</button>`:k==='seats'?`<span class="sub">${cap} PC de soute</span>`:'<span class="sub">dés</span>'}</div>`; };
-  B.innerHTML=`${V.length>1?`<div class="eg-tabs">${V.map(x=>`<button type="button" data-v="${x.id}" class="${x.id===v.id?'on':''}">${esc(x.name||'Sans nom')}</button>`).join('')}</div>`:''}
-    <div class="eg-id"><div class="field full"><span class="cap">Nom du véhicule</span><input class="line-in eg-name" id="eg-name" value="${esc(v.name)}" placeholder="Sans nom" autocomplete="off"></div>
+  B.innerHTML=`<div class="eg-id"><div class="field full"><span class="cap">Nom du véhicule</span><input class="line-in eg-name" id="eg-name" value="${esc(v.name)}" placeholder="Sans nom" autocomplete="off"></div>
       <div class="field"><span class="cap">Type</span><input class="line-in" id="eg-kind" value="${esc(v.kind)}" placeholder="Moto, jeep, astronef…" autocomplete="off"></div>
       <div class="field"><span class="cap">Facteur</span><select class="line-in" id="eg-fact">${ENG_FACT.map(([n,l])=>`<option value="${n}" ${+v.factor===n?'selected':''}>${l}</option>`).join('')}</select></div></div>
     <div class="eg-stats">${['arm','mot','seats','integ'].map(st).join('')}</div>
@@ -1846,12 +1866,11 @@ function renderEngin(){
       ${astro?`<label title="Chaque point d'intégrité dépensé baisse le seuil de réussite de 1">Dépenser l'intégrité <select class="line-in" id="eg-spend">${Array.from({length:Math.min(7,v.integ)+1},(_,i)=>`<option value="${i}" ${engSpend===i?'selected':''}>${i}</option>`).join('')}</select></label>`:''}</div>
     <div class="eg-act"><button class="btn" type="button" id="eg-pilot">Piloter<small>DEX ${dex} + moteur ${v.mot}${fb?` + ${fb}`:''}</small></button><button class="btn" type="button" id="eg-fire" ${v.arm?'':'disabled'}>Tirer<small>PER ${per} + armement ${v.arm}${fb?` + ${fb}`:''}</small></button></div>
     <div class="eg-hold-h"><div class="subttl">Soute</div><span class="eg-cap ${used>cap?'over':''}">${used} / ${cap} PC</span></div>
-    <div class="eg-hold">${v.hold.map(h=>`<div class="eg-row" data-h="${h.id}"><input data-f="name" value="${esc(h.name)}" placeholder="Objet"><input class="pc" data-f="pc" inputmode="numeric" value="${esc(String(h.pc??''))}" placeholder="PC" title="Points de charge"><input data-f="note" value="${esc(h.note)}" placeholder="Effet, description"><button class="del" type="button" data-hdel title="Retirer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4.5h6V7M6 7l1 13h10l1-13"/></svg></button></div>`).join('')}
+    <div class="eg-hold">${v.hold.map(h=>`<div class="eg-row" data-h="${h.id}"><input data-f="name" value="${esc(h.name||'')}" placeholder="Objet"><input class="pc" data-f="weight" inputmode="numeric" value="${esc(String(h.weight??''))}" placeholder="PC" title="Points de charge"><input data-f="specialAbility" value="${esc(h.specialAbility||h.ability||'')}" placeholder="Effet, description"><button class="del" type="button" data-hdel title="Retirer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4.5h6V7M6 7l1 13h10l1-13"/></svg></button></div>`).join('')}
       <button class="btn ghost" type="button" id="eg-hadd">Ajouter à la soute</button></div>
-    <div class="eg-foot"><button class="btn ghost" type="button" id="eg-del" style="color:var(--danger)">Supprimer ce véhicule</button></div>`;
-  const up=()=>{ markDirty(); };
-  B.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{ engCur=+b.dataset.v; engSpend=0; renderEngin(); });
-  $('eg-name').oninput=e=>{ v.name=e.target.value; up(); const t=B.querySelector(`[data-v="${v.id}"]`); if(t) t.textContent=v.name||'Sans nom'; };
+    <div class="eg-foot"><button class="btn ghost" type="button" id="eg-park">Garer à la banque</button><button class="btn ghost" type="button" id="eg-del" style="color:var(--danger)">Supprimer</button></div>`;
+  const up=()=>{ markDirty(); clearTimeout(vcT); vcT=setTimeout(()=>vehCatSave(C.vehicle),800); };
+  $('eg-name').oninput=e=>{ v.name=e.target.value; up(); };
   $('eg-kind').oninput=e=>{ v.kind=e.target.value; up(); };
   $('eg-fact').onchange=e=>{ v.factor=+e.target.value; engSpend=0; up(); renderEngin(); };
   $('eg-opp').onchange=e=>{ engOpp=+e.target.value; renderEngin(); };
@@ -1869,21 +1888,26 @@ function renderEngin(){
     engSpend=0; renderEngin(); };
   $('eg-pilot').onclick=()=>roll('Pilotage','DEX',+v.mot||0,'moteur');
   $('eg-fire').onclick=()=>roll('Tir','PER',+v.arm||0,'armement');
-  B.querySelectorAll('.eg-row').forEach(r=>{ const h=v.hold.find(x=>x.id===+r.dataset.h);
-    r.querySelectorAll('input').forEach(i=>i.oninput=()=>{ h[i.dataset.f]=i.dataset.f==='pc'?(i.value=i.value.replace(/[^\d]/g,''),i.value===''?'':+i.value):i.value; up();
-      if(i.dataset.f==='pc'){ const u=engHoldPC(v), c=$('eng-body').querySelector('.eg-cap'); c.textContent=`${u} / ${cap} PC`; c.classList.toggle('over',u>cap); } });
-    r.querySelector('[data-hdel]').onclick=()=>{ v.hold.splice(v.hold.indexOf(h),1); up(); renderEngin(); }; });
-  $('eg-hadd').onclick=()=>{ v.hold.push({id:Date.now(),name:'',pc:1,note:''}); up(); renderEngin(); const L=$('eng-body').querySelectorAll('.eg-row input[data-f="name"]'); if(L.length) L[L.length-1].focus(); };
+  B.querySelectorAll('.eg-row').forEach(r=>{ const h=v.hold.find(x=>String(x.id)===r.dataset.h);
+    r.querySelectorAll('input').forEach(i=>i.oninput=()=>{ const f=i.dataset.f; if(f==='weight'){ i.value=i.value.replace(/[^\d]/g,''); h.weight=i.value===''?0:+i.value; } else { h[f]=i.value; if(f==='specialAbility'&&h.ability!==undefined) h.ability=i.value; } markDirty();
+      if(f==='weight'){ const u=holdPC(v), c=$('eng-body').querySelector('.eg-cap'); c.textContent=`${u} / ${cap} PC`; c.classList.toggle('over',u>cap); } });
+    r.querySelector('[data-hdel]').onclick=()=>{ v.hold.splice(v.hold.indexOf(h),1); markDirty(); renderEngin(); }; });
+  $('eg-hadd').onclick=()=>addDialog('hold');
+  $('eg-park').onclick=()=>{ C.bankVehicles.unshift(v); C.vehicle=null; markDirty(); renderEngin(); toast(`${v.name||'Véhicule'} garé à la banque`); };
   $('eg-del').onclick=()=>{ openDialog(`<h3>Supprimer le véhicule</h3><p>« ${esc(v.name||'Sans nom')} » et le contenu de sa soute seront retirés de la fiche.</p><div class="actions"><button class="btn ghost" type="button" data-close>Annuler</button><button class="btn danger" type="button" id="vd-ok">Supprimer</button></div>`);
-    $('vd-ok').onclick=()=>{ C.vehicles.splice(C.vehicles.indexOf(v),1); engCur=null; dlg.close(); up(); renderEngin(); }; };
+    $('vd-ok').onclick=()=>{ C.vehicle=null; dlg.close(); markDirty(); renderEngin(); }; };
 }
-function engAdd(){ const v=vehNew(); (C.vehicles||(C.vehicles=[])).push(v); engCur=v.id; markDirty(); renderEngin(); setTimeout(()=>{ const n=$('eg-name'); if(n) n.focus(); },30); }
-$('eng-add').onclick=engAdd;
+/* ce qu'on ajoute « à la soute » passe par la même fenêtre que l'inventaire */
+function toHold(it){ const v=C.vehicle; if(!v) return false; it.zone=''; it.equipped=false; v.hold.push(it); dlg.close(); markDirty(); renderEngin(); toast(`${it.name||'Objet'} chargé dans la soute`);
+  setTimeout(()=>{ const L=$('eng-body').querySelectorAll('.eg-row'); const r=L[L.length-1]; if(r){ r.scrollIntoView({block:'nearest',behavior:'smooth'}); r.animate([{background:'rgba(224,118,31,.22)'},{background:'transparent'}],{duration:1400}); } },30); return true; }
+function renderGarage(){ const L=C.bankVehicles||[]; if(!$('bank-veh')) return;
+  $('bank-veh').innerHTML=L.length?L.map((v,i)=>`<div class="bk-it bk-row" style="grid-template-columns:30px minmax(0,1fr) auto"><span class="tico">${svgI('carv','#e0761f')}</span><div class="t"><b>${esc(v.name||'Sans nom')}</b><i>${esc(vehMeta(v))}</i></div><button class="btn ghost" type="button" data-vout="${i}" style="padding:6px 10px">${C.vehicle?'Échanger':'Sortir'}</button></div>`).join(''):`<div class="bk-empty">Aucun véhicule au garage.</div>`;
+  $('bank-veh').querySelectorAll('[data-vout]').forEach(b=>b.onclick=()=>{ const i=+b.dataset.vout, v=C.bankVehicles[i]; C.bankVehicles.splice(i,1); if(C.vehicle) C.bankVehicles.unshift(C.vehicle); C.vehicle=v; markDirty(); renderGarage(); toast(`${v.name||'Véhicule'} sorti du garage`); }); }
 /* Quantum Bank : Bastos et objets mis au coffre (hors charge) */
 function bankMeta(it){ const m=[]; if(isWeapon(it)&&it.stat) m.push(`${it.stat}${+it.diceBonus?' +'+it.diceBonus+'D':''}`); if(it.itemType==='armor') m.push(`${+it.armorPoints||0} PP`); if(+it.weight) m.push(`${it.itemType==='backpack'?'+':'−'}${it.weight} PC`); if(it.specialAbility) m.push(it.specialAbility); return m.join(' · '); }
 function renderBank(){
   if(!Array.isArray(C.bankInventory)) C.bankInventory=[];
-  $('bank-val').textContent=(+C.bankBastos||0).toLocaleString('fr-FR');
+  $('bank-val').textContent=(+C.bankBastos||0).toLocaleString('fr-FR'); renderGarage();
   $('bank-wallet').textContent=`Portefeuille : ${(+C.bastos||0).toLocaleString('fr-FR')} ₿`;
   $('bank-list').innerHTML=C.bankInventory.length?C.bankInventory.map(it=>{ const T=it._col==='cyb'?(CYB_TYPES[it.type]||CYB_TYPES.cybernetic):(ITEM_TYPES[typeKey(it)]||ITEM_TYPES.misc);
     return `<div class="bk-it row bk-row" data-id="${it.id}" data-col="bank"><button type="button" class="grip" data-drag title="Glisser vers l'inventaire" aria-label="Glisser vers l'inventaire">${GRIP}</button><span class="tico" data-drag>${svgI(T.ico,T.col)}</span><div class="t"><b>${esc(it.name||'Sans nom')}</b><i>${esc(T.label+(bankMeta(it)?' · '+bankMeta(it):''))}</i></div></div>`; }).join('')
@@ -2218,6 +2242,7 @@ function tbRetry(){ if(!NETP.want) return; NETP.retry++; const wait=Math.min(100
 setInterval(()=>{ if(NETP.want&&netOpen()&&Date.now()-(NETP.seen||Date.now())>15000){ const c=NETP.conn; NETP.conn=null; try{ c.close(); }catch(e){} tbRetry(); } },3000);
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&NETP.want&&!netOpen()){ NETP.retry=0; tbRetry(); } });
 function tbIn(d){ if(!d||typeof d!=='object') return;
+  if(d.t==='vinteg'){ const v=Math.round(+d.v); if(C.vehicle&&Number.isFinite(v)&&v!==C.vehicle.integ){ C.vehicle.integ=Math.max(0,Math.min(C.vehicle.integMax,v)); if($('engin').classList.contains('open')) renderEngin(); markDirty(); toast(`Intégrité du véhicule : ${C.vehicle.integ}`); } return; }
   if(d.t==='pv'){ const v=Math.round(+d.v); if(Number.isFinite(v)&&v!==C.pv){ C.pv=v; renderAll(); markDirty(); toast(`PV : ${v} (maître du destin)`); } return; }
   if(d.t==='given'&&d.item){ const it=Object.assign(JSON.parse(JSON.stringify(d.item)),{id:Date.now()});
     if(d.g==='cyb'){ it.bodyPart=''; C.cybernetics.unshift(it); } else { it.zone=''; it.equipped=false; C.inventory.unshift(it); }
@@ -2236,14 +2261,16 @@ function tbLive(){ $('tb-join').hidden=true; $('tb-live').hidden=false; $('tb-le
   const f=document.createElement('iframe'); f.className='tb-frame'; f.title='Plateau de la table'; f.setAttribute('allow','fullscreen');
   f.srcdoc=html.replace('<head>','<head><script>window.__ADB_NET_VIEW=1<'+'/script>'); NETP.frame=f; NETP.ready=false; $('tb-live').appendChild(f); }
 window.addEventListener('message',e=>{ if(!NETP.frame||e.source!==NETP.frame.contentWindow) return; const d=e.data; if(!d||!d.__adbUp||!d.m) return; const m=d.m;
-  if(m.t==='ready'){ NETP.ready=true; tbToFrame({t:'me',id:NETP.pid}); if(NETP.last.bg) tbToFrame(NETP.last.bg); if(NETP.last.state) tbToFrame(NETP.last.state); }
+  if(m.t==='ready'){ NETP.ready=true; tbToFrame({t:'me',id:NETP.pid}); vehToFrame(); if(NETP.last.bg) tbToFrame(NETP.last.bg); if(NETP.last.state) tbToFrame(NETP.last.state); }
   else if(m.t==='ptr'&&netOpen()) NETP.conn.send({t:'ptr',x:m.x,y:m.y,end:m.end?1:0});
   else if(m.t==='open'&&netOpen()) NETP.conn.send({t:'open',id:String(m.id)});
+  else if(m.t==='veh'&&netOpen()){ if(C.vehicle) NETP.conn.send({t:'veh'}); }
   else if(m.t==='say'&&netOpen()) NETP.conn.send({t:'say',text:String(m.text||'').slice(0,140)});
   else if(m.t==='take'&&netOpen()){ const st=NETP.last.state, t=st&&(st.tokens||[]).find(x=>x.id===m.id); if(!t||!t.item) return; const d=t.data||{}, w=+d.weight||0;
     const fits=d.itemType==='backpack'||(t.g==='cyb'&&d.type!=='cybernetic')||derive(C).pc-w>=0;
     if(!fits){ tbToFrame({t:'full',id:t.id}); toast('Plus de place dans l\'inventaire'); return; }
     NETP.conn.send({t:'take',id:String(t.id)}); } });
+function vehToFrame(){ const v=C.vehicle; tbToFrame({t:'veh',has:!!v,name:v?(v.name||'Véhicule'):''}); }
 function tbLeave(){ NETP.want=false; const c=NETP.conn, p=NETP.peer; NETP.conn=null; NETP.peer=null;
   try{ if(c) c.close(); }catch(e){} try{ if(p) p.destroy(); }catch(e){}
   if(NETP.frame){ NETP.frame.remove(); NETP.frame=null; } NETP.ready=false; NETP.last={state:null,bg:null};
@@ -2252,7 +2279,7 @@ function tbLeave(){ NETP.want=false; const c=NETP.conn, p=NETP.peer; NETP.conn=n
 /* la fiche suit : chaque modification part vers la table, chaque jet aussi */
 let netSheetT=0;
 const _netMarkDirty=markDirty;
-markDirty=function(){ _netMarkDirty.apply(this,arguments); if(!netOpen()) return; clearTimeout(netSheetT);
+markDirty=function(){ _netMarkDirty.apply(this,arguments); vehToFrame(); if(!netOpen()) return; clearTimeout(netSheetT);
   netSheetT=setTimeout(async()=>{ if(netOpen()) NETP.conn.send({t:'sheet',sheet:await sheetData()}); },700); };
 const _netLogRoll=logRoll;
 logRoll=function(label,rolls,th,succ){ _netLogRoll.apply(this,arguments); if(netOpen()) NETP.conn.send({t:'roll',label:String(label),rolls:[...(rolls||[])],th,succ}); };
@@ -2534,6 +2561,12 @@ html.pland:not(.player){--bar:0px;--bot:0px;--rail:56px;--tabs:60px}
 .bub.out{opacity:0;transition:opacity .5s}
 .bubfix{position:fixed;left:50%;bottom:120px;z-index:60}
 @keyframes bubIn{from{opacity:0;transform:scale(.4) translateY(10px)}}
+.tk.inveh{display:none!important}
+.tk .vpax{position:absolute;left:50%;bottom:-8px;transform:translate(-50%,0) scale(calc(1/var(--s,1)));transform-origin:50% 0;background:#e0761f;color:#fff;font:800 10.5px var(--f-body);padding:1px 6px;border-radius:8px;white-space:nowrap;pointer-events:none;z-index:3}
+.tk.vdrop .face{box-shadow:0 0 0 4px #e0761f,0 0 18px #e0761f}
+.vehbtn{position:fixed;right:78px;bottom:16px;width:52px;height:52px;border-radius:50%;border:2px solid #e0761f;background:var(--paper);color:#e0761f;display:grid;place-items:center;z-index:40;box-shadow:0 6px 18px rgba(0,0,0,.3);cursor:pointer}.vehbtn svg{width:26px;height:26px}.vehbtn.on{background:#e0761f;color:#fff}
+.cveh{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:2px 0 6px}.cveh span{border:1px solid var(--rule);border-radius:8px;padding:4px;text-align:center;font-size:10.5px;color:var(--ink-soft);font-weight:700;letter-spacing:.06em;text-transform:uppercase}.cveh b{display:block;font-size:16px;color:var(--ink-strong);letter-spacing:0}
+.cpax{display:flex;flex-direction:column;gap:4px;margin-bottom:6px}.cpax div{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--ink-strong)}.cpax div button{margin-left:auto}
 .chatbtn{position:fixed;right:16px;bottom:16px;width:52px;height:52px;border-radius:50%;border:0;background:var(--ink-strong);color:#fff;display:grid;place-items:center;z-index:40;box-shadow:0 6px 18px rgba(0,0,0,.35);cursor:pointer}.chatbtn svg{width:26px;height:26px}
 .chatpop{position:fixed;right:16px;bottom:78px;z-index:41;display:flex;gap:6px;background:var(--paper);border:1px solid var(--rule);border-radius:14px;padding:6px;box-shadow:0 10px 30px rgba(0,0,0,.3);width:min(320px,calc(100vw - 32px))}
 .chatpop input{flex:1;min-width:0;border:0;outline:none;font:600 15px var(--f-body);padding:8px 8px;background:none;color:var(--ink-strong)}
@@ -3444,7 +3477,7 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><filter id="fxw1" x="-20%" y="-20%" width="140%" height="140%"><feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="2" seed="3"><animate attributeName="baseFrequency" values="0.018;0.03;0.018" dur="4s" repeatCount="indefinite"/></feTurbulence><feDisplacementMap in="SourceGraphic" scale="5"/></filter><filter id="fxw2" x="-25%" y="-25%" width="150%" height="150%"><feTurbulence type="fractalNoise" baseFrequency="0.022" numOctaves="2" seed="5"><animate attributeName="baseFrequency" values="0.022;0.04;0.022" dur="2.6s" repeatCount="indefinite"/></feTurbulence><feDisplacementMap in="SourceGraphic" scale="11"/></filter><filter id="fxw3" x="-30%" y="-30%" width="160%" height="160%"><feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="3" seed="8"><animate attributeName="baseFrequency" values="0.028;0.055;0.02;0.028" dur="1.6s" repeatCount="indefinite"/></feTurbulence><feDisplacementMap in="SourceGraphic" scale="20"/></filter></defs></svg>
 <div id="nosig"><canvas id="nosig-cv" width="160" height="90"></canvas><span>NO SIGNAL</span></div>
 <div class="pmark"><span class="dot"></span>ALDEBARAN</div>
-<button class="chatbtn" type="button" id="chatbtn" title="Envoyer un message" hidden></button><div class="chatpop" id="chatpop" hidden><input id="chat-in" maxlength="140" placeholder="Votre message…" autocomplete="off"><button type="button" id="chat-go" title="Envoyer"></button></div><div class="sysbox" id="sysbox"></div>
+<button class="vehbtn" type="button" id="vehbtn" title="Invoquer mon véhicule" hidden></button><button class="chatbtn" type="button" id="chatbtn" title="Envoyer un message" hidden></button><div class="chatpop" id="chatpop" hidden><input id="chat-in" maxlength="140" placeholder="Votre message…" autocomplete="off"><button type="button" id="chat-go" title="Envoyer"></button></div><div class="sysbox" id="sysbox"></div>
 <div class="pwait" id="pwait">En attente du maître du destin…</div>
 <div id="stitle"><span class="cap">Scène</span><svg class="ttl" viewBox="0 0 1600 70" preserveAspectRatio="xMidYMid meet"><text x="800" y="56" text-anchor="middle"></text></svg></div>
 <dialog id="dlg"><div class="dlg" id="dlg-body"></div></dialog>
@@ -3491,6 +3524,7 @@ const STAT_INFO={
 };
 /* Pictogrammes dessinés (grille 24, trait) — jamais d'emoji */
 const IC={o_melee:'<g transform="translate(1.90 1.85) scale(0.848)" stroke-width="1.47"><path d="M5.82 11.62L13 18.17L12.44 18.78L5.26 12.23ZM20.2 2.94L11.17 16.51M9.23 15.85L5.67 19.76M20.2 2.94L7.5 13.16M8.33 15.03L4.79 18.91M20.2 2.94L11.24 12.75"/><circle cx="4.64" cy="19.94" r="1.04"/></g>',o_fire:'<g transform="translate(3.51 3.49) scale(0.725)" stroke-width="1.72"><path d="M7.87 6.64L7.8 6.45L20.64 1.44M21.08 1.27L21.38 1.15L22.11 3.02L14.75 5.9M8.49 15.02L6.99 15.61L4.07 8.12L14.09 4.21L17.01 11.69L12.13 13.6M7.03 7.87L12.64 5.68L14.46 10.32L8.84 12.52ZM4.9 10.25L4.28 11.87L3.43 12.54L3.78 17.55L5.77 21.58L8.41 22.63L12.6 19.82L10.01 17.22M11.09 13.05L10.64 15.16L11.45 16.17L10.1 15.41L9.85 13.15M21.08 1.27L20.39 0.84L20.64 1.44M4.45 7.97L4.15 7.2L4.94 6.89L5.54 7.23L5.65 7.5M4.85 10.14L3.22 9.57L1.3 10.32L1.45 10.72L2.8 10.2L4.29 11.85M18.16 16.08L21.62 16.08L21.62 21.08L18.16 21.08ZM18.16 21.3L21.63 21.3L21.63 21.88L18.16 21.88ZM21.62 16.08L21.57 15.69L21.45 15.33L21.24 15L20.97 14.73L20.64 14.52L20.28 14.39L19.89 14.35L19.51 14.39L19.14 14.52L18.81 14.73L18.54 15L18.34 15.33L18.21 15.69L18.16 16.08M21.46 21.08L21.46 21.3M18.29 21.3L18.29 21.08"/><circle cx="10.64" cy="15.16" r="2.16"/></g>',o_energy:'<g transform="translate(3.21 3.26) scale(0.739)" stroke-width="1.69"><path d="M7.64 6.72L7.57 6.54L20.41 1.52M20.85 1.35L21.16 1.23L21.89 3.1L14.52 5.98M8.26 15.1L6.76 15.69L3.84 8.2L13.86 4.29L16.78 11.78L11.91 13.68M6.8 7.95L12.42 5.76L14.23 10.41L8.62 12.6ZM4.67 10.33L4.05 11.95L3.2 12.63L3.56 17.64L5.55 21.66L8.19 22.72L12.37 19.9L9.79 17.3M10.86 13.13L10.41 15.24L11.22 16.25L9.88 15.49L9.63 13.23M20.85 1.35L20.17 0.93L20.41 1.52M4.23 8.05L3.93 7.28L4.71 6.97L5.32 7.31L5.42 7.58M4.63 10.22L2.99 9.65L1.07 10.4L1.23 10.8L2.58 10.28L4.07 11.93M20.22 9.63L16.44 16.48L19.94 16.56L17.93 22.67L22.72 15.43L19.5 14.95Z"/><circle cx="10.41" cy="15.24" r="2.16"/></g>',o_weapon:'<g transform="translate(3.34 3.24) scale(0.737)" stroke-width="1.70"><path d="M7.77 13.3L4.26 9L14.59 0.57L18.96 5.93L17.8 6.88M9.4 10.23L16.09 4.78L18.7 7.98L12.02 13.43ZM11.12 12.33L9.04 14.02M15.09 1.18L15.61 0.75L17.46 3.02L16.93 3.45M17.49 4.13L17.84 3.84L18.78 4.99L18.43 5.28M5.45 10.46L3.88 13.3L1.65 15.12L2.35 17.44L6.53 16.14M2.98 17.24L3.25 18.15L4.06 19.93L5.28 21.64L6.71 22.92L7.3 23.22L10.68 19L8.94 18.18L7.53 17.14L7.35 16.57M3.69 11.95L1.94 13M1.94 13L1.99 13.6M1.99 13.6L3.42 13.02M3.42 13.02L3.59 13.54M4.55 12.08L3.69 11.95M6.63 13.67L7.06 15.15L8.07 15.7L7.67 14.95L7.97 13.32M18.4 15.95L21.85 15.95L21.85 20.95L18.4 20.95ZM18.4 21.17L21.86 21.17L21.86 21.75L18.4 21.75ZM21.85 15.95L21.81 15.57L21.68 15.2L21.47 14.87L21.2 14.6L20.87 14.39L20.51 14.27L20.12 14.22L19.74 14.27L19.37 14.39L19.05 14.6L18.77 14.87L18.57 15.2L18.44 15.57L18.4 15.95M21.69 20.95L21.69 21.17M18.52 21.17L18.52 20.95"/><circle cx="7.67" cy="14.95" r="1.65"/></g>',o_armor:'<g transform="translate(0.75 0.67) scale(0.928)" stroke-width="1.35"><path d="M14.97 4.37L17.42 4.37M17.42 10.12L17.42 20.05L6.83 20.05L6.83 10.12M6.83 4.37L9.28 4.37M6.83 10.12L4.47 11.78L1.76 7.94L6.83 4.37M12.12 7.22L12.62 7.17L13.1 7.04L13.55 6.83L13.95 6.55L14.3 6.2L14.59 5.79L14.8 5.34L14.92 4.86L14.97 4.37M9.28 4.37L9.32 4.86L9.45 5.34L9.66 5.79L9.94 6.2L10.3 6.55L10.7 6.83L11.15 7.04L11.63 7.17L12.12 7.22M12.12 7.22L12.12 20.05M17.42 10.12L19.77 11.78L22.48 7.94L17.42 4.37"/></g>',o_care:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V4.8h6V7M12 10.5v6M9 13.5h6"/>',o_drug:'<g transform="translate(1.35 0.97) scale(0.894)" stroke-width="1.40"><path d="M19.88 9.77L15.61 15.23L8.21 9.44L12.49 3.98L12.63 3.8L12.79 3.63L12.95 3.47L13.12 3.31L13.3 3.17L13.49 3.03L13.68 2.9L13.88 2.78L14.08 2.68L14.29 2.58L14.5 2.49L14.72 2.41L14.94 2.35L15.16 2.29L15.39 2.25L15.62 2.21L15.85 2.19L16.08 2.18L16.31 2.18L16.54 2.19L16.77 2.22L17 2.25L17.22 2.29L17.45 2.35L17.67 2.42L17.88 2.5L18.1 2.59L18.3 2.68L18.51 2.79L18.71 2.91L18.9 3.04L19.08 3.18L19.26 3.33L19.43 3.48L19.59 3.64L19.75 3.81L19.89 3.99L20.03 4.18L20.16 4.37L20.28 4.57L20.39 4.77L20.48 4.98L20.57 5.19L20.65 5.41L20.71 5.63L20.77 5.86L20.82 6.08L20.85 6.31L20.87 6.54L20.88 6.77L20.88 7L20.87 7.23L20.85 7.46L20.81 7.69L20.77 7.92L20.71 8.14L20.64 8.36L20.56 8.58L20.48 8.79L20.38 9L20.27 9.2L20.15 9.4L20.02 9.59Z" fill="currentColor" stroke="none" opacity=".45"/><path d="M3.93 14.9L12.49 3.98M19.88 9.77L11.33 20.69M19.88 9.77L20.26 9.22L20.55 8.62L20.75 7.98L20.86 7.32L20.88 6.65L20.8 5.98L20.62 5.33L20.36 4.72L20.01 4.14L19.58 3.63L19.08 3.18L18.53 2.8L17.92 2.51L17.28 2.31L16.62 2.2L15.95 2.18L15.29 2.27L14.64 2.44L14.02 2.71L13.45 3.06L12.94 3.48L12.49 3.98M3.93 14.9L3.56 15.45L3.27 16.06L3.06 16.7L2.95 17.36L2.94 18.03L3.02 18.69L3.19 19.34L3.46 19.96L3.81 20.53L4.24 21.04L4.73 21.49L5.29 21.87L5.89 22.16L6.53 22.36L7.19 22.47L7.86 22.49L8.53 22.41L9.18 22.23L9.79 21.97L10.36 21.62L10.88 21.19L11.33 20.69M8.21 9.44L15.61 15.23"/></g>',o_misc:'<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>',o_backpack:'<path d="M6 8h12l1 12H5z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>',o_cyb:'<rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4M10 10h4v4h-4z"/>',
+  carv:'<path d="M3 15.5v-3.2l2.2-4.6c.3-.6.9-1 1.6-1h10.4c.7 0 1.3.4 1.6 1l2.2 4.6v3.2c0 .6-.4 1-1 1H4c-.6 0-1-.4-1-1z"/><path d="M3.4 12h17.2"/><circle cx="7" cy="16.5" r="2"/><circle cx="17" cy="16.5" r="2"/>',
   chat:'<path d="M3 4.5h12v8H8.2L5 15v-2.5H3z"/><path d="M15 8.5h6v8h-2V19l-3-2.5h-5.6v-4"/>',
   send:'<path d="M4 11.6L20 4.5l-6.4 15.9-2.9-6.4z"/><path d="M10.7 14L20 4.5"/>',
   mega:'<path d="M4 9.5h3l9-4.5v14l-9-4.5H4z"/><path d="M7 14.5l1.4 4.6h2.4L9.6 15"/><path d="M19 9.5a3 3 0 0 1 0 5"/>',
@@ -3748,20 +3782,21 @@ function tokenHTML(t){
 function tokenEl(t){
   let el=document.querySelector(`.tk[data-id="${t.id}"]`);
   if(!el){ el=document.createElement('div'); el.dataset.id=t.id; $('tokens').appendChild(el); if(!isPlayer) bindToken(el); }
-  el.className=`tk ${t.type}`+(t.hidden?' hid':'')+(t.inbox?' inbox':'')+(t.box?' box':'')+(t.kind==='deco'?' deco':'')+(SWAY[t.stamp]?' sway':'')+(ALIVE(t)&&t.hp<=0?' down':'')+(cardId===t.id?' open':'')+(SEL.has(t.id)?' sel':'')+(curTurnId()===t.id?' current':'')+(isPlayer&&ME&&t.owner===ME?' mine':'')+(t.stamp==='lucioles'?' flies'+(lightState(t)==='off'?' off':''):'')+stClasses(t);
+  el.className=`tk ${t.type}`+(t.hidden?' hid':'')+(t.inbox?' inbox':'')+(t.inveh?' inveh':'')+(t.box?' box':'')+(t.kind==='deco'?' deco':'')+(SWAY[t.stamp]?' sway':'')+(ALIVE(t)&&t.hp<=0?' down':'')+(cardId===t.id?' open':'')+(SEL.has(t.id)?' sel':'')+(curTurnId()===t.id?' current':'')+(isPlayer&&ME&&t.owner===ME&&t.kind!=='vehicle'?' mine':'')+(t.stamp==='lucioles'?' flies'+(lightState(t)==='off'?' off':''):'')+stClasses(t);
   if(ALIVE(t)){ const was=HPPREV.get(t.id); HPPREV.set(t.id,t.hp); if(was!==undefined&&was>0&&t.hp<=0) splat(t); }
   if(isPlayer&&ME&&t.owner===ME&&!el._mine){ el._mine=1; bindMine(el); }
   el.style.left=t.x+'px'; el.style.top=t.y+'px'; el.style.setProperty('--s',t.s||1);
   el.innerHTML=tokenHTML(t);
+  if(t.kind==='vehicle'){ const n=S.tokens.filter(p=>p.inveh===t.id).length, b=document.createElement('span'); b.className='vpax'; b.textContent=`${n}/${(t.veh&&t.veh.seats)||0}`; el.appendChild(b); }
   return el;
 }
 function renderTokens(){
   const keep=new Set(S.tokens.map(t=>t.id));
   document.querySelectorAll('.tk').forEach(el=>{ if(!keep.has(el.dataset.id)) el.remove(); });
   [...SEL].forEach(id=>{ if(!keep.has(id)) SEL.delete(id); });
-  S.tokens.forEach(tokenEl); markTurn();
+  S.tokens.forEach(tokenEl); markTurn(); if(isPlayer) vehBtnPaint();
 }
-function moveTokenEl(t){ bleedTrail(t); const el=document.querySelector(`.tk[data-id="${t.id}"]`); if(el){ el.style.left=t.x+'px'; el.style.top=t.y+'px'; el.style.setProperty('--s',t.s||1); if(t.stamp&&el.dataset.ss!==String(t.s||1)){ el.dataset.ss=String(t.s||1); const f=el.querySelector('.face'); if(f) f.innerHTML=faceHTML(t); const g=el.querySelector('.glow,.beam'); if(g){ const d=lightHTML(t); if(d) g.outerHTML=d; } } } }
+function moveTokenEl(t){ bleedTrail(t); if(t.kind==='vehicle') S.tokens.forEach(p=>{ if(p.inveh===t.id){ p.x=t.x; p.y=t.y; } }); const el=document.querySelector(`.tk[data-id="${t.id}"]`); if(el){ el.style.left=t.x+'px'; el.style.top=t.y+'px'; el.style.setProperty('--s',t.s||1); if(t.stamp&&el.dataset.ss!==String(t.s||1)){ el.dataset.ss=String(t.s||1); const f=el.querySelector('.face'); if(f) f.innerHTML=faceHTML(t); const g=el.querySelector('.glow,.beam'); if(g){ const d=lightHTML(t); if(d) g.outerHTML=d; } } } }
 function renderBoard(){
   if(S.bg&&!S.bgW){ S.bgW=S.bgH=4000; }   // ancienne table : fond sur 4000 × 4000
   const bg=$('bg'), gr=$('grid');
@@ -3930,11 +3965,15 @@ function bindToken(el){
       if(!d.moved){ d.moved=true; el.classList.add('moving'); document.body.classList.add('dragging'); closeCard(); }
       const [x,y]=toWorld(ev.clientX,ev.clientY); t.x=bx(Math.round(x+d.dx),t); t.y=by(Math.round(y+d.dy),t); moveTokenEl(t);
       d.grp.forEach(g=>{ g.o.x=bx(g.x+t.x-d.ox,g.o); g.o.y=by(g.y+t.y-d.oy,g.o); moveTokenEl(g.o); });
+      if(t.type==='player'){ const v=vehAt(t); document.querySelectorAll('.tk.vdrop').forEach(x=>x.classList.toggle('vdrop',!!v&&x.dataset.id===v.id)); if(v){ const ve=document.querySelector(`.tk[data-id="${v.id}"]`); if(ve) ve.classList.add('vdrop'); } }
       const b=$('bin').getBoundingClientRect(); $('bin').classList.toggle('over',ev.clientX>=b.left-8&&ev.clientX<=b.right+8&&ev.clientY>=b.top-8&&ev.clientY<=b.bottom+8);
       fowLater(); if(!d.raf) d.raf=requestAnimationFrame(()=>{ d.raf=0; send({t:'mv',id:t.id,x:t.x,y:t.y,s:t.s}); d.grp.forEach(g=>send({t:'mv',id:g.o.id,x:g.o.x,y:g.o.y,s:g.o.s})); }); };
     const up=ev=>{ if(ev&&ev.pointerId!==e.pointerId) return; window.removeEventListener('pointermove',mv); window.removeEventListener('pointerup',up); window.removeEventListener('pointercancel',up);
       el.classList.remove('moving'); document.body.classList.remove('dragging');
-      if(d.moved){ if($('bin').classList.contains('over')){ $('bin').classList.remove('over'); if(d.grp.length) removeTokens([t.id,...d.grp.map(g=>g.o.id)]); else removeToken(t.id); return; } markDirty(); sync(); }
+      if(d.moved){ if($('bin').classList.contains('over')){ $('bin').classList.remove('over'); if(d.grp.length) removeTokens([t.id,...d.grp.map(g=>g.o.id)]); else removeToken(t.id); return; }
+        document.querySelectorAll('.tk.vdrop').forEach(x=>x.classList.remove('vdrop'));
+        [t,...d.grp.map(g=>g.o)].filter(p=>p.type==='player').forEach(p=>{ const v=vehAt(p); if(v) boardVeh(p,v); });
+        markDirty(); sync(); }
       else toggleCard(t.id); };
     window.addEventListener('pointermove',mv); window.addEventListener('pointerup',up); window.addEventListener('pointercancel',up);
   });
@@ -3945,13 +3984,27 @@ function bindToken(el){
   el.addEventListener('touchend',e=>{ if(e.cancelable) e.preventDefault(); },{passive:false});
 }
 const SEL=new Set(); let rselAt=0;
+/* Véhicules : jeton « engin » d'un joueur (ou du MJ), qui embarque des aventuriers selon ses places */
+const VEH_CAT=[{"cid": "v-velo", "name": "Vélo", "kind": "Deux-roues", "factor": 1, "arm": 0, "mot": 1, "seats": 1, "integMax": 4, "price": 150, "desc": "Silencieux, ne consomme rien. On pédale."}, {"cid": "v-hoverboard", "name": "Hoverboard", "kind": "Planche antigrav", "factor": 1, "arm": 0, "mot": 2, "seats": 1, "integMax": 3, "price": 400, "desc": "Flotte à 20 cm du sol. Craint l'eau."}, {"cid": "v-rat", "name": "Rat de selle", "kind": "Monture", "factor": 1, "arm": 1, "mot": 2, "seats": 2, "integMax": 8, "price": 600, "desc": "Monture vivante : mord quand on l'énerve."}, {"cid": "v-moto", "name": "Moto", "kind": "Deux-roues motorisé", "factor": 2, "arm": 0, "mot": 3, "seats": 2, "integMax": 8, "price": 1500, "desc": "Rapide et maniable, peu de soute."}, {"cid": "v-buggy", "name": "Buggy des sables", "kind": "Tout-terrain", "factor": 2, "arm": 1, "mot": 3, "seats": 2, "integMax": 10, "price": 2500, "desc": "Passe partout dans les déserts de Wastcity."}, {"cid": "v-jeep", "name": "Jeep", "kind": "Tout-terrain", "factor": 2, "arm": 2, "mot": 2, "seats": 4, "integMax": 14, "price": 4000, "desc": "Mitrailleuse de toit, quatre places."}, {"cid": "v-glisseur", "name": "Aéroglisseur", "kind": "Glisseur", "factor": 2, "arm": 0, "mot": 3, "seats": 4, "integMax": 10, "price": 5000, "desc": "Terre, eau, marais : glisse sur tout."}, {"cid": "v-camion", "name": "Camion blindé", "kind": "Poids lourd", "factor": 2, "arm": 3, "mot": 1, "seats": 8, "integMax": 25, "price": 9000, "desc": "Lent, increvable, grosse soute."}, {"cid": "v-helico", "name": "Hélico de transport", "kind": "Aéronef", "factor": 3, "arm": 2, "mot": 3, "seats": 6, "integMax": 18, "price": 15000, "desc": "Six places, treuil, mitrailleuse latérale."}, {"cid": "v-chasseur", "name": "Chasseur atmosphérique", "kind": "Aéronef", "factor": 3, "arm": 5, "mot": 4, "seats": 1, "integMax": 14, "price": 22000, "desc": "Monoplace armé jusqu'aux dents."}, {"cid": "v-navette", "name": "Navette spatiale", "kind": "Astronef", "factor": 4, "arm": 1, "mot": 3, "seats": 6, "integMax": 20, "price": 40000, "desc": "Orbite, atterrissage, cargo léger."}, {"cid": "v-croiseur", "name": "Astronef de combat", "kind": "Astronef", "factor": 4, "arm": 5, "mot": 4, "seats": 4, "integMax": 30, "price": 80000, "desc": "Tourelles, blindage, quatre postes."}];
+const vehAt=p=>S.tokens.find(v=>v.kind==='vehicle'&&v.id!==p.id&&Math.hypot(v.x-p.x,v.y-p.y)<40*(v.s||1)+12);
+const paxOf=v=>S.tokens.filter(p=>p.inveh===v.id);
+function boardVeh(p,v){ const n=paxOf(v).length, max=(v.veh&&v.veh.seats)||0; if(n>=max){ toast(`${v.name||'Véhicule'} : plus de place (${max})`,true); return false; }
+  p.inveh=v.id; p.x=v.x; p.y=v.y; SEL.delete(p.id); tokenEl(p); tokenEl(v); if(cardId===p.id) closeCard(); if(cardId===v.id) renderCard(); toast(`${p.name||'Aventurier'} monte dans ${v.name||'le véhicule'}`); return true; }
+function ejectVeh(p,v,i){ const a=(i||0)*1.3+.4, r=60*(v.s||1)+30; p.inveh=null; p.x=bx(Math.round(v.x+Math.cos(a)*r),p); p.y=by(Math.round(v.y+Math.sin(a)*r),p); tokenEl(p); tokenEl(v); }
+function ejectAll(v){ paxOf(v).forEach((p,i)=>ejectVeh(p,v,i)); }
+function vehToken(x,owner){ const veh={cid:x.cid||'',kind:x.kind||'',factor:+x.factor||2,arm:+x.arm||0,mot:+x.mot||0,seats:+x.seats||1,integ:+(x.integ??x.integMax)||1,integMax:+x.integMax||1,vid:x.id||null};
+  return {type:'prop',kind:'vehicle',ico:'car',name:x.name||'Véhicule',veh,owner:owner||null,s:1.6,note:x.desc||''}; }
+function vehFromSheet(pid,sh){ const t=S.tokens.find(x=>x.kind==='vehicle'&&x.owner===pid); if(!t) return; const v=sh&&sh.full&&sh.full.vehicle;
+  if(!v||(t.veh.vid&&v.id!==t.veh.vid)){ ejectAll(t); S.tokens=S.tokens.filter(x=>x!==t); if(cardId===t.id) closeCard(); renderTokens(); renderFoW(); markDirty(); sync(); return; }
+  const n=vehToken(v,pid); t.name=n.name; t.veh=n.veh; tokenEl(t); if(cardId===t.id) renderCard(); }
 function selPaint(){ document.querySelectorAll('.tk').forEach(el=>el.classList.toggle('sel',SEL.has(el.dataset.id))); }
 function selClear(){ if(!SEL.size) return; SEL.clear(); selPaint(); }
 function removeTokens(ids){ ids=ids.filter(id=>tok(id)); if(!ids.length) return; if(ids.length===1){ SEL.delete(ids[0]); removeToken(ids[0]); return; }
+  ids.forEach(id=>{ const v=tok(id); if(v&&v.kind==='vehicle') ejectAll(v); });
   const K=new Set(ids); S.tokens=S.tokens.filter(x=>!K.has(x.id)); S.order=S.order.filter(x=>!K.has(x)); ids.forEach(id=>SEL.delete(id)); if(K.has(cardId)) closeCard();
   const L=orderToks(); if(S.turn>=L.length) S.turn=L.length?0:-1;
   renderTokens(); renderTracker(); renderFoW(); markDirty(); sync(); toast(`${ids.length} éléments retirés du plateau`); }
-function removeToken(id){ const t=tok(id); if(!t) return; S.tokens=S.tokens.filter(x=>x.id!==id); S.order=S.order.filter(x=>x!==id); if(cardId===id) closeCard();
+function removeToken(id){ const t=tok(id); if(!t) return; if(t.kind==='vehicle') ejectAll(t); if(t.inveh){ const v=tok(t.inveh); t.inveh=null; if(v) setTimeout(()=>tokenEl(v)); } S.tokens=S.tokens.filter(x=>x.id!==id); S.order=S.order.filter(x=>x!==id); if(cardId===id) closeCard();
   const L=orderToks(); if(S.turn>=L.length) S.turn=L.length?0:-1;
   renderTokens(); renderTracker(); renderFoW(); markDirty(); sync(); toast(`${t.name||TYPES[t.type].label} retiré du plateau`); }
 function addToken(t){
@@ -3995,7 +4048,7 @@ function renderCard(){
       $('c-h0').onclick=e=>{ e.stopPropagation(); delete t.lh; up(); done(); renderCard(); };
       $('c-lr').oninput=e=>{ t.lr=+e.target.value; $('c-lrv').textContent=fmtMm(t.lr/PX_M); up(); }; $('c-lr').onchange=done; }
     const cs=$('c-s'); cs.oninput=()=>{ t.s=+cs.value; $('c-sv').textContent=fmtMm(t.s); moveTokenEl(t); markDirty(); sendLater({t:'mv',id:t.id,x:t.x,y:t.y,s:t.s}); }; cs.onchange=()=>placeCard(); return; }
-  const head=`<div class="ch"><div class="av">${faceHTML(t,'sm')}</div><div class="t"><b>${esc(t.name||T.label)}</b><span>${T.label}${t.scene?' · scène':''}</span></div>
+  const head=`<div class="ch"><div class="av">${faceHTML(t,'sm')}</div><div class="t"><b>${esc(t.name||T.label)}</b><span>${t.kind==='vehicle'?'Véhicule':T.label}${t.scene?' · scène':''}</span></div>
     <button class="ib ${t.hidden?'on':''}" type="button" data-a="hide" title="${t.hidden?'Caché aux joueurs — cliquer pour montrer':'Visible des joueurs — cliquer pour cacher'}">${IB(t.hidden?'eyeoff':'eye')}</button>
     ${t.type!=='light'?`<button class="ib" type="button" data-a="edit" title="Modifier">${IB('edit')}</button>`:''}
     <button class="ib" type="button" data-a="close" title="Fermer">${IB('x')}</button></div>`;
@@ -4008,6 +4061,10 @@ function renderCard(){
     if(t.type==='mob'&&t.pp!=null) body+=`<div class="ppl"><span>💙 ${t.pp} PP</span><span>🦶🏻 ${t.pa} PA</span><span>🌀 ${t.pt} PT</span></div>`;
     if((t.attacks||[]).length) body+=`<div class="atks">${t.attacks.map((a,i)=>{ const n=(t.stats[a.stat]||0)+(+a.bonus||0); return `<div class="atk"><b>${esc(a.name||'Attaque')}</b><small>${a.stat}${+a.bonus?` ${+a.bonus>0?'+':''}${+a.bonus}`:''}</small><button class="useb" type="button" data-atk="${i}" title="Lancer ${n} D10">${IB('dice')}${n}</button></div>`; }).join('')}</div>`;
   }
+  if(t.kind==='vehicle'){ const V=t.veh||{}, P=paxOf(t);
+    body+=`<div class="hpr"><button class="pmb" type="button" data-vi="-1" title="Retirer 1 point d'intégrité">−</button><div class="hpbar" title="Intégrité"><i class="${hpCls(V.integ/(V.integMax||1))}" style="width:${Math.max(0,V.integ/(V.integMax||1))*100}%"></i><b>${V.integ} / ${V.integMax} intégrité</b></div><button class="pmb" type="button" data-vi="1" title="Ajouter 1 point d'intégrité">+</button></div>
+      <div class="cveh"><span>Facteur<b>${V.factor}</b></span><span>Moteur<b>${V.mot}</b></span><span>Armement<b>${V.arm}</b></span><span>Places<b>${P.length}/${V.seats}</b></span></div>
+      <span class="cap">À bord${t.owner&&PL.get(t.owner)?` · véhicule de ${esc(PL.get(t.owner).name)}`:''}</span><div class="cpax">${P.length?P.map(p=>`<div>${esc(p.name||'Aventurier')}<button class="mini" type="button" data-eject="${p.id}">Faire descendre</button></div>`).join(''):'<div style="font-weight:500;color:var(--ink-soft)">Personne. Glissez un aventurier sur le véhicule pour l\'embarquer.</div>'}</div>`; }
   if(t.kind==='item') body+=boxChk(t,'c-box');
   if(t.type==='prop') body+=`<span class="cap">${t.kind==='item'?'Description':'Note secrète (MJ)'}</span><textarea class="cnote" id="c-note" placeholder="Ce que cache ce décor…">${esc(t.note||'')}</textarea>`;
   if((t.type==='mob'||t.type==='npc')&&t.note) body+=`<span class="cap">${t.type==='mob'?'Notes & remarques':'Capacités (MJ)'}</span><textarea class="cnote" id="c-note">${esc(t.note)}</textarea>`;
@@ -4018,6 +4075,8 @@ function renderCard(){
   c.innerHTML=head+body; if($('c-box')) $('c-box').onchange=e=>setInbox(t,e.target.checked);
   c.onclick=e=>{ const b=e.target.closest('button'); if(!b) return; if(performance.now()-cardAt<450) return;
     if(b.dataset.st){ toggleSt(t,b.dataset.st); return; }
+    if(b.dataset.eject){ const p=tok(b.dataset.eject); if(p){ ejectVeh(p,t,paxOf(t).length); renderCard(); markDirty(); sync(); } return; }
+    if(b.dataset.vi){ const V=t.veh; V.integ=clamp(V.integ+(+b.dataset.vi),0,V.integMax); renderCard(); markDirty(); sync(); if(t.owner) netTo(t.owner,{t:'vinteg',v:V.integ}); return; }
     if(b.dataset.a==='close') closeCard();
     else if(b.dataset.a==='hide'){ t.hidden=!t.hidden; tokenEl(t); renderCard(); renderTracker(); renderFoW(); markDirty(); sync(); toast(t.hidden?'Caché aux joueurs':'Visible des joueurs'); }
     else if(b.dataset.a==='edit'){ entityDialog(t.type,t); }
@@ -6077,7 +6136,7 @@ function renderItemPanel(){ const box=$('litem-body'); if(!box) return; jetRead=
   $('litem').style.setProperty('--tc','var(--brown)');
   if(IP.edit){ const t=clone(IP.edit); box.innerHTML='<div id="it-main"></div>';
     propForm($('it-main'),t,{edit:IP.edit,pid:'ie',noIcons:1,top:top('Modifier'),onBack:back}); $('it-back').onclick=back; jetStamp(false); return; }
-  const SECS=[['board','Sur le plateau','target'],['create','Créer un item','plus'],['inv','Inventaire','chest']];
+  const SECS=[['board','Sur le plateau','target'],['create','Créer un item','plus'],['inv','Inventaire','chest'],['veh','Véhicules','carv']];
   box.innerHTML=`<div class="jtabs">${SECS.map(([k,l,ic])=>`<button type="button" class="wxb${IP.sec===k?' on':''}" data-is="${k}" style="--tc:var(--brown)" aria-pressed="${IP.sec===k}">${IB(ic,1.7)}<span>${l}</span></button>`).join('')}</div><div class="jbody" id="it-body"></div>`;
   box.querySelectorAll('[data-is]').forEach(b=>b.onclick=()=>{ IP.sec=IP.sec===b.dataset.is?null:b.dataset.is; IP.cfg=null; renderItemPanel(); });
   const body=$('it-body');
@@ -6093,6 +6152,14 @@ function renderItemPanel(){ const box=$('litem-body'); if(!box) return; jetRead=
     $('li-q').oninput=draw; draw(); IP.drawB=draw; }
   else if(IP.sec==='create'){ if(!IP.item) IP.item={type:'prop',kind:'item',name:'',ico:'o_misc',g:'misc',img:null,note:'',s:1};
     jetRead=propForm(body,IP.item,{pid:'ic',onChange,save:saveItem}); }
+  else if(IP.sec==='veh'){ body.innerHTML=`<div class="bsearch"><input class="line-in" id="lw-q" placeholder="Rechercher un véhicule…" autocomplete="off"></div><div class="jlist" id="lw-list"></div>`;
+    const mineP=()=>{ const o=[]; if(typeof PL!=='undefined') PL.forEach(P=>{ const f=P.sheet&&P.sheet.full; if(!f) return; [f.vehicle,...(f.bankVehicles||[])].forEach(v=>{ if(v&&v.name&&!o.some(x=>x.name===v.name)) o.push({...v,cid:'p-'+v.id,who:P.name}); }); }); return o; };
+    const draw=()=>{ const qq=normTxt($('lw-q').value), L=[...mineP(),...VEH_CAT].filter(x=>!qq||normTxt(x.name+' '+(x.kind||'')).includes(qq));
+      const F=['','À pied / monture','Terrestre','Aéronef','Vaisseau'];
+      $('lw-list').innerHTML=L.length?[1,2,3,4].map(f=>{ const G=L.filter(x=>+x.factor===f); return G.length?bgrp('vh','f'+f,`Facteur ${f} · ${F[f]}`,G.length,G.map(x=>`<div class="jrow brow" data-c="${esc(x.cid)}" style="--c:#e0761f" title="Glisser sur le plateau"><span class="bface">${faceHTML({type:'prop',ico:'car'},'sm')}</span><b>${esc(x.name)}</b><span class="jhp">${x.who?esc(x.who):`M${x.mot} · A${x.arm} · ${x.seats}pl`}</span><span></span></div>`).join(''),qq):''; }).join(''):`<p class="meta" style="text-align:left;padding:6px 2px">Aucun véhicule ne correspond.</p>`;
+      $('lw-list').querySelectorAll('.jrow').forEach(r=>{ const x=L.find(y=>y.cid===r.dataset.c); if(!x) return;
+        dragOut(r,()=>faceHTML({type:'prop',ico:'car'}),(px,py)=>{ const t=vehToken(x,null); t.x=Math.round(px); t.y=Math.round(py); addToken(t); },()=>{ const t=addToken(vehToken(x,null)); toast(`${t.name} posé au centre du plateau`); }); }); };
+    $('lw-q').oninput=draw; draw(); }
   else if(IP.sec==='inv'){
     if(IP.cfg){ jetRead=propForm(body,IP.cfg,{pid:'iv',noIcons:1,top:top(esc(IP.cfg.name||'Objet')),onChange,save:saveItem}); $('it-back').onclick=()=>{ IP.cfg=null; renderItemPanel(); }; }
     else { body.innerHTML=`<div class="bsearch"><input class="line-in" id="lv-q" placeholder="Rechercher un objet…" autocomplete="off"></div><div class="jlist" id="lv-list"></div>`;
@@ -6155,7 +6222,7 @@ function loadScene(i){
   closeCard(); const keep=S.tokens.filter(t=>!t.scene); S.tokens=keep; S.order=S.order.filter(id=>keep.some(t=>t.id===id)); S.scene=i;
   const sc=S.scenes[i];
   if(sc){ S.bg=sc.bg||''; S.bgKind=sc.bgKind||''; S.bgW=sc.bgW||0; S.bgH=sc.bgH||0; S.bgNW=sc.bgNW||0; S.bgNH=sc.bgNH||0; S.bgScale=sc.bgScale||1; S.geo=sc.geo?{...sc.geo}:null; S.light=sc.light!==false; S.weather=sc.weather||''; S.seen=clone(sc.seen||{}); S.blood=clone(sc.blood||[]); S.fogAuto=sc.fogAuto; FOG.sig=''; S.ground=sc.ground?{...sc.ground}:null; S.drawings=clone(sc.drawings||[]); S.tokens.push(...clone(sc.tokens||[])); S.order.push(...(sc.order||[]).filter(id=>tok(id))); }
-  if(typeof PL!=='undefined') S.tokens.forEach(t=>{ const P=t.owner&&PL.get(t.owner); if(P&&P.sheet) Object.assign(t,tokenData(P.sheet)); });
+  if(typeof PL!=='undefined') S.tokens.forEach(t=>{ const P=t.owner&&t.kind!=='vehicle'&&PL.get(t.owner); if(P&&P.sheet) Object.assign(t,tokenData(P.sheet)); });
   S.turn=-1; renderAllBoard(); renderScenes(); markDirty(); sync(); if(typeof renderPtabs==='function') renderPtabs();
   if(sc) send({t:'scene',title:sc.title||`Scène ${i+1}`,idx:i+1});
 }
@@ -6263,7 +6330,7 @@ function send(m){ if(isPlayer) return; m.n=Date.now()*100+(seq++%100); m.from='m
   if(bc) try{ bc.postMessage(m); }catch(e){}
   if(bc&&m.t!=='state') return;   // le canal direct suffit ; le stockage local ne garde que l'état complet
   try{ localStorage.setItem(LS_SYNC,JSON.stringify(m)); }catch(e){ if(m.t==='state'){ const lite={...m,bg:m.bg&&m.bg.length>1.5e6?'':m.bg}; try{ localStorage.setItem(LS_SYNC,JSON.stringify(lite)); }catch(e2){} } } }
-function publicState(){ const pub=t=>({id:t.id,type:t.type,name:t.name,hp:t.hp,hpMax:t.hpMax,img:t.img,ico:t.ico,emo:t.emo,x:t.x,y:t.y,s:t.s,r:t.r,owner:t.owner||null,note:t.type==='prop'&&t.note?' ':'',kind:t.kind==='deco'?'deco':undefined,stamp:t.stamp||undefined,st:(ALIVE(t)&&effSt(t).length)?effSt(t):undefined,lit:t.lit===false?false:undefined,ls:t.ls,lh:t.lh,lr:t.lr});
+function publicState(){ const pub=t=>({id:t.id,type:t.type,name:t.name,hp:t.hp,hpMax:t.hpMax,img:t.img,ico:t.ico,emo:t.emo,x:t.x,y:t.y,s:t.s,r:t.r,owner:t.owner||null,note:t.type==='prop'&&t.note?' ':'',kind:t.kind==='deco'?'deco':t.kind==='vehicle'?'vehicle':undefined,inveh:t.inveh||undefined,veh:t.kind==='vehicle'?{seats:(t.veh||{}).seats||0}:undefined,stamp:t.stamp||undefined,st:(ALIVE(t)&&effSt(t).length)?effSt(t):undefined,lit:t.lit===false?false:undefined,ls:t.ls,lh:t.lh,lr:t.lr});
   return {t:'state',bg:S.bg,bgKind:S.bgKind||'',bgW:S.bgW||0,bgH:S.bgH||0,geo:S.geo||null,light:S.light,weather:S.weather||'',ground:S.ground||null,grid:S.grid,drawings:S.drawings,seen:S.seen||{},blood:S.blood||[],tokens:S.tokens.filter(t=>!t.hidden).map(t=>t.kind==='item'&&!t.inbox?Object.assign(pub(t),{item:1,g:t.g||'misc',data:itemData(t)}):t.inbox?{id:t.id,type:'prop',name:'',ico:'chest',img:null,x:t.x,y:t.y,s:Math.max(1,t.s||1),box:1,note:''}:pub(t)),order:S.order.filter(id=>{ const t=tok(id); return t&&!t.hidden; }),turn:turnIdForPlayers(),view:viewMsg()}; }
 function turnIdForPlayers(){ const L=orderToks(), c=L[S.turn]; return c&&!c.hidden?c.id:null; }
 let syncRaf=0; function sync(){ if(isPlayer||syncRaf) return; syncRaf=requestAnimationFrame(()=>{ syncRaf=0; send(publicState()); }); }
@@ -6276,6 +6343,7 @@ function openPlayerView(){ playerWin=window.open(location.href.split('?')[0].spl
 function receive(m){ if(!m) return;
   if(!isPlayer){ if(m.t==='hello') sync(); return; }
   if(m.t==='me'){ ME=m.id; renderTokens(); followMe(); return; }
+  if(m.t==='veh'){ VEHME=m; vehBtnPaint(); return; }
   if(m.t==='bg'){ S.bg=m.data||''; S.bgKind=m.kind||''; renderBoard(); return; }
   if(m.t==='full'){ noRoom(m.id); return; }
   if(m.t==='sys'&&m.priv){ sysMsg(m.text,true); return; }
@@ -6292,7 +6360,7 @@ function receive(m){ if(!m) return;
   else if(m.t==='sys') sysMsg(m.text,false);
   else if(m.t==='view'){ if(!NETVIEW) setPlayerView(m); }
   else if(m.t==='ptr'){ if(m.pid!==ME) showPtr(m); }
-  else if(m.t==='mv'){ const t=tok(m.id); if(t&&!(myDrag&&myDrag.id===m.id)){ t.x=m.x; t.y=m.y; t.s=m.s; moveTokenEl(t); fowLater(); if(NETVIEW&&t.owner===ME) followMe(); } }
+  else if(m.t==='mv'){ const t=tok(m.id); if(t&&!(myDrag&&myDrag.id===m.id)){ t.x=m.x; t.y=m.y; t.s=m.s; moveTokenEl(t); fowLater(); if(NETVIEW&&(t.owner===ME||t.kind==='vehicle')) followMe(); } }
   else if(m.t==='ping') ping(m.x,m.y);
   else if(m.t==='measure'){ if(m.on) drawMeasure(m); else { measure=null; $('over').innerHTML=''; $('mlabel').hidden=true; } }
   else if(m.t==='scene') sceneTitle(m.title,m.idx);
@@ -6316,7 +6384,7 @@ function reveal(id,it,by){ const t=tok(id); if(!t) return; const [sx,sy]=toScree
   el.innerHTML=`<i class="rv-halo"></i><i class="rv-rays"></i><div class="rv-chest">${IB('chest',1.6)}</div><div class="rv-item">${faceHTML(Object.assign({type:'prop'},it))}</div><b class="rv-name">${esc(it.name||'Objet')}${by?`<small>${esc(by)}</small>`:''}</b>`;
   board.appendChild(el); setTimeout(()=>el.classList.add('out'),3400); setTimeout(()=>el.remove(),4100); }
 /* bulles de BD au-dessus du jeton du joueur (ou en bas de l'écran s'il n'a pas de jeton) */
-function bubble(pid,html,cls,who){ const t=pid&&S.tokens.find(x=>x.owner===pid); const el=document.createElement('div'); el.className='bub '+(cls||'');
+function bubble(pid,html,cls,who){ const t=pid&&S.tokens.find(x=>x.owner===pid&&x.kind!=='vehicle'); const el=document.createElement('div'); el.className='bub '+(cls||'');
   if(t){ document.querySelectorAll(`.bub[data-pid="${CSS.escape(pid)}"]`).forEach(b=>b.remove()); el.dataset.pid=pid; el.style.left=t.x+'px'; el.style.top=(t.y-36*(t.s||1))+'px'; el.innerHTML=`<div>${html}</div>`; $('world').appendChild(el); }
   else { el.classList.add('bubfix'); el.innerHTML=`<div>${who?`<span><small>${esc(who)}</small>${html}</span>`:html}</div>`; document.body.appendChild(el); }
   const life=cls==='say'?6500:4200; setTimeout(()=>el.classList.add('out'),life); setTimeout(()=>el.remove(),life+600); }
@@ -6334,7 +6402,7 @@ function showPtr(m){ let p=PTRS.get(m.pid); if(!p){ const el=document.createElem
 function placePtr(p){ p.el.style.left=(V.x+p.x*V.z)+'px'; p.el.style.top=(V.y+p.y*V.z)+'px'; }
 function placePtrs(){ if(typeof PTRS!=='undefined') PTRS.forEach(placePtr); }
 /* vue à distance : la caméra suit le jeton du joueur ; sans jeton posé, pas de signal */
-function followMe(){ if(!NETVIEW) return; const t=ME?S.tokens.find(x=>x.owner===ME):null;
+function followMe(){ if(!NETVIEW) return; const t=ME?S.tokens.find(x=>x.owner===ME&&x.kind!=='vehicle'):null;
   document.documentElement.classList.toggle('nosignal',!t); noiseRun(!t); if(!t) return;
   const r=board.getBoundingClientRect(); V.x=r.width/2-t.x*V.z; V.y=r.height/2-t.y*V.z; applyView(); }
 let noiseOn=false;
@@ -7047,7 +7115,7 @@ function netIn(c,d){ if(!d||typeof d!=='object') return;
     const sh=d.sheet||{}, first=!PL.has(c.pid)||!PL.get(c.pid).online;
     const P=Object.assign(PL.get(c.pid)||{pid:c.pid},{name:String(sh.name||'Aventurier').slice(0,40),sheet:sh,online:true});
     PL.set(c.pid,P); c.name=P.name;
-    const t=S.tokens.find(x=>x.owner===c.pid); if(t) claimToken(c.pid,sh,t);
+    const t=S.tokens.find(x=>x.owner===c.pid&&x.kind!=='vehicle'); if(t) claimToken(c.pid,sh,t); vehFromSheet(c.pid,sh);
     if(first&&d.t==='join') toast(`${P.name} rejoint la table : glissez son jeton depuis son onglet`);
     renderPtabs(); if(sheetPid===c.pid) sheetRefresh(); netStatus(NET.status);
     if(d.t==='join'){ c.bgId=null; const st=publicState(); st.n=Date.now()*100+(seq++%100); st.from='mj'; netSendTo(c,st); } }
@@ -7059,6 +7127,11 @@ function netIn(c,d){ if(!d||typeof d!=='object') return;
   else if(d.t==='roll'&&c.pid){ const succ=+d.succ||0, label=String(d.label||'Jet').slice(0,60);
     logRoll(`${c.name} · ${label}`,Array.isArray(d.rolls)?d.rolls.slice(0,60):[],+d.th||8,succ);
     const n=Array.isArray(d.rolls)?d.rolls.length:0; bubble(c.pid,rollHTML(succ,n),'',c.name); send({t:'roll',who:c.name,label,succ,dn:n,pid:c.pid}); }
+  else if(d.t==='veh'&&c.pid){ const P=PL.get(c.pid), v=P&&P.sheet&&P.sheet.full&&P.sheet.full.vehicle, cur=S.tokens.find(x=>x.kind==='vehicle'&&x.owner===c.pid);
+    if(cur){ removeToken(cur.id); toast(`${c.name} renvoie son véhicule`); return; }
+    if(!v){ return; } const me=S.tokens.find(x=>x.owner===c.pid&&x.type==='player'), t=vehToken(v,c.pid);
+    if(me){ const a=Math.random()*Math.PI*2; t.x=Math.round(me.x+Math.cos(a)*110); t.y=Math.round(me.y+Math.sin(a)*110); }
+    addToken(t); toast(`${c.name} invoque : ${t.name}`); }
   else if(d.t==='say'&&c.pid){ const text=String(d.text||'').trim().slice(0,140); if(!text) return; bubble(c.pid,esc(text),'say',c.name); send({t:'say',pid:c.pid,who:c.name,text}); }
 }
 function playerGone(c){ if(!c.pid) return; const P=PL.get(c.pid); if(P&&![...NET.conns].some(x=>x!==c&&x.pid===c.pid)){ P.online=false; renderPtabs();
@@ -7171,7 +7244,7 @@ function renderNetBody(){ const b=$('net-body'); if(!b||!dlg.open) return;
       ${link?`<div class="nlink"><input readonly value="${esc(link)}" aria-label="Lien d'invitation"><button class="mini" type="button" id="net-copy">${IB('copy')}Copier</button></div><div class="nqr" id="net-qr"></div>`
         :'<p class="meta">Ouvrez l\'appli depuis son adresse en ligne (GitHub Pages) pour obtenir un lien et un QR code à partager.</p>'}
       <div class="subttl">Joueurs connectés</div>${NET.pending.size?`<p class="meta" style="text-align:left">${NET.pending.size} joueur${NET.pending.size>1?'s':''} en cours de connexion…</p>`:''}
-      <div class="nplayers">${L.length?L.map(c=>{ const t=S.tokens.find(x=>x.owner===c.pid); return `<div class="np"><i></i><b>${esc(c.name)}</b><small>${t?`${t.hp} / ${t.hpMax} PV`:''}</small></div>`; }).join(''):'<p class="meta" style="text-align:left">Personne pour l\'instant.</p>'}</div>
+      <div class="nplayers">${L.length?L.map(c=>{ const t=S.tokens.find(x=>x.owner===c.pid&&x.kind!=='vehicle'); return `<div class="np"><i></i><b>${esc(c.name)}</b><small>${t?`${t.hp} / ${t.hpMax} PV`:''}</small></div>`; }).join(''):'<p class="meta" style="text-align:left">Personne pour l\'instant.</p>'}</div>
       ${localHTML()}
       <div class="actions"><button class="btn ghost" type="button" id="net-new" style="margin-right:auto" title="Changer le code de la table">Nouveau code</button><button class="btn danger" type="button" id="net-close">Fermer la table</button><button class="btn" type="button" data-close>OK</button></div>`;
     $('net-close').onclick=()=>{ const k=players().length; confirmDialog('Fermer la table',`La table en ligne sera fermée${k?` et ${k} joueur${k>1?'s':''} déconnecté${k>1?'s':''}`:''}. Vous pourrez la rouvrir avec le même code.`,'Fermer la table',()=>{ closeTable(); toast('Table fermée'); }); };
@@ -7194,6 +7267,9 @@ function renderNetBody(){ const b=$('net-body'); if(!b||!dlg.open) return;
 /* vue à distance : seul le MJ déplace les jetons */
 let myDrag=null;
 function up(m){ try{ parent.postMessage({__adbUp:1,m},'*'); }catch(e){} }
+let VEHME=null;
+function vehBtnPaint(){ const b=$('vehbtn'); if(!b||!NETVIEW) return; const has=VEHME&&VEHME.has; b.hidden=!has; if(!has) return; if(!b.firstChild){ b.innerHTML=IB('carv',1.7); b.onclick=()=>up({t:'veh'}); }
+  const on=S.tokens.some(x=>x.kind==='vehicle'&&x.owner===ME); b.classList.toggle('on',on); b.title=on?`Renvoyer ${VEHME.name}`:`Invoquer ${VEHME.name}`; }
 function bindMine(){}
 
 /* =========================================================
