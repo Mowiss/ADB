@@ -178,6 +178,41 @@ body{overflow-x:clip}
 .invin::-webkit-scrollbar{display:none}
 .inv-drawer{width:min(460px,100vw - 40px)}
 .bank-drawer{width:min(460px,100vw - 40px)}
+.engin{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:14px;padding-bottom:16px}
+.eg-tabs{display:flex;gap:6px;flex-wrap:wrap}
+.eg-tabs button{border:1px solid var(--rule);background:var(--paper);border-radius:16px;padding:5px 12px;font-weight:700;font-size:12.5px;color:var(--ink)}
+.eg-tabs button.on{border-color:#e0761f;color:#e0761f;background:#fdf1e6}
+.eg-id{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
+.eg-id .field{display:flex;flex-direction:column;gap:2px;min-width:0}
+.eg-id .full{grid-column:1/-1}
+.eg-name{font-family:var(--f-title);font-size:22px;letter-spacing:.06em;color:var(--ink-strong)}
+.eg-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.eg-st{border:1px solid var(--faint);border-radius:12px;padding:10px 6px 8px;display:flex;flex-direction:column;align-items:center;gap:4px;background:var(--paper)}
+.eg-st svg.ic{width:22px;height:22px;stroke:var(--sc);fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.eg-st .cap{font-size:9.5px;letter-spacing:.12em;text-align:center}
+.eg-st .val{display:flex;align-items:center;gap:2px}
+.eg-st .val b{font-family:var(--f-title);font-size:26px;font-weight:400;color:var(--ink-strong);min-width:28px;text-align:center;font-variant-numeric:tabular-nums}
+.eg-st .val small{font-size:12px;color:var(--ink-soft);font-weight:700}
+.eg-st.integ .val b{font-size:21px;min-width:0}.eg-st.integ .val small{font-size:11px;margin-right:2px}.eg-st.integ .val{gap:1px}
+.eg-st button{width:22px;height:22px;border-radius:50%;border:1px solid var(--rule);background:var(--paper);padding:0;font-weight:700;color:var(--ink);line-height:1}
+.eg-st button:hover{border-color:var(--sc);color:var(--sc)}
+.eg-st .sub{font-size:10.5px;color:var(--ink-soft);font-weight:600}
+.eg-bar{height:5px;border-radius:3px;background:var(--faint);overflow:hidden;width:80%}.eg-bar i{display:block;height:100%;background:var(--ok)}
+.eg-act{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.eg-act .btn{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px}
+.eg-act .btn small{font-weight:600;font-size:11px;opacity:.8}
+.eg-opt{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;font-size:12.5px}
+.eg-opt label{display:flex;align-items:center;gap:6px;font-weight:600}
+.eg-opt select{width:auto}
+.eg-hold-h{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.eg-hold{display:flex;flex-direction:column;gap:6px}
+.eg-row{display:grid;grid-template-columns:minmax(0,1fr) 54px minmax(0,1.2fr) 28px;gap:8px;align-items:center;border:1px solid var(--faint);border-radius:10px;padding:5px 6px 5px 10px}
+.eg-row input{border:0;background:transparent;outline:none;min-width:0;font-size:13px;color:var(--ink-strong)}
+.eg-row input.pc{text-align:center;border-bottom:1px solid var(--faint)}
+.eg-row .del{width:26px;height:26px;border:0;background:none;color:var(--ink-soft);padding:0}.eg-row .del:hover{color:var(--danger)}.eg-row .del svg{width:15px;height:15px}
+.eg-cap{font-size:12px;color:var(--ink-soft);font-weight:700}.eg-cap.over{color:var(--danger)}
+.eg-empty{border:1px dashed var(--rule);border-radius:12px;padding:26px 18px;text-align:center;color:var(--ink-soft);font-size:13px}
+.eg-foot{display:flex;justify-content:flex-end}
 /* Onglets verticaux collés au bord droit ; ils suivent le volet ouvert */
 .vtabs{position:fixed;right:0;top:calc(var(--bar) + env(safe-area-inset-top,0px));bottom:0;width:40px;z-index:41;display:flex;flex-direction:column;gap:4px;padding:14px 0 calc(14px + env(safe-area-inset-bottom,0px));background:var(--paper);border-left:1px solid var(--rule);overflow-y:auto}
 .vtab{display:flex;flex-direction:column;align-items:center;gap:7px;width:40px;padding:10px 0;border:0;border-left:3px solid transparent;border-radius:0;flex:none;background:var(--paper);color:var(--ink);cursor:pointer}
@@ -695,10 +730,11 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}input[type=num
 </header>
 <\!-- Onglets latéraux des volets : Inventaire, Jet libre, Journal -->
 <nav class="vtabs" id="vtabs" aria-label="Volets">
-  <button type="button" class="vtab" data-drawer="invpanel" style="--tc:var(--c-for)" title="Inventaire"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 9.5L12 13l8.5-3.5"/><path d="M3.5 9.5V18l8.5 3.5 8.5-3.5V9.5"/><path d="M12 13v8.5"/><path d="M3.5 9.5L1.5 6 10 2.8l2 3.6M20.5 9.5l2-3.5L14 2.8l-2 3.6"/><path d="M12 6.4L3.5 9.5M12 6.4l8.5 3.1"/></svg><span>Inventaire</span></button>
-  <button type="button" class="vtab" data-drawer="roller" style="--tc:var(--c-sav)" title="Jet libre"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M11.97 22.00L1.80 14.72L2.10 9.84L11.93 2.00L21.87 9.91L22.20 14.76ZM11.97 22.00L11.97 17.75L18.35 14.59L22.20 14.76M11.97 17.75L5.62 14.66L1.80 14.72M5.62 14.66L11.93 2.00L18.35 14.59"/><path d="M8.92 10.11L8.92 10.90L10.16 10.20L10.16 15.01L11.00 15.01L11.00 8.45L10.41 8.45ZM13.31 14.11L13.02 14.03L12.75 13.79L12.52 13.40L12.35 12.91L12.24 12.33L12.21 11.71L12.25 11.10L12.37 10.52L12.55 10.03L12.78 9.65L13.05 9.41L13.34 9.33L13.63 9.42L13.90 9.66L14.13 10.04L14.30 10.53L14.41 11.11L14.44 11.73L14.40 12.35L14.28 12.92L14.10 13.41L13.87 13.79L13.60 14.03ZM13.31 8.51L13.79 8.62L14.24 8.94L14.62 9.44L14.92 10.11L15.11 10.88L15.18 11.71L15.12 12.54L14.94 13.32L14.65 13.98L14.27 14.50L13.82 14.82L13.34 14.93L12.86 14.83L12.41 14.51L12.03 14.00L11.73 13.34L11.54 12.56L11.47 11.73L11.53 10.90L11.71 10.13L12.00 9.46L12.38 8.95L12.83 8.62Z" fill="currentColor" stroke="none" fill-rule="evenodd"/></svg><span>Jet libre</span></button>
-  <button type="button" class="vtab" data-drawer="journal" style="--tc:var(--c-per)" title="Journal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18H6z"/><path d="M9 3v18M12 8h4M12 12h4"/></svg><span>Journal</span></button>
-  <button type="button" class="vtab" data-drawer="bank" style="--tc:var(--c-res)" title="Quantum Bank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="15" rx="2"/><circle cx="12" cy="11.5" r="3.6"/><path d="M12 7.9v1.4M12 13.7v1.4M8.4 11.5h1.4M14.2 11.5h1.4M6 19v2M18 19v2"/></svg><span>Quantum Bank</span></button>
+  <button type="button" class="vtab" data-drawer="invpanel" style="--tc:var(--c-for)" title="Stuff"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 9.5L12 13l8.5-3.5"/><path d="M3.5 9.5V18l8.5 3.5 8.5-3.5V9.5"/><path d="M12 13v8.5"/><path d="M3.5 9.5L1.5 6 10 2.8l2 3.6M20.5 9.5l2-3.5L14 2.8l-2 3.6"/><path d="M12 6.4L3.5 9.5M12 6.4l8.5 3.1"/></svg><span>Stuff</span></button>
+  <button type="button" class="vtab" data-drawer="roller" style="--tc:var(--c-sav)" title="Roll"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M11.97 22.00L1.80 14.72L2.10 9.84L11.93 2.00L21.87 9.91L22.20 14.76ZM11.97 22.00L11.97 17.75L18.35 14.59L22.20 14.76M11.97 17.75L5.62 14.66L1.80 14.72M5.62 14.66L11.93 2.00L18.35 14.59"/><path d="M8.92 10.11L8.92 10.90L10.16 10.20L10.16 15.01L11.00 15.01L11.00 8.45L10.41 8.45ZM13.31 14.11L13.02 14.03L12.75 13.79L12.52 13.40L12.35 12.91L12.24 12.33L12.21 11.71L12.25 11.10L12.37 10.52L12.55 10.03L12.78 9.65L13.05 9.41L13.34 9.33L13.63 9.42L13.90 9.66L14.13 10.04L14.30 10.53L14.41 11.11L14.44 11.73L14.40 12.35L14.28 12.92L14.10 13.41L13.87 13.79L13.60 14.03ZM13.31 8.51L13.79 8.62L14.24 8.94L14.62 9.44L14.92 10.11L15.11 10.88L15.18 11.71L15.12 12.54L14.94 13.32L14.65 13.98L14.27 14.50L13.82 14.82L13.34 14.93L12.86 14.83L12.41 14.51L12.03 14.00L11.73 13.34L11.54 12.56L11.47 11.73L11.53 10.90L11.71 10.13L12.00 9.46L12.38 8.95L12.83 8.62Z" fill="currentColor" stroke="none" fill-rule="evenodd"/></svg><span>Roll</span></button>
+  <button type="button" class="vtab" data-drawer="journal" style="--tc:var(--c-per)" title="Notes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18H6z"/><path d="M9 3v18M12 8h4M12 12h4"/></svg><span>Notes</span></button>
+  <button type="button" class="vtab" data-drawer="engin" style="--tc:#e0761f" title="Engin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 15.5v-3.2l2.2-4.6c.3-.6.9-1 1.6-1h10.4c.7 0 1.3.4 1.6 1l2.2 4.6v3.2c0 .6-.4 1-1 1H4c-.6 0-1-.4-1-1z"/><path d="M3.4 12h17.2"/><circle cx="7" cy="16.5" r="2"/><circle cx="17" cy="16.5" r="2"/><path d="M8.5 8.8h7"/></svg><span>Engin</span></button>
+  <button type="button" class="vtab" data-drawer="bank" style="--tc:var(--c-res)" title="Bank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="15" rx="2"/><circle cx="12" cy="11.5" r="3.6"/><path d="M12 7.9v1.4M12 13.7v1.4M8.4 11.5h1.4M14.2 11.5h1.4M6 19v2M18 19v2"/></svg><span>Bank</span></button>
   <button type="button" class="vtab" data-drawer="mapdrw" style="--tc:var(--c-cha)" title="Map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4L3 6.5v13.5l6-2.5 6 2.5 6-2.5V4l-6 2.5z"/><path d="M9 4v13.5M15 6.5V20"/></svg><span>Map</span></button>
   <button type="button" class="vtab" data-drawer="tabledrw" style="--tc:var(--c-dex)" title="Table en ligne"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/></svg><span>Table</span></button>
 </nav>
@@ -765,16 +801,20 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}input[type=num
 <aside class="drawer inv-drawer" id="invpanel" style="--tc:var(--c-for)" aria-label="Inventaire"><div class="invin">
       <section class="frame" id="fr-inv">
         <div class="frame-head">
-          <svg class="ttl sm" data-title><text x="0" y="24">INVENTAIRE</text></svg>
+          <svg class="ttl sm" data-title><text x="0" y="24">STUFF</text></svg>
           <span class="frame-meta fade" id="capline"></span>
-          <button class="sq-add droptgt" type="button" id="inv-bankdrop" title="Lâcher ici pour mettre au coffre (Quantum Bank)" aria-label="Mettre au coffre" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="15" rx="2"/><circle cx="12" cy="11.5" r="3.6"/><path d="M12 7.9v1.4M12 13.7v1.4M8.4 11.5h1.4M14.2 11.5h1.4M6 19v2M18 19v2"/></svg></button><button class="sq-add fade" type="button" id="b-additem" title="Ajouter à l'inventaire" aria-label="Ajouter à l'inventaire"><svg class="i-add" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><svg class="i-bin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4.5h6V7M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg></button>
+          <button class="sq-add droptgt" type="button" id="inv-bankdrop" title="Lâcher ici pour mettre au coffre (Bank)" aria-label="Mettre au coffre" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="15" rx="2"/><circle cx="12" cy="11.5" r="3.6"/><path d="M12 7.9v1.4M12 13.7v1.4M8.4 11.5h1.4M14.2 11.5h1.4M6 19v2M18 19v2"/></svg></button><button class="sq-add fade" type="button" id="b-additem" title="Ajouter à l'inventaire" aria-label="Ajouter à l'inventaire"><svg class="i-add" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><svg class="i-bin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4.5h6V7M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg></button>
         </div>
         <div class="invscroll"><div class="rows" id="inv"></div></div>
       </section>
   </div></aside>
 
-<aside class="drawer bank-drawer" id="bank" style="--tc:var(--c-res)" aria-label="Quantum Bank">
-  <header><h3>Quantum Bank</h3><span class="spacer"></span></header>
+<aside class="drawer bank-drawer" id="engin" style="--tc:#e0761f" aria-label="Engin">
+  <header><h3>Engin</h3><span class="spacer"></span><button class="btn ghost" type="button" id="eng-add">Nouveau véhicule</button></header>
+  <div class="engin" id="eng-body"></div>
+</aside>
+<aside class="drawer bank-drawer" id="bank" style="--tc:var(--c-res)" aria-label="Bank">
+  <header><h3>Bank</h3><span class="spacer"></span></header>
   <div class="bankin">
     <div class="bk-bal"><div><span class="cap">Solde en banque</span><b id="bank-val">0</b><span class="cur">₿</span></div><div class="cap" id="bank-wallet"></div></div>
     <div class="bk-move"><input class="line-in" type="number" min="0" id="bank-amt" placeholder="Montant" aria-label="Montant">
@@ -802,13 +842,13 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}input[type=num
 </aside>
 
 <aside class="drawer" id="journal" style="--tc:var(--c-per)" aria-label="Journal de bord">
-  <header><h3>Journal</h3><span class="spacer"></span>
+  <header><h3>Notes</h3><span class="spacer"></span>
     <button class="btn ghost" type="button" id="b-addnote">Ajouter une entrée</button></header>
   <div class="notes" id="notes"></div>
 </aside>
 
 <aside class="drawer" id="roller" style="--tc:var(--c-sav)" aria-label="Jet libre">
-  <header><h3>Jet libre</h3><span class="spacer"></span></header>
+  <header><h3>Roll</h3><span class="spacer"></span></header>
   <div class="roller">
     <div class="rl-row">
       <div class="rl-f"><span class="cap">Dés (D10)</span><div class="stepper"><button type="button" data-step="fr-n" data-d="-1">−</button><input id="fr-n" inputmode="numeric" value="3" aria-label="Nombre de dés"><button type="button" data-step="fr-n" data-d="1">+</button></div></div>
@@ -934,6 +974,7 @@ function normalize(ch){
   }
   // mains : les anciennes armes « équipées » prennent une main
   const used=new Set();
+  if(!Array.isArray(c.vehicles)) c.vehicles=[];
   if(!Array.isArray(c.bankInventory)) c.bankInventory=[]; c.bankBastos=+c.bankBastos||0;
   c.inventory.forEach(it=>{ if(!it.itemType) it.itemType='misc'; if(it.zone===undefined) it.zone='';
     if(isWeapon(it)&&it.equipped&&!it.zone){ if((it.hands||1)===2&&!used.size){ it.zone='Mains'; used.add('Main G');used.add('Main D'); } else { const h=HANDS.find(x=>!used.has(x)); if(h){ it.zone=h; used.add(h);} } }
@@ -1213,7 +1254,7 @@ function printSheet(){
   const notes=(C.notes||[]).filter(n=>n.title||n.content).map(n=>`<div class="ps-note"><b>${e(n.title||'')}</b><p>${e(n.content||'')}</p></div>`).join('');
   $('printsheet').innerHTML=`<div class="ps">
     <header class="ps-head">${C.photo?`<img class="ps-photo" src="${C.photo}" alt="">`:''}<div><div class="ps-brand">ALDEBARAN</div><h1>${e(C.name||'Sans nom')}</h1><div class="ps-sub">${e(RACE_LABEL[C.race]||'')} · ${e(R.name)} — ${e(R.desc)}</div></div>
-      <div class="ps-money"><span>Bastos</span><b>${(+C.bastos||0).toLocaleString('fr-FR')} ₿</b><span>Quantum Bank</span><b>${(+C.bankBastos||0).toLocaleString('fr-FR')} ₿</b></div></header>
+      <div class="ps-money"><span>Bastos</span><b>${(+C.bastos||0).toLocaleString('fr-FR')} ₿</b><span>Bank</span><b>${(+C.bankBastos||0).toLocaleString('fr-FR')} ₿</b></div></header>
     <div class="ps-top"><div class="ps-left"><h2>Statistiques</h2><div class="ps-grid">${stats}</div><h2>Décompte</h2><div class="ps-grid">${ctr}</div>
       <h2>Effets actifs</h2><ul class="ps-fx">${fx}</ul></div><div class="ps-fig">${fig}</div></div>
     <h2>Inventaire</h2>${rowsI?`<table class="ps-t"><thead><tr><th>Objet</th><th>Zone</th><th>Dés</th><th>Seuil</th><th>PC</th><th>PP</th><th>₿</th><th>Effets &amp; description</th></tr></thead><tbody>${rowsI}</tbody></table>`:'<p class="ps-empty">Inventaire vide.</p>'}
@@ -1761,22 +1802,83 @@ function catDialog(){
 $('b-bastos').onclick=()=>{
   openDialog(`<h3>Bastos</h3><p>Solde actuel : <b>${(+C.bastos||0).toLocaleString('fr-FR')} ₿</b></p>
     <input class="line-in name-in" type="number" min="0" id="bastos-amt" placeholder="Montant" style="font-size:24px">
-    <div class="actions"><button class="btn ghost" type="button" data-close>Annuler</button><button class="btn danger" type="button" id="bastos-minus">Dépenser</button><button class="btn" type="button" id="bastos-plus">Gagner</button><button class="btn gold" type="button" id="bastos-save" title="Mettre en banque (Quantum Bank)">Épargner</button></div>`);
+    <div class="actions"><button class="btn ghost" type="button" data-close>Annuler</button><button class="btn danger" type="button" id="bastos-minus">Dépenser</button><button class="btn" type="button" id="bastos-plus">Gagner</button><button class="btn gold" type="button" id="bastos-save" title="Mettre en banque (Bank)">Épargner</button></div>`);
   const go=s=>{ const v=parseInt($('bastos-amt').value)||0; if(!v){ dlg.close(); return; } if(s<0&&v>C.bastos){ toast('Solde insuffisant.'); return; } C.bastos=Math.max(0,(+C.bastos||0)+s*v); renderDerived(); markDirty(); dlg.close(); };
   $('bastos-plus').onclick=()=>go(1); $('bastos-minus').onclick=()=>go(-1);
   $('bastos-save').onclick=()=>{ const v=parseInt($('bastos-amt').value)||0; if(!v){ $('bastos-amt').focus(); return; } if(v>(+C.bastos||0)){ toast('Solde insuffisant.'); return; }
     C.bastos=(+C.bastos||0)-v; C.bankBastos=(+C.bankBastos||0)+v; renderDerived(); markDirty(); dlg.close(); toast(`${v.toLocaleString('fr-FR')} ₿ épargnés`); }; setTimeout(()=>$('bastos-amt').focus(),30);
 };
 /* Volets latéraux : un seul ouvert à la fois */
-const DRAWERS=['invpanel','roller','journal','bank','mapdrw','tabledrw'];
+const DRAWERS=['invpanel','roller','journal','engin','bank','mapdrw','tabledrw'];
 function openDrawer(id){ const was=id&&$(id).classList.contains('open');
   DRAWERS.forEach(d=>$(d).classList.toggle('open',d===id&&!was));
   const cur=DRAWERS.find(d=>$(d).classList.contains('open'));
   if(cur==='mapdrw'&&!$('mapwrap').firstChild) $('mapwrap').innerHTML=`<iframe title="Carte d'Aldebaran" allowfullscreen allow="geolocation" loading="lazy" src="https://framacarte.org/fr/map/aldebaran_185113?scaleControl=false&miniMap=false&scrollWheelZoom=true&zoomControl=true&editMode=disabled&moreControl=true&searchControl=null&tilelayersControl=null&embedControl=null&datalayersControl=true&onLoadPanel=none&captionBar=false&captionMenus=true"></iframe>`;
-  if(cur==='bank') renderBank();
+  if(cur==='bank') renderBank(); if(cur==='engin') renderEngin();
   document.querySelectorAll('.vtab').forEach(t=>{ t.classList.toggle('on',t.dataset.drawer===cur); t.setAttribute('aria-expanded',t.dataset.drawer===cur); }); }
 document.querySelectorAll('.vtab').forEach(t=>t.onclick=()=>openDrawer(t.dataset.drawer));
 document.addEventListener('click',e=>{ if(e.target.closest('[data-closedrawer]')) openDrawer(null); });
+/* Engin : véhicules du personnage (règles « Pilotage » : armement, moteur, places, intégrité, facteur) */
+const ENG_FACT=[[1,'1 · À pied, vélo, monture'],[2,'2 · Véhicule terrestre'],[3,'3 · Aéronef'],[4,'4 · Vaisseau spatial']];
+const ENG_ST={
+  arm:{lbl:'Armement',col:'var(--c-sav)',ico:'<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>',min:0,max:30},
+  mot:{lbl:'Moteur',col:'#e0761f',ico:'<path d="M5 19h14"/><path d="M7 19l1.5-9h7L17 19"/><path d="M9.5 10V6.5L12 4l2.5 2.5V10"/><path d="M10 14h4"/>',min:0,max:30},
+  seats:{lbl:'Places',col:'var(--c-res)',ico:'<path d="M7 4v9c0 1 .8 2 2 2h7"/><path d="M7 13h8.5c.8 0 1.5.7 1.5 1.5V20"/><path d="M9 15v5"/>',min:0,max:60},
+  integ:{lbl:'Intégrité',col:'var(--ok)',ico:'<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/><path d="M9 11h6M12 8v6"/>',min:0,max:99}};
+const vehNew=()=>({id:Date.now(),name:'',kind:'',factor:2,arm:0,mot:2,seats:2,integ:10,integMax:10,hold:[]});
+let engCur=null, engOpp=0, engSpend=0;
+function curVeh(){ const V=C.vehicles||(C.vehicles=[]); let v=V.find(x=>x.id===engCur); if(!v) v=V[0]; engCur=v?v.id:null; return v; }
+function engHoldPC(v){ return v.hold.reduce((a,h)=>a+(+h.pc||0),0); }
+function renderEngin(){
+  const B=$('eng-body'), V=C.vehicles||(C.vehicles=[]), v=curVeh();
+  $('eng-add').hidden=!V.length;
+  if(!v){ B.innerHTML=`<div class="eg-empty">Aucun véhicule.<br><br><button class="btn" type="button" id="eng-first">Ajouter un véhicule</button></div>`; $('eng-first').onclick=engAdd; return; }
+  const D=derive(C), dex=D.r.DEX||0, per=D.r.PER||0, diff=engOpp?Math.max(0,v.factor-engOpp):0, fb=Math.min(10,diff*5), boom=diff>=3, astro=v.factor>=4;
+  const cap=(+v.seats||0)*5, used=engHoldPC(v);
+  const st=k=>{ const S=ENG_ST[k]; const val=k==='integ'?`<b>${v.integ}</b><small>/ ${v.integMax}</small>`:`<b>${v[k]}</b>`;
+    return `<div class="eg-st ${k}" style="--sc:${S.col}"><svg class="ic" viewBox="0 0 24 24">${S.ico}</svg><span class="cap">${S.lbl}</span><div class="val"><button type="button" data-st="${k}" data-d="-1" aria-label="Moins">−</button>${val}<button type="button" data-st="${k}" data-d="1" aria-label="Plus">+</button></div>${k==='integ'?`<div class="eg-bar"><i style="width:${v.integMax?Math.round(100*v.integ/v.integMax):0}%"></i></div><button type="button" data-imax style="width:auto;height:auto;border:0;font-size:10.5px;color:var(--ink-soft)" title="Régler l'intégrité maximale">max ${v.integMax}</button>`:k==='seats'?`<span class="sub">${cap} PC de soute</span>`:'<span class="sub">dés</span>'}</div>`; };
+  B.innerHTML=`${V.length>1?`<div class="eg-tabs">${V.map(x=>`<button type="button" data-v="${x.id}" class="${x.id===v.id?'on':''}">${esc(x.name||'Sans nom')}</button>`).join('')}</div>`:''}
+    <div class="eg-id"><div class="field full"><span class="cap">Nom du véhicule</span><input class="line-in eg-name" id="eg-name" value="${esc(v.name)}" placeholder="Sans nom" autocomplete="off"></div>
+      <div class="field"><span class="cap">Type</span><input class="line-in" id="eg-kind" value="${esc(v.kind)}" placeholder="Moto, jeep, astronef…" autocomplete="off"></div>
+      <div class="field"><span class="cap">Facteur</span><select class="line-in" id="eg-fact">${ENG_FACT.map(([n,l])=>`<option value="${n}" ${+v.factor===n?'selected':''}>${l}</option>`).join('')}</select></div></div>
+    <div class="eg-stats">${['arm','mot','seats','integ'].map(st).join('')}</div>
+    <div class="eg-opt"><label>Face à un facteur <select class="line-in" id="eg-opp"><option value="0">—</option>${ENG_FACT.map(([n])=>`<option value="${n}" ${engOpp===n?'selected':''}>${n}</option>`).join('')}</select></label>${diff?`<span class="cap" style="color:#e0761f">${boom?'Cible détruite d’office':`+${fb} dés de facteur`}</span>`:''}
+      ${astro?`<label title="Chaque point d'intégrité dépensé baisse le seuil de réussite de 1">Dépenser l'intégrité <select class="line-in" id="eg-spend">${Array.from({length:Math.min(7,v.integ)+1},(_,i)=>`<option value="${i}" ${engSpend===i?'selected':''}>${i}</option>`).join('')}</select></label>`:''}</div>
+    <div class="eg-act"><button class="btn" type="button" id="eg-pilot">Piloter<small>DEX ${dex} + moteur ${v.mot}${fb?` + ${fb}`:''}</small></button><button class="btn" type="button" id="eg-fire" ${v.arm?'':'disabled'}>Tirer<small>PER ${per} + armement ${v.arm}${fb?` + ${fb}`:''}</small></button></div>
+    <div class="eg-hold-h"><div class="subttl">Soute</div><span class="eg-cap ${used>cap?'over':''}">${used} / ${cap} PC</span></div>
+    <div class="eg-hold">${v.hold.map(h=>`<div class="eg-row" data-h="${h.id}"><input data-f="name" value="${esc(h.name)}" placeholder="Objet"><input class="pc" data-f="pc" inputmode="numeric" value="${esc(String(h.pc??''))}" placeholder="PC" title="Points de charge"><input data-f="note" value="${esc(h.note)}" placeholder="Effet, description"><button class="del" type="button" data-hdel title="Retirer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4.5h6V7M6 7l1 13h10l1-13"/></svg></button></div>`).join('')}
+      <button class="btn ghost" type="button" id="eg-hadd">Ajouter à la soute</button></div>
+    <div class="eg-foot"><button class="btn ghost" type="button" id="eg-del" style="color:var(--danger)">Supprimer ce véhicule</button></div>`;
+  const up=()=>{ markDirty(); };
+  B.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{ engCur=+b.dataset.v; engSpend=0; renderEngin(); });
+  $('eg-name').oninput=e=>{ v.name=e.target.value; up(); const t=B.querySelector(`[data-v="${v.id}"]`); if(t) t.textContent=v.name||'Sans nom'; };
+  $('eg-kind').oninput=e=>{ v.kind=e.target.value; up(); };
+  $('eg-fact').onchange=e=>{ v.factor=+e.target.value; engSpend=0; up(); renderEngin(); };
+  $('eg-opp').onchange=e=>{ engOpp=+e.target.value; renderEngin(); };
+  if($('eg-spend')) $('eg-spend').onchange=e=>{ engSpend=+e.target.value; };
+  B.querySelectorAll('[data-st]').forEach(b=>b.onclick=()=>{ const k=b.dataset.st, S=ENG_ST[k], d=+b.dataset.d;
+    if(k==='integ') v.integ=Math.max(0,Math.min(v.integMax,v.integ+d)); else v[k]=Math.max(S.min,Math.min(S.max,(+v[k]||0)+d)); up(); renderEngin(); });
+  B.querySelector('[data-imax]').onclick=()=>{ openDialog(`<h3>Intégrité maximale</h3><div class="stepper" style="max-width:160px;margin:0 auto"><button type="button" id="im-m">−</button><input id="im-v" inputmode="numeric" value="${v.integMax}" aria-label="Intégrité maximale"><button type="button" id="im-p">+</button></div><div class="actions"><button class="btn ghost" type="button" data-close>Annuler</button><button class="btn" type="button" id="im-ok">Valider</button></div>`);
+    $('im-m').onclick=()=>$('im-v').value=Math.max(1,(+$('im-v').value||1)-1); $('im-p').onclick=()=>$('im-v').value=Math.min(99,(+$('im-v').value||0)+1);
+    $('im-ok').onclick=()=>{ const m=Math.max(1,Math.min(99,parseInt($('im-v').value)||1)); const full=v.integ>=v.integMax; v.integMax=m; v.integ=full?m:Math.min(v.integ,m); dlg.close(); up(); renderEngin(); }; };
+  const roll=(lbl,stat,base,extra)=>{ if(boom){ toast('Trois facteurs d’écart : la cible est détruite d’office.'); return; }
+    const n=(D.r[stat]||0)+base+fb; if(n<=0){ toast('Pas assez de dés pour ce jet.'); return; }
+    let th=8-(astro?engSpend:0); if(hasFx(C,'pasTop')) th+=1; th=Math.max(2,th);
+    if(astro&&engSpend){ v.integ=Math.max(0,v.integ-engSpend); up(); }
+    showRoll(`${v.name||'Véhicule'} · ${lbl}`,Array.from({length:n},()=>1+Math.floor(Math.random()*10)),th,`${stat} ${D.r[stat]||0} + ${extra} ${base}${fb?` + facteur ${fb}`:''}${astro&&engSpend?` · ${engSpend} intégrité dépensée`:''} = ${n} dés`);
+    engSpend=0; renderEngin(); };
+  $('eg-pilot').onclick=()=>roll('Pilotage','DEX',+v.mot||0,'moteur');
+  $('eg-fire').onclick=()=>roll('Tir','PER',+v.arm||0,'armement');
+  B.querySelectorAll('.eg-row').forEach(r=>{ const h=v.hold.find(x=>x.id===+r.dataset.h);
+    r.querySelectorAll('input').forEach(i=>i.oninput=()=>{ h[i.dataset.f]=i.dataset.f==='pc'?(i.value=i.value.replace(/[^\d]/g,''),i.value===''?'':+i.value):i.value; up();
+      if(i.dataset.f==='pc'){ const u=engHoldPC(v), c=$('eng-body').querySelector('.eg-cap'); c.textContent=`${u} / ${cap} PC`; c.classList.toggle('over',u>cap); } });
+    r.querySelector('[data-hdel]').onclick=()=>{ v.hold.splice(v.hold.indexOf(h),1); up(); renderEngin(); }; });
+  $('eg-hadd').onclick=()=>{ v.hold.push({id:Date.now(),name:'',pc:1,note:''}); up(); renderEngin(); const L=$('eng-body').querySelectorAll('.eg-row input[data-f="name"]'); if(L.length) L[L.length-1].focus(); };
+  $('eg-del').onclick=()=>{ openDialog(`<h3>Supprimer le véhicule</h3><p>« ${esc(v.name||'Sans nom')} » et le contenu de sa soute seront retirés de la fiche.</p><div class="actions"><button class="btn ghost" type="button" data-close>Annuler</button><button class="btn danger" type="button" id="vd-ok">Supprimer</button></div>`);
+    $('vd-ok').onclick=()=>{ C.vehicles.splice(C.vehicles.indexOf(v),1); engCur=null; dlg.close(); up(); renderEngin(); }; };
+}
+function engAdd(){ const v=vehNew(); (C.vehicles||(C.vehicles=[])).push(v); engCur=v.id; markDirty(); renderEngin(); setTimeout(()=>{ const n=$('eg-name'); if(n) n.focus(); },30); }
+$('eng-add').onclick=engAdd;
 /* Quantum Bank : Bastos et objets mis au coffre (hors charge) */
 function bankMeta(it){ const m=[]; if(isWeapon(it)&&it.stat) m.push(`${it.stat}${+it.diceBonus?' +'+it.diceBonus+'D':''}`); if(it.itemType==='armor') m.push(`${+it.armorPoints||0} PP`); if(+it.weight) m.push(`${it.itemType==='backpack'?'+':'−'}${it.weight} PC`); if(it.specialAbility) m.push(it.specialAbility); return m.join(' · '); }
 function renderBank(){
@@ -2193,6 +2295,7 @@ if(window.__adbJoin){ const code=window.__adbJoin; window.__adbJoin=null; setTim
 { const H=document.documentElement; let view='table';
   const css=document.createElement('style'); css.textContent=`
 #tbseg,#phud,#pfab,#tbback{display:none}
+html:not(.pl-body) #tbback{display:none}
 html.pt-land #tbseg{display:flex;position:fixed;left:calc(var(--pw,350px) + 16px);top:calc(var(--bar) + 14px);z-index:36;padding:4px;background:var(--paper);border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,.3)}
 #tbseg button{height:40px;padding:0 16px;border:0;border-radius:9px;background:none;font:700 13px var(--f-body);color:var(--ink);cursor:pointer}#tbseg button.on{background:var(--ink-strong);color:#fff}
 html.tbcenter #tabledrw{transform:none!important;left:var(--pw,350px);right:40px;width:auto;padding:0;z-index:30;border:0;box-shadow:none!important;top:calc(var(--bar) + env(safe-area-inset-top,0px))}
