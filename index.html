@@ -2911,6 +2911,10 @@ dialog::backdrop{background:rgba(47,51,64,.42)}
 .btn.ghost{background:transparent;color:var(--ink-strong);border-color:var(--rule)}
 .btn.ghost:hover{border-color:var(--ink)}
 .btn.danger{background:var(--danger);border-color:var(--danger)}
+.btn.sc-blue{background:var(--c-res);border-color:var(--c-res)}
+.btn.sc-yel{background:#e0b11c;border-color:#e0b11c;color:#2f2600}
+.scacts{flex-wrap:wrap}.scacts .btn{flex:1 1 auto;padding:9px 10px}
+.dfoot.scacts+.dfoot{margin-top:8px;padding-top:0;border-top:0}
 .btn:disabled{opacity:.5;cursor:default}
 .actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;align-items:center}
 .subttl{font-family:var(--f-title);font-size:14px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-strong);margin:4px 0 -4px}
@@ -3246,7 +3250,8 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 <aside class="drawer ldrawer" id="scenario" style="--tc:var(--c-per)" aria-label="Scénario">
   <header><h3>Scénario</h3><span class="spacer"></span><button class="ib" type="button" id="sc-pdf" title="Exporter le scénario (PDF)"></button></header>
   <div class="dscroll" id="scenes"></div>
-  <div class="dfoot"><button class="btn" type="button" id="sc-new"></button><button class="btn ghost" type="button" id="sc-del" title="Supprimer la scène active"></button><span class="spacer"></span><button class="nb" type="button" id="sc-up" title="Scène précédente"></button><button class="nb" type="button" id="sc-down" title="Scène suivante"></button></div>
+  <div class="dfoot scacts"><button class="btn sc-blue" type="button" id="sc-new"></button><button class="btn sc-yel" type="button" id="sc-clean" title="Retire tracés, pictos, MOBs, PNJ, objets, sang et brouillard de la scène (le fond et les joueurs restent)"></button><button class="btn danger" type="button" id="sc-wipe" title="Remet toute la campagne à zéro"></button></div>
+  <div class="dfoot"><button class="btn ghost" type="button" id="sc-del" title="Supprimer la scène active"></button><span class="spacer"></span><button class="nb" type="button" id="sc-up" title="Scène précédente"></button><button class="nb" type="button" id="sc-down" title="Scène suivante"></button></div>
 </aside>
 <aside class="drawer ldrawer" id="notes" style="--tc:var(--c-cha)" aria-label="Notes du MJ">
   <header><h3>Notes MJ</h3></header>
@@ -6241,10 +6246,14 @@ function loadText(txt,handle,name){
   S=Object.assign(blankTable(),o.table); setFile(name||null); setTimeout(histInit,0);
   dirty=false; lastSaved=new Date(); closeCard(); renderAll(); if(S.view){ V={...S.view}; applyView(); } else fitBoard(); saveLocal(true); updateSaveState(); sync(); toast('Table chargée');
 }
-function newTable(){ confirmDialog('Effacer la campagne en cours','Toute la table est remise à zéro : scènes, fonds de carte, tracés, jetons, initiative et notes. Le fichier déjà enregistré dans le dossier n\'est pas touché ; le bestiaire et le code de la table en ligne sont conservés. Cette action est définitive pour la table ouverte.','Tout effacer',()=>{
+function newTable(){ confirmDialog('Effacer la campagne','Êtes-vous sûr ? Toute la table est remise à zéro : scènes, fonds de carte, tracés, jetons, initiative et notes. Le fichier déjà enregistré dans le dossier n\'est pas touché ; le bestiaire et le code de la table en ligne sont conservés.','Oui, effacer',()=>setTimeout(()=>confirmDialog('Effacer la campagne','Êtes-vous vraiment sûr ? Il n\'y aura pas de retour en arrière.','Effacer définitivement',()=>{
     const best=S.bestiary, inv=S.items, code=S.netCode, open=S.netOpen; S=blankTable(); S.bestiary=best; S.items=inv||[]; S.netCode=code; S.netOpen=open;
     setFile(null); dirty=false; lastSaved=null; closeCard(); if(typeof sheetPid!=='undefined'&&sheetPid) closeSheet(); timers=[]; renderTimers();
-    renderAll(); fitBoard(); saveLocal(true); updateSaveState(); sync(); if(typeof renderPtabs==='function') renderPtabs(); toast('Campagne effacée : la table repart de zéro'); }); }
+    renderAll(); fitBoard(); saveLocal(true); updateSaveState(); sync(); if(typeof renderPtabs==='function') renderPtabs(); toast('Campagne effacée : la table repart de zéro'); }),60)); }
+/* nettoyer la table : la scène est vidée, le fond et les joueurs restent */
+function cleanTable(){ confirmDialog('Nettoyer la table','Les tracés, pictos, MOBs, PNJ, objets, taches de sang et zones découvertes de la scène sont retirés. Le fond de carte et les joueurs restent.','Nettoyer',()=>{
+  closeCard(); S.drawings=[]; S.blood=[]; S.seen={}; FOG.ver++; FOG.sig=''; S.tokens=S.tokens.filter(t=>t.type==='player'); S.order=S.order.filter(id=>tok(id)); S.turn=-1;
+  if(typeof mapVer!=='undefined'){ mapVer++; } renderAllBoard(); markDirty(); sync(); toast('Table nettoyée'); }); }
 let autoTimer=null;
 function setupAutosave(){ clearInterval(autoTimer); if(isPlayer||!+prefs.autosave) return;
   autoTimer=setInterval(async()=>{ if(!dirty) return; if(!saveLocal(true)) return; if(fileName&&dirHandle&&await dirOK(false)){ try{ await writeDir(fileName); }catch(e){} } dirty=false; lastSaved=new Date(); updateSaveState(); },prefs.autosave*1000); }
@@ -6268,11 +6277,10 @@ function settings(){
     <p class="meta" style="text-align:left">La campagne s'enregistre dans le même dossier que les fiches des aventuriers, sous le nom <b>campagne.adb</b> (modifiable). La sauvegarde automatique la garde dans ce navigateur et la réécrit dans le dossier.</p>
     <div class="subttl">Plateau</div>
     <label class="switch"><input type="checkbox" id="p-wake">Empêcher la mise en veille de l'écran</label>
-    <div class="inst"><div><b>Effacer la campagne en cours</b><span>Remet la table à zéro (avec confirmation). Le fichier enregistré n'est pas touché.</span></div><button class="btn danger" type="button" id="p-new">${IB('bin')}Effacer</button></div>
     <div class="inst"><div><b>Partie locale</b><span id="loc-msg">${LOC_TXT}</span></div><button class="btn" type="button" id="p-srv" title="PC du MJ uniquement — Windows. Les joueurs n'installent rien." ${isWinPC()?'':'disabled'}>${IB('server')}Télécharger le serveur</button></div>
     <div class="inst"><div><b>Application</b><span id="inst-msg">${installMsg()}</span></div><button class="btn" type="button" id="p-install" ${isStandalone()?'disabled':''}>${isStandalone()?'Installée':'Installer'}</button></div>
     <div class="actions" style="justify-content:space-between"><span class="meta">Aldebaran MJ · version ${APP_VER}</span><span style="display:flex;gap:8px">${window.__ADB?`<button class="btn ghost" type="button" id="p-home" title="Revenir au choix Aventurier / Maître du destin">${IB('home')}Accueil</button>`:''}<button class="btn ghost" type="button" id="p-guide">${IB('help')}Guide</button><button class="btn ghost" type="button" data-close>Fermer</button></span></div>`);
-  $('p-new').onclick=newTable; $('p-open').onclick=()=>{ dlg.close(); openFile(); }; $('p-save').onclick=()=>{ dlg.close(); save(); }; $('p-saveas').onclick=()=>{ dlg.close(); saveAs(); };
+  $('p-open').onclick=()=>{ dlg.close(); openFile(); }; $('p-save').onclick=()=>{ dlg.close(); save(); }; $('p-saveas').onclick=()=>{ dlg.close(); saveAs(); };
   $('p-auto').onchange=e=>{ prefs.autosave=+e.target.value; savePrefs(); setupAutosave(); }; wakeBind();
   $('p-srv').onclick=srvDownload; locMsg(); $('p-install').onclick=doInstall; $('p-guide').onclick=showGuide; if($('p-home')) $('p-home').onclick=()=>{ saveLocal(true); location.href=location.pathname; }; updateSaveState();
 }
@@ -6355,7 +6363,7 @@ function wire(){ wireTouch(); $('b-undo').innerHTML=IB('undo'); $('b-redo').inne
   $('rb-notes').innerHTML=IB('note'); $('rb-roll').innerHTML=D10ICO; $('rb-loot').innerHTML=IB('coins'); $('rb-map').innerHTML=IB('map'); $('scn-ico').innerHTML=IB('scroll',1.5);
   document.querySelectorAll('[data-left]').forEach(b=>b.onclick=()=>openLeft(b.dataset.left));
   $('b-shuffle').innerHTML=IB('shuffle'); $('b-next').innerHTML=IB('next'); $('b-timer').innerHTML=IB('hourglass');
-  $('bin').innerHTML=IB('bin'); $('sc-pdf').innerHTML=IB('print'); $('sc-new').innerHTML=IB('clap')+'Nouvelle scène'; $('sc-del').innerHTML=IB('bin')+'Supprimer';
+  $('bin').innerHTML=IB('bin'); $('sc-pdf').innerHTML=IB('print'); $('sc-new').innerHTML=IB('clap')+'Nouvelle scène'; $('sc-clean').innerHTML=IB('eraser')+'Nettoyer la table'; $('sc-wipe').innerHTML=IB('bin')+'Effacer la campagne'; $('sc-del').innerHTML=IB('bin')+'Supprimer';
   const VT={scenario:IB('scroll'),notes:IB('note'),roller:D10ICO,loot:IB('coins'),fond:IB('planet'),mapdrw:IB('map')};
   document.querySelectorAll('.vtab').forEach(b=>{ b.insertAdjacentHTML('afterbegin',VT[b.dataset.drawer]); b.title=b.textContent.trim(); b.onclick=()=>openDrawer(b.dataset.drawer); });
   document.querySelectorAll('svg.ttl text').forEach(t=>{ const s=t.textContent; t.innerHTML=[...s].map(ch=>`<tspan>${ch===' '?'&#160;':esc(ch)}</tspan>`).join(''); });
@@ -6392,7 +6400,7 @@ function wire(){ wireTouch(); $('b-undo').innerHTML=IB('undo'); $('b-redo').inne
   $('b-full').onclick=()=>{ if(!document.fullscreenElement) document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); else document.exitFullscreen(); };
   $('sc-prev').onclick=()=>gotoScene(S.scene-1); $('sc-next').onclick=()=>gotoScene(S.scene+1); $('sc-num').onclick=()=>openDrawer('scenario',true);
   // scénario
-  $('sc-new').onclick=newSceneDialog; $('sc-del').onclick=deleteScene; $('sc-up').onclick=()=>gotoScene(S.scene-1); $('sc-down').onclick=()=>gotoScene(S.scene+1); $('sc-pdf').onclick=exportScenario;
+  $('sc-new').onclick=newSceneDialog; $('sc-clean').onclick=cleanTable; $('sc-wipe').onclick=newTable; $('sc-del').onclick=deleteScene; $('sc-up').onclick=()=>gotoScene(S.scene-1); $('sc-down').onclick=()=>gotoScene(S.scene+1); $('sc-pdf').onclick=exportScenario;
   $('notes-in').oninput=e=>{ S.notes=e.target.value; markDirty(); };
   // initiative
   $('b-shuffle').onclick=()=>{ const ids=orderToks().map(t=>t.id); for(let i=ids.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [ids[i],ids[j]]=[ids[j],ids[i]]; }
