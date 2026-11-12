@@ -4,6 +4,8 @@ package main
 
 import (
 	"io"
+	"net/http"
+	"time"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -36,11 +38,26 @@ func maybeInstall() bool {
 	if msgBox(q, "Aldebaran — serveur local", mbYesNo|mbIconInfo) != idYes {
 		return false
 	}
-	if err := copyFile(self, dst); err != nil {
-		fatal("L'installation a échoué : " + err.Error())
+	// une ancienne version tourne encore : on l'arrête, sinon son .exe est verrouillé
+	if had == nil {
+		if r, e := http.Post("http://127.0.0.1:4777/stop", "text/plain", nil); e == nil {
+			r.Body.Close()
+			time.Sleep(1200 * time.Millisecond)
+		}
+	}
+	var cerr error
+	for i := 0; i < 6; i++ {
+		if cerr = copyFile(self, dst); cerr == nil {
+			break
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
+	if cerr != nil {
+		fatal("L'installation a échoué : " + cerr.Error() + "\n\nFermez le serveur (icône près de l'horloge › Arrêter le serveur) puis relancez ce fichier.")
 		return false
 	}
 	shortcuts(dst)
+	refreshIcons()
 	fixFirewall() // une fenêtre Windows demande l'autorisation : sans elle, les téléphones ne voient pas le serveur
 	cmd := exec.Command(dst)
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
@@ -111,4 +128,9 @@ func shortcuts(target string) {
 		d.Release()
 		logf("raccourci créé : %s", lnk)
 	}
+}
+
+// Windows garde les icônes en cache : on lui signale le changement (raccourcis, barre des tâches)
+func refreshIcons() {
+	syscall.NewLazyDLL("shell32.dll").NewProc("SHChangeNotify").Call(0x08000000, 0, 0, 0)
 }
