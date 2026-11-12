@@ -2555,6 +2555,8 @@ html.pland:not(.player){--bar:0px;--bot:0px;--rail:56px;--tabs:60px}
 .bub>div{position:relative;margin-bottom:12px;background:#fff;border:2px solid #2a2c33;border-radius:16px;padding:7px 12px;font:700 15px var(--f-body);color:#2a2c33;white-space:nowrap;display:flex;align-items:center;gap:6px;box-shadow:0 4px 14px rgba(0,0,0,.25);animation:bubIn .35s cubic-bezier(.3,1.6,.5,1) both}
 .bub>div::after{content:'';position:absolute;left:50%;bottom:-11px;margin-left:-8px;border:9px solid transparent;border-top-color:#2a2c33;border-bottom:0}
 .bub>div::before{content:'';position:absolute;left:50%;bottom:-7px;margin-left:-6px;border:7px solid transparent;border-top-color:#fff;border-bottom:0;z-index:1}
+.bub.priv>div{border-style:dashed;border-color:var(--c-per);background:#f4f0ff}.bub.priv>div::after{border-top-color:var(--c-per)}.bub.priv>div::before{border-top-color:#f4f0ff}.bub .to{display:block;font:800 10px var(--f-body);letter-spacing:.1em;text-transform:uppercase;color:var(--c-per);margin-bottom:2px}
+.chatac{position:fixed;right:16px;bottom:132px;z-index:42;width:min(320px,calc(100vw - 32px));background:var(--paper);border:1px solid var(--rule);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.25);padding:4px;display:flex;flex-direction:column}.chatac button{border:0;background:none;text-align:left;padding:8px 10px;border-radius:8px;font:700 14px var(--f-body);color:var(--ink-strong);cursor:pointer}.chatac button.on,.chatac button:hover{background:var(--wash)}.chatac button.mj{color:var(--c-per)}
 .bub.say>div{white-space:normal;max-width:220px;font-weight:600;font-size:14px;line-height:1.3}
 .bub small{display:block;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#7a7f8c;font-weight:700}
 .bub svg{width:22px;height:22px;flex:none}.bub b{font-size:19px}
@@ -3477,7 +3479,7 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><filter id="fxw1" x="-20%" y="-20%" width="140%" height="140%"><feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="2" seed="3"><animate attributeName="baseFrequency" values="0.018;0.03;0.018" dur="4s" repeatCount="indefinite"/></feTurbulence><feDisplacementMap in="SourceGraphic" scale="5"/></filter><filter id="fxw2" x="-25%" y="-25%" width="150%" height="150%"><feTurbulence type="fractalNoise" baseFrequency="0.022" numOctaves="2" seed="5"><animate attributeName="baseFrequency" values="0.022;0.04;0.022" dur="2.6s" repeatCount="indefinite"/></feTurbulence><feDisplacementMap in="SourceGraphic" scale="11"/></filter><filter id="fxw3" x="-30%" y="-30%" width="160%" height="160%"><feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="3" seed="8"><animate attributeName="baseFrequency" values="0.028;0.055;0.02;0.028" dur="1.6s" repeatCount="indefinite"/></feTurbulence><feDisplacementMap in="SourceGraphic" scale="20"/></filter></defs></svg>
 <div id="nosig"><canvas id="nosig-cv" width="160" height="90"></canvas><span>NO SIGNAL</span></div>
 <div class="pmark"><span class="dot"></span>ALDEBARAN</div>
-<button class="vehbtn" type="button" id="vehbtn" title="Invoquer mon véhicule" hidden></button><button class="chatbtn" type="button" id="chatbtn" title="Envoyer un message" hidden></button><div class="chatpop" id="chatpop" hidden><input id="chat-in" maxlength="140" placeholder="Votre message…" autocomplete="off"><button type="button" id="chat-go" title="Envoyer"></button></div><div class="sysbox" id="sysbox"></div>
+<button class="vehbtn" type="button" id="vehbtn" title="Invoquer mon véhicule" hidden></button><button class="chatbtn" type="button" id="chatbtn" title="Envoyer un message" hidden></button><div class="chatpop" id="chatpop" hidden><input id="chat-in" maxlength="140" placeholder="Votre message… (@MJ ou @joueur en privé)" autocomplete="off"><button type="button" id="chat-go" title="Envoyer"></button></div><div class="sysbox" id="sysbox"></div>
 <div class="pwait" id="pwait">En attente du maître du destin…</div>
 <div id="stitle"><span class="cap">Scène</span><svg class="ttl" viewBox="0 0 1600 70" preserveAspectRatio="xMidYMid meet"><text x="800" y="56" text-anchor="middle"></text></svg></div>
 <dialog id="dlg"><div class="dlg" id="dlg-body"></div></dialog>
@@ -6347,6 +6349,7 @@ function receive(m){ if(!m) return;
   if(m.t==='bg'){ S.bg=m.data||''; S.bgKind=m.kind||''; renderBoard(); return; }
   if(m.t==='full'){ noRoom(m.id); return; }
   if(m.t==='sys'&&m.priv){ sysMsg(m.text,true); return; }
+  if(m.t==='say'&&m.priv){ bubble(m.pid,`<span><small class="to">${m.pid===ME?'→ '+esc(m.to||''):'Message privé'}</small>${esc(m.text||'')}</span>`,'say priv',m.who); return; }
   if(m.t==='closed'){ $('pwait').classList.add('gone'); S.tokens=[]; S.order=[]; renderAllBoard(); followMe(); return; }   /* table fermée : NO SIGNAL */
   if(m.from!=='mj'||m.n<=lastSeq) return; lastSeq=m.n;
   if(m.t==='state'){ $('pwait').classList.add('gone');
@@ -6356,7 +6359,7 @@ function receive(m){ if(!m) return;
     renderAllBoard(); if(NETVIEW) followMe(); else if(m.view) setPlayerView(m.view); }
   else if(m.t==='opened'){ reveal(m.id,m.item||{},m.by); }
   else if(m.t==='roll') bubble(m.pid,rollHTML(m.succ,m.dn),'',m.who);
-  else if(m.t==='say') bubble(m.pid,esc(m.text||''),'say',m.who);
+  else if(m.t==='say') bubble(m.pid,(m.priv?`<span><small class="to">${m.pid===ME?'→ '+esc(m.to||''):'Message privé'}</small>${esc(m.text||'')}</span>`:esc(m.text||'')),'say'+(m.priv?' priv':''),m.who);
   else if(m.t==='sys') sysMsg(m.text,false);
   else if(m.t==='view'){ if(!NETVIEW) setPlayerView(m); }
   else if(m.t==='ptr'){ if(m.pid!==ME) showPtr(m); }
@@ -7132,7 +7135,12 @@ function netIn(c,d){ if(!d||typeof d!=='object') return;
     if(!v){ return; } const me=S.tokens.find(x=>x.owner===c.pid&&x.type==='player'), t=vehToken(v,c.pid);
     if(me){ const a=Math.random()*Math.PI*2; t.x=Math.round(me.x+Math.cos(a)*110); t.y=Math.round(me.y+Math.sin(a)*110); }
     addToken(t); toast(`${c.name} invoque : ${t.name}`); }
-  else if(d.t==='say'&&c.pid){ const text=String(d.text||'').trim().slice(0,140); if(!text) return; bubble(c.pid,esc(text),'say',c.name); send({t:'say',pid:c.pid,who:c.name,text}); }
+  else if(d.t==='say'&&c.pid){ let text=String(d.text||'').trim().slice(0,140); if(!text) return; const m=text.match(/^@(\S+)\s+([\s\S]+)$/);
+    if(m){ const k=normTxt(m[1].replace(/_/g,' ')), msg=m[2].trim();
+      if(k==='mj'||k==='md'||k==='maitre'){ bubble(c.pid,`<span><small class="to">→ MJ (privé)</small>${esc(msg)}</span>`,'say priv',c.name); netTo(c.pid,{t:'say',pid:c.pid,who:c.name,text:msg,priv:1,to:'MJ'}); return; }
+      const P=[...PL.values()].find(P=>P.pid!==c.pid&&(normTxt(P.name).startsWith(k)||normTxt(P.name).split(/\s+/).includes(k)));
+      if(P){ bubble(c.pid,`<span><small class="to">→ ${esc(P.name)}</small>${esc(msg)}</span>`,'say priv',c.name); const o={t:'say',pid:c.pid,who:c.name,text:msg,priv:1,to:P.name}; netTo(P.pid,o); netTo(c.pid,o); return; } }
+    bubble(c.pid,esc(text),'say',c.name); send({t:'say',pid:c.pid,who:c.name,text}); }
 }
 function playerGone(c){ if(!c.pid) return; const P=PL.get(c.pid); if(P&&![...NET.conns].some(x=>x!==c&&x.pid===c.pid)){ P.online=false; renderPtabs();
     clearTimeout(P.bye); P.bye=setTimeout(()=>{ const Q=PL.get(P.pid); if(Q&&!Q.online){ PL.delete(P.pid); if(sheetPid===P.pid) closeSheet(); renderPtabs(); netStatus(NET.status); } },12000); } }
@@ -7329,8 +7337,21 @@ if(isPlayer){
   if(NETVIEW){ $('pwait').classList.add('gone'); V.z=.32; followMe(); window.addEventListener('message',e=>{ if(e.data&&e.data.__adb) receive(e.data.m); }); up({t:'ready'});
     /* petit message : bouton rond en bas à droite */
     const cb=$('chatbtn'), cp=$('chatpop'), ci=$('chat-in'); cb.hidden=false; cb.innerHTML=IB('chat',1.7); $('chat-go').innerHTML=IB('send',1.9);
-    const say=()=>{ const t=ci.value.trim(); if(!t) return; up({t:'say',text:t}); ci.value=''; cp.hidden=true; };
-    cb.onclick=()=>{ cp.hidden=!cp.hidden; if(!cp.hidden) setTimeout(()=>ci.focus(),30); };
+    const say=()=>{ const t=ci.value.trim(); if(!t) return; up({t:'say',text:t}); ci.value=''; cp.hidden=true; ac.hidden=true; };
+    const ac=document.createElement('div'); ac.className='chatac'; ac.hidden=true; document.body.appendChild(ac); let acL=[], acI=0;
+    const acHide=()=>{ ac.hidden=true; acL=[]; };
+    const acPick=n=>{ ci.value='@'+n.replace(/\s+/g,'_')+' '+ci.value.replace(/^@\S*\s?/,''); acHide(); ci.focus(); };
+    const acShow=()=>{ const m=ci.value.match(/^@(\S*)$/); if(!m||cp.hidden){ acHide(); return; } const k=normTxt(m[1].replace(/_/g,' '));
+      const names=['MJ',...new Set(S.tokens.filter(t=>t.type==='player'&&t.owner&&t.owner!==ME&&t.name).map(t=>t.name))];
+      acL=names.filter(n=>!k||normTxt(n).startsWith(k)||normTxt(n).split(/\s+/).some(w=>w.startsWith(k))); acI=Math.min(acI,Math.max(0,acL.length-1));
+      if(!acL.length){ acHide(); return; } ac.innerHTML=acL.map((n,j)=>`<button type="button" data-j="${j}" class="${j===acI?'on':''}${n==='MJ'?' mj':''}">${n==='MJ'?'Maître du destin (MJ)':esc(n)}</button>`).join(''); ac.hidden=false; };
+    ac.addEventListener('pointerdown',e=>{ const b=e.target.closest('[data-j]'); if(!b) return; e.preventDefault(); acPick(acL[+b.dataset.j]); });
+    ci.addEventListener('input',()=>{ acI=0; acShow(); });
+    ci.addEventListener('keydown',e=>{ if(ac.hidden||!acL.length) return;
+      if(e.key==='ArrowDown'||e.key==='ArrowUp'){ e.preventDefault(); e.stopImmediatePropagation(); acI=(acI+(e.key==='ArrowDown'?1:-1)+acL.length)%acL.length; acShow(); }
+      else if(e.key==='Enter'||e.key==='Tab'){ e.preventDefault(); e.stopImmediatePropagation(); acPick(acL[acI]); }
+      else if(e.key==='Escape'){ e.stopImmediatePropagation(); acHide(); } },true);
+    cb.onclick=()=>{ cp.hidden=!cp.hidden; if(cp.hidden) acHide(); else setTimeout(()=>ci.focus(),30); };
     $('chat-go').onclick=say; ci.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); say(); } else if(e.key==='Escape') cp.hidden=true; });
     /* le joueur ne déplace pas son jeton : il montre avec son pointeur */
     let pd=false, raf=0, last=null, pdAt=null;
