@@ -4264,7 +4264,7 @@ function fpsDraw(){ if(!FPS.el||FPS.el.hidden||!FPS.cam) return; const cv=FPS.el
   const W=Math.max(160,Math.min(560,Math.round(r.width/2))), H=Math.round(W*r.height/r.width); if(cv.width!==W||cv.height!==H){ cv.width=W; cv.height=H; FPS.img=null; }
   let cam=FPS.cam; const A=FPS.anim; if(A){ const k=Math.min(1,(performance.now()-A.t0)/A.dur), e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
     cam={x:A.f.x+(A.to.x-A.f.x)*e,y:A.f.y+(A.to.y-A.f.y)*e,a:A.f.a+(A.to.a-A.f.a)*e}; if(k<1) fpsLater(); else { FPS.anim=null; FPS.cam=A.to; if(FPS.queue){ const q=FPS.queue; FPS.queue=null; fpsAct(q); } } }
-  fpsRender(cv,cam,FPS.self);
+  FPS.lastCam=cam; fpsRender(cv,cam,FPS.self);
   const cp=FPS.el.querySelector('.fps-cmp'); if(cp){ const d=(((Math.round(FPS.cam.a/(Math.PI/2))%4)+4)%4); cp.textContent=['Nord','Est','Sud','Ouest'][d]; } }
 /* déplacements : avancer, reculer, pas de côté, quart de tour */
 function fpsAct(k){ if(!FPS.cam) return; if(FPS.anim){ FPS.queue=k; return; } const c=FPS.cam, d=(((Math.round(c.a/(Math.PI/2))%4)+4)%4), V4=[[0,-1],[1,0],[0,1],[-1,0]];
@@ -4277,6 +4277,16 @@ function fpsAct(k){ if(!FPS.cam) return; if(FPS.anim){ FPS.queue=k; return; } co
     to.x=ni+.5; to.y=nj+.5; }
   FPS.anim={f:{...c},to,t0:performance.now(),dur:k==='tl'||k==='tr'?190:230}; fpsLater();
   if(FPS.mode==='play'){ const nd=(((Math.round(to.a/(Math.PI/2))%4)+4)%4); up({t:'dmove',x:to.x*CELL,y:to.y*CELL,dir:nd}); } }
+/* point de la carte 2D sous le doigt dans la vue 3D : sol, pied du mur ou personnage visé */
+function fpsWorldAt(cx,cy){ if(!FPS.el||FPS.el.hidden||!FPS.lastCam||!FPS.z) return null; const cv=FPS.el.querySelector('canvas'), r=cv.getBoundingClientRect();
+  if(cx<r.left||cx>r.right||cy<r.top||cy>r.bottom) return null;
+  for(const b of FPS.el.querySelectorAll('.fps-pad,.fps-x,.fps-cmp')){ const q=b.getBoundingClientRect(); if(cx>=q.left&&cx<=q.right&&cy>=q.top&&cy<=q.bottom) return null; }
+  const u=(cx-r.left)/r.width, v=(cy-r.top)/r.height, h=(FPS.hits||[]).filter(o=>u>=o.x0&&u<=o.x1&&v>=o.y0&&v<=o.y1).sort((a,b)=>a.r-b.r)[0];
+  if(h) return [h.t.x,h.t.y];
+  const cam=FPS.lastCam, W=cv.width, H=cv.height, col=Math.max(0,Math.min(W-1,Math.floor(u*W))), cX=2*col/W-1, K=.72;
+  const rdx=Math.sin(cam.a)+Math.cos(cam.a)*K*cX, rdy=-Math.cos(cam.a)+Math.sin(cam.a)*K*cX, zw=Math.max(.05,FPS.z[col]-.08);
+  const p=v*H-H/2, d=p>.5?Math.min(zw,(.5*H)/p):zw;
+  return [(cam.x+d*rdx)*CELL,(cam.y+d*rdy)*CELL]; }
 /* ouvrir / fermer la porte d'en face */
 function fpsFacing(){ const c=FPS.cam, d=(((Math.round(c.a/(Math.PI/2))%4)+4)%4), V4=[[0,-1],[1,0],[0,1],[-1,0]], i=Math.floor(c.x), j=Math.floor(c.y); return [i,j,i+V4[d][0],j+V4[d][1]]; }
 function fpsDoor(){ if(!FPS.cam||FPS.anim) return false; const [i,j,ni,nj]=fpsFacing(), o=dgDoor(i,j,ni,nj); if(!o||dgHid(o)){ fpsBump(); return false; }
@@ -7901,7 +7911,7 @@ if(isPlayer){
     $('chat-go').onclick=say; ci.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); say(); } else if(e.key==='Escape') cp.hidden=true; });
     /* le joueur ne déplace pas son jeton : il montre avec son pointeur */
     let pd=false, raf=0, last=null, pdAt=null;
-    const ptr=(e,end)=>{ const [x,y]=toWorld(e.clientX,e.clientY); last={x:Math.round(x),y:Math.round(y)};
+    const ptr=(e,end)=>{ let w; if(document.documentElement.classList.contains('fpsmode')){ w=fpsWorldAt(e.clientX,e.clientY); if(!w){ if(end&&last) up({t:'ptr',x:last.x,y:last.y,end:1}); return; } } else w=toWorld(e.clientX,e.clientY); const [x,y]=w; last={x:Math.round(x),y:Math.round(y)};
       showPtr({pid:ME||'moi',name:'Vous',color:pcol(ME||'moi'),x:last.x,y:last.y,end});
       if(end){ up({t:'ptr',x:last.x,y:last.y,end:1}); return; } if(!raf) raf=requestAnimationFrame(()=>{ raf=0; up({t:'ptr',x:last.x,y:last.y}); }); };
     /* zoom : molette, ou pincer à deux doigts — la vue reste centrée sur son jeton */
