@@ -2728,6 +2728,7 @@ input,textarea,select,[contenteditable],[contenteditable] *,.rg-txt,.rg-txt *,.n
 /* modules Fond de carte et Dessin retirés pour le moment (code conservé) */
 /* le second outil de création suit le type de la scène : Dessin en 2D, Donjon en 3D */
 .sc3d #rb-draw,html:not(.sc3d) #rb-dgn{display:none!important}
+.sctype{margin-left:auto;font:800 12px Quicksand,sans-serif;letter-spacing:.1em;padding:3px 8px;border-radius:7px;border:1px solid var(--tc);color:var(--tc)}
 .scseg{display:flex;gap:6px;margin:2px 0 6px}.scseg .wxb b{font:800 18px var(--f-title,Quicksand),sans-serif;letter-spacing:.06em}
 .dg-step .wxb b{font-size:17px;line-height:22px}
 .mkseg{display:flex;gap:6px;margin:4px 0 12px}.mkseg .wxb{min-width:0}
@@ -3634,7 +3635,7 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
   <div class="dscroll" id="dg-body"></div>
 </aside>
 <aside class="drawer ldrawer" id="fond" style="--tc:var(--c-dex)" aria-label="Environnement">
-  <header><h3>Environnement</h3></header>
+  <header><h3>Environnement</h3><span class="sctype" id="sctype"></span></header>
   <div class="dscroll" id="fond-body"></div>
 </aside>
 <aside class="drawer ldrawer map-drawer" id="mapdrw" style="--tc:var(--c-res)" aria-label="Carte du monde">
@@ -6946,12 +6947,16 @@ function loadScene(i){
 }
 function gotoScene(i){ setTimeout(histInit,400); if(i<0||i>=S.scenes.length||i===S.scene) return; snapshot(); loadScene(i); }
 function newSceneDialog(){
-  openDialog(`<h3>Nouvelle scène</h3><div class="choice">
+  let t3=false;
+  openDialog(`<h3>Nouvelle scène</h3>
+    <div class="wxrow scseg" style="margin:4px 0 14px;--tc:var(--c-per)"><button type="button" class="wxb on" id="ns-2d"><b>2D</b><span>Vue du dessus</span></button><button type="button" class="wxb" id="ns-3d"><b>3D</b><span>Première personne</span></button></div>
+    <div class="choice">
     <button type="button" class="dark" id="ns-cap">${IB('camera')}<b>Capturer le plateau</b><span>La scène part du plateau actuel : fond, tracés, monstres, décors et lumières.</span></button>
     <button type="button" id="ns-blank">${IB('page')}<b>Scène vierge</b><span>Un plateau vide ; les jetons des joueurs retournent dans leurs onglets.</span></button></div>
     <div class="actions"><button class="btn ghost" type="button" data-close>Annuler</button></div>`,'var(--c-per)');
-  $('ns-cap').onclick=()=>{ dlg.close(); snapshot(); S.tokens.forEach(t=>{ t.scene=true; }); S.scenes.push({id:nid(),title:`Scène ${S.scenes.length+1}`,content:''}); S.scene=S.scenes.length-1; snapshot(); renderScenes(); markDirty(); openDrawer('scenario',true); focusScene(); };
-  $('ns-blank').onclick=()=>{ dlg.close(); snapshot(); S.scenes.push({id:nid(),title:`Scène ${S.scenes.length+1}`,content:'',bg:'',bgW:0,bgH:0,geo:null,light:true,ground:GROUND0(),drawings:[],tokens:[],order:[]}); loadScene(S.scenes.length-1); openDrawer('scenario',true); focusScene(); };
+  const ty=v=>{ t3=v; $('ns-2d').classList.toggle('on',!v); $('ns-3d').classList.toggle('on',v); }; $('ns-2d').onclick=()=>ty(false); $('ns-3d').onclick=()=>ty(true);
+  $('ns-cap').onclick=()=>{ dlg.close(); snapshot(); S.tokens.forEach(t=>{ t.scene=true; }); S.scenes.push({id:nid(),title:`Scène ${S.scenes.length+1}`,content:''}); S.scene=S.scenes.length-1; if(t3!==sceneIs3D()) setScene3D(t3); snapshot(); renderScenes(); markDirty(); openDrawer('scenario',true); focusScene(); };
+  $('ns-blank').onclick=()=>{ dlg.close(); snapshot(); S.scenes.push({id:nid(),title:`Scène ${S.scenes.length+1}`,content:'',bg:'',bgW:0,bgH:0,geo:null,light:true,ground:GROUND0(),drawings:[],tokens:[],order:[],dg:t3?{on:true,th:'pierre',c:{},d:{}}:null}); loadScene(S.scenes.length-1); openDrawer('scenario',true); focusScene(); };
 }
 function focusScene(){ setTimeout(()=>{ const i=document.querySelector('.scn.on .stt'); if(i){ i.focus({preventScroll:true}); i.select(); i.scrollLeft=0; $('scenes').scrollLeft=0; i.scrollIntoView({block:'nearest',inline:'nearest'}); $('scenes').scrollLeft=0; } },340); }
 function deleteScene(){ if(S.scene<0) return; const sc=S.scenes[S.scene];
@@ -7652,10 +7657,8 @@ function useGeo(lat,lon,label){ S.bg=''; S.bgKind=''; S.bgW=S.bgH=S.bgNW=S.bgNH=
 function renderFond(){ const box=$('fond-body'); if(!box) return;
   const sc=Math.log10(S.bgScale||1), W=S.weather||'';
   const wb=(id,ico,lbl,on)=>`<button type="button" class="wxb${on?' on':''}" id="${id}" title="${lbl}" aria-pressed="${on?'true':'false'}">${IB(ico)}<span>${lbl}</span></button>`;
-  const d3=sceneIs3D(), only2=h=>d3?'':h; if(FOG.r!==DG.n) FOG.r=DG.n;
+  const d3=sceneIs3D(), only2=h=>d3?'':h; $('sctype').textContent=d3?'3D':'2D'; if(FOG.r!==DG.n) FOG.r=DG.n;
   box.innerHTML=(`
-    <div class="subttl">Type de scène</div>
-    <div class="wxrow scseg"><button type="button" class="wxb${!d3?' on':''}" id="sc-2d" title="Vue du dessus, outils de dessin"><b>2D</b><span>Vue du dessus</span></button><button type="button" class="wxb${d3?' on':''}" id="sc-3d" title="Donjon en vue à la première personne"><b>3D</b><span>Première personne</span></button></div>
     <div class="subttl">Heure</div>${clockHTML()}
     <div class="subttl">Météo</div>
     <div class="wxrow">${wb('wx-fine','fine','Beau temps',!W)}${wb('wx-rain','rain','Pluie',W==='rain')}${wb('wx-storm','storm','Orage',W==='storm')}</div>`+only2(`
@@ -7678,7 +7681,6 @@ function renderFond(){ const box=$('fond-body'); if(!box) return;
     <div class="geores" id="geo-res"></div>
 
     <button class="btn ghost" type="button" id="bg-rm" ${S.bg||S.geo?'':'disabled'}>${IB('bin')}Retirer le fond</button>`));
-  $('sc-2d').onclick=()=>{ if(sceneIs3D()) setScene3D(false); renderFond(); }; $('sc-3d').onclick=()=>{ if(!sceneIs3D()) setScene3D(true); renderFond(); };
   clockWire();
   if(d3){ const setW=w=>{ S.weather=w; renderBoard(); markDirty(); sync(); }; $('wx-fine').onclick=()=>setW(''); $('wx-rain').onclick=()=>setW(S.weather==='rain'?'':'rain'); $('wx-storm').onclick=()=>setW(S.weather==='storm'?'':'storm');
     $('wx-grid').onclick=()=>{ S.grid=S.grid===false; renderBoard(); drawDgLater(); markDirty(); sync(); }; $('wx-center').onclick=fitBoard; $('wx-blood').onclick=clearBlood; return; }
