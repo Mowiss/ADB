@@ -2726,7 +2726,9 @@ input,textarea,select,[contenteditable],[contenteditable] *,.rg-txt,.rg-txt *,.n
 #board.grounded .bands{opacity:0}
 #dmap{position:absolute;pointer-events:none;z-index:2}
 /* modules Fond de carte et Dessin retirés pour le moment (code conservé) */
-/* #rb-fond,#rb-draw masqués : désactivé */
+/* le second outil de création suit le type de la scène : Dessin en 2D, Donjon en 3D */
+.sc3d #rb-draw,html:not(.sc3d) #rb-dgn{display:none!important}
+.scseg{display:flex;gap:6px;margin:2px 0 6px}.scseg .wxb b{font:800 18px var(--f-title,Quicksand),sans-serif;letter-spacing:.06em}
 .dg-step .wxb b{font-size:17px;line-height:22px}
 .mkseg{display:flex;gap:6px;margin:4px 0 12px}.mkseg .wxb{min-width:0}
 .dgclock{display:flex;justify-content:center;margin:2px 0 10px}#dg-clk{width:132px;height:132px;cursor:grab;touch-action:none}#dg-clk text{font:700 15px Quicksand,sans-serif;fill:var(--ink-strong,#2f3340)}
@@ -3532,7 +3534,7 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 
 <nav class="rail" id="rail" aria-label="Outils">
     <span class="cap">Créa</span>
-    <button class="rb" type="button" data-left="fond" id="rb-fond" title="Fond de carte (F)" aria-pressed="false"></button>
+    <button class="rb" type="button" data-left="fond" id="rb-fond" title="Environnement (F)" aria-pressed="false"></button>
     <button class="rb" type="button" data-left="dgdrw" id="rb-dgn" title="Donjon 3D" aria-pressed="false"></button>
     <button class="rb" type="button" data-left="ldraw" id="rb-draw" title="Dessin (D)" aria-pressed="false"></button>
     <button class="rb" type="button" data-left="ljet" id="rb-jet" title="MOBs (J)" aria-pressed="false"></button>
@@ -3631,8 +3633,8 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
   <header><h3>Donjon 3D</h3></header>
   <div class="dscroll" id="dg-body"></div>
 </aside>
-<aside class="drawer ldrawer" id="fond" style="--tc:var(--c-dex)" aria-label="Fond de carte">
-  <header><h3>Fond de carte</h3></header>
+<aside class="drawer ldrawer" id="fond" style="--tc:var(--c-dex)" aria-label="Environnement">
+  <header><h3>Environnement</h3></header>
   <div class="dscroll" id="fond-body"></div>
 </aside>
 <aside class="drawer ldrawer map-drawer" id="mapdrw" style="--tc:var(--c-res)" aria-label="Carte du monde">
@@ -4254,10 +4256,9 @@ function dgArrive(t){ const [i,j]=dgCell(t.x,t.y), m=dgMk(i,j); if(!m||!m.to) re
 /* ---------- volet du MJ ---------- */
 function renderDgPanel(){ const box=$('dg-body'); if(!box) return; const D=S.dg||{}, on=!!D.on, nC=Object.keys(D.c||{}).length;
   const wb=(id,ico,lbl,act)=>`<button type="button" class="wxb${act?' on':''}" id="${id}" title="${lbl}" aria-pressed="${act?'true':'false'}">${ico}<span>${lbl}</span></button>`;
-  box.innerHTML=`<label class="switch"><input type="checkbox" id="dg-on" ${on?'checked':''}>Donjon 3D sur cette scène</label>
-    <div class="subttl">Pinceau</div>
-    <div class="wxrow">${wb('dg-carve',IB('brush'),'Creuser',tool==='dgn'&&DG.tool==='carve')}${wb('dg-paint',dgI('paint',1.7),'Peindre',tool==='dgn'&&DG.tool==='paint')}${wb('dg-fill',IB('eraser'),'Combler',tool==='dgn'&&DG.tool==='fill')}</div>
-    <div class="crange"><span class="cap">Taille</span><input type="range" min="1" max="10" step="1" value="${DG.n}" id="dg-n" aria-label="Taille du pinceau"><b id="dg-nv">${DG.n} × ${DG.n}</b></div>
+  box.innerHTML=`<div class="subttl">Pinceau</div>
+    <div class="wxrow">${wb('dg-carve',IB('brush'),'Creuser',tool==='dgn'&&DG.tool==='carve')}${wb('dg-paint',dgI('paint',1.7),'Peindre',tool==='dgn'&&DG.tool==='paint')}${wb('dg-fill',IB('eraser'),'Gomme',tool==='dgn'&&DG.tool==='fill')}</div>
+    <div class="crange"><span class="cap">Taille</span><input type="range" min="1" max="15" step="1" value="${DG.n}" id="dg-n" aria-label="Taille du pinceau"><b id="dg-nv">${DG.n} × ${DG.n}</b></div>
     <div class="subttl">Passages</div>
     <div class="wxrow">${wb('dg-sup',dgI('sup',1.7),'Escalier ↑',tool==='dgn'&&DG.tool==='sup')}${wb('dg-sdown',dgI('sdown',1.7),'Escalier ↓',tool==='dgn'&&DG.tool==='sdown')}${wb('dg-tp',dgI('tp',1.7),'Zone TP',tool==='dgn'&&DG.tool==='tp')}</div>
     <div class="subttl">Portes</div>
@@ -4266,28 +4267,38 @@ function renderDgPanel(){ const box=$('dg-body'); if(!box) return; const D=S.dg|
     <div class="wxrow dg-th">${Object.entries(DG_TH).map(([k,t])=>`<button type="button" class="wxb${dgBrushTh()===k?' on':''}" data-th="${k}" title="${t.lbl}"><i class="gsw" style="background:${t.sw}"></i><span>${t.lbl}</span></button>`).join('')}</div>
     <div class="wxrow">${wb('dg-ceil',dgI('ceil',1.7),'Plafond',!DG.sky)}${wb('dg-sky',dgI('sky',1.7),'Ciel',DG.sky)}</div>
     <div class="wxrow">${wb('dg-wall',dgI('wall',1.7),'Murs',!DG.iw)}${wb('dg-iw',dgI('iwall',1.7),'Murs invisibles',DG.iw)}</div>
-    <div class="subttl">Heure</div>
-    <div class="dgclock"><svg id="dg-clk" viewBox="0 0 120 120" aria-label="Heure du jour (glisser ou molette)"><defs><linearGradient id="dgclkg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9fd0f5"/><stop offset=".5" stop-color="#f6c58c"/><stop offset="1" stop-color="#1a2244"/></linearGradient></defs>
-      <circle cx="60" cy="60" r="54" fill="url(#dgclkg)" stroke="var(--rule)"/>${Array.from({length:24},(_,i)=>{ const a=i/24*2*Math.PI, r1=i%6?49:45; return `<line x1="${60-Math.sin(a)*r1}" y1="${60+Math.cos(a)*r1}" x2="${60-Math.sin(a)*53}" y2="${60+Math.cos(a)*53}" stroke="rgba(0,0,0,.35)" stroke-width="${i%6?1:2}"/>`; }).join('')}
-      <circle cx="60" cy="60" r="30" fill="var(--paper)"/><g id="dg-clkh"></g><text id="dg-clkt" x="60" y="66" text-anchor="middle"></text></svg></div>
     <div class="subttl">Vue des joueurs <small>${nC} m²</small></div>
     <div class="wxrow">${wb('dg-prev',IB('eye'),'Aperçu',false)}${wb('dg-clear',IB('bin'),'Tout combler',false)}</div>`;
-  $('dg-on').onchange=e=>{ dgEnsure().on=e.target.checked; if(e.target.checked){ if(tool!=='dgn'){ DG.tool='carve'; setTool('dgn'); } S.tokens.forEach(t=>{ if(dgSnap(t)) moveTokenEl(t); }); } else if(tool==='dgn') setTool('dgn');
-    drawDgLater(); renderTokens(); renderDgPanel(); markDirty(); sync(); };
   const pick=m=>{ if(!dgOn()){ dgEnsure().on=true; } if(tool==='dgn'&&DG.tool===m) setTool('dgn'); else { DG.tool=m; if(tool!=='dgn') setTool('dgn'); } drawDgLater(); renderDgPanel(); };
   $('dg-carve').onclick=()=>pick('carve'); $('dg-fill').onclick=()=>pick('fill'); $('dg-paint').onclick=()=>pick('paint'); $('dg-sup').onclick=()=>pick('sup'); $('dg-sdown').onclick=()=>pick('sdown'); $('dg-tp').onclick=()=>pick('tp');
   const opt=(k,v)=>{ DG[k]=v; if(tool!=='dgn'||DG.tool==='fill'||DG.tool==='door'||DG.tool==='secret'){ DG.tool=DG.tool==='paint'?'paint':'carve'; if(tool!=='dgn') setTool('dgn'); } renderDgPanel(); };
   $('dg-ceil').onclick=()=>opt('sky',false); $('dg-sky').onclick=()=>opt('sky',true); $('dg-wall').onclick=()=>opt('iw',false); $('dg-iw').onclick=()=>opt('iw',true); $('dg-door').onclick=()=>pick('door'); $('dg-sdoor').onclick=()=>pick('secret');
-  $('dg-n').oninput=e=>{ DG.n=+e.target.value; $('dg-nv').textContent=`${DG.n} × ${DG.n}`; drawDgLater(); };
+  $('dg-n').oninput=e=>{ brushSize(+e.target.value); $('dg-nv').textContent=`${DG.n} × ${DG.n}`; drawDgLater(); };
   box.querySelectorAll('[data-th]').forEach(b=>b.onclick=()=>{ DG.th=b.dataset.th; if(b.dataset.th==='prairie'){ DG.sky=true; } if(tool!=='dgn'||!['carve','paint'].includes(DG.tool)){ DG.tool=DG.tool==='paint'?'paint':'carve'; if(tool!=='dgn') setTool('dgn'); } renderDgPanel(); });
   $('dg-prev').onclick=()=>fpsPreview();
-  dgClockPaint(); const ck=$('dg-clk'), set=h=>{ S.hour=((Math.round(h*4)/4)%24+24)%24; dgClockPaint(); fpsLater(); markDirty(); syncLater(); };
-  const at=e=>{ const r=ck.getBoundingClientRect(), dx=e.clientX-(r.left+r.width/2), dy=e.clientY-(r.top+r.height/2); let a=Math.atan2(-dx,dy); if(a<0) a+=2*Math.PI; set(a/(2*Math.PI)*24); };
-  ck.onpointerdown=e=>{ e.preventDefault(); ck.setPointerCapture(e.pointerId); at(e); ck.onpointermove=at; };
-  ck.onpointerup=ck.onpointercancel=()=>{ ck.onpointermove=null; };
-  ck.addEventListener('wheel',e=>{ e.preventDefault(); set(dgHour()+(e.deltaY>0?.25:-.25)); },{passive:false});
   $('dg-clear').onclick=()=>confirmDialog('Tout combler','Toute la zone creusée de cette scène redevient de la roche.','Tout combler',()=>{ dgEnsure().c={}; drawDgLater(); renderDgPanel(); markDirty(); sync(); }); }
 
+/* ---------- outils communs : type de scène, heure, taille de pinceau ---------- */
+/* taille unique : pinceau du donjon (n × n cases) et gomme du brouillard (n m) */
+function brushSize(n){ n=Math.max(1,Math.min(15,Math.round(n))); DG.n=n; if(typeof FOG!=='undefined') FOG.r=n; }
+/* scène 2D (vue du dessus, outils de dessin) ou 3D (donjon, vue à la première personne) */
+function sceneIs3D(){ return dgOn(); }
+function setScene3D(on){ dgEnsure().on=!!on; if(on) S.tokens.forEach(t=>{ if(dgSnap(t)) moveTokenEl(t); });
+  if(!on&&tool==='dgn') setTool('dgn'); if(on&&(tool==='map'||tool==='fog')) setTool(tool);
+  const crOpen=$('ldraw').classList.contains('open')||$('dgdrw').classList.contains('open'); sceneMode();
+  if(crOpen) openLeft(on?'dgdrw':'ldraw',true);
+  drawDgLater(); renderAllBoard(); markDirty(); sync(); }
+function sceneMode(){ document.documentElement.classList.toggle('sc3d',sceneIs3D()); if(sceneIs3D()&&$('ldraw').classList.contains('open')){ $('ldraw').classList.remove('open'); if(tool==='map') setTool('map'); } if(!sceneIs3D()&&$('dgdrw').classList.contains('open')){ $('dgdrw').classList.remove('open'); if(tool==='dgn') setTool('dgn'); } }
+/* heure du jour : pilote le ciel 3D, la lumière et le brouillard de la carte 2D (remplace Jour / Nuit) */
+function setHour(h){ S.hour=((Math.round(h*4)/4)%24+24)%24; const was=S.light; S.light=dgDay(S.hour)>=.35; dgClockPaint(); fpsLater(); if(was!==S.light){ fondHold=true; try{ renderBoard(); renderTracker(); } finally{ fondHold=false; } } markDirty(); syncLater(); }
+function clockHTML(){ return `<div class="dgclock"><svg id="dg-clk" viewBox="0 0 120 120" aria-label="Heure du jour (glisser ou molette)"><defs><linearGradient id="dgclkg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9fd0f5"/><stop offset=".5" stop-color="#f6c58c"/><stop offset="1" stop-color="#1a2244"/></linearGradient></defs>
+      <circle cx="60" cy="60" r="54" fill="url(#dgclkg)" stroke="var(--rule)"/>${Array.from({length:24},(_,i)=>{ const a=i/24*2*Math.PI, r1=i%6?49:45; return `<line x1="${60-Math.sin(a)*r1}" y1="${60+Math.cos(a)*r1}" x2="${60-Math.sin(a)*53}" y2="${60+Math.cos(a)*53}" stroke="rgba(0,0,0,.35)" stroke-width="${i%6?1:2}"/>`; }).join('')}
+      <circle cx="60" cy="60" r="30" fill="var(--paper)"/><g id="dg-clkh"></g><text id="dg-clkt" x="60" y="66" text-anchor="middle"></text></svg></div>`; }
+function clockWire(){ const ck=$('dg-clk'); if(!ck) return; dgClockPaint();
+  const at=e=>{ const r=ck.getBoundingClientRect(), dx=e.clientX-(r.left+r.width/2), dy=e.clientY-(r.top+r.height/2); let a=Math.atan2(-dx,dy); if(a<0) a+=2*Math.PI; setHour(a/(2*Math.PI)*24); };
+  ck.onpointerdown=e=>{ e.preventDefault(); ck.setPointerCapture(e.pointerId); at(e); ck.onpointermove=at; };
+  ck.onpointerup=ck.onpointercancel=()=>{ ck.onpointermove=null; };
+  ck.addEventListener('wheel',e=>{ e.preventDefault(); setHour(dgHour()+(e.deltaY>0?.25:-.25)); },{passive:false}); }
 function dgClockPaint(){ const g=$('dg-clkh'), t=$('dg-clkt'); if(!g) return; const h=dgHour(), a=h/24*2*Math.PI, day=dgDay(h), px=60-Math.sin(a)*42, py=60+Math.cos(a)*42;
   g.innerHTML=`<line x1="${60-Math.sin(a)*31}" y1="${60+Math.cos(a)*31}" x2="${px}" y2="${py}" stroke="var(--ink)" stroke-width="2"/>`+(day>.35?`<circle cx="${px}" cy="${py}" r="8" fill="#ffd34d" stroke="#e39b1d" stroke-width="2"/>`:`<circle cx="${px}" cy="${py}" r="7.5" fill="#ecebdc" stroke="#8b8fa8" stroke-width="1.5"/><circle cx="${px+3.5}" cy="${py-2}" r="6" fill="#1a2244"/>`);
   t.textContent=`${String(Math.floor(h)).padStart(2,'0')}:${String(Math.round((h%1)*60)).padStart(2,'0')}`; }
@@ -7288,7 +7299,7 @@ async function doInstall(){ const ev=installEvt||window.__adbInstall;
 /* =========================================================
    Branchements
    ========================================================= */
-function renderAllBoard(){ drawDg(); if(FPS.el&&FPS.mode==='prev') fpsLater(); renderBoard(); renderDrawings(); renderBlood(); renderTokens(); renderTracker(); renderFoW(); if(cardId) renderCard(); }
+function renderAllBoard(){ sceneMode(); drawDg(); if(FPS.el&&FPS.mode==='prev') fpsLater(); renderBoard(); renderDrawings(); renderBlood(); renderTokens(); renderTracker(); renderFoW(); if(cardId) renderCard(); }
 /* bandes pastel : peintes dans le fond des cadres (en-tête, barre d'outils, bandeaux du bas), sous leurs éléments, jamais sur la zone de travail */
 let bandsKey='';
 function edgeBands(){ if(isPlayer) return; const W=innerWidth, H=innerHeight, key=W+'x'+H; if(key===bandsKey) return; bandsKey=key;
@@ -7518,7 +7529,7 @@ function wire(){ wireTouch(); $('b-undo').innerHTML=IB('undo'); $('b-redo').inne
     if(k==='delete'&&!(tool==='map')){ const ids=SEL.size?[...SEL]:(cardId?[cardId]:[]); if(ids.length){ e.preventDefault(); removeTokens(ids); } return; }
     if(k==='escape'){ selClear(); if(wallDraft) finishWall(); arrowTip=null; mapPrev=null; closeLeft(); if(tool) setTool(tool); jetStamp(false); closeCard(); closePop(); if(sheetPid) closeSheet(); drawMapLater(); }
     else if(MODS_OFF&&(k==='m'||k==='d'||(k==='f'&&!e.ctrlKey&&!e.metaKey))){ }
-    else if(k==='m'){ if(!$('ldraw').classList.contains('open')) openLeft('ldraw'); pickMapTool('measure'); } else if(k==='d') openLeft('ldraw'); else if(k==='b') openJet({secBest:true,secCreate:false,secProp:false}); else if(k==='j') openLeft('ljet'); else if(k==='i') openLeft('litem'); else if(k==='f'&&!e.ctrlKey&&!e.metaKey) openLeft('fond'); else if(k==='0') fitBoard();
+    else if(k==='m'&&!sceneIs3D()){ if(!$('ldraw').classList.contains('open')) openLeft('ldraw'); pickMapTool('measure'); } else if(k==='d') openLeft(sceneIs3D()?'dgdrw':'ldraw'); else if(k==='b') openJet({secBest:true,secCreate:false,secProp:false}); else if(k==='j') openLeft('ljet'); else if(k==='i') openLeft('litem'); else if(k==='f'&&!e.ctrlKey&&!e.metaKey) openLeft('fond'); else if(k==='0') fitBoard();
     else if(e.code==='Space'){ e.preventDefault(); nextTurn(); } });
   document.addEventListener('pointerdown',e=>{ if(!e.target.closest('.pop')&&!e.target.closest('[data-tool="draw"]')) closePop(); });
 }
@@ -7641,17 +7652,21 @@ function useGeo(lat,lon,label){ S.bg=''; S.bgKind=''; S.bgW=S.bgH=S.bgNW=S.bgNH=
 function renderFond(){ const box=$('fond-body'); if(!box) return;
   const sc=Math.log10(S.bgScale||1), W=S.weather||'';
   const wb=(id,ico,lbl,on)=>`<button type="button" class="wxb${on?' on':''}" id="${id}" title="${lbl}" aria-pressed="${on?'true':'false'}">${IB(ico)}<span>${lbl}</span></button>`;
+  const d3=sceneIs3D(), only2=h=>d3?'':h; if(FOG.r!==DG.n) FOG.r=DG.n;
   box.innerHTML=(`
+    <div class="subttl">Type de scène</div>
+    <div class="wxrow scseg"><button type="button" class="wxb${!d3?' on':''}" id="sc-2d" title="Vue du dessus, outils de dessin"><b>2D</b><span>Vue du dessus</span></button><button type="button" class="wxb${d3?' on':''}" id="sc-3d" title="Donjon en vue à la première personne"><b>3D</b><span>Première personne</span></button></div>
+    <div class="subttl">Heure</div>${clockHTML()}
+    <div class="subttl">Météo</div>
+    <div class="wxrow">${wb('wx-fine','fine','Beau temps',!W)}${wb('wx-rain','rain','Pluie',W==='rain')}${wb('wx-storm','storm','Orage',W==='storm')}</div>`+only2(`
     <div class="subttl">Fond</div>
     <div class="wxrow gnd">${Object.entries(GROUNDS).map(([k,l])=>`<button type="button" class="wxb${S.ground&&S.ground.k===k?' on':''}" data-gnd="${k}" title="${l}${S.ground&&S.ground.k===k?' — cliquer pour revenir au fond normal':''}"><i class="gsw" style="${k==='color'?`background:${esc(S.ground&&S.ground.c||'#2a2e36')}`:`background-image:url('${groundTile(k)}');background-size:120px`}"></i><span>${l}</span></button>`).join('')}</div>
-    <div class="subttl">Ambiance</div>
-    <div class="wxrow">${wb('wx-day',S.light?'sun':'moon',S.light?'Jour':'Nuit',!S.light)}${wb('wx-fine','fine','Beau temps',!W)}${wb('wx-rain','rain','Pluie',W==='rain')}${wb('wx-storm','storm','Orage',W==='storm')}</div>
     <div class="subttl">Brouillard <small>${S.light?'visible la nuit':''}</small></div>
     <div class="wxrow">${wb('fog-rev','eraser','Révéler',tool==='fog'&&FOG.mode==='rev')}${wb('fog-hide','brush','Masquer',tool==='fog'&&FOG.mode==='hide')}${wb('fog-all','sun','Tout révéler',false)}${wb('fog-none','moon','Tout masquer',false)}</div>
-    <div class="crange fogr"><span class="cap">Taille</span><input type="range" min="1" max="15" step="0.5" value="${FOG.r}" id="fog-r" aria-label="Taille de la gomme"><b id="fog-rv">${fmtMm(FOG.r)}</b></div>
-    <label class="switch"><input type="checkbox" id="fog-auto" ${S.fogAuto!==false?'checked':''}>Les joueurs découvrent en avançant</label>
+    <div class="crange fogr"><span class="cap">Taille</span><input type="range" min="1" max="15" step="1" value="${DG.n}" id="fog-r" aria-label="Taille du pinceau"><b id="fog-rv">${DG.n} m</b></div>
+    <label class="switch"><input type="checkbox" id="fog-auto" ${S.fogAuto!==false?'checked':''}>Les joueurs découvrent en avançant</label>`)+`
     <div class="subttl">Plateau</div>
-    <div class="wxrow">${wb('wx-grid','grid','Grille',S.grid!==false)}${wb('wx-center','target','Recentrer',false)}${wb('wx-blood','drop','Nettoyer le sang',false)}</div>
+    <div class="wxrow">${wb('wx-grid','grid','Grille',S.grid!==false)}${wb('wx-center','target','Recentrer',false)}${wb('wx-blood','drop','Nettoyer le sang',false)}</div>`+only2(`
     <div class="subttl">Image</div>
     <div class="wxrow"><button type="button" class="wxb${fondCat?' on':''}" id="bg-cat" title="Catalogue des fonds">${IB('book')}<span>Catalogue</span></button><button type="button" class="wxb" id="bg-pc" title="Importer une image de l'ordinateur">${IB('upload')}<span>Importer</span></button></div>
     <div class="fdgrid" id="fd-grid" ${fondCat?'':'hidden'}><p class="meta" style="text-align:left;grid-column:1/-1">Chargement du catalogue…</p></div>
@@ -7662,18 +7677,21 @@ function renderFond(){ const box=$('fond-body'); if(!box) return;
     <div class="georow"><input class="line-in" id="geo-q" placeholder="Un lieu, une adresse, ou « 44.559, 6.079 »" value="${esc(S.geo&&S.geo.label||'')}"><button class="mini" type="button" id="geo-go">Chercher</button><button class="mini" type="button" id="geo-me" title="Ma position">${IB('target')}</button></div>
     <div class="geores" id="geo-res"></div>
 
-    <button class="btn ghost" type="button" id="bg-rm" ${S.bg||S.geo?'':'disabled'}>${IB('bin')}Retirer le fond</button>`);
+    <button class="btn ghost" type="button" id="bg-rm" ${S.bg||S.geo?'':'disabled'}>${IB('bin')}Retirer le fond</button>`));
+  $('sc-2d').onclick=()=>{ if(sceneIs3D()) setScene3D(false); renderFond(); }; $('sc-3d').onclick=()=>{ if(!sceneIs3D()) setScene3D(true); renderFond(); };
+  clockWire();
+  if(d3){ const setW=w=>{ S.weather=w; renderBoard(); markDirty(); sync(); }; $('wx-fine').onclick=()=>setW(''); $('wx-rain').onclick=()=>setW(S.weather==='rain'?'':'rain'); $('wx-storm').onclick=()=>setW(S.weather==='storm'?'':'storm');
+    $('wx-grid').onclick=()=>{ S.grid=S.grid===false; renderBoard(); drawDgLater(); markDirty(); sync(); }; $('wx-center').onclick=fitBoard; $('wx-blood').onclick=clearBlood; return; }
   box.querySelectorAll('[data-gnd]').forEach(b=>b.onclick=()=>{ const k=b.dataset.gnd; S.ground={k,c:'#2a2e36'}; renderBoard(); markDirty(); sync(); });
   if($('gnd-c')) $('gnd-c').oninput=e=>{ S.ground={k:'color',c:e.target.value}; fondHold=true; try{ renderGround(); } finally{ fondHold=false; } box.querySelector('[data-gnd="color"] .gsw').style.background=e.target.value; markDirty(); syncLater(); };
-  $('wx-day').onclick=()=>{ S.light=!S.light; renderBoard(); renderTracker(); markDirty(); sync(); toast(S.light?'Jour : le brouillard se lève':'Nuit : brouillard de guerre'); };
   const setW=w=>{ S.weather=w; renderBoard(); markDirty(); sync(); };
   $('wx-fine').onclick=()=>setW(''); $('wx-rain').onclick=()=>setW(S.weather==='rain'?'':'rain'); $('wx-storm').onclick=()=>setW(S.weather==='storm'?'':'storm');
   $('wx-grid').onclick=()=>{ S.grid=S.grid===false; renderBoard(); markDirty(); sync(); };
   $('wx-center').onclick=fitBoard; $('wx-blood').onclick=clearBlood;
-  const fogT=m=>{ if(tool==='fog'&&FOG.mode===m) setTool('fog'); else { FOG.mode=m; if(tool!=='fog') setTool('fog'); } if(S.light&&tool==='fog') toast('Le brouillard se voit la nuit (Ambiance › Nuit)'); renderFond(); };
+  const fogT=m=>{ if(tool==='fog'&&FOG.mode===m) setTool('fog'); else { FOG.mode=m; if(tool!=='fog') setTool('fog'); } if(S.light&&tool==='fog') toast('Le brouillard se voit la nuit : tournez l\'heure vers la nuit'); renderFond(); };
   $('fog-rev').onclick=()=>fogT('rev'); $('fog-hide').onclick=()=>fogT('hide');
   $('fog-all').onclick=()=>fogAll(true); $('fog-none').onclick=()=>confirmDialog('Tout masquer','Toutes les zones découvertes de cette scène redeviennent noires.','Tout masquer',()=>fogAll(false));
-  $('fog-r').oninput=e=>{ FOG.r=+e.target.value; $('fog-rv').textContent=fmtMm(FOG.r); };
+  $('fog-r').oninput=e=>{ brushSize(+e.target.value); $('fog-rv').textContent=DG.n+' m'; };
   $('fog-auto').onchange=e=>{ S.fogAuto=e.target.checked; FOG.sig=''; renderFoW(); markDirty(); };
   $('bg-cat').onclick=()=>{ fondCat=!fondCat; renderFond(); };
   $('bg-pc').onclick=pickBgFile;
