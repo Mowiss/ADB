@@ -3123,9 +3123,11 @@ input.hue{-webkit-appearance:none;appearance:none;height:12px;border-radius:6px;
 .rb.on-tool:not([aria-pressed="true"]){color:var(--c-sav)}
 .ldrawer .wxb{min-width:62px}
 #lbest .brow,#lbest .bhead{grid-template-columns:30px minmax(0,1fr) 22px 22px auto;gap:6px}#lbest .bhead>span:last-child{display:none}#lbest .brow{position:relative}#lbest .brow .del{position:absolute;right:4px;top:50%;transform:translateY(-50%);background:var(--paper);opacity:0;transition:opacity .15s}#lbest .brow:hover .del,#lbest .brow .del:focus-visible{opacity:1}@media (hover:none){#lbest .brow .del{opacity:1;position:static;transform:none}#lbest .brow{grid-template-columns:30px minmax(0,1fr) 22px 22px auto 26px}}#lbest .bss i{width:16px;font-size:11.5px}#lbest .bhead .bss svg{width:13px;height:13px}#lbest .bface{width:30px;height:30px}
-.mtgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:8px}.mtgrid .wxb svg,.ldrawer .wxb svg{width:22px;height:22px}
+.mtgrid{display:flex;flex-wrap:wrap;gap:8px}.mtgrid>*{flex:1 1 calc((100% - 24px)/4);min-width:0}.mtgrid .wxb svg,.ldrawer .wxb svg{width:22px;height:22px}
 .mcat{font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft);margin:4px 0 -4px}
-.stgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:6px}
+.stgrid{display:flex;flex-wrap:wrap;gap:6px}.stgrid>.stb{flex:1 1 calc((100% - 30px)/6);aspect-ratio:auto;height:54px;min-width:0}.stgrid>.stb svg{width:auto;height:100%;max-width:100%}
+/* toutes les lignes d'outils remplissent la largeur ; actions destructrices en bas, sur toute la largeur */
+.ldrawer .wxrow>.wxb{min-width:0}.ldrawer .btn.wide{width:100%;justify-content:center;margin-top:16px}
 .stb{aspect-ratio:1;border:1px solid var(--rule);border-radius:10px;background:#fff;color:#241a12;padding:6px;display:grid;place-items:center}.stb svg{width:100%;height:100%}
 .stb:hover{border-color:var(--ink)}.stb.on{border-color:var(--tc);box-shadow:inset 0 0 0 2px var(--tc)}
 .emgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(38px,1fr));gap:2px}
@@ -4278,16 +4280,17 @@ function renderDgPanel(){ const box=$('dg-body'); if(!box) return; const D=S.dg|
   box.innerHTML=`<div class="subttl">Pinceau</div>
     <div class="wxrow">${wb('dg-carve',IB('brush'),'Creuser',tool==='dgn'&&DG.tool==='carve')}${wb('dg-paint',dgI('paint',1.7),'Peindre',tool==='dgn'&&DG.tool==='paint')}${wb('dg-fill',IB('eraser'),'Gomme',tool==='dgn'&&DG.tool==='fill')}</div>
     <div class="crange"><span class="cap">Taille</span><input type="range" min="1" max="15" step="1" value="${DG.n}" id="dg-n" aria-label="Taille du pinceau"><b id="dg-nv">${DG.n} × ${DG.n}</b></div>
-    <div class="subttl">Passages</div>
-    <div class="wxrow">${wb('dg-sup',dgI('sup',1.7),'Escalier ↑',tool==='dgn'&&DG.tool==='sup')}${wb('dg-sdown',dgI('sdown',1.7),'Escalier ↓',tool==='dgn'&&DG.tool==='sdown')}${wb('dg-tp',dgI('tp',1.7),'Zone TP',tool==='dgn'&&DG.tool==='tp')}</div>
-    <div class="subttl">Portes</div>
-    <div class="wxrow">${wb('dg-door',dgI('door',1.7),'Porte',tool==='dgn'&&DG.tool==='door')}${wb('dg-sdoor',dgI('sdoor',1.7),'Porte cachée',tool==='dgn'&&DG.tool==='secret')}</div>
-    <div class="subttl">Style du pinceau</div>
+    <div class="subttl">Style</div>
     <div class="wxrow dg-th">${Object.entries(DG_TH).map(([k,t])=>`<button type="button" class="wxb${dgBrushTh()===k?' on':''}" data-th="${k}" title="${t.lbl}"><i class="gsw" style="background:${t.sw}"></i><span>${t.lbl}</span></button>`).join('')}</div>
     <div class="wxrow">${wb('dg-ceil',dgI('ceil',1.7),'Plafond',!DG.sky)}${wb('dg-sky',dgI('sky',1.7),'Ciel',DG.sky)}</div>
     <div class="wxrow">${wb('dg-wall',dgI('wall',1.7),'Murs',!DG.iw)}${wb('dg-iw',dgI('iwall',1.7),'Murs invisibles',DG.iw)}</div>
+    <div class="subttl">Portes</div>
+    <div class="wxrow">${wb('dg-door',dgI('door',1.7),'Porte',tool==='dgn'&&DG.tool==='door')}${wb('dg-sdoor',dgI('sdoor',1.7),'Porte cachée',tool==='dgn'&&DG.tool==='secret')}</div>
+    <div class="subttl">Passages</div>
+    <div class="wxrow">${wb('dg-sup',dgI('sup',1.7),'Escalier ↑',tool==='dgn'&&DG.tool==='sup')}${wb('dg-sdown',dgI('sdown',1.7),'Escalier ↓',tool==='dgn'&&DG.tool==='sdown')}${wb('dg-tp',dgI('tp',1.7),'Zone TP',tool==='dgn'&&DG.tool==='tp')}</div>
     <div class="subttl">Vue des joueurs <small>${nC} m²</small></div>
-    <div class="wxrow">${wb('dg-prev',IB('eye'),'Aperçu',false)}${wb('dg-clear',IB('bin'),'Tout combler',false)}</div>`;
+    <div class="wxrow">${wb('dg-prev',IB('eye'),'Aperçu de la vue 3D',false)}</div>
+    <button class="btn ghost wide" type="button" id="dg-clear">${IB('bin')}Tout reboucher</button>`;
   const pick=m=>{ if(!dgOn()){ dgEnsure().on=true; } if(tool==='dgn'&&DG.tool===m) setTool('dgn'); else { DG.tool=m; if(tool!=='dgn') setTool('dgn'); } drawDgLater(); renderDgPanel(); };
   $('dg-carve').onclick=()=>pick('carve'); $('dg-fill').onclick=()=>pick('fill'); $('dg-paint').onclick=()=>pick('paint'); $('dg-sup').onclick=()=>pick('sup'); $('dg-sdown').onclick=()=>pick('sdown'); $('dg-tp').onclick=()=>pick('tp');
   const opt=(k,v)=>{ DG[k]=v; if(tool!=='dgn'||DG.tool==='fill'||DG.tool==='door'||DG.tool==='secret'){ DG.tool=DG.tool==='paint'?'paint':'carve'; if(tool!=='dgn') setTool('dgn'); } renderDgPanel(); };
@@ -4295,7 +4298,7 @@ function renderDgPanel(){ const box=$('dg-body'); if(!box) return; const D=S.dg|
   $('dg-n').oninput=e=>{ brushSize(+e.target.value); $('dg-nv').textContent=`${DG.n} × ${DG.n}`; drawDgLater(); };
   box.querySelectorAll('[data-th]').forEach(b=>b.onclick=()=>{ DG.th=b.dataset.th; if(b.dataset.th==='prairie'){ DG.sky=true; } if(tool!=='dgn'||!['carve','paint'].includes(DG.tool)){ DG.tool=DG.tool==='paint'?'paint':'carve'; if(tool!=='dgn') setTool('dgn'); } renderDgPanel(); });
   $('dg-prev').onclick=()=>fpsPreview();
-  $('dg-clear').onclick=()=>confirmDialog('Tout combler','Toute la zone creusée de cette scène redevient de la roche.','Tout combler',()=>{ dgEnsure().c={}; drawDgLater(); renderDgPanel(); markDirty(); sync(); }); }
+  $('dg-clear').onclick=()=>confirmDialog('Tout reboucher','Toute la zone creusée de cette scène redevient de la roche.','Tout reboucher',()=>{ dgEnsure().c={}; drawDgLater(); renderDgPanel(); markDirty(); sync(); }); }
 
 /* ---------- outils communs : type de scène, heure, taille de pinceau ---------- */
 /* taille unique : pinceau du donjon (n × n cases) et gomme du brouillard (n m) */
@@ -6719,31 +6722,32 @@ const PATHW=()=>MT.tool==='corridor'||MT.tool==='pathline'||MT.tool==='bridge', 
 const mtWLabel=()=>fmtMm(mtW()/PX_M);
 function pickMapTool(k){ if(wallDraft&&k!==MT.tool) finishWall(); arrowTip=null; mapPrev=null; removeMapText();
   if(k==='measure'){ if(tool!=='measure') setTool('measure'); }
+  else if(k==='scale'){ if(tool!=='scale') setTool('scale'); toast('Échelle : tracez sur la carte une distance dont vous connaissez la longueur'); }
   else if(k==='none'){ if(tool) setTool(tool); } else { MT.tool=k; saveMT(); if(tool!=='map') setTool('map'); }
   renderDrawPanel(); drawMapLater(); }
 function renderDrawPanel(){ const box=$('ldraw-body'); if(!box) return; const on=k=>tool==='map'&&MT.tool===k&&k!=='measure';
   const tb=k=>{ const T=MAP_TOOLS[k]; return `<button type="button" class="wxb${on(k)?' on':''}" data-mt="${k}" title="${esc(T.n)} — ${esc(T.h)}">${T.svg}<span>${esc(T.n)}</span></button>`; };
   const stamps=Object.keys(MAP.STAMPS), scat=[...new Set(stamps.map(k=>MAP.STAMPS[k].cat||'Divers'))];
-  box.innerHTML=`<div class="wxrow">
+  box.innerHTML=`<div class="subttl">Outils</div><div class="wxrow">
       <button type="button" class="wxb${!tool?' on':''}" data-mt="none" title="Ne plus dessiner : déplacer les jetons et la vue">${IB('grab')}<span>Main</span></button>
-      <button type="button" class="wxb${tool==='measure'?' on':''}" data-mt="measure" title="Mesurer une distance (M)">${IB('ruler')}<span>Mesure</span></button>
       ${tb('eraser')}
-      <button type="button" class="wxb" id="md-clear" title="Effacer tous les tracés de la scène">${IB('bin')}<span>Tout effacer</span></button></div>
-    <div class="subttl">Largeur</div><div class="bgscale"><input type="range" id="md-w" min="${PATHW()?PX_M:20}" max="${PATHW()?PX_M*5:150}" step="${PATHW()?PX_M/4:2}" value="${mtW()}" aria-label="Largeur"><b id="md-wv" style="min-width:48px">${mtWLabel()}</b></div>
-    <div class="subttl">Tracés</div><div class="mtgrid">${tb('pencil')}</div>
+      <button type="button" class="wxb${tool==='measure'?' on':''}" data-mt="measure" title="Mesurer une distance (M)">${IB('ruler')}<span>Mesure</span></button>
+      <button type="button" class="wxb${tool==='scale'?' on':''}" data-mt="scale" title="Mettre le fond à l'échelle : tracer une distance connue">${IB('target')}<span>Échelle</span></button></div>
+    <div class="subttl">Taille</div><div class="bgscale"><input type="range" id="md-w" min="${PATHW()?PX_M:20}" max="${PATHW()?PX_M*5:150}" step="${PATHW()?PX_M/4:2}" value="${mtW()}" aria-label="Largeur"><b id="md-wv" style="min-width:48px">${mtWLabel()}</b></div>
+    <div class="subttl">Annotations</div><div class="mtgrid">${tb('pencil')}${['text','arrow'].map(tb).join('')}<button type="button" class="wxb" id="md-undo" title="Retirer le dernier tracé">${IB('undo')}<span>Annuler</span></button></div>
     ${MT.tool==='pencil'?`<div class="swatches md-inks">${MAP_INKS.map(([c,n])=>`<button type="button" style="--c:${c}" data-ink="${c}" title="${n}" class="${MT.ink===c?'on':''}"></button>`).join('')}</div>`:''}
     <div class="subttl">Terrain</div><div class="mtgrid">${['corridor','pathline','river','foliage','meadow','desert','wood','wall'].map(tb).join('')}</div>
     ${MT.tool==='meadow'?`<div class="subttl">Densité de l'herbe</div><div class="bgscale"><input type="range" id="md-d" min="0.3" max="3" step="0.1" value="${MT.dens}" aria-label="Densité de l'herbe"><b id="md-dv" style="min-width:40px">${fmtMm(MT.dens)}</b></div>`:''}
     <div class="subttl">Ouvertures</div><div class="mtgrid">${['door','secret','stairs','bridge'].map(tb).join('')}</div>
-    <div class="subttl">Annotations</div><div class="mtgrid">${['text','arrow'].map(tb).join('')}</div>
     <div class="subttl">Pictogrammes</div>${scat.map(c=>`<div class="mcat">${esc(c)}</div><div class="stgrid">${stamps.filter(k=>(MAP.STAMPS[k].cat||'Divers')===c).map(k=>`<button type="button" class="stb${tool==='map'&&MT.tool==='svg'&&MT.svg===k?' on':''}" data-st="${k}" title="${esc(MAP.STAMPS[k].title||k)}">${MAP.stampMarkup(k)}</button>`).join('')}</div>`).join('')}
-`;
+
+    <button class="btn ghost wide" type="button" id="md-clear">${IB('bin')}Effacer tous les tracés</button>`;
   box.querySelectorAll('[data-mt]').forEach(b=>b.onclick=()=>pickMapTool(b.dataset.mt));
   box.querySelectorAll('[data-st]').forEach(b=>b.onclick=()=>{ MT.svg=b.dataset.st; pickMapTool('svg'); });
   box.querySelectorAll('[data-ink]').forEach(b=>b.onclick=()=>{ MT.ink=b.dataset.ink; saveMT(); renderDrawPanel(); });
   $('md-w').oninput=e=>{ MT.width=+e.target.value; $('md-wv').textContent=mtWLabel(); saveMT(); };
   if($('md-d')) $('md-d').oninput=e=>{ MT.dens=+e.target.value; $('md-dv').textContent=fmtMm(MT.dens); saveMT(); };
-  $('md-clear').onclick=clearDrawings;
+  $('md-clear').onclick=clearDrawings; $('md-undo').onclick=mapUndo;
   $('rb-draw').classList.toggle('on-tool',tool==='map'); }
 
 /* =========================================================
@@ -7759,7 +7763,7 @@ function renderFond(){ const box=$('fond-body'); if(!box) return;
     <div class="georow"><input class="line-in" id="geo-q" placeholder="Un lieu, une adresse, ou « 44.559, 6.079 »" value="${esc(S.geo&&S.geo.label||'')}"><button class="mini" type="button" id="geo-go">Chercher</button><button class="mini" type="button" id="geo-me" title="Ma position">${IB('target')}</button></div>
     <div class="geores" id="geo-res"></div>
 
-    <button class="btn ghost" type="button" id="bg-rm" ${S.bg||S.geo?'':'disabled'}>${IB('bin')}Retirer le fond</button>`));
+    <button class="btn ghost wide" type="button" id="bg-rm" ${S.bg||S.geo?'':'disabled'}>${IB('bin')}Retirer le fond</button>`));
   clockWire();
   if(d3){ const setW=w=>{ S.weather=w; renderBoard(); markDirty(); sync(); }; $('wx-fine').onclick=()=>setW(''); $('wx-rain').onclick=()=>setW(S.weather==='rain'?'':'rain'); $('wx-storm').onclick=()=>setW(S.weather==='storm'?'':'storm');
     $('wx-grid').onclick=()=>{ S.grid=S.grid===false; renderBoard(); drawDgLater(); markDirty(); sync(); }; $('wx-center').onclick=fitBoard; $('wx-blood').onclick=clearBlood; return; }
