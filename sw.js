@@ -1,7 +1,7 @@
 // Service worker Aldebaran (Aventurier + Maître du destin) : l'appli s'ouvre hors ligne,
 // mais va toujours chercher la dernière version sur le réseau quand il y en a un.
-const CACHE='aldebaran-v173';
-const FILES=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./icon-maskable-512.png','./apple-touch-icon.png','./favicon.png'];
+const CACHE='aldebaran-v174';
+const FILES=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./icon-maskable-512.png','./apple-touch-icon.png','./favicon.png','./res/mains/humain.webp','./res/mains/troll.webp','./res/mains/demon.webp','./res/mains/trifide.webp','./res/mains/droide.webp','./res/sprites/coffre.png','./res/sprites/caisse.png','./res/sprites/tech.png','./res/sprites/jarre.png','./res/sprites/viande.png'];
 self.addEventListener('install',e=>{ e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES.map(u=>new Request(u,{cache:'reload'})))).then(()=>self.skipWaiting())); });
 self.addEventListener('activate',e=>{ e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(n=>n!==CACHE).map(n=>caches.delete(n)))).then(()=>self.clients.claim())); });
 self.addEventListener('message',e=>{ if(e.data==='skipWaiting') self.skipWaiting(); });
