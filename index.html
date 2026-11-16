@@ -2726,7 +2726,7 @@ input,textarea,select,[contenteditable],[contenteditable] *,.rg-txt,.rg-txt *,.n
 #board.grounded .bands{opacity:0}
 #dmap{position:absolute;pointer-events:none;z-index:2}
 /* modules Fond de carte et Dessin retirés pour le moment (code conservé) */
-#rb-fond,#rb-draw{display:none!important}
+/* #rb-fond,#rb-draw masqués : désactivé */
 .dg-step .wxb b{font-size:17px;line-height:22px}
 .mkseg{display:flex;gap:6px;margin:4px 0 12px}.mkseg .wxb{min-width:0}
 .dgclock{display:flex;justify-content:center;margin:2px 0 10px}#dg-clk{width:132px;height:132px;cursor:grab;touch-action:none}#dg-clk text{font:700 15px Quicksand,sans-serif;fill:var(--ink-strong,#2f3340)}
@@ -4076,7 +4076,7 @@ function setTool(t){
   board.classList.toggle('erasing',tool==='map'&&MT.tool==='eraser');
   if($('rb-draw')) $('rb-draw').classList.toggle('on-tool',tool==='map'); if($('ldraw')&&$('ldraw').classList.contains('open')) renderDrawPanel();
 }
-const MODS_OFF=true;   // Fond de carte et Dessin masqués pour le moment
+const MODS_OFF=false;   // Fond de carte et Dessin masqués pour le moment
 /* =========================================================
    Donjon 3D : le MJ creuse des zones jouables dans un bloc plein,
    chaque joueur s'y déplace case par case, en vue à la première personne
