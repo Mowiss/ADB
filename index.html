@@ -6787,7 +6787,7 @@ function receive(m){ if(!m) return;
     if(myDrag){ const t=tok(myDrag.id); if(t){ t.x=myDrag.x; t.y=myDrag.y; } }
     followMe.got=1; followMe.closed=0; renderAllBoard(); if(NETVIEW) followMe(); else if(m.view) setPlayerView(m.view); }
   else if(m.t==='opened'){ reveal(m.id,m.item||{},m.by); }
-  else if(m.t==='roll') bubble(m.pid,rollHTML(m.succ,m.dn),'',m.who);
+  else if(m.t==='roll') bubble(m.pid,m.e?rollHTML(0,m.rn,m.e):rollHTML(m.succ,m.dn),'',m.who);
   else if(m.t==='boom') boomFx(m.x,m.y,m.s);
   else if(m.t==='say') bubble(m.pid,(m.priv?`<span><small class="to">${m.pid===ME?'→ '+esc(m.to||''):'Message privé'}</small>${esc(m.text||'')}</span>`:esc(m.text||'')),'say'+(m.priv?' priv':''),m.who);
   else if(m.t==='sys') sysMsg(m.text,false);
@@ -6822,7 +6822,11 @@ function bubble(pid,html,cls,who){ const t=pid&&S.tokens.find(x=>x.owner===pid&&
   if(t&&!fpm){ document.querySelectorAll(`.bub[data-pid="${CSS.escape(pid)}"]`).forEach(b=>b.remove()); el.dataset.pid=pid; el.style.left=t.x+'px'; el.style.top=(t.y-36*(t.s||1))+'px'; el.innerHTML=`<div>${html}</div>`; $('world').appendChild(el); }
   else { el.classList.add('bubfix'); el.innerHTML=`<div>${who?`<span><small>${esc(who)}</small>${html}</span>`:html}</div>`; document.body.appendChild(el); }
   const life=cls==='say'?6500:4200; setTimeout(()=>el.classList.add('out'),life); setTimeout(()=>el.remove(),life+600); }
-const rollHTML=(succ,n)=>`${D10ICO}<b>${succ>0?succ:Math.max(1,n||0)}</b>${succ>0?'🏆':'♟️'}`;
+/* bulle de jet : 🏆 que des 10 parmi les réussites · 👍 réussites classiques · 👎 aucun succès sans 1 · ♟️ aucun succès avec des 1 */
+function rollRes(rolls,th){ th=+th||8; const ok=rolls.filter(r=>r>=th), cls=ok.filter(r=>r<10).length, ones=rolls.filter(r=>r===1).length;
+  if(ok.length&&!cls) return {e:'🏆',n:ok.length}; if(cls) return {e:'👍',n:ok.length}; if(!ones) return {e:'👎',n:rolls.length}; return {e:'♟️',n:ones}; }
+const RES_E=['🏆','👍','👎','♟️'];
+const rollHTML=(succ,n,e)=>RES_E.includes(e)?`${D10ICO}<b>${n}</b>${e}`:`${D10ICO}<b>${succ>0?succ:Math.max(1,n||0)}</b>${succ>0?'👍':'👎'}`;
 function sysMsg(text,priv){ const box=$('sysbox'); if(!box) return; const el=document.createElement('div'); el.className='sysm';
   el.innerHTML=`${IB('mega',1.7)}<span><small>Maître du destin${priv?' · pour vous':''}</small>${esc(text)}</span>`; el.onclick=()=>el.remove(); box.appendChild(el);
   setTimeout(()=>el.classList.add('out'),9000); setTimeout(()=>el.remove(),9600); }
@@ -7587,7 +7591,7 @@ function netIn(c,d){ if(!d||typeof d!=='object') return;
     const it=itemData(t), g=t.g||'misc'; removeToken(t.id); jetRefresh(); toast(`${c.name} prend : ${it.name}`); netTo(c.pid,{t:'given',g,item:it}); sync(); }
   else if(d.t==='roll'&&c.pid){ const succ=+d.succ||0, label=String(d.label||'Jet').slice(0,60);
     logRoll(`${c.name} · ${label}`,Array.isArray(d.rolls)?d.rolls.slice(0,60):[],+d.th||8,succ);
-    const n=Array.isArray(d.rolls)?d.rolls.length:0; bubble(c.pid,rollHTML(succ,n),'',c.name); send({t:'roll',who:c.name,label,succ,dn:n,pid:c.pid}); }
+    const R=Array.isArray(d.rolls)?d.rolls.slice(0,60).map(Number):[], n=R.length, rr=rollRes(R,+d.th||8); bubble(c.pid,rollHTML(0,rr.n,rr.e),'',c.name); send({t:'roll',who:c.name,label,succ,dn:n,e:rr.e,rn:rr.n,pid:c.pid}); }
   else if(d.t==='drop'&&c.pid&&d.item){ const me=S.tokens.find(x=>x.owner===c.pid&&x.type==='player'), v=me&&me.inveh&&tok(me.inveh), o=v||me; const it=objClean(d.item); delete it.price;
     const t=objItem(it,d.g==='cyb'?'cyb':objGroup(it,'inv'),'player',c.name); delete t.src; delete t.who; const a=Math.random()*Math.PI*2, r=o?50*(o.s||1)+20:0;
     if(o){ t.x=Math.round(o.x+Math.cos(a)*r); t.y=Math.round(o.y+Math.sin(a)*r); } addToken(t); toast(`${c.name} lâche : ${t.name}`); }
