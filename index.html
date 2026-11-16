@@ -4298,8 +4298,17 @@ function fpsDoor(){ if(!FPS.cam||FPS.anim) return false; const [i,j,ni,nj]=fpsFa
 /* toucher l'écran : ramasser l'objet visé (à portée de main) ou manœuvrer la porte */
 function fpsTap(e,cv){ const r=cv.getBoundingClientRect(), u=(e.clientX-r.left)/r.width, v=(e.clientY-r.top)/r.height;
   const h=(FPS.hits||[]).filter(o=>u>=o.x0&&u<=o.x1&&v>=o.y0&&v<=o.y1).sort((a,b)=>a.r-b.r)[0];
-  if(h&&dgItem(h.t)&&FPS.mode==='play'){ if(h.r>1.6){ toast('Trop loin'); return; } up((h.t.box||h.t.inbox)?{t:'open',id:h.t.id}:{t:'take',id:h.t.id}); return; }
+  if(h&&FPS.mode==='play'&&(dgItem(h.t)||h.t.shop)){ if(h.r>1.6){ toast('Trop loin, approchez-vous'); return; } openAsk(h.t.id,[r.left+(h.x0+h.x1)/2*r.width,r.top+h.y0*r.height]); return; }
   if(!h) fpsDoor(); }
+/* position à l'écran d'un jeton vu en 3D (bulle « Prendre / Ouvrir », manque de place) */
+function fpsScreenOf(id){ if(!document.documentElement.classList.contains('fpsmode')||!FPS.el) return null; const h=(FPS.hits||[]).find(o=>o.t.id===id); if(!h) return null; const r=FPS.el.querySelector('canvas').getBoundingClientRect(); return [r.left+(h.x0+h.x1)/2*r.width,r.top+h.y0*r.height]; }
+/* fin d'un appui sur la vue 3D du joueur : toucher (objet, porte) ou glisser (se déplacer) */
+function fpsRelease(e,s0){ if(!FPS.el||FPS.el.hidden) return; const cv=FPS.el.querySelector('canvas'), r=cv.getBoundingClientRect();
+  if(s0.x<r.left||s0.x>r.right||s0.y<r.top||s0.y>r.bottom) return;
+  for(const b of FPS.el.querySelectorAll('.fps-pad,.fps-x')){ const q=b.getBoundingClientRect(); if(s0.x>=q.left&&s0.x<=q.right&&s0.y>=q.top&&s0.y<=q.bottom) return; }
+  const ddx=e.clientX-s0.x, ddy=e.clientY-s0.y, m=Math.max(Math.abs(ddx),Math.abs(ddy));
+  if(m<8){ fpsTap(e,cv); return; } if(m<30) return;
+  if(Math.abs(ddx)>Math.abs(ddy)) fpsAct(ddx<0?'tr':'tl'); else fpsAct(ddy<0?'fw':'bk'); }
 /* mains du personnage selon sa race */
 function fpsHands(){ if(!FPS.el) return; const im=FPS.el.querySelector('.fps-hands'); if(!im) return; const r=FPS.mode==='play'&&typeof VEHME!=='undefined'&&VEHME&&VEHME.race, src=r&&(HANDS[r]||HANDS.humain);
   if(!src){ im.hidden=true; return; } if(im.dataset.r!==r){ im.dataset.r=r; im.src=src; } im.hidden=false; }
@@ -4310,8 +4319,8 @@ function fpsBuild(host,mode){ let el=host.querySelector('.fps'); if(!el){ el=doc
     host.appendChild(el);
     el.querySelectorAll('[data-fk]').forEach(b=>b.addEventListener('pointerdown',e=>{ e.preventDefault(); fpsAct(b.dataset.fk); }));
     const cv=el.querySelector('canvas'); let sw=null;
-    cv.addEventListener('pointerdown',e=>{ sw={x:e.clientX,y:e.clientY}; });
-    cv.addEventListener('pointerup',e=>{ if(!sw) return; const ddx=e.clientX-sw.x, ddy=e.clientY-sw.y; sw=null; if(Math.max(Math.abs(ddx),Math.abs(ddy))<30){ if(Math.max(Math.abs(ddx),Math.abs(ddy))<8) fpsTap(e,cv); return; } if(Math.abs(ddx)>Math.abs(ddy)) fpsAct(ddx<0?'tr':'tl'); else fpsAct(ddy<0?'fw':'bk'); });
+    if(mode==='prev') cv.addEventListener('pointerdown',e=>{ sw={x:e.clientX,y:e.clientY}; });
+    if(mode==='prev') cv.addEventListener('pointerup',e=>{ if(!sw) return; const ddx=e.clientX-sw.x, ddy=e.clientY-sw.y; sw=null; if(Math.max(Math.abs(ddx),Math.abs(ddy))<30){ if(Math.max(Math.abs(ddx),Math.abs(ddy))<8) fpsTap(e,cv); return; } if(Math.abs(ddx)>Math.abs(ddy)) fpsAct(ddx<0?'tr':'tl'); else fpsAct(ddy<0?'fw':'bk'); });
     if(mode==='prev') el.querySelector('.fps-x').onclick=()=>{ el.remove(); FPS.el=null; FPS.mode=null; }; }
   FPS.el=el; FPS.mode=mode; return el; }
 document.addEventListener('keydown',e=>{ if(!FPS.el||FPS.el.hidden||e.target.closest&&e.target.closest('input,textarea,[contenteditable]')) return;
@@ -6883,15 +6892,15 @@ const PCOL=['#2b79bd','#33964d','#c74990','#7556c2','#d24c45','#c79600','#0e9aa7
 const pcol=pid=>{ let h=0; for(const ch of String(pid)) h=(h*31+ch.charCodeAt(0))>>>0; return PCOL[h%PCOL.length]; };
 const PTRS=new Map();
 /* Contenant : « Ouvrir ? » puis l'objet sort par le dessus, dans un halo */
-function openAsk(id){ const t=tok(id); if(!t) return; if(t.shop){ shopDlg(t.id); return; } let a=$('openask'); if(!a){ a=document.createElement('div'); a.id='openask'; board.appendChild(a); }
-  const [sx,sy]=toScreen(t.x,t.y), b=board.getBoundingClientRect(); a.style.left=(sx-b.left)+'px'; a.style.top=(sy-b.top-(t.s||1)*V.z*36-14)+'px';
+function openAsk(id,at){ const t=tok(id); if(!t) return; if(t.shop){ shopDlg(t.id); return; } let a=$('openask'); if(!a){ a=document.createElement('div'); a.id='openask'; board.appendChild(a); }
+  const b=board.getBoundingClientRect(); at=at||(typeof fpsScreenOf==='function'&&fpsScreenOf(id)); if(at){ a.style.left=(at[0]-b.left)+'px'; a.style.top=(at[1]-b.top-8)+'px'; } else { const [sx,sy]=toScreen(t.x,t.y); a.style.left=(sx-b.left)+'px'; a.style.top=(sy-b.top-(t.s||1)*V.z*36-14)+'px'; }
   a.classList.remove('full'); a.innerHTML=t.box?`<button type="button" class="oa-go">${IB('chest',1.8)}Ouvrir ?</button><button type="button" class="oa-x" title="Laisser fermé">${IB('x',2)}</button>`
     :`<b class="oa-n">${esc(t.name||'Objet')}</b><button type="button" class="oa-go">${IB('o_backpack',1.8)}Prendre</button><button type="button" class="oa-x" title="Laisser">${IB('x',2)}</button>`; a.hidden=false;
   a.querySelector('.oa-go').onpointerdown=e=>{ e.stopPropagation(); a.hidden=true; up(t.box?{t:'open',id}:{t:'take',id}); };
   a.querySelector('.oa-x').onpointerdown=e=>{ e.stopPropagation(); a.hidden=true; }; }
 function noRoom(id){ const el=document.querySelector(`.tk[data-id="${id}"]`); if(el){ el.classList.remove('nofit'); void el.offsetWidth; el.classList.add('nofit'); setTimeout(()=>el.classList.remove('nofit'),900); }
   const t=tok(id); if(!t) return; openAsk(id); const a=$('openask'); a.classList.add('full'); a.innerHTML=`${IB('o_backpack',1.8)}<b>Plus de place</b>`; clearTimeout(noRoom.T); noRoom.T=setTimeout(()=>{ a.hidden=true; },1800); }
-function reveal(id,it,by){ const t=tok(id); if(!t) return; const [sx,sy]=toScreen(t.x,t.y), b=board.getBoundingClientRect(), k=clamp(V.z*(t.s||1)*1.4,1,2.2);
+function reveal(id,it,by){ const t=tok(id); if(!t) return; const fa=typeof fpsScreenOf==='function'&&fpsScreenOf(id); const [sx,sy]=fa?[fa[0],fa[1]+40]:toScreen(t.x,t.y), b=board.getBoundingClientRect(), k=fa?1.3:clamp(V.z*(t.s||1)*1.4,1,2.2);
   const el=document.createElement('div'); el.className='reveal'; el.style.left=(sx-b.left)+'px'; el.style.top=(sy-b.top)+'px'; el.style.setProperty('--k',k);
   el.innerHTML=`<i class="rv-halo"></i><i class="rv-rays"></i><div class="rv-chest">${IB('chest',1.6)}</div><div class="rv-item">${faceHTML(Object.assign({type:'prop'},it))}</div><b class="rv-name">${esc(it.name||'Objet')}${by?`<small>${esc(by)}</small>`:''}</b>`;
   board.appendChild(el); setTimeout(()=>el.classList.add('out'),3400); setTimeout(()=>el.remove(),4100); }
@@ -7932,6 +7941,7 @@ if(isPlayer){
     board.addEventListener('pointermove',e=>{ if(touches.has(e.pointerId)) touches.set(e.pointerId,{x:e.clientX,y:e.clientY});
       if(pinch&&touches.size>=2){ V.z=clamp(pinch.z*pdist()/pinch.d,PZ[0],PZ[1]); followMe(); return; } if(pd) ptr(e); });
     const endp=e=>{ touches.delete(e.pointerId); if(touches.size<2) pinch=null; if(!pd) return; pd=false; ptr(e,true);
+      if(document.documentElement.classList.contains('fpsmode')){ if(e.type==='pointerup'&&pdAt) fpsRelease(e,pdAt); pdAt=null; return; }
       if(e.type==='pointerup'&&pdAt&&Math.hypot(e.clientX-pdAt.x,e.clientY-pdAt.y)<8){ const [wx,wy]=toWorld(e.clientX,e.clientY), h=S.tokens.filter(t=>(t.box||t.item||t.shop)&&Math.hypot(t.x-wx,t.y-wy)<36*(t.s||1)+6).sort((a,b)=>Math.hypot(a.x-wx,a.y-wy)-Math.hypot(b.x-wx,b.y-wy))[0]; if(h) openAsk(h.id); } pdAt=null; }; board.addEventListener('pointerup',endp); board.addEventListener('pointercancel',endp);
     board.addEventListener('wheel',e=>{ e.preventDefault(); V.z=clamp(V.z*(e.deltaY>0?1/1.12:1.12),PZ[0],PZ[1]); followMe(); },{passive:false}); }
   else { try{ const m=JSON.parse(ls.get(LS_SYNC)||'null'); if(m&&m.t==='state') receive(m); }catch(e){}
