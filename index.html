@@ -255,6 +255,9 @@ body{-webkit-user-select:none;user-select:none}input,textarea,select,[contentedi
 .portrait img.cropped{position:absolute;max-width:none;object-fit:fill}
 .portrait svg{width:32px;height:32px;color:var(--ink-soft)}
 .field{display:flex;flex-direction:column;gap:1px;min-width:0}
+.racerow{display:flex;align-items:center;gap:8px}.racerow select{flex:1}
+.sexsw{display:flex;gap:4px;flex:none}.sexsw button{width:30px;height:30px;border:1px solid var(--rule);border-radius:8px;background:none;font-size:17px;line-height:1;color:var(--ink-soft,#777);cursor:pointer;padding:0}
+.sexsw button[aria-pressed="true"]{background:var(--ink-strong,#2f3340);color:#fff;border-color:var(--ink-strong,#2f3340)}
 .line-in{border:0;border-bottom:1px solid var(--rule);background:transparent;padding:4px 2px;min-width:0;width:100%;outline:none}
 .line-in:focus{border-bottom-color:var(--ink)}
 .name-in{font-family:var(--f-title);font-size:25px;letter-spacing:.05em;color:var(--ink-strong)}
@@ -761,7 +764,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}input[type=num
         <button class="portrait" id="portrait" type="button" title="Changer le portrait"></button>
         <div style="display:flex;flex-direction:column;gap:8px;min-width:0">
           <div class="field"><label class="cap" for="f-name">Nom</label><input id="f-name" class="line-in name-in" placeholder="Sans nom" autocomplete="off"></div>
-          <div class="field"><label class="cap" for="f-race">Race</label><select id="f-race" class="line-in"></select></div>
+          <div class="field"><label class="cap" for="f-race">Race</label><div class="racerow"><select id="f-race" class="line-in"></select><span class="sexsw" role="group" aria-label="Sexe"><button type="button" data-sex="h" title="Homme" aria-pressed="false">♂</button><button type="button" data-sex="f" title="Femme" aria-pressed="false">♀</button></span></div></div>
         </div>
       </div>
     </section>
@@ -1283,7 +1286,7 @@ function printSheet(){
 function renderIdentity(){
   const pc=C.photoCrop; $('portrait').innerHTML=C.photo?`<img src="${C.photo}" alt="Portrait"${pc?` class="cropped" style="left:${-pc.l*100}%;top:${-pc.t*100}%;width:${pc.w*100}%;height:${pc.h*100}%"`:''}>`:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="9" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>`;
   if(document.activeElement!==$('f-name')) $('f-name').value=C.name||'';
-  $('f-race').value=C.race;
+  $('f-race').value=C.race; document.querySelectorAll('.sexsw [data-sex]').forEach(b=>b.setAttribute('aria-pressed',(C.sexe||'h')===b.dataset.sex?'true':'false'));
 }
 function handName(h){ const it=C.inventory.find(i=>handsOf(i).includes(h)); return it?(it.name||'Arme'):''; }
 function renderDerived(){
@@ -1619,6 +1622,8 @@ document.addEventListener('mouseover',e=>{
   } else tip.classList.remove('show');
 });
 
+/* sexe du personnage : change l'apparence vue par les autres joueurs en 3D */
+document.addEventListener('click',e=>{ const b=e.target.closest('.sexsw [data-sex]'); if(!b) return; C.sexe=b.dataset.sex; document.querySelectorAll('.sexsw [data-sex]').forEach(x=>x.setAttribute('aria-pressed',x===b?'true':'false')); markDirty(); });
 document.addEventListener('click',e=>{ const ef=e.target.closest('.stat .eff'); if(!ef) return; const st=ef.closest('.stat'); st.classList.add('editing'); const i=st.querySelector('.statin'); i.focus(); i.select(); });
 document.addEventListener('focusout',e=>{ if(e.target.classList&&e.target.classList.contains('statin')) e.target.closest('.stat').classList.remove('editing'); });
 /* Glisser-déposer : une ligne de l'inventaire sur une zone du corps ou une main */
@@ -4368,6 +4373,10 @@ const DGSPR={"coffre": "res/sprites/coffre.png", "caisse": "res/sprites/caisse.p
 const CONT={coffre:'Coffre',caisse:'Caisse',tech:'Caisse tech',jarre:'Jarre',viande:'Tas de chair'};
 const SPR_H={mklamp:1.45,mkup:1,mktp:.95,coffre:.48,caisse:.55,tech:.55,jarre:.55,viande:.4};
 const DGIM={};
+/* aventuriers vus par les autres : sprite en pied selon la race et le sexe (res/persos/<race>-<h|f>.png) */
+const PERSOS=['humain-h','humain-f'], PERSO_ALIAS={elfe:'humain'};
+function persoKey(t){ if(t.type!=='player') return null; const r=PERSO_ALIAS[t.race]||t.race||'humain', k=r+'-'+(t.sexe==='f'?'f':'h'); return PERSOS.includes(k)?k:null; }
+function persoImg(k){ const id='p:'+k; let im=DGIM[id]; if(!im){ im=DGIM[id]=new Image(); im.onload=()=>{ FPS.sprites.clear(); fpsLater(); }; im.src='res/persos/'+k+'.png'; } return im.complete&&im.naturalWidth?im:null; }
 function dgImg(k){ if(!DGSPR[k]) return null; let im=DGIM[k]; if(!im){ im=DGIM[k]=new Image(); im.onload=()=>{ FPS.sprites.clear(); fpsLater(); }; im.src=DGSPR[k]; } return im.complete&&im.naturalWidth?im:null; }
 const dgDead=t=>ALIVE(t)&&t.hp!=null&&t.hp<=0;
 const dgSprK=t=>dgDead(t)?'viande':(t.box||t.inbox)?(CONT[t.ct]?t.ct:'coffre'):null;
@@ -4504,6 +4513,11 @@ function mkSprite(kind){ FPS.mks=FPS.mks||{}; if(FPS.mks[kind]) return FPS.mks[k
   c._k='mk'+kind; return FPS.mks[kind]=c; }
 /* image d'un personnage : sa pastille debout, avec son nom */
 function fpsSprite(t){ if(t.type==='mk') return mkSprite(t.mk); const sk=dgSprK(t), key=t.id+'|'+(t.img||'')+'|'+(t.name||'')+'|'+t.type+'|'+(t.ico||'')+'|'+(sk||''); let s=FPS.sprites.get(t.id); if(s&&s.key===key) return s.ready?s.cv:null;
+  const pk=!sk&&persoKey(t); if(pk){ const im=persoImg(pk); if(!im) return null; const key2=key+'|'+pk; if(s&&s.key===key2) return s.cv;
+    const cv=document.createElement('canvas'), x=cv.getContext('2d'), nm=(t.name||'').slice(0,18); x.font='700 15px sans-serif'; const lw=nm?Math.ceil(x.measureText(nm).width)+16:0, LH=nm?26:0;
+    cv.width=Math.max(im.naturalWidth,lw); cv.height=im.naturalHeight+LH+4; x.imageSmoothingEnabled=false; x.drawImage(im,(cv.width-im.naturalWidth)/2|0,LH+4);
+    if(nm){ x.font='700 15px sans-serif'; x.fillStyle='rgba(255,255,255,.94)'; x.beginPath(); x.roundRect?x.roundRect((cv.width-lw)/2,0,lw,LH-2,11):x.rect((cv.width-lw)/2,0,lw,LH-2); x.fill(); x.fillStyle='#222'; x.textAlign='center'; x.textBaseline='middle'; x.fillText(nm,cv.width/2,LH/2); }
+    cv._k='perso'; cv._hf=.95*cv.height/361; FPS.sprites.set(t.id,{key:key2,cv,ready:true}); return cv; }
   if(sk){ const im=dgImg(sk); if(!im) return null; s={key,cv:document.createElement('canvas'),ready:true,img:1}; s.cv.width=im.naturalWidth; s.cv.height=im.naturalHeight; s.cv.getContext('2d').drawImage(im,0,0); s.cv._k=sk; FPS.sprites.set(t.id,s); return s.cv; }
   s={key,cv:document.createElement('canvas'),ready:false}; FPS.sprites.set(t.id,s); s.cv.width=128; s.cv.height=176;
   const cv0=TYPES[t.type]&&TYPES[t.type].col.match(/--[\w-]+/), col=(cv0&&getComputedStyle(document.documentElement).getPropertyValue(cv0[0]).trim())||'#888';
@@ -4584,7 +4598,7 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
   const inv=1/(px*dy-dx*py);
   L.forEach(o=>{ const tX=inv*(dy*o.sx-dx*o.sy), tY=inv*(-py*o.sx+px*o.sy); if(tY<=.15) return; const img=fpsSprite(o.t); if(!img) return;
     if(!img._px) img._px=new Uint32Array(img.getContext('2d').getImageData(0,0,img.width,img.height).data.buffer.slice(0));
-    const it=dgItem(o.t), sk=img._k, zb=dgH(Math.floor(o.t.x/CELL),Math.floor(o.t.y/CELL)), scrX=(W/2)*(1+tX/tY), hh=Math.abs(H/tY)*(sk?SPR_H[sk]:it?.34:.62)*(!it&&!sk&&o.t.s?Math.min(1.6,Math.max(.6,o.t.s)):1), ww=hh*img.width/img.height;
+    const it=dgItem(o.t), sk=img._k, zb=dgH(Math.floor(o.t.x/CELL),Math.floor(o.t.y/CELL)), scrX=(W/2)*(1+tX/tY), hh=Math.abs(H/tY)*(sk?(img._hf||SPR_H[sk]):it?.34:.62)*(!it&&!sk&&o.t.s?Math.min(1.6,Math.max(.6,o.t.s)):1), ww=hh*img.width/img.height;
     const bot=h2+(eye-zb)*H/tY, top=bot-hh, x0=Math.round(scrX-ww/2), x1=Math.round(scrX+ww/2);
     const f=o.t.mk==='tp'||o.t.mk==='lamp'?1:HUB?Math.max(.25,hubLit(o.t.x/CELL,o.t.y/CELL)):Math.max(.35,lit(o.r)), fade=o.lim===Infinity?1:Math.min(1,(o.lim-o.r)/1.5+.15), IW=img.width, IH=img.height, PX=img._px;
     const cxp=Math.max(0,Math.min(W-1,Math.round(scrX))), cyp=Math.max(0,Math.min(H-1,Math.round(top+hh*.5)));
@@ -7207,7 +7221,7 @@ function send(m){ if(isPlayer) return; m.n=Date.now()*100+(seq++%100); m.from='m
   if(bc) try{ bc.postMessage(m); }catch(e){}
   if(bc&&m.t!=='state') return;   // le canal direct suffit ; le stockage local ne garde que l'état complet
   try{ localStorage.setItem(LS_SYNC,JSON.stringify(m)); }catch(e){ if(m.t==='state'){ const lite={...m,bg:m.bg&&m.bg.length>1.5e6?'':m.bg}; try{ localStorage.setItem(LS_SYNC,JSON.stringify(lite)); }catch(e2){} } } }
-function publicState(){ const pub=t=>({mvl:t.type==='player'&&S.dexLock?dexLeft(t):undefined,dir:t.dir,id:t.id,type:t.type,name:t.name,hp:t.hp,hpMax:t.hpMax,img:t.img,ico:t.ico,emo:t.emo,x:t.x,y:t.y,s:t.s,r:t.r,owner:t.owner||null,note:t.type==='prop'&&t.note?' ':'',kind:t.kind==='deco'?'deco':t.kind==='vehicle'?'vehicle':undefined,inveh:t.inveh||undefined,veh:t.kind==='vehicle'?{seats:(t.veh||{}).seats||0,r:Math.round(vehR(t)*100)/100}:undefined,stamp:t.stamp||undefined,st:(ALIVE(t)&&effSt(t).length)?effSt(t):undefined,lit:t.lit===false?false:undefined,dir:t.dir,ls:t.ls,lh:t.lh,lr:t.lr});
+function publicState(){ const pub=t=>({race:t.type==='player'?t.race:undefined,sexe:t.type==='player'?t.sexe:undefined,mvl:t.type==='player'&&S.dexLock?dexLeft(t):undefined,dir:t.dir,id:t.id,type:t.type,name:t.name,hp:t.hp,hpMax:t.hpMax,img:t.img,ico:t.ico,emo:t.emo,x:t.x,y:t.y,s:t.s,r:t.r,owner:t.owner||null,note:t.type==='prop'&&t.note?' ':'',kind:t.kind==='deco'?'deco':t.kind==='vehicle'?'vehicle':undefined,inveh:t.inveh||undefined,veh:t.kind==='vehicle'?{seats:(t.veh||{}).seats||0,r:Math.round(vehR(t)*100)/100}:undefined,stamp:t.stamp||undefined,st:(ALIVE(t)&&effSt(t).length)?effSt(t):undefined,lit:t.lit===false?false:undefined,dir:t.dir,ls:t.ls,lh:t.lh,lr:t.lr});
   return {t:'state',dexLock:!!S.dexLock,dg:dgPub(),hour:S.hour,bg:S.bg,bgKind:S.bgKind||'',bgW:S.bgW||0,bgH:S.bgH||0,geo:S.geo||null,light:S.light,weather:S.weather||'',ground:S.ground||null,grid:S.grid,drawings:S.drawings,seen:S.seen||{},blood:S.blood||[],tokens:S.tokens.filter(t=>!t.hidden&&!(t.inveh&&t.type!=='player')).map(t=>t.kind==='shop'?Object.assign(pub(t),{shop:{stock:t.shop.stock.map(x=>({k:x.k,name:x.data.name,g:x.g,veh:!!x.veh,qty:x.qty,price:shopPrice(t,x),w:x.veh||x.data.itemType==='backpack'||x.g==='cyb'?0:+x.data.weight||0,desc:x.veh?`Facteur ${x.veh.factor} · ${x.veh.kind}${x.veh.desc?'\n'+x.veh.desc:''}`:objNote(x.data)}))}}):t.kind==='item'&&!t.inbox?Object.assign(pub(t),{item:1,g:t.g||'misc',data:itemData(t)}):t.inbox?{id:t.id,type:'prop',name:'',ico:'chest',img:null,x:t.x,y:t.y,s:Math.max(1,t.s||1),box:1,ct:t.ct||undefined,note:''}:pub(t)),order:S.order.filter(id=>{ const t=tok(id); return t&&!t.hidden; }),turn:turnIdForPlayers(),view:viewMsg()}; }
 function turnIdForPlayers(){ const L=orderToks(), c=L[S.turn]; return c&&!c.hidden?c.id:null; }
 let syncRaf=0; function sync(){ if(isPlayer||syncRaf) return; syncRaf=requestAnimationFrame(()=>{ syncRaf=0; send(publicState()); }); }
@@ -8084,7 +8098,7 @@ function tokenData(sh){ sh=sh||{}; const st={}; STATS.forEach(s=>st[s]=Math.max(
   const data={name:String(sh.name||'Aventurier').slice(0,40),stats:st,hpMax:Math.max(1,+sh.pvMax||st.RES+5)};
   data.hp=Number.isFinite(+sh.pv)?clamp(+sh.pv,-1,data.hpMax):data.hpMax;
   if(typeof sh.img==='string'&&sh.img.startsWith('data:image/')&&sh.img.length<120000) data.img=sh.img;
-  const F=sh.full||{}, ast=[]; data.frac=(F.fractures||[]).slice(); if((F.fractures||[]).length) ast.push('fracture'); if(data.hp<5&&data.hp>0) ast.push('pastop');
+  const F=sh.full||{}, ast=[]; data.race=F.race||'humain'; data.sexe=F.sexe==='f'?'f':'h'; data.frac=(F.fractures||[]).slice(); if((F.fractures||[]).length) ast.push('fracture'); if(data.hp<5&&data.hp>0) ast.push('pastop');
   const PK={burn:'brulure',bleed:'saignement',stun:'etourdi',hypoesthesia:'hypostasie',pasTop:'pastop',snare:'entrave',sick:'maladie',frenzy:'frenesie',pompette1:'pompette',pompette2:'pinte',pompette3:'eclate'};
   (F.effects||[]).forEach(e=>{ const k=PK[e&&e.key]; if(k&&!ast.includes(k)) ast.push(k); }); data.ast=ast;
   return data; }
