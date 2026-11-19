@@ -2751,7 +2751,8 @@ html.noscene #rb-fond,html.noscene #rb-draw,html.noscene #rb-dgn,html.noscene #r
 html.inhub #rb-dgn,html.inhub #rb-fond,html.inhub #rb-jet,html.inhub #rb-item{opacity:.3;pointer-events:none}
 /* appli installée : déjà en plein écran, bouton inutile */
 @media (display-mode:standalone),(display-mode:fullscreen),(display-mode:minimal-ui){#b-full{display:none!important}}
-.scenenav .dexh{margin-left:10px}
+.scenenav .choice .soon{opacity:.45;cursor:not-allowed;filter:grayscale(1)}.choice .soon .soonico{font-style:normal;font-size:22px;line-height:1}
+.dexh{margin-left:10px}
 .scenenav .scnb{border:0;margin:0 2px;padding:4px 8px}
 .dexh{font:800 12px Quicksand,sans-serif!important;letter-spacing:.06em;padding:0 10px!important;border:1px solid var(--rule)!important;border-radius:9px;gap:5px;display:inline-flex;align-items:center;height:32px}.dexh i{font-style:normal;font-size:14px}.dexh[aria-pressed="true"]{background:var(--c-dex,#d9a400);border-color:var(--c-dex,#d9a400)!important;color:#fff}
 .dexlk{width:auto!important;padding:0 9px!important;gap:5px;display:inline-flex;align-items:center}.dexlk b{font:800 11px Quicksand,sans-serif;letter-spacing:.08em}.dexlk svg{width:16px;height:16px}
@@ -7100,9 +7101,10 @@ function newSceneDialog(){
   const t3=true;   /* toutes les scènes sont en 3D */
   /* toujours une scène vierge : un donjon à creuser, ou un hub */
   openDialog(`<h3>Nouvelle scène</h3>
-    <div class="choice">
+    <div class="choice" style="grid-template-columns:repeat(3,1fr)">
     <button type="button" id="ns-dg">${dgI('dgn',1.7)}<b>Donjon</b><span>Un bloc de roche à creuser ; les jetons des joueurs retournent dans leurs onglets.</span></button>
-    <button type="button" id="ns-hub"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v6"/><path d="M8.5 8h7l3.5 5H5z"/><path d="M9 16.5l-1.5 3M15 16.5l1.5 3M12 17v3"/></svg><b>Hub</b><span>Salle de béton 5 × 5 sous une lampe ; les aventuriers y sont placés en cercle.</span></button></div>
+    <button type="button" id="ns-hub"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v6"/><path d="M8.5 8h7l3.5 5H5z"/><path d="M9 16.5l-1.5 3M15 16.5l1.5 3M12 17v3"/></svg><b>Hub</b><span>Salle de béton 5 × 5 sous une lumière ; les aventuriers y sont placés en cercle.</span></button>
+    <button type="button" id="ns-chase" class="soon" disabled aria-disabled="true"><i class="soonico">🏗️</i><b>Course-poursuite</b><span>Coming soon…</span></button></div>
     <div class="actions"><button class="btn ghost" type="button" data-close>Annuler</button></div>`,'var(--c-per)');
   $('ns-hub').onclick=()=>{ dlg.close(); hubScene(); };
   $('ns-dg').onclick=()=>{ dlg.close(); snapshot(); S.scenes.push({id:nid(),title:`Scène ${S.scenes.length+1}`,content:'',bg:'',bgW:0,bgH:0,geo:null,light:true,ground:GROUND0(),drawings:[],tokens:[],order:[],dg:{on:true,th:'pierre',c:{},d:{}}}); loadScene(S.scenes.length-1); startCreation(); };
