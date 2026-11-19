@@ -6821,7 +6821,7 @@ function renderDrawPanel(){ const box=$('ldraw-body'); if(!box) return; const on
 function closeLeft(){ if(typeof jetStamp==='function') jetStamp(false); document.querySelectorAll('.ldrawer.open').forEach(d=>{ d.classList.remove('open'); if(d.id==='ldraw'&&(tool==='map'||tool==='measure')) setTool(tool); if(d.id==='dgdrw'&&tool==='dgn') setTool('dgn'); }); document.querySelectorAll('[data-left]').forEach(b=>b.setAttribute('aria-pressed','false')); }
 function openLeft(id,force){ const was=$(id).classList.contains('open'); if(was&&force) return; closeLeft(); if(was) return;
   $(id).classList.add('open'); document.querySelectorAll(`[data-left="${id}"]`).forEach(b=>b.setAttribute('aria-pressed','true')); drawerOpened(id);
-  if(id==='ldraw'){ if(tool!=='map') setTool('map'); renderDrawPanel(); } else if(id==='lbest') renderBestPanel(); else if(id==='ljet'){ renderJetPanel(); } else if(id==='litem'){ renderItemPanel(); } else if(id==='fond') renderFond(); else if(id==='dgdrw') renderDgPanel(); }
+  if(id==='ldraw'){ if(tool!=='map') setTool('map'); renderDrawPanel(); } else if(id==='lbest') renderBestPanel(); else if(id==='ljet'){ renderJetPanel(); } else if(id==='litem'){ renderItemPanel(); } else if(id==='fond') renderFond(); else if(id==='dgdrw'){ if(tool!=='dgn'&&!(S.dg&&S.dg.hub)) setTool('dgn'); renderDgPanel(); } }
 function bestRows(q){ q=normTxt(q); const L=S.bestiary.map((m,i)=>({m,i})).filter(x=>!q||normTxt(x.m.name).includes(q));
   const row=x=>{ const m=x.m; return `<div class="brow" data-i="${x.i}" title="Glisser sur le plateau · cliquer pour ouvrir"><span class="bface">${faceHTML({...m,type:'mob'},'sm')}</span><b>${esc(m.name)}</b><span class="bv">${m.hpMax}</span><span class="bv">${m.pp||0}</span><span class="bss">${STATS.map(s=>`<i style="--sc:${STAT_INFO[s].col}" title="${s}">${m.stats&&m.stats[s]!=null?m.stats[s]:0}</i>`).join('')}</span>${m.cat?'<span class="nodel"></span>':`<button class="ib del" type="button" data-del="${x.i}" title="Retirer du bestiaire">${IB('bin')}</button>`}</div>`; };
   const cats=[...BEST_CATS,...new Set(L.map(x=>x.m.cat).filter(c=>c&&!BEST_CATS.includes(c)))], mine=L.filter(x=>!x.m.cat);
@@ -7185,6 +7185,11 @@ $('timers').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; cons
    Volets latéraux : un seul ouvert à la fois
    ========================================================= */
 const DRAWERS=['scenario','notes','roller','loot','mapdrw','regles'];
+/* clic hors d'un volet : il se ferme (sauf pendant qu'un outil dessine ou pose sur le plateau) */
+document.addEventListener('pointerdown',e=>{ if(isPlayer||!document.querySelector('.ldrawer.open')||e.button>0) return; const t=e.target;
+  if(!t.closest||t.closest('.ldrawer,[data-left],.rail,dialog,#card,#openask,#fpsprev,.msgbar,.timbar,.bbx,.toast,#covertip,.chatac,.fracfly,#selbox')) return;
+  if(t.closest('#board')&&(tool||(typeof jetStampOn!=='undefined'&&jetStampOn))) return;
+  closeLeft(); },true);
 function openDrawer(id,force){ if(!id){ closeLeft(); return; } openLeft(id,force); }
 function drawerOpened(id){ {
     if(id==='regles') rgRender();
