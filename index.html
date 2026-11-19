@@ -4475,7 +4475,7 @@ const CONT={coffre:'Coffre',caisse:'Caisse',tech:'Caisse tech',jarre:'Jarre',via
 const SPR_H={mklamp:1.45,mkup:1,mktp:.95,coffre:.48,caisse:.55,tech:.55,jarre:.55,viande:.4};
 const DGIM={};
 /* aventuriers vus par les autres : sprite en pied selon la race et le sexe (res/persos/<race>-<h|f>.png) */
-const PERSOS=['humain-h','humain-f','troll-h','troll-f','droide-h','droide-f'], PERSO_ALIAS={elfe:'humain'};
+const PERSOS=['humain-h','humain-f','troll-h','troll-f','droide-h','droide-f','demon-h','demon-f'], PERSO_ALIAS={elfe:'humain'};
 function persoKey(t){ if(t.type!=='player') return null; const r=PERSO_ALIAS[t.race]||t.race||'humain', k=r+'-'+(t.sexe==='f'?'f':'h'); return PERSOS.includes(k)?k:null; }
 function persoImg(k){ const id='p:'+k; let im=DGIM[id]; if(!im){ im=DGIM[id]=new Image(); im.onload=()=>{ FPS.sprites.clear(); fpsLater(); }; im.src='res/persos/'+k+'.png'; } return im.complete&&im.naturalWidth?im:null; }
 function dgImg(k){ if(!DGSPR[k]) return null; let im=DGIM[k]; if(!im){ im=DGIM[k]=new Image(); im.onload=()=>{ FPS.sprites.clear(); fpsLater(); }; im.src=DGSPR[k]; } return im.complete&&im.naturalWidth?im:null; }
