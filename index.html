@@ -4398,17 +4398,31 @@ const fightCur=()=>S.fight?orderToks()[S.turn]||null:null;
 function fpsSpectating(){ if(FPS.mode!=='play'||!S.fight) return false; const c=fightCur(); return !c||c.id!==FPS.self; }
 /* ---------- mode test (joueur, en développement) : un bout de complexe à explorer sans MJ ---------- */
 function dgTestLoad(){ window.DGTEST=true; if(!ME) ME='test'; const c={}, d={}, m={}, box=(x0,y0,w,h,st)=>{ for(let i=x0;i<x0+w;i++) for(let j=y0;j<y0+h;j++) c[i+','+j]=st; };
-  box(0,0,5,5,'pierre'); box(5,2,5,1,'pierre'); box(10,0,6,6,'crypte'); box(2,5,1,4,'station'); box(0,9,5,5,'station'); box(16,0,8,8,'prairie|s|i'); box(-3,1,3,3,'crypte');
-  d[dgEK(4,2,5,2)]={open:false}; d[dgEK(9,2,10,2)]={open:false}; d[dgEK(15,3,16,3)]={open:false}; d[dgEK(0,2,-1,2)]={s:1,f:1,open:false}; d[dgEK(2,8,2,9)]={open:true};
-  m['2,12']={k:'tp',code:'TEST1',to:'TEST2'}; m['22,6']={k:'tp',code:'TEST2',to:'TEST1'}; m['13,5']={k:'down',code:'TEST3',to:''};
-  S.dg={on:true,th:'pierre',c,d,m}; S.hour=14; S.weather=''; S.combat=null; S.fight=null; S.dexLock=false;
-  S.tokens=[{id:'me',type:'player',name:'Vous',owner:ME,race:(typeof VEHME!=='undefined'&&VEHME&&VEHME.race)||'humain',sexe:'h',hp:10,hpMax:10,x:2.5*CELL,y:2.5*CELL,dir:1,s:1},
+  /* une boucle qui traverse tous les styles : pierre → crypte → prairie → ruelle → ruines → désert → jungle → station → pierre */
+  box(0,0,5,5,'pierre'); box(5,2,5,1,'pierre'); box(-3,1,3,3,'crypte');
+  box(10,0,6,6,'crypte'); box(16,0,8,8,'prairie|s|i');
+  box(19,8,2,12,'ruelle|s'); box(15,20,8,7,'ruines|s');
+  box(5,22,10,3,'desert|s'); box(8,25,3,2,'desert|s'); box(0,18,5,9,'jungle|s');
+  box(2,14,1,4,'station'); box(0,9,5,5,'station'); box(2,5,1,4,'station');
+  d[dgEK(4,2,5,2)]={open:false}; d[dgEK(9,2,10,2)]={open:false}; d[dgEK(15,3,16,3)]={open:false}; d[dgEK(0,2,-1,2)]={s:1,f:1,open:false};
+  d[dgEK(19,7,19,8)]={open:false}; d[dgEK(20,7,20,8)]={open:false}; d[dgEK(2,8,2,9)]={open:true}; d[dgEK(2,13,2,14)]={open:false};
+  m['2,12']={k:'tp',code:'TEST1',to:'TEST2'}; m['22,6']={k:'tp',code:'TEST2',to:'TEST1'};
+  m['13,5']={k:'down',code:'TEST3',to:'TEST4'}; m['21,25']={k:'up',code:'TEST4',to:'TEST3'};
+  S.dg={on:true,th:'pierre',c,d,m}; S.hour=18.5; S.weather=''; S.combat=null; S.fight=null; S.dexLock=false; FPS.skys=null; FPS.dst={};
+  const race=(typeof VEHME!=='undefined'&&VEHME&&VEHME.race)||'humain', P=(id,name,race,sexe,x,y,dir)=>({id,type:'player',name,race,sexe,owner:'x'+id,hp:10,hpMax:10,x:(x+.5)*CELL,y:(y+.5)*CELL,s:1,dir});
+  S.tokens=[{id:'me',type:'player',name:'Vous',owner:ME,race,sexe:'h',hp:10,hpMax:10,x:2.5*CELL,y:2.5*CELL,dir:1,s:1},
+    P('tp1','Kara','humain','f',7,2,3), P('tp2','Grom','troll','h',18,2,2), P('tp3','Ursa','troll','f',21,4,3),
+    P('tp4','Bzzt','droide','h',20,13,0), P('tp5','Kiku','droide','f',19,17,0), P('tp6','Azar','demon','h',9,23,1), P('tp7','Lilith','demon','f',12,24,3),
     {id:'tm1',type:'mob',name:'Goule',hp:6,hpMax:6,x:13.5*CELL,y:2.5*CELL,s:1,ico:'skull'},
-    {id:'tn1',type:'npc',name:'Vieux sage',hp:5,hpMax:5,x:20.5*CELL,y:3.5*CELL,s:1,ico:'user'},
-    {id:'tp1',type:'player',name:'Kara',race:'humain',sexe:'f',owner:'x',hp:10,hpMax:10,x:7.5*CELL,y:2.5*CELL,s:1,dir:3},
+    {id:'tm2',type:'mob',name:'Rôdeur',hp:8,hpMax:8,x:2.5*CELL,y:22.5*CELL,s:1,ico:'skull'},
+    {id:'tn1',type:'npc',name:'Vieux sage',hp:5,hpMax:5,x:20.5*CELL,y:2.5*CELL,s:1,ico:'user'},
+    {id:'tv1',type:'prop',kind:'vehicle',name:'Moto',ico:'car',x:17.5*CELL,y:22.5*CELL,s:1.6,veh:{factor:1,seats:2,pax:0}},
     {id:'ti1',type:'prop',kind:'item',inbox:true,ct:'caisse',name:'Caisse',x:-2.5*CELL,y:2.5*CELL,s:1,ico:'chest',data:{name:'Médikit'}},
-    {id:'ti2',type:'prop',kind:'item',inbox:true,ct:'jarre',name:'Jarre',x:14.5*CELL,y:.5*CELL,s:1,ico:'chest',data:{name:'Pièces'}}];
-  S.order=[]; S.turn=-1; FPS.cam=null; FPS.dp=null; renderTokens(); followMe(); toast('🔷 Mode test : complexe chargé'); }
+    {id:'ti2',type:'prop',kind:'item',inbox:true,ct:'jarre',name:'Jarre',x:14.5*CELL,y:.5*CELL,s:1,ico:'chest',data:{name:'Pièces'}},
+    {id:'ti3',type:'prop',kind:'item',inbox:true,ct:'coffre',name:'Coffre',x:1.5*CELL,y:25.5*CELL,s:1,ico:'chest',data:{name:'Trésor'}},
+    {id:'ti4',type:'prop',kind:'item',inbox:true,ct:'tech',name:'Caisse tech',x:22.5*CELL,y:20.5*CELL,s:1,ico:'chest',data:{name:'Batterie'}},
+    {id:'ti5',type:'prop',kind:'item',inbox:true,ct:'viande',name:'Restes',x:9.5*CELL,y:25.5*CELL,s:1,ico:'chest',data:{name:'Os'}}];
+  S.order=[]; S.turn=-1; FPS.cam=null; FPS.dp=null; FPS.sprites&&FPS.sprites.clear(); renderTokens(); followMe(); toast('🔷 Mode test : complexe chargé (tous les styles)'); }
 function dgTestMove(x,y,dir){ const me=S.tokens.find(t=>t.owner===ME&&t.type==='player'); if(!me) return; me.x=x; me.y=y; me.dir=dir;
   const [i,j]=dgCell(x,y), mk=dgMk(i,j); if(mk&&mk.to){ const k=Object.keys(S.dg.m).find(k=>S.dg.m[k].code===mk.to); if(k){ const [a,b]=k.split(',').map(Number); setTimeout(()=>{ me.x=(a+.5)*CELL; me.y=(b+.5)*CELL; fpsSync(); },260); } } }
 
