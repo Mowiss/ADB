@@ -4592,7 +4592,6 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
   const pos=t=>{ let q=DP.get(t.id); if(!q){ q={x:t.x,y:t.y}; DP.set(t.id,q); } const ex=t.x-q.x, ey=t.y-q.y, d=Math.hypot(ex,ey);
     if(d<.5||d>CELL*8){ q.x=t.x; q.y=t.y; } else { q.x+=ex*.2; q.y+=ey*.2; moving=true; } return q; };
   const L=S.tokens.filter(t=>t.id!==selfId&&!t.hidden&&!t.inveh&&(['player','mob','npc'].includes(t.type)||(t.type==='prop'&&t.kind!=='deco'&&t.kind!=='vehicle'))).map(t=>{ const q=pos(t); return {t,sx:q.x/CELL-cam.x,sy:q.y/CELL-cam.y}; }).map(o=>({...o,d:o.sx*o.sx+o.sy*o.sy})).map(o=>({...o,r:Math.sqrt(o.d),lim:rng(o.t)})).filter(o=>o.r<=o.lim);
-  if(HUB){ const t={id:'mklamp',type:'mk',mk:'lamp',x:2.5*CELL,y:2.5*CELL}, sx=2.5-cam.x, sy=2.5-cam.y, d=sx*sx+sy*sy; L.push({t,sx,sy,d,r:Math.sqrt(d),lim:Infinity}); }
   for(const k in (S.dg&&S.dg.m||{})){ const m=S.dg.m[k]; if(m.k==='down') continue; const p=k.indexOf(','), t={id:'mk'+k,type:'mk',mk:m.k,x:(+k.slice(0,p)+.5)*CELL,y:(+k.slice(p+1)+.5)*CELL}, sx=t.x/CELL-cam.x, sy=t.y/CELL-cam.y, d=sx*sx+sy*sy; L.push({t,sx,sy,d,r:Math.sqrt(d),lim:Infinity}); }
   FPS.hits=[];
   const inv=1/(px*dy-dx*py);
