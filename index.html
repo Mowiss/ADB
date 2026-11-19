@@ -2793,7 +2793,7 @@ html.incombat #rb-dgn,html.incombat #rb-fond{opacity:.3;pointer-events:none}
 .fighth[aria-pressed="true"]{background:#e04b3a!important;border-color:#e04b3a!important;color:#fff}
 #board.fzone{cursor:crosshair}
 .fps-pad{display:none!important}   /* déplacements au toucher (glisser) et au clavier : plus de croix */
-.fps-hud{height:90px}
+.fps-hud,.fps-cmp{display:none!important}
 .dexh{margin-left:10px}
 .scenenav .scnb{border:0;margin:0 2px;padding:4px 8px}
 .dexh{font:800 12px Quicksand,sans-serif!important;letter-spacing:.06em;padding:0 10px!important;border:1px solid var(--rule)!important;border-radius:9px;gap:5px;display:inline-flex;align-items:center;height:32px}.dexh i{font-style:normal;font-size:14px}.dexh[aria-pressed="true"]{background:var(--c-dex,#d9a400);border-color:var(--c-dex,#d9a400)!important;color:#fff}
@@ -2822,12 +2822,12 @@ html.incombat #rb-dgn,html.incombat #rb-fond{opacity:.3;pointer-events:none}
 /* bandeau bas façon Wizardry : fondu sombre, cadres filaires pixel */
 .fps-hud{position:absolute;left:0;right:0;bottom:0;height:128px;z-index:2;pointer-events:none;background:linear-gradient(180deg,rgba(5,3,12,0) 0%,rgba(5,3,12,.82) 30%,rgba(5,3,12,.96) 100%)}
 .fps-hud::before{content:"";position:absolute;left:10px;right:10px;top:6px;height:0;border-top:2px solid rgba(45,226,255,.6);box-shadow:0 -4px 0 -2px rgba(255,60,172,.45),0 0 8px rgba(45,226,255,.5)}
-.fps-hands{bottom:46px!important}
+.fps-hands{bottom:0!important}
 /* boutons Véhicule et Parler en vue 3D : ronds, cerclés, fond blanc dépoli (comme les stats de la fiche) */
-html.fpsmode .vehbtn,html.fpsmode .chatbtn{bottom:16px;width:54px;height:54px;border-radius:50%;background:rgba(255,255,255,.72);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border:2.5px solid #8a8f9f;color:#2f3340;box-shadow:0 4px 14px rgba(0,0,0,.35)}
-html.fpsmode .chatbtn{right:18px}html.fpsmode .vehbtn{right:84px}
+html.fpsmode .vehbtn,html.fpsmode .chatbtn{top:14px;bottom:auto;right:14px;width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.72);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border:2.5px solid #8a8f9f;color:#2f3340;box-shadow:0 4px 14px rgba(0,0,0,.35)}
+html.fpsmode .vehbtn{top:76px}
 html.fpsmode .vehbtn svg,html.fpsmode .chatbtn svg{filter:none;width:24px;height:24px}
-html.fpsmode .chatpop{bottom:140px}
+html.fpsmode .chatpop{bottom:16px}
 .fps-pad button{width:46px!important;height:46px!important}
 .fps-cmp{border:1px solid #2de2ff;box-shadow:0 0 8px rgba(45,226,255,.6);color:#bff9ff!important;text-shadow:0 0 6px #2de2ff;background:rgba(10,2,24,.7)!important}
 .fps-pad button{width:48px;height:48px;border-radius:0;border:2px solid #ff3cac;outline:2px solid #000;background:linear-gradient(180deg,rgba(40,6,60,.72),rgba(14,2,30,.78));color:#7af8ff;display:grid;place-items:center;padding:0;cursor:pointer;
@@ -4637,7 +4637,9 @@ function fpsSprite(t){ if(t.type==='mk') return mkSprite(t.mk); const sk=dgSprK(
   return null; }
 function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam.y), here=dgAt(ci,cj)||dgInfo(1), W=cv.width, H=cv.height; if(!W||!H) return;
   const x=cv.getContext('2d'); if(!FPS.img||FPS.img.width!==W||FPS.img.height!==H){ FPS.img=x.createImageData(W,H); FPS.buf=new Uint32Array(FPS.img.data.buffer); FPS.dz=new Float32Array(W*H); }
-  const B=FPS.buf, DZ=FPS.dz, dx=Math.sin(cam.a), dy=-Math.cos(cam.a), K=.72, px=Math.cos(cam.a)*K, py=Math.sin(cam.a)*K;
+  /* pas d'image étirée : même échelle en largeur et en hauteur ; champ de vision ajusté au format */
+  const K=FPS.K=Math.max(.42,Math.min(.8,.72*(W/H)/1.58)), PS=W/(2*K);
+  const B=FPS.buf, DZ=FPS.dz, dx=Math.sin(cam.a), dy=-Math.cos(cam.a), px=Math.cos(cam.a)*K, py=Math.sin(cam.a)*K;
   DZ.fill(Infinity);
   const eye=(cam.z!=null?cam.z:dgH(ci,cj))+.5;
   const dl=dgDay(dgHour()), night=dl<.35, out=here.sky, amb=out?(.14+.58*dl)*((S.weather||'')==='storm'?.7:(S.weather||'')==='rain'?.82:1):(night?.07:.2), torch=out?1-.6*dl:(night?1.15:1.3);
@@ -4660,21 +4662,21 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
     if(rdy<0){ sty=-1; sdy=(cam.y-my)*ddy; } else { sty=1; sdy=(my+1-cam.y)*ddy; }
     const put=(y,c,d)=>{ const i=y*W+xx; if(DZ[i]!==Infinity) return; B[i]=c; DZ[i]=d; };
     /* face verticale (mur, marche, plafond qui descend, façade) entre les hauteurs z0 et z1 à la distance d */
-    const face=(z0,z1,d,tex,N)=>{ const yT=Math.max(0,Math.ceil(h2+(eye-z1)*H/d)), yB=Math.min(H-1,Math.floor(h2+(eye-z0)*H/d)); if(yB<yT) return;
+    const face=(z0,z1,d,tex,N)=>{ const yT=Math.max(0,Math.ceil(h2+(eye-z1)*PS/d)), yB=Math.min(H-1,Math.floor(h2+(eye-z0)*PS/d)); if(yB<yT) return;
       let wx=side===0?cam.y+d*rdy:cam.x+d*rdx; wx-=Math.floor(wx); let tx=(wx*N)|0; if(side===0&&rdx>0||side===1&&rdy<0) tx=N-tx-1;
       const f=lit(d)*(side?.78:1)*vis(cam.x+d*rdx,cam.y+d*rdy);
-      for(let y=yT;y<=yB;y++){ const z=eye-(y+.5-h2)*d/H; const ty=((1-(z-Math.floor(z)))*N|0)&(N-1); put(y,sh(tex[ty*N+tx],f),d); } };
+      for(let y=yT;y<=yB;y++){ const z=eye-(y+.5-h2)*d/PS; const ty=((1-(z-Math.floor(z)))*N|0)&(N-1); put(y,sh(tex[ty*N+tx],f),d); } };
     let cur=here, fh=dgH(mx,my), TT=fpsTextures(cur.th), virt=false, d0=.01;
     if(cam.z!=null) fh=Math.min(fh,cam.z);   /* en pleine montée : le sol de départ suit la caméra */
     while(n++<160){ const d1=Math.min(sdx,sdy), N=TT.N;
       /* sol de la case */
-      if(eye>fh){ const yA=Math.max(0,Math.ceil(h2+(eye-fh)*H/d1)), yB=Math.min(H-1,Math.floor(h2+(eye-fh)*H/d0)), mm=!virt&&dgMk(mx,my), FT=mm&&mm.k!=='up'?mkTex()[mm.k]:TT.floor;
-        for(let y=yA;y<=yB;y++){ const rd=(eye-fh)*H/(y+.5-h2); let wx=cam.x+rd*rdx, wy=cam.y+rd*rdy; const fx=wx-Math.floor(wx), fy=wy-Math.floor(wy), tx=(fx*N)&(N-1), ty=(fy*N)&(N-1);
+      if(eye>fh){ const yA=Math.max(0,Math.ceil(h2+(eye-fh)*PS/d1)), yB=Math.min(H-1,Math.floor(h2+(eye-fh)*PS/d0)), mm=!virt&&dgMk(mx,my), FT=mm&&mm.k!=='up'?mkTex()[mm.k]:TT.floor;
+        for(let y=yA;y<=yB;y++){ const rd=(eye-fh)*PS/(y+.5-h2); let wx=cam.x+rd*rdx, wy=cam.y+rd*rdy; const fx=wx-Math.floor(wx), fy=wy-Math.floor(wy), tx=(fx*N)&(N-1), ty=(fy*N)&(N-1);
           if(REACH&&!virt){ const a=inR(mx,my); if((fx<RE&&a!==inR(mx-1,my))||(fx>1-RE&&a!==inR(mx+1,my))||(fy<RE&&a!==inR(mx,my-1))||(fy>1-RE&&a!==inR(mx,my+1))){ put(y,RC,rd); continue; } }
           put(y,sh(FT[ty*N+tx],(HUB?hubLit(wx,wy):mm&&mm.k==='tp'?1:lit(rd))*vis(wx,wy)),rd); } }
       /* plafond de la case (ou ciel) */
-      if(!cur.sky){ const ch=fh+1; if(ch>eye){ const yA=Math.max(0,Math.ceil(h2+(eye-ch)*H/d0)), yB=Math.min(H-1,Math.floor(h2+(eye-ch)*H/d1));
-        for(let y=yA;y<=yB;y++){ const rd=(eye-ch)*H/(y+.5-h2); let wx=cam.x+rd*rdx, wy=cam.y+rd*rdy; const tx=((wx-Math.floor(wx))*N)&(N-1), ty=((wy-Math.floor(wy))*N)&(N-1); put(y,sh(TT.ceil[ty*N+tx],lit(rd)*.85*vis(wx,wy)),rd); } } }
+      if(!cur.sky){ const ch=fh+1; if(ch>eye){ const yA=Math.max(0,Math.ceil(h2+(eye-ch)*PS/d0)), yB=Math.min(H-1,Math.floor(h2+(eye-ch)*PS/d1));
+        for(let y=yA;y<=yB;y++){ const rd=(eye-ch)*PS/(y+.5-h2); let wx=cam.x+rd*rdx, wy=cam.y+rd*rdy; const tx=((wx-Math.floor(wx))*N)&(N-1), ty=((wy-Math.floor(wy))*N)&(N-1); put(y,sh(TT.ceil[ty*N+tx],lit(rd)*.85*vis(wx,wy)),rd); } } }
       else anySky=true;
       pmx=mx; pmy=my; if(sdx<sdy){ sdx+=ddx; mx+=stx; side=0; } else { sdy+=ddy; my+=sty; side=1; } d0=d1;
       let nf=dgAt(mx,my), wt=null; const door=nf&&!virt?dgDoor(pmx,pmy,mx,my):null;
@@ -4703,8 +4705,8 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
   const inv=1/(px*dy-dx*py);
   L.forEach(o=>{ const tX=inv*(dy*o.sx-dx*o.sy), tY=inv*(-py*o.sx+px*o.sy); if(tY<=.15) return; const img=fpsSprite(o.t); if(!img) return;
     if(!img._px) img._px=new Uint32Array(img.getContext('2d').getImageData(0,0,img.width,img.height).data.buffer.slice(0));
-    const it=dgItem(o.t), sk=img._k, zb=dgH(Math.floor(o.t.x/CELL),Math.floor(o.t.y/CELL)), scrX=(W/2)*(1+tX/tY), hh=Math.abs(H/tY)*(sk?(img._hf||SPR_H[sk]):it?.34:.62)*(!it&&!sk&&o.t.s?Math.min(1.6,Math.max(.6,o.t.s)):1), ww=hh*img.width/img.height;
-    const bot=h2+(eye-zb)*H/tY, top=bot-hh, x0=Math.round(scrX-ww/2), x1=Math.round(scrX+ww/2);
+    const it=dgItem(o.t), sk=img._k, zb=dgH(Math.floor(o.t.x/CELL),Math.floor(o.t.y/CELL)), scrX=(W/2)*(1+tX/tY), hh=Math.abs(PS/tY)*(sk?(img._hf||SPR_H[sk]):it?.34:.62)*(!it&&!sk&&o.t.s?Math.min(1.6,Math.max(.6,o.t.s)):1), ww=hh*img.width/img.height;
+    const bot=h2+(eye-zb)*PS/tY, top=bot-hh, x0=Math.round(scrX-ww/2), x1=Math.round(scrX+ww/2);
     const sv=vis(o.t.x/CELL,o.t.y/CELL); if(sv<.05) return;
     const f=sv*(o.t.mk==='tp'||o.t.mk==='lamp'?1:HUB?Math.max(.25,hubLit(o.t.x/CELL,o.t.y/CELL)):Math.max(.35,lit(o.r))), fade=o.lim===Infinity?1:Math.min(1,(o.lim-o.r)/1.5+.15), IW=img.width, IH=img.height, PX=img._px;
     const cxp=Math.max(0,Math.min(W-1,Math.round(scrX))), cyp=Math.max(0,Math.min(H-1,Math.round(top+hh*.5)));
@@ -4745,7 +4747,7 @@ function fpsWorldAt(cx,cy){ if(!FPS.el||FPS.el.hidden||!FPS.lastCam||!FPS.dz) re
   for(const b of FPS.el.querySelectorAll('.fps-pad,.fps-x,.fps-cmp')){ const q=b.getBoundingClientRect(); if(cx>=q.left&&cx<=q.right&&cy>=q.top&&cy<=q.bottom) return null; }
   const u=(cx-r.left)/r.width, v=(cy-r.top)/r.height, h=(FPS.hits||[]).filter(o=>u>=o.x0&&u<=o.x1&&v>=o.y0&&v<=o.y1).sort((a,b)=>a.r-b.r)[0];
   if(h) return [h.t.x,h.t.y];
-  const cam=FPS.lastCam, W=cv.width, H=cv.height, col=Math.max(0,Math.min(W-1,Math.floor(u*W))), row=Math.max(0,Math.min(H-1,Math.floor(v*H))), cX=2*col/W-1, K=.72;
+  const cam=FPS.lastCam, W=cv.width, H=cv.height, col=Math.max(0,Math.min(W-1,Math.floor(u*W))), row=Math.max(0,Math.min(H-1,Math.floor(v*H))), cX=2*col/W-1, K=FPS.K||.72;
   const rdx=Math.sin(cam.a)+Math.cos(cam.a)*K*cX, rdy=-Math.cos(cam.a)+Math.sin(cam.a)*K*cX, dz=FPS.dz[row*W+col]; if(!isFinite(dz)||dz>40) return null; const d=Math.max(.05,dz-.05);
   return [(cam.x+d*rdx)*CELL,(cam.y+d*rdy)*CELL]; }
 /* ouvrir / fermer la porte d'en face */
@@ -4772,7 +4774,7 @@ function fpsHands(){ if(!FPS.el) return; const im=FPS.el.querySelector('.fps-han
 function fpsStep(turn){ const im=FPS.el&&FPS.el.querySelector('.fps-hands'); if(im&&!im.hidden&&im.animate) im.animate(turn?[{transform:'translateX(-50%)'},{transform:'translateX(-50%) translateX(3%) rotate(.6deg)'},{transform:'translateX(-50%)'}]:[{transform:'translateX(-50%)'},{transform:'translateX(-50%) translateY(4%)'},{transform:'translateX(-50%)'}],{duration:turn?190:230,easing:'ease-in-out'}); }
 function fpsBump(){ const el=FPS.el&&FPS.el.querySelector('canvas'); if(el&&el.animate) el.animate([{transform:'translateY(0)'},{transform:'translateY(4px)'},{transform:'translateY(0)'}],{duration:160}); }
 function fpsBuild(host,mode){ let el=host.querySelector('.fps'); if(!el){ el=document.createElement('div'); el.className='fps';
-    el.innerHTML=`<canvas></canvas><img class="fps-hands" alt="" hidden><div class="fps-hud"></div><div class="fps-cmp">Nord</div><div class="fps-pad">${['tl','fw','tr','sl','bk','sr'].map(k=>`<button type="button" data-fk="${k}" title="${{tl:'Tourner à gauche (Q)',fw:'Avancer (Z)',tr:'Tourner à droite (D)',sl:'Pas à gauche (A)',bk:'Reculer (S)',sr:'Pas à droite (E)'}[k]}">${dgI(k)}</button>`).join('')}</div>${mode==='prev'?'<button type="button" class="fps-x" title="Fermer l\'aperçu">'+IB('x',2)+'</button>':''}`;
+    el.innerHTML=`<canvas></canvas><img class="fps-hands" alt="" hidden><div class="fps-cmp">Nord</div><div class="fps-pad">${['tl','fw','tr','sl','bk','sr'].map(k=>`<button type="button" data-fk="${k}" title="${{tl:'Tourner à gauche (Q)',fw:'Avancer (Z)',tr:'Tourner à droite (D)',sl:'Pas à gauche (A)',bk:'Reculer (S)',sr:'Pas à droite (E)'}[k]}">${dgI(k)}</button>`).join('')}</div>${mode==='prev'?'<button type="button" class="fps-x" title="Fermer l\'aperçu">'+IB('x',2)+'</button>':''}`;
     host.appendChild(el);
     el.querySelectorAll('[data-fk]').forEach(b=>b.addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); fpsAct(b.dataset.fk); }));
     const cv=el.querySelector('canvas'); let sw=null;
