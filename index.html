@@ -2729,7 +2729,7 @@ input,textarea,select,[contenteditable],[contenteditable] *,.rg-txt,.rg-txt *,.n
 /* le second outil de création suit le type de la scène : Dessin en 2D, Donjon en 3D */
 #rb-draw{display:none!important}   /* la 2D est retirée : Dessin masqué */
 #cover{position:absolute;inset:0;z-index:40;overflow:hidden;background:#0b0d14;cursor:default}
-#cover .ci{position:absolute;inset:0;background:url(res/couverture.webp) 49% 47%/cover no-repeat;transform-origin:49% 50%;animation:cvKB 38s ease-in-out infinite alternate}
+#cover .ci{position:absolute;inset:0;background:url(res/couverture.webp) 50% 40%/cover no-repeat;transform-origin:50% 42%;animation:cvKB 38s ease-in-out infinite alternate}
 @keyframes cvKB{from{transform:scale(1)}to{transform:scale(1.06) translateY(-.8%)}}
 #cover .dot{position:absolute;left:var(--dx,47%);top:var(--dy,41.6%);width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:radial-gradient(circle,rgba(255,40,40,.85),rgba(255,40,40,0) 70%);animation:cvDot 2.6s ease-in-out infinite}
 @keyframes cvDot{0%,100%{opacity:.25;transform:scale(.8)}50%{opacity:1;transform:scale(1.5)}}
@@ -7091,7 +7091,7 @@ function coverPaint(){ if(isPlayer) return; const none=S.scene<0||!S.scenes.leng
     for(let i=0;i<26;i++){ const z=1+Math.random()*2.5; h+=`<i class="ff" style="left:${4+Math.random()*92}%;top:${55+Math.random()*42}%;width:${z}px;height:${z}px;--d:${(7+Math.random()*9).toFixed(1)}s;--o:${(Math.random()*-16).toFixed(1)}s;--x:${(Math.random()*60-30).toFixed(0)}px"></i>`; }
     ci.insertAdjacentHTML('beforeend',h); tip.onclick=newSceneDialog; addEventListener('resize',placeTip); }
   placeTip(); if(tool) setTool(tool); }
-function placeTip(){ const c=$('cover'); if(c&&!c.hidden){ const r=c.getBoundingClientRect(), k=Math.max(r.width/821,r.height/1162), ox=(r.width-821*k)*.49, oy=(r.height-1162*k)*.47; c.style.setProperty('--dx',(ox+386*k)+'px'); c.style.setProperty('--dy',(oy+483*k)+'px'); }
+function placeTip(){ const c=$('cover'); if(c&&!c.hidden){ const r=c.getBoundingClientRect(), k=Math.max(r.width/2576,r.height/1093), ox=(r.width-2576*k)*.5, oy=(r.height-1093*k)*.4; c.style.setProperty('--dx',(ox+1262*k)+'px'); c.style.setProperty('--dy',(oy+455*k)+'px'); }
   const t=$('covertip'), b=$('b-scen'); if(!t||t.hidden||!b) return; const r=b.getBoundingClientRect(); t.style.left=Math.max(8,r.left+r.width/2-34)+'px'; t.style.top=(r.bottom+14)+'px'; }
 /* nouvelle scène : on passe directement aux outils de création (dessin en 2D, donjon en 3D) */
 function startCreation(){ closeLeft(); fitBoard(); if(sceneIs3D()){ DG.tool='carve'; openLeft('dgdrw'); if(tool!=='dgn') setTool('dgn'); } else openLeft('ldraw'); }
