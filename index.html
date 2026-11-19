@@ -2746,6 +2746,8 @@ html.noscene #rb-fond,html.noscene #rb-draw,html.noscene #rb-dgn,html.noscene #r
 html.inhub #rb-dgn,html.inhub #rb-fond,html.inhub #rb-jet,html.inhub #rb-item{opacity:.3;pointer-events:none}
 /* appli installée : déjà en plein écran, bouton inutile */
 @media (display-mode:standalone),(display-mode:fullscreen),(display-mode:minimal-ui){#b-full{display:none!important}}
+.scenenav .dexh{margin-left:10px}
+.scenenav .scnb{border:0;margin:0 2px;padding:4px 8px}
 .dexh{font:800 12px Quicksand,sans-serif!important;letter-spacing:.06em;padding:0 10px!important;border:1px solid var(--rule)!important;border-radius:9px;gap:5px;display:inline-flex;align-items:center;height:32px}.dexh i{font-style:normal;font-size:14px}.dexh[aria-pressed="true"]{background:var(--c-dex,#d9a400);border-color:var(--c-dex,#d9a400)!important;color:#fff}
 .dexlk{width:auto!important;padding:0 9px!important;gap:5px;display:inline-flex;align-items:center}.dexlk b{font:800 11px Quicksand,sans-serif;letter-spacing:.08em}.dexlk svg{width:16px;height:16px}
 .dexlk:not([aria-pressed="true"]) .shk{transform:translate(4px,-2px) rotate(18deg);transform-origin:16px 10px}.dexlk[aria-pressed="true"]{background:var(--c-dex,#d9a400);color:#fff;border-color:var(--c-dex,#d9a400)}
@@ -3545,15 +3547,15 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
   <div class="brand"><span class="dot"></span>ALDEBARAN<small>Maître du destin</small></div>
   <div class="scenenav">
     <button class="nb" type="button" id="sc-prev" title="Scène précédente"></button>
-    <span class="sc-num" id="sc-num"><span class="sc-ico" id="sc-ico"></span><b id="sc-title"></b></span>
-    <button class="nb" type="button" id="sc-next" title="Scène suivante"></button>
+    <span class="sc-num" id="sc-num" hidden><span class="sc-ico" id="sc-ico"></span><b id="sc-title"></b></span>
     <button class="scnb" type="button" id="b-scen" data-left="scenario" title="Scénario" aria-pressed="false"><span id="scn-ico"></span></button>
+    <button class="nb" type="button" id="sc-next" title="Scène suivante"></button>
+    <button class="tool dexh" type="button" id="b-dex" title="Déplacements : libres, ou limités à DEX × 2 cases par tour" aria-pressed="false"></button>
 
   </div>
   <div class="spacer"></div>
   <div class="tools">
     <span class="undo2" id="undo2"><button class="tool icon" type="button" id="b-undo" title="Annuler (Ctrl+Z)" disabled></button><button class="tool icon" type="button" id="b-redo" title="Rétablir (Ctrl+Y)" disabled></button></span><span class="sep" id="undosep"></span>
-    <button class="tool dexh" type="button" id="b-dex" title="Déplacements : libres, ou limités à DEX × 2 cases par tour" aria-pressed="false"></button>
     <button class="tool icon netb" type="button" id="b-net"><i class="nd"></i><b id="net-n"></b></button>
     <button class="tool" type="button" id="b-player" title="Ouvrir la vue joueur (second écran)"></button>
     <button class="tool icon" type="button" id="b-full" title="Plein écran"></button>
@@ -7083,18 +7085,14 @@ function loadScene(i){
 function gotoScene(i){ if(S.hub) hubOff(); setTimeout(histInit,400); if(i<0||i>=S.scenes.length||i===S.scene) return; snapshot(); loadScene(i); }
 function newSceneDialog(){
   const t3=true;   /* toutes les scènes sont en 3D */
-  let hub=false;
+  /* toujours une scène vierge : un donjon à creuser, ou un hub */
   openDialog(`<h3>Nouvelle scène</h3>
-    <div class="wxrow scseg" style="margin:4px 0 14px;--tc:var(--c-per)"><button type="button" class="wxb on" id="ns-dg">${dgI('dgn',1.7)}<span>Donjon</span></button><button type="button" class="wxb" id="ns-hub"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v6"/><path d="M8.5 8h7l3.5 5H5z"/><path d="M9 16.5l-1.5 3M15 16.5l1.5 3M12 17v3"/></svg><span>Hub</span></button></div>
     <div class="choice">
-    ${S.scenes.length?`<button type="button" class="dark" id="ns-cap">${IB('camera')}<b>Copier la scène précédente</b><span>Fond, tracés, donjon, monstres, décors et lumières sont repris.</span></button>`:''}
-    <button type="button" id="ns-blank">${IB('page')}<b>Repartir de zéro</b><span>Un plateau vide ; les jetons des joueurs retournent dans leurs onglets.</span></button></div>
+    <button type="button" id="ns-dg">${dgI('dgn',1.7)}<b>Donjon</b><span>Un bloc de roche à creuser ; les jetons des joueurs retournent dans leurs onglets.</span></button>
+    <button type="button" id="ns-hub"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v6"/><path d="M8.5 8h7l3.5 5H5z"/><path d="M9 16.5l-1.5 3M15 16.5l1.5 3M12 17v3"/></svg><b>Hub</b><span>Salle de béton 5 × 5 sous une lampe ; les aventuriers y sont placés en cercle.</span></button></div>
     <div class="actions"><button class="btn ghost" type="button" data-close>Annuler</button></div>`,'var(--c-per)');
-  const ty=v=>{ hub=v; $('ns-dg').classList.toggle('on',!v); $('ns-hub').classList.toggle('on',v); if($('ns-cap')) $('ns-cap').hidden=v;
-    $('ns-blank').querySelector('b').textContent=v?'Créer le hub':'Repartir de zéro'; $('ns-blank').querySelector('span').textContent=v?'Salle de béton 5 × 5 sous une lampe ; les aventuriers y sont placés en cercle.':'Un plateau vide ; les jetons des joueurs retournent dans leurs onglets.'; };
-  $('ns-dg').onclick=()=>ty(false); $('ns-hub').onclick=()=>ty(true);
-  if($('ns-cap')) $('ns-cap').onclick=()=>{ dlg.close(); snapshot(); S.tokens.forEach(t=>{ t.scene=true; }); S.scenes.push({id:nid(),title:`Scène ${S.scenes.length+1}`,content:''}); S.scene=S.scenes.length-1; if(t3!==sceneIs3D()) setScene3D(t3); snapshot(); renderScenes(); markDirty(); startCreation(); };
-  $('ns-blank').onclick=()=>{ dlg.close(); if(hub){ hubScene(); return; } snapshot(); S.scenes.push({id:nid(),title:`Scène ${S.scenes.length+1}`,content:'',bg:'',bgW:0,bgH:0,geo:null,light:true,ground:GROUND0(),drawings:[],tokens:[],order:[],dg:t3?{on:true,th:'pierre',c:{},d:{}}:null}); loadScene(S.scenes.length-1); startCreation(); };
+  $('ns-hub').onclick=()=>{ dlg.close(); hubScene(); };
+  $('ns-dg').onclick=()=>{ dlg.close(); snapshot(); S.scenes.push({id:nid(),title:`Scène ${S.scenes.length+1}`,content:'',bg:'',bgW:0,bgH:0,geo:null,light:true,ground:GROUND0(),drawings:[],tokens:[],order:[],dg:{on:true,th:'pierre',c:{},d:{}}}); loadScene(S.scenes.length-1); startCreation(); };
 }
 function focusScene(){ setTimeout(()=>{ const i=document.querySelector('.scn.on .stt'); if(i){ i.focus({preventScroll:true}); i.select(); i.scrollLeft=0; $('scenes').scrollLeft=0; i.scrollIntoView({block:'nearest',inline:'nearest'}); $('scenes').scrollLeft=0; } },340); }
 function deleteScene(){ if(S.scene<0) return; const sc=S.scenes[S.scene];
