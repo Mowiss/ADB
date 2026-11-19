@@ -2760,13 +2760,15 @@ html.inhub #rb-dgn,html.inhub #rb-fond,html.inhub #rb-jet,html.inhub #rb-item{op
 .theatre .th-acts{position:absolute;inset:0}
 .theatre .act{position:absolute;height:auto;transform:translateX(-50%) scale(var(--sc));transform-origin:bottom center;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;animation:thIn .9s ease-out both}
 @keyframes thIn{from{opacity:0;transform:translateX(-50%) scale(var(--sc)) translateY(10px)}}
-.theatre .act.sp{height:40%}.theatre .act .fig{height:100%;display:flex;align-items:flex-end;justify-content:center;position:relative;z-index:2}
+.theatre .act.sp{height:46%}.theatre .act .fig{height:100%;display:flex;align-items:flex-end;justify-content:center;position:relative;z-index:2}
 .theatre .act .spr{height:100%;width:auto;image-rendering:pixelated;filter:drop-shadow(0 6px 6px rgba(0,0,0,.6))}
 .theatre .act.r .spr{transform:scaleX(-1)}
 .theatre .act .pst{width:min(13vh,120px);aspect-ratio:1;border-radius:50%;overflow:hidden;background:#fff;border:4px solid var(--danger);display:grid;place-items:center;box-shadow:0 8px 20px rgba(0,0,0,.6);margin-bottom:6%}.theatre .act.pl .pst{border-color:var(--c-res,#2b6cb0)}
 .theatre .act .pst img{width:100%;height:100%;object-fit:cover}.theatre .act .pst.ico{color:var(--danger);font-size:48px}.theatre .act .pst.ico svg{width:55%;height:55%}
 .theatre .act .nm{position:relative;z-index:2;margin-top:4px;font:700 13px Quicksand,sans-serif;background:rgba(255,255,255,.92);color:#222;padding:2px 9px;border-radius:10px;white-space:nowrap}
 .theatre .act .hpb{position:relative;z-index:2;width:70px;height:6px;border-radius:4px;background:rgba(0,0,0,.6);margin-top:4px;overflow:hidden}.theatre .act .hpb i{display:block;height:100%;background:#3fbf5f}.theatre .act.r .hpb i{background:#e04b3a}
+.theatre .act .shd{position:absolute;bottom:-3%;left:50%;width:120%;height:9%;transform:translateX(-50%);border-radius:50%;background:radial-gradient(ellipse,rgba(0,0,0,.75) 0%,rgba(0,0,0,.45) 45%,rgba(0,0,0,0) 72%);z-index:1;pointer-events:none}
+.theatre .act .nm,.theatre .act .hpb{position:absolute!important;top:100%;bottom:auto;margin-top:6px}.theatre .act .hpb{margin-top:30px}
 .theatre .act .spot{position:absolute;bottom:-4%;left:50%;width:240%;height:160%;transform:translateX(-50%);background:linear-gradient(180deg,rgba(255,244,214,0) 0%,rgba(255,244,214,.16) 55%,rgba(255,244,214,.3) 100%);clip-path:polygon(42% 0,58% 0,100% 100%,0 100%);opacity:0;transition:opacity 1.2s;pointer-events:none;z-index:1}
 .theatre .act .spot::after{content:"";position:absolute;left:15%;right:15%;bottom:0;height:12%;border-radius:50%;background:radial-gradient(ellipse,rgba(255,240,200,.55),rgba(255,240,200,0) 70%)}
 .theatre[data-phase=intro] .act.pl .spot{opacity:1}
@@ -4803,13 +4805,14 @@ function thRender(force){ const on=!!S.combat; let el=board.querySelector('.thea
   const sig=JSON.stringify([C.phase,C.deco,cur,P.map(t=>[t.id,t.hp,t.hpMax,t.name,t.race,t.sexe,t.img]),E.map(t=>[t.id,t.hp,t.hpMax,t.name,t.img,t.ico,t.hidden])]);
   if(!force&&sig===thSig) return; thSig=sig; el.dataset.phase=C.phase;
   /* placement : deux rangs par camp, le rang du fond plus petit */
-  const lay=(L,side)=>L.map((t,k)=>{ const n=L.length, back=n>4&&k%2===1, per=Math.ceil(n/(n>4?2:1)), idx=n>4?(k>>1):k, span=24, x0=side==='l'?16:60;
-      const x=x0+(per>1?idx*(span/(per-1)):span/2)+(back?span/(per*2||1)*.5:0); return {t,x:side==='l'?x:x,bot:back?26:9,sc:back?.8:1,side}; });
+  /* perspective : le premier de la file devant (en bas, grand), les suivants s'éloignent en diagonale vers le fond */
+  const lay=(L,side)=>L.map((t,k)=>{ const n=L.length, d=n>1?k/(n-1):0, x=14+(k%2?11:d*6), bot=13+d*26, sc=1-d*.4;
+      return {t,x:side==='l'?x:100-x,bot,sc,side}; });
   const A=[...lay(P,'l'),...lay(E,'r')].sort((a,b)=>b.bot-a.bot);
   el.querySelector('.th-acts').innerHTML=A.map(({t,x,bot,sc,side})=>{ const pk=t.type==='player'&&typeof persoKey==='function'&&persoKey(t), dead=t.hp!=null&&t.hp<=0, hp=t.hpMax?Math.max(0,Math.min(1,t.hp/t.hpMax)):1;
     const body=pk?`<img class="spr" src="res/persos/${pk}.png" alt="">`:t.img?`<span class="pst"><img src="${esc(t.img)}" alt=""></span>`:`<span class="pst ico">${t.emo?esc(t.emo):IB(IC[t.ico]?t.ico:(t.type==='player'?'user':'skull'))}</span>`;
     return `<div class="act ${side}${pk?' sp':''}${dead?' dead':''}${t.id===cur&&C.phase==='lit'?' cur':''}${t.type==='player'?' pl':''}" data-id="${t.id}" style="left:${x}%;bottom:${bot}%;--sc:${sc}">
-      <i class="spot"></i>${t.id===cur&&C.phase==='lit'?'<i class="finger">👇</i>':''}<div class="fig">${body}</div><div class="nm">${esc(t.name||'')}</div>${C.phase==='lit'?`<div class="hpb"><i style="width:${hp*100}%"></i></div>`:''}</div>`; }).join('');
+      <i class="spot"></i><i class="shd"></i>${t.id===cur&&C.phase==='lit'?'<i class="finger">👇</i>':''}<div class="fig">${body}</div><div class="nm">${esc(t.name||'')}</div>${C.phase==='lit'?`<div class="hpb"><i style="width:${hp*100}%"></i></div>`:''}</div>`; }).join('');
   el.querySelector('.th-ctl').innerHTML=isPlayer?'':C.phase==='intro'?`<button type="button" class="btn" data-th="light">💡 Allumer la scène</button>`:`<button type="button" class="btn" data-th="dark">Éteindre</button>`; }
 setInterval(()=>{ if(S.combat||board.querySelector('.theatre')) thRender(); },250);
 
