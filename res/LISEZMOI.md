@@ -4,6 +4,7 @@ Fichiers chargés par l'appli à la demande (pas codés dans index.html).
 
 - `mains/<race>.webp` : mains en vue 3D — humain (aussi pour elfe), troll, demon, trifide, droide.
 - `persos/<race>-<h|f>.png` : aventuriers vus en pied par les autres joueurs (h = homme, f = femme). Race absente : pastille.
+- `vehicules/facteur<n>.png` : véhicules vus en 3D selon leur facteur (pastille passagers/places ajoutée par l appli).
 - `sprites/<style>.png` : contenants et dépouille en vue 3D — coffre, caisse, tech, jarre, viande.
 - `themes/<thème>/` : textures du donjon 3D, thèmes `pierre`, `crypte`, `station`.
   Déposer `mur.png`, `sol.png`, `plafond.png`, `porte.png` (carrés, idéalement 64×64 ou 128×128).
