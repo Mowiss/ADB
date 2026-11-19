@@ -2743,8 +2743,10 @@ input,textarea,select,[contenteditable],[contenteditable] *,.rg-txt,.rg-txt *,.n
 @keyframes tipBob{0%,100%{transform:translateY(0)}50%{transform:translateY(5px)}}
 html.noscene #b-scen{box-shadow:0 0 0 3px var(--c-per,#8e5bd6);border-radius:10px}
 html.noscene #rb-fond,html.noscene #rb-draw,html.noscene #rb-dgn,html.noscene #rb-jet,html.noscene #rb-item{opacity:.3;pointer-events:none}
-.hubb{display:inline-flex;align-items:center;gap:6px}.hubb svg{width:17px;height:17px}.hubb[aria-pressed="true"]{background:#2b2a28;color:#ffe9b0;border-color:#2b2a28}
 html.inhub #rb-dgn,html.inhub #rb-fond,html.inhub #rb-jet,html.inhub #rb-item{opacity:.3;pointer-events:none}
+/* appli installée : déjà en plein écran, bouton inutile */
+@media (display-mode:standalone),(display-mode:fullscreen),(display-mode:minimal-ui){#b-full{display:none!important}}
+.dexh{font:800 12px Quicksand,sans-serif!important;letter-spacing:.06em;padding:0 10px!important;border:1px solid var(--rule)!important;border-radius:9px;gap:5px;display:inline-flex;align-items:center;height:32px}.dexh i{font-style:normal;font-size:14px}.dexh[aria-pressed="true"]{background:var(--c-dex,#d9a400);border-color:var(--c-dex,#d9a400)!important;color:#fff}
 .dexlk{width:auto!important;padding:0 9px!important;gap:5px;display:inline-flex;align-items:center}.dexlk b{font:800 11px Quicksand,sans-serif;letter-spacing:.08em}.dexlk svg{width:16px;height:16px}
 .dexlk:not([aria-pressed="true"]) .shk{transform:translate(4px,-2px) rotate(18deg);transform-origin:16px 10px}.dexlk[aria-pressed="true"]{background:var(--c-dex,#d9a400);color:#fff;border-color:var(--c-dex,#d9a400)}
 .fps-mv{position:absolute;top:12px;left:12px;font:800 12px Quicksand,sans-serif;letter-spacing:.06em;color:#fff;background:rgba(0,0,0,.55);padding:6px 11px;border-radius:16px;pointer-events:none}.fps-mv.zero{background:#c0392b}
@@ -2765,7 +2767,9 @@ html.inhub #rb-dgn,html.inhub #rb-fond,html.inhub #rb-jet,html.inhub #rb-item{op
 .fps-hands{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:min(max(100cqw,87cqh),103cqh);height:auto;max-width:none;image-rendering:pixelated;pointer-events:none;user-select:none}
 @container (max-aspect-ratio:1/1){ .fps-hands{width:135cqw} }
 .fps-cmp{position:absolute;top:12px;left:50%;transform:translateX(-50%);font:700 11px var(--f-body);letter-spacing:.3em;text-transform:uppercase;color:#fff;background:rgba(0,0,0,.55);padding:6px 10px 6px 14px;border-radius:20px;pointer-events:none}
-.fps-pad{position:absolute;left:14px;bottom:14px;display:grid;grid-template-columns:repeat(3,48px);gap:6px}
+.fps-pad{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);display:grid;grid-template-columns:repeat(3,46px);grid-template-rows:repeat(3,46px);gap:4px}
+.fps-pad [data-fk=tl]{grid-area:1/1}.fps-pad [data-fk=fw]{grid-area:1/2}.fps-pad [data-fk=tr]{grid-area:1/3}.fps-pad [data-fk=sl]{grid-area:2/1}.fps-pad [data-fk=sr]{grid-area:2/3}.fps-pad [data-fk=bk]{grid-area:3/2}
+.fps-pad button{width:46px!important;height:46px!important}
 .fps-pad button{width:48px;height:48px;border-radius:12px;border:1px solid rgba(255,255,255,.25);background:rgba(0,0,0,.5);color:#fff;display:grid;place-items:center;padding:0;cursor:pointer}
 .fps-pad button:active{background:rgba(255,255,255,.25)}
 .fps-pad svg{width:24px;height:24px}
@@ -3543,12 +3547,13 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
     <button class="nb" type="button" id="sc-prev" title="Scène précédente"></button>
     <span class="sc-num" id="sc-num"><span class="sc-ico" id="sc-ico"></span><b id="sc-title"></b></span>
     <button class="nb" type="button" id="sc-next" title="Scène suivante"></button>
-    <button class="scnb" type="button" id="b-scen" data-left="scenario" title="Scénario" aria-pressed="false"><span id="scn-ico"></span><span>scenario</span></button>
-    <button class="scnb hubb" type="button" id="b-hub" title="Hub : salle d'attente des aventuriers" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v6"/><path d="M8.5 8h7l3.5 5H5z"/><path d="M9 16.5l-1.5 3M15 16.5l1.5 3M12 17v3"/></svg><span>hub</span></button>
+    <button class="scnb" type="button" id="b-scen" data-left="scenario" title="Scénario" aria-pressed="false"><span id="scn-ico"></span></button>
+
   </div>
   <div class="spacer"></div>
   <div class="tools">
     <span class="undo2" id="undo2"><button class="tool icon" type="button" id="b-undo" title="Annuler (Ctrl+Z)" disabled></button><button class="tool icon" type="button" id="b-redo" title="Rétablir (Ctrl+Y)" disabled></button></span><span class="sep" id="undosep"></span>
+    <button class="tool dexh" type="button" id="b-dex" title="Déplacements : libres, ou limités à DEX × 2 cases par tour" aria-pressed="false"></button>
     <button class="tool icon netb" type="button" id="b-net"><i class="nd"></i><b id="net-n"></b></button>
     <button class="tool" type="button" id="b-player" title="Ouvrir la vue joueur (second écran)"></button>
     <button class="tool icon" type="button" id="b-full" title="Plein écran"></button>
@@ -3599,7 +3604,7 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
     <svg class="ttl" data-title><text x="0" y="16">INITIATIVE</text></svg>
     <button class="mini ico" type="button" id="b-shuffle" title="Mélanger l'ordre"></button>
     <button class="mini solid ico" type="button" id="b-next" title="Tour suivant (Espace)"></button>
-    <button class="mini ico dexlk" type="button" id="b-dex" title="DEX lock : chaque aventurier se déplace de DEX × 2 cases par tour" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path class="shk" d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg><b>DEX</b></button>
+
     <div class="tracker" id="tracker"></div>
   </div>
   <div class="bbx" id="bbx"><button class="bbt sab" type="button" id="bb-sab" title="Sabliers" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12M6 21h12M7 3c0 5 10 5 10 9s-10 4-10 9M17 3c0 5-10 5-10 9s10 4 10 9"/></svg><span>Sabliers</span><i class="bdg" id="bb-sabn" hidden></i></button><button class="bbt msg" type="button" id="bb-msg" title="Message aux joueurs" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3l9-4.5v14l-9-4.5H4z"/><path d="M7 14.5l1.4 4.6h2.4L9.6 15"/><path d="M19 9.5a3 3 0 0 1 0 5"/></svg><span>Message</span></button></div>
@@ -4284,6 +4289,11 @@ function dgArrive(t){ const [i,j]=dgCell(t.x,t.y), m=dgMk(i,j); if(!m||!m.to) re
 
 /* ---------- Hub : salle de béton 5 × 5 sous une lampe, où les aventuriers attendent et se voient ---------- */
 function hubDg(){ const c={}; for(let i=0;i<5;i++) for(let j=0;j<5;j++) c[i+','+j]='hub|i'; return {on:true,hub:true,th:'hub',c,d:{},m:{}}; }
+function hubScene(){ snapshot(); const pl=S.tokens.filter(t=>t.type==='player'&&!t.inveh).map(t=>clone(t)); const n=S.scenes.filter(x=>x.dg&&x.dg.hub).length;
+  S.scenes.push({id:nid(),title:n?`Hub ${n+1}`:'Hub',content:'',bg:'',bgW:0,bgH:0,geo:null,light:true,ground:GROUND0(),drawings:[],tokens:[],order:[],dg:hubDg()}); loadScene(S.scenes.length-1);
+  const spots=[[1,1],[3,1],[1,3],[3,3],[2,1],[1,2],[3,2],[2,3],[0,0],[4,0],[0,4],[4,4],[2,0],[0,2],[4,2],[2,4]];
+  pl.forEach((t,k)=>{ if(tok(t.id)) return; const [i,j]=spots[k%spots.length]; t.x=(i+.5)*CELL; t.y=(j+.5)*CELL; const dx=2-i, dy=2-j; t.dir=Math.abs(dx)>=Math.abs(dy)?(dx>0?1:3):(dy>0?2:0); t.scene=true; delete t.inveh; S.tokens.push(t); if(!S.order.includes(t.id)) S.order.push(t.id); });
+  closeLeft(); renderAllBoard(); renderTracker(); renderScenes(); centerOn(2.5*CELL,2.5*CELL,1.2); markDirty(); sync(); }
 function hubToggle(){ if(S.hub) hubOff(); else hubOn(); }
 function hubOn(){ if(S.hub) return; closeCard(); closeLeft(); if(tool) setTool(tool);
   S.hub={dg:S.dg?clone(S.dg):null,tokens:clone(S.tokens),order:S.order.slice(),hour:S.hour,weather:S.weather,turn:S.turn};
@@ -4292,7 +4302,7 @@ function hubOn(){ if(S.hub) return; closeCard(); closeLeft(); if(tool) setTool(t
   S.tokens=P; S.order=P.map(t=>t.id); S.turn=-1; S.dg=hubDg(); S.weather=''; hubPaint(); renderAllBoard(); renderTracker(); centerOn(2.5*CELL,2.5*CELL,1.2); toast('Hub ouvert'); markDirty(); sync(); }
 function hubOff(){ const H=S.hub; if(!H) return; S.hub=null; S.dg=H.dg; S.tokens=H.tokens; S.order=H.order; S.hour=H.hour; S.weather=H.weather; S.turn=H.turn??-1;
   hubPaint(); renderAllBoard(); renderTracker(); fitBoard(); toast('Retour à la scène'); markDirty(); sync(); }
-function hubPaint(){ const b=$('b-hub'); if(b) b.setAttribute('aria-pressed',S.hub?'true':'false'); document.documentElement.classList.toggle('inhub',!!S.hub); }
+function hubPaint(){ document.documentElement.classList.toggle('inhub',!!(S.hub||(S.dg&&S.dg.hub))); }
 
 /* ---------- volet du MJ ---------- */
 function renderDgPanel(){ const box=$('dg-body'); if(!box) return; const D=S.dg||{}, on=!!D.on, nC=Object.keys(D.c||{}).length;
@@ -4329,13 +4339,13 @@ function sceneIs3D(){ return true; }   /* la 2D est retirée : toutes les scène
 function dexMax(t){ const P=t.owner&&typeof PL!=='undefined'?PL.get(t.owner):null, d=+((P&&P.sheet&&P.sheet.stats&&P.sheet.stats.DEX)??(t.stats&&t.stats.DEX)??0); return Math.max(1,d*2); }
 function dexLeft(t){ return Math.max(0,dexMax(t)-(t.mvu||0)); }
 function dexLock(on){ S.dexLock=!!on; S.tokens.forEach(t=>{ if(t.type==='player') t.mvu=0; }); dexPaint(); toast(on?'DEX lock : DEX × 2 cases par tour':'Déplacement libre'); markDirty(); sync(); }
-function dexPaint(){ const b=$('b-dex'); if(b) b.setAttribute('aria-pressed',S.dexLock?'true':'false'); }
+function dexPaint(){ const b=$('b-dex'); if(!b) return; b.setAttribute('aria-pressed',S.dexLock?'true':'false'); b.innerHTML=S.dexLock?'<i>🔒</i>DEX':'<i>👟</i>DEX'; b.title=S.dexLock?'Déplacement limité : DEX × 2 cases par tour (cliquer pour libérer)':'Déplacement libre (cliquer pour limiter à DEX × 2 cases)'; }
 function setScene3D(on){ dgEnsure().on=!!on; if(on) S.tokens.forEach(t=>{ if(dgSnap(t)) moveTokenEl(t); });
   if(!on&&tool==='dgn') setTool('dgn'); if(on&&(tool==='map'||tool==='fog')) setTool(tool);
   const crOpen=$('ldraw').classList.contains('open')||$('dgdrw').classList.contains('open'); sceneMode();
   if(crOpen) openLeft(on?'dgdrw':'ldraw',true);
   drawDgLater(); renderAllBoard(); markDirty(); sync(); }
-function sceneMode(){ if(!isPlayer&&S.scene>=0&&!dgOn()) dgEnsure().on=true; document.documentElement.classList.toggle('sc3d',sceneIs3D()); if(sceneIs3D()&&$('ldraw').classList.contains('open')){ $('ldraw').classList.remove('open'); if(tool==='map') setTool('map'); } if(!sceneIs3D()&&$('dgdrw').classList.contains('open')){ $('dgdrw').classList.remove('open'); if(tool==='dgn') setTool('dgn'); } }
+function sceneMode(){ if(!isPlayer&&S.scene>=0&&!dgOn()) dgEnsure().on=true; hubPaint(); document.documentElement.classList.toggle('sc3d',sceneIs3D()); if(sceneIs3D()&&$('ldraw').classList.contains('open')){ $('ldraw').classList.remove('open'); if(tool==='map') setTool('map'); } if(!sceneIs3D()&&$('dgdrw').classList.contains('open')){ $('dgdrw').classList.remove('open'); if(tool==='dgn') setTool('dgn'); } }
 /* heure du jour : pilote le ciel 3D, la lumière et le brouillard de la carte 2D (remplace Jour / Nuit) */
 function setHour(h){ S.hour=((Math.round(h*4)/4)%24+24)%24; const was=S.light; S.light=dgDay(S.hour)>=.35; dgClockPaint(); fpsLater(); if(was!==S.light){ fondHold=true; try{ renderBoard(); renderTracker(); } finally{ fondHold=false; } } markDirty(); syncLater(); }
 function clockHTML(){ return `<div class="dgclock"><svg id="dg-clk" viewBox="0 0 120 120" aria-label="Heure du jour (glisser ou molette)"><defs><linearGradient id="dgclkg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9fd0f5"/><stop offset=".5" stop-color="#f6c58c"/><stop offset="1" stop-color="#1a2244"/></linearGradient></defs>
@@ -4514,6 +4524,10 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
   DZ.fill(Infinity);
   const eye=(cam.z!=null?cam.z:dgH(ci,cj))+.5;
   const dl=dgDay(dgHour()), night=dl<.35, out=here.sky, amb=out?(.14+.58*dl)*((S.weather||'')==='storm'?.7:(S.weather||'')==='rain'?.82:1):(night?.07:.2), torch=out?1-.6*dl:(night?1.15:1.3);
+  /* DEX lock : cases encore atteignables ce tour, bordées d'un trait au sol */
+  let REACH=null; { const me=FPS.mode==='play'&&S.dexLock&&S.tokens.find(t=>t.id===selfId); if(me&&me.mvl!=null){ const si=Math.floor(me.x/CELL), sj=Math.floor(me.y/CELL); REACH=new Set([si+','+sj]); let fr=[[si,sj]];
+    for(let st=0;st<me.mvl&&fr.length;st++){ const nx=[]; fr.forEach(([i,j])=>[[1,0],[-1,0],[0,1],[0,-1]].forEach(([u,v])=>{ const k=(i+u)+','+(j+v); if(!REACH.has(k)&&dgPass(i,j,i+u,j+v)){ REACH.add(k); nx.push([i+u,j+v]); } })); fr=nx; } } }
+  const RC=0xff38d6ff, RE=.045, inR=(i,j)=>REACH.has(i+','+j);
   const HUB=S.dg&&S.dg.hub, lit=d=>Math.min(1,amb+torch/(1+d*d*.09));
   const hubLit=(wx,wy)=>{ const dx=wx-2.5, dy=wy-2.5, d2=dx*dx+dy*dy; return Math.min(1.05,.03+1.15/(1+d2*.32)); };
   const sh=(c,f)=>{ const r=(c&255)*f, g=((c>>8)&255)*f, b=((c>>16)&255)*f; return 0xff000000|(b<<16)|(g<<8)|r; };
@@ -4533,7 +4547,9 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
     while(n++<160){ const d1=Math.min(sdx,sdy), N=TT.N;
       /* sol de la case */
       if(eye>fh){ const yA=Math.max(0,Math.ceil(h2+(eye-fh)*H/d1)), yB=Math.min(H-1,Math.floor(h2+(eye-fh)*H/d0)), mm=!virt&&dgMk(mx,my), FT=mm&&mm.k!=='up'?mkTex()[mm.k]:TT.floor;
-        for(let y=yA;y<=yB;y++){ const rd=(eye-fh)*H/(y+.5-h2); let wx=cam.x+rd*rdx, wy=cam.y+rd*rdy; const tx=((wx-Math.floor(wx))*N)&(N-1), ty=((wy-Math.floor(wy))*N)&(N-1); put(y,sh(FT[ty*N+tx],HUB?hubLit(wx,wy):mm&&mm.k==='tp'?1:lit(rd)),rd); } }
+        for(let y=yA;y<=yB;y++){ const rd=(eye-fh)*H/(y+.5-h2); let wx=cam.x+rd*rdx, wy=cam.y+rd*rdy; const fx=wx-Math.floor(wx), fy=wy-Math.floor(wy), tx=(fx*N)&(N-1), ty=(fy*N)&(N-1);
+          if(REACH&&!virt){ const a=inR(mx,my); if((fx<RE&&a!==inR(mx-1,my))||(fx>1-RE&&a!==inR(mx+1,my))||(fy<RE&&a!==inR(mx,my-1))||(fy>1-RE&&a!==inR(mx,my+1))){ put(y,RC,rd); continue; } }
+          put(y,sh(FT[ty*N+tx],HUB?hubLit(wx,wy):mm&&mm.k==='tp'?1:lit(rd)),rd); } }
       /* plafond de la case (ou ciel) */
       if(!cur.sky){ const ch=fh+1; if(ch>eye){ const yA=Math.max(0,Math.ceil(h2+(eye-ch)*H/d0)), yB=Math.min(H-1,Math.floor(h2+(eye-ch)*H/d1));
         for(let y=yA;y<=yB;y++){ const rd=(eye-ch)*H/(y+.5-h2); let wx=cam.x+rd*rdx, wy=cam.y+rd*rdy; const tx=((wx-Math.floor(wx))*N)&(N-1), ty=((wy-Math.floor(wy))*N)&(N-1); put(y,sh(TT.ceil[ty*N+tx],lit(rd)*.85),rd); } } }
@@ -4581,8 +4597,6 @@ function fpsDraw(){ if(!FPS.el||FPS.el.hidden||!FPS.cam) return; const cv=FPS.el
   let cam=FPS.cam; const A=FPS.anim; if(A){ const k=Math.min(1,(performance.now()-A.t0)/A.dur), e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
     cam={x:A.f.x+(A.to.x-A.f.x)*e,y:A.f.y+(A.to.y-A.f.y)*e,a:A.f.a+(A.to.a-A.f.a)*e,z:(A.f.z||0)+((A.to.z||0)-(A.f.z||0))*e}; if(k<1) fpsLater(); else { FPS.anim=null; FPS.cam=A.to; if(FPS.queue){ const q=FPS.queue; FPS.queue=null; fpsAct(q); } } }
   FPS.lastCam=cam; fpsRender(cv,cam,FPS.self); fpsWeather();
-  const mvb=FPS.el.querySelector('.fps-mv'), me=FPS.mode==='play'&&S.tokens.find(t=>t.id===FPS.self);
-  if(mvb){ const on=!!(S.dexLock&&me&&me.mvl!=null); mvb.hidden=!on; if(on){ mvb.textContent=`Déplacement : ${me.mvl} case${me.mvl>1?'s':''}`; mvb.classList.toggle('zero',me.mvl<=0); } }
   const cp=FPS.el.querySelector('.fps-cmp'); if(cp){ const d=(((Math.round(FPS.cam.a/(Math.PI/2))%4)+4)%4); cp.textContent=['Nord','Est','Sud','Ouest'][d]; } }
 /* déplacements : avancer, reculer, pas de côté, quart de tour */
 function fpsAct(k){ if(!FPS.cam) return; if(FPS.anim){ FPS.queue=k; return; } const c=FPS.cam, d=(((Math.round(c.a/(Math.PI/2))%4)+4)%4), V4=[[0,-1],[1,0],[0,1],[-1,0]];
@@ -4632,7 +4646,7 @@ function fpsHands(){ if(!FPS.el) return; const im=FPS.el.querySelector('.fps-han
 function fpsStep(turn){ const im=FPS.el&&FPS.el.querySelector('.fps-hands'); if(im&&!im.hidden&&im.animate) im.animate(turn?[{transform:'translateX(-50%)'},{transform:'translateX(-50%) translateX(3%) rotate(.6deg)'},{transform:'translateX(-50%)'}]:[{transform:'translateX(-50%)'},{transform:'translateX(-50%) translateY(4%)'},{transform:'translateX(-50%)'}],{duration:turn?190:230,easing:'ease-in-out'}); }
 function fpsBump(){ const el=FPS.el&&FPS.el.querySelector('canvas'); if(el&&el.animate) el.animate([{transform:'translateY(0)'},{transform:'translateY(4px)'},{transform:'translateY(0)'}],{duration:160}); }
 function fpsBuild(host,mode){ let el=host.querySelector('.fps'); if(!el){ el=document.createElement('div'); el.className='fps';
-    el.innerHTML=`<canvas></canvas><img class="fps-hands" alt="" hidden><div class="fps-cmp">Nord</div><div class="fps-mv" hidden></div><div class="fps-pad">${['tl','fw','tr','sl','bk','sr'].map(k=>`<button type="button" data-fk="${k}" title="${{tl:'Tourner à gauche (Q)',fw:'Avancer (Z)',tr:'Tourner à droite (D)',sl:'Pas à gauche (A)',bk:'Reculer (S)',sr:'Pas à droite (E)'}[k]}">${dgI(k)}</button>`).join('')}</div>${mode==='prev'?'<button type="button" class="fps-x" title="Fermer l\'aperçu">'+IB('x',2)+'</button>':''}`;
+    el.innerHTML=`<canvas></canvas><img class="fps-hands" alt="" hidden><div class="fps-cmp">Nord</div><div class="fps-pad">${['tl','fw','tr','sl','sr','bk'].map(k=>`<button type="button" data-fk="${k}" title="${{tl:'Tourner à gauche (Q)',fw:'Avancer (Z)',tr:'Tourner à droite (D)',sl:'Pas à gauche (A)',bk:'Reculer (S)',sr:'Pas à droite (E)'}[k]}">${dgI(k)}</button>`).join('')}</div>${mode==='prev'?'<button type="button" class="fps-x" title="Fermer l\'aperçu">'+IB('x',2)+'</button>':''}`;
     host.appendChild(el);
     el.querySelectorAll('[data-fk]').forEach(b=>b.addEventListener('pointerdown',e=>{ e.preventDefault(); fpsAct(b.dataset.fk); }));
     const cv=el.querySelector('canvas'); let sw=null;
@@ -7069,13 +7083,18 @@ function loadScene(i){
 function gotoScene(i){ if(S.hub) hubOff(); setTimeout(histInit,400); if(i<0||i>=S.scenes.length||i===S.scene) return; snapshot(); loadScene(i); }
 function newSceneDialog(){
   const t3=true;   /* toutes les scènes sont en 3D */
+  let hub=false;
   openDialog(`<h3>Nouvelle scène</h3>
+    <div class="wxrow scseg" style="margin:4px 0 14px;--tc:var(--c-per)"><button type="button" class="wxb on" id="ns-dg">${dgI('dgn',1.7)}<span>Donjon</span></button><button type="button" class="wxb" id="ns-hub"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v6"/><path d="M8.5 8h7l3.5 5H5z"/><path d="M9 16.5l-1.5 3M15 16.5l1.5 3M12 17v3"/></svg><span>Hub</span></button></div>
     <div class="choice">
     ${S.scenes.length?`<button type="button" class="dark" id="ns-cap">${IB('camera')}<b>Copier la scène précédente</b><span>Fond, tracés, donjon, monstres, décors et lumières sont repris.</span></button>`:''}
     <button type="button" id="ns-blank">${IB('page')}<b>Repartir de zéro</b><span>Un plateau vide ; les jetons des joueurs retournent dans leurs onglets.</span></button></div>
     <div class="actions"><button class="btn ghost" type="button" data-close>Annuler</button></div>`,'var(--c-per)');
+  const ty=v=>{ hub=v; $('ns-dg').classList.toggle('on',!v); $('ns-hub').classList.toggle('on',v); if($('ns-cap')) $('ns-cap').hidden=v;
+    $('ns-blank').querySelector('b').textContent=v?'Créer le hub':'Repartir de zéro'; $('ns-blank').querySelector('span').textContent=v?'Salle de béton 5 × 5 sous une lampe ; les aventuriers y sont placés en cercle.':'Un plateau vide ; les jetons des joueurs retournent dans leurs onglets.'; };
+  $('ns-dg').onclick=()=>ty(false); $('ns-hub').onclick=()=>ty(true);
   if($('ns-cap')) $('ns-cap').onclick=()=>{ dlg.close(); snapshot(); S.tokens.forEach(t=>{ t.scene=true; }); S.scenes.push({id:nid(),title:`Scène ${S.scenes.length+1}`,content:''}); S.scene=S.scenes.length-1; if(t3!==sceneIs3D()) setScene3D(t3); snapshot(); renderScenes(); markDirty(); startCreation(); };
-  $('ns-blank').onclick=()=>{ dlg.close(); snapshot(); S.scenes.push({id:nid(),title:`Scène ${S.scenes.length+1}`,content:'',bg:'',bgW:0,bgH:0,geo:null,light:true,ground:GROUND0(),drawings:[],tokens:[],order:[],dg:t3?{on:true,th:'pierre',c:{},d:{}}:null}); loadScene(S.scenes.length-1); startCreation(); };
+  $('ns-blank').onclick=()=>{ dlg.close(); if(hub){ hubScene(); return; } snapshot(); S.scenes.push({id:nid(),title:`Scène ${S.scenes.length+1}`,content:'',bg:'',bgW:0,bgH:0,geo:null,light:true,ground:GROUND0(),drawings:[],tokens:[],order:[],dg:t3?{on:true,th:'pierre',c:{},d:{}}:null}); loadScene(S.scenes.length-1); startCreation(); };
 }
 function focusScene(){ setTimeout(()=>{ const i=document.querySelector('.scn.on .stt'); if(i){ i.focus({preventScroll:true}); i.select(); i.scrollLeft=0; $('scenes').scrollLeft=0; i.scrollIntoView({block:'nearest',inline:'nearest'}); $('scenes').scrollLeft=0; } },340); }
 function deleteScene(){ if(S.scene<0) return; const sc=S.scenes[S.scene];
@@ -7639,7 +7658,6 @@ function wire(){ wireTouch(); $('b-undo').innerHTML=IB('undo'); $('b-redo').inne
   // initiative
   $('b-shuffle').onclick=()=>{ const ids=orderToks().map(t=>t.id); for(let i=ids.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [ids[i],ids[j]]=[ids[j],ids[i]]; }
     S.order=ids.concat(S.order.filter(id=>!ids.includes(id))); S.turn=-1; renderTracker(); markTurn(); markDirty(); sync(); };
-  $('b-hub').onclick=hubToggle; hubPaint();
   $('b-next').onclick=nextTurn; $('b-dex').onclick=()=>dexLock(!S.dexLock); dexPaint();
   const tr=$('tracker'); let dragId=null;
   tr.onclick=e=>{ const b=e.target.closest('.tr'); if(!b) return; const t=tok(b.dataset.id); if(t){ centerOn(t.x,t.y); openCard(t.id); } };
