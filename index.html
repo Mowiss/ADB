@@ -256,8 +256,7 @@ body{-webkit-user-select:none;user-select:none}input,textarea,select,[contentedi
 .portrait svg{width:32px;height:32px;color:var(--ink-soft)}
 .field{display:flex;flex-direction:column;gap:1px;min-width:0}
 .racerow{display:flex;align-items:center;gap:8px}.racerow select{flex:1}
-.sexsw{display:flex;gap:4px;flex:none}.sexsw button{width:30px;height:30px;border:1px solid var(--rule);border-radius:8px;background:none;font-size:17px;line-height:1;color:var(--ink-soft,#777);cursor:pointer;padding:0}
-.sexsw button[aria-pressed="true"]{background:var(--ink-strong,#2f3340);color:#fff;border-color:var(--ink-strong,#2f3340)}
+.sexsw{flex:none;border:0;background:none;padding:0 4px;font-size:42px;font-weight:700;line-height:1;cursor:pointer;color:#2b6cb0;transition:transform .15s}.sexsw.f{color:#c2408a}.sexsw:active{transform:scale(.85)}
 .line-in{border:0;border-bottom:1px solid var(--rule);background:transparent;padding:4px 2px;min-width:0;width:100%;outline:none}
 .line-in:focus{border-bottom-color:var(--ink)}
 .name-in{font-family:var(--f-title);font-size:25px;letter-spacing:.05em;color:var(--ink-strong)}
@@ -764,7 +763,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}input[type=num
         <button class="portrait" id="portrait" type="button" title="Changer le portrait"></button>
         <div style="display:flex;flex-direction:column;gap:8px;min-width:0">
           <div class="field"><label class="cap" for="f-name">Nom</label><input id="f-name" class="line-in name-in" placeholder="Sans nom" autocomplete="off"></div>
-          <div class="field"><label class="cap" for="f-race">Race</label><div class="racerow"><select id="f-race" class="line-in"></select><span class="sexsw" role="group" aria-label="Sexe"><button type="button" data-sex="h" title="Homme" aria-pressed="false">♂</button><button type="button" data-sex="f" title="Femme" aria-pressed="false">♀</button></span></div></div>
+          <div class="field"><label class="cap" for="f-race">Race</label><div class="racerow"><select id="f-race" class="line-in"></select><button type="button" class="sexsw" id="f-sexe" title="Homme (toucher pour changer)">♂</button></div></div>
         </div>
       </div>
     </section>
@@ -1286,7 +1285,7 @@ function printSheet(){
 function renderIdentity(){
   const pc=C.photoCrop; $('portrait').innerHTML=C.photo?`<img src="${C.photo}" alt="Portrait"${pc?` class="cropped" style="left:${-pc.l*100}%;top:${-pc.t*100}%;width:${pc.w*100}%;height:${pc.h*100}%"`:''}>`:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="9" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>`;
   if(document.activeElement!==$('f-name')) $('f-name').value=C.name||'';
-  $('f-race').value=C.race; document.querySelectorAll('.sexsw [data-sex]').forEach(b=>b.setAttribute('aria-pressed',(C.sexe||'h')===b.dataset.sex?'true':'false'));
+  $('f-race').value=C.race; sexPaint();
 }
 function handName(h){ const it=C.inventory.find(i=>handsOf(i).includes(h)); return it?(it.name||'Arme'):''; }
 function renderDerived(){
@@ -1623,7 +1622,8 @@ document.addEventListener('mouseover',e=>{
 });
 
 /* sexe du personnage : change l'apparence vue par les autres joueurs en 3D */
-document.addEventListener('click',e=>{ const b=e.target.closest('.sexsw [data-sex]'); if(!b) return; C.sexe=b.dataset.sex; document.querySelectorAll('.sexsw [data-sex]').forEach(x=>x.setAttribute('aria-pressed',x===b?'true':'false')); markDirty(); });
+function sexPaint(){ const b=$('f-sexe'); if(!b) return; const f=C.sexe==='f'; b.textContent=f?'♀':'♂'; b.classList.toggle('f',f); b.title=(f?'Femme':'Homme')+' (toucher pour changer)'; }
+document.addEventListener('click',e=>{ if(!e.target.closest('#f-sexe')) return; C.sexe=C.sexe==='f'?'h':'f'; sexPaint(); markDirty(); });
 document.addEventListener('click',e=>{ const ef=e.target.closest('.stat .eff'); if(!ef) return; const st=ef.closest('.stat'); st.classList.add('editing'); const i=st.querySelector('.statin'); i.focus(); i.select(); });
 document.addEventListener('focusout',e=>{ if(e.target.classList&&e.target.classList.contains('statin')) e.target.closest('.stat').classList.remove('editing'); });
 /* Glisser-déposer : une ligne de l'inventaire sur une zone du corps ou une main */
