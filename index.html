@@ -5054,6 +5054,7 @@ function fpsAct(k){ if(!FPS.cam) return; if(fpsSpectating()){ toast('Ce n\'est p
     if(!dgPass(ci,cj,ni,nj)||(FPS.mode==='play'&&S.tokens.some(t=>t.id!==FPS.self&&!t.inveh&&!t.hidden&&!dgDead(t)&&['player','mob','npc'].includes(t.type)&&Math.floor(t.x/CELL)===ni&&Math.floor(t.y/CELL)===nj))){ fpsBump(); return; }
     to.x=ni+.5; to.y=nj+.5; to.z=dgH(ni,nj); }
   FPS.anim={f:{...c},to,t0:performance.now(),dur:k==='tl'||k==='tr'?190:230}; fpsLater(); fpsStep(k==='tl'||k==='tr');
+  if(FPS.mode!=='play'&&k!=='tl'&&k!=='tr') setTimeout(()=>fpsPrevArrive(to),260);
   if(FPS.mode==='play'){ const nd=(((Math.round(to.a/(Math.PI/2))%4)+4)%4); up({t:'dmove',x:to.x*CELL,y:to.y*CELL,dir:nd}); if(window.DGTEST&&k!=='tl'&&k!=='tr') dgTestMove(to.x*CELL,to.y*CELL,nd); else if(window.DGTEST){ const me=S.tokens.find(t=>t.id===FPS.self); if(me) me.dir=nd; } } }
 /* point de la carte 2D sous le doigt dans la vue 3D : sol, pied du mur ou personnage visé */
 function fpsWorldAt(cx,cy){ if(!FPS.el||FPS.el.hidden||!FPS.lastCam||!FPS.dz) return null; const cv=FPS.el.querySelector('canvas'), r=cv.getBoundingClientRect();
@@ -5111,6 +5112,13 @@ function fpsSync(){ if(!isPlayer||!NETVIEW) return; const me=ME&&S.tokens.find(t
   if(!FPS.cam||FPS.mode!=='play'||(!FPS.anim&&(Math.abs(FPS.cam.x-c.x)>.01||Math.abs(FPS.cam.y-c.y)>.01))){ const keepA=FPS.cam&&FPS.mode==='play'&&!FPS.anim&&(((Math.round(FPS.cam.a/(Math.PI/2))%4)+4)%4)===(me.dir||0); FPS.cam={x:c.x,y:c.y,z:c.z,a:keepA?FPS.cam.a:c.a}; } else if(!FPS.anim) FPS.cam.z=c.z;
   fpsLater(); }
 /* MJ : aperçu depuis le jeton ouvert, un aventurier, ou le centre du donjon */
+/* aperçu du MJ : escaliers, zones TP et panneaux emmènent aussi la caméra (vers une autre scène si besoin) */
+function fpsPrevArrive(to){ const i=Math.floor(to.x), j=Math.floor(to.y), m=dgMk(i,j); if(!m) return;
+  if(!m.to){ toast(`${MK_LBL[m.k]} ${m.code||''} : aucune destination (« Mène à »)`); return; }
+  const dest=dgCodes().find(c=>c.code===m.to); if(!dest){ toast(`Destination ${m.to} introuvable`,true); return; }
+  const [di,dj]=dest.k.split(',').map(Number), a=FPS.cam?FPS.cam.a:0;
+  if(dest.si!==S.scene){ const sc=S.scenes[dest.si]; loadScene(dest.si); toast(`${MK_LBL[m.k]} → « ${(sc&&sc.title)||'Scène '+(dest.si+1)} »`); }
+  FPS.sprites.clear(); FPS.anim=null; FPS.cam={x:di+.5,y:dj+.5,a,z:dgH(di,dj)}; const el=$('fpsprev'); if(el) el.hidden=false; fpsLater(); }
 function fpsPreview(){ if(!dgOn()||!Object.keys(S.dg.c||{}).length){ toast('Creusez d\'abord une zone jouable',true); return; }
   let t=cardId&&tok(cardId); if(!t||!dgOpen(...dgCell(t.x,t.y))) t=S.tokens.find(x=>x.type==='player'&&dgOpen(...dgCell(x.x,x.y)));
   let cam; if(t) cam={x:Math.floor(t.x/CELL)+.5,y:Math.floor(t.y/CELL)+.5,a:(t.dir||0)*Math.PI/2,z:dgH(Math.floor(t.x/CELL),Math.floor(t.y/CELL))};
