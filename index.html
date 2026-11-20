@@ -2755,6 +2755,7 @@ input,textarea,select,[contenteditable],[contenteditable] *,.rg-txt,.rg-txt *,.n
 .wxrow{display:flex;flex-wrap:wrap;gap:8px}
 .dg-pal{display:grid;grid-template-columns:repeat(8,1fr);gap:5px}.dg-pal button{padding:0;border:2px solid transparent;border-radius:9px;background:none;aspect-ratio:1;overflow:hidden;cursor:pointer}.dg-pal button img{width:100%;height:100%;display:block;image-rendering:pixelated;border-radius:7px}.dg-pal button.on{border-color:var(--danger);box-shadow:0 0 0 2px rgba(224,75,58,.18)}
 .dphead{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}.dphead h3{margin:0}.dpseg{flex-wrap:nowrap}.dpseg .wxb{flex:1 1 0}.dplk{font-style:normal;font-size:20px;line-height:1}
+.dg-top{display:flex;gap:6px;align-items:center;margin-bottom:4px}.dg-top span{flex:1}.dg-top .ib{width:38px;height:38px}.dg-top .ib svg{width:20px;height:20px}
 .wxrow.dg-tools{flex-wrap:nowrap;gap:4px}.dg-tools .wxb{flex:1 1 0;min-width:0;padding:8px 0;min-height:0}.dg-tools .wxb span{display:none}.dg-tools .wxb svg{width:22px;height:22px}
 .dg-tname{font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft,#777);margin:2px 2px 0}
 .gsw{display:block;width:30px;height:22px;border-radius:6px;border:1px solid var(--rule)}
@@ -3992,7 +3993,7 @@ function histInit(){ HIST.u=[]; HIST.r=[]; HIST.cur=histSnap(); histBtns(); }
 function histLater(){ if(isPlayer||HIST.busy) return; clearTimeout(HIST.t); HIST.t=setTimeout(histPush,350); }
 function histPush(){ if(HIST.busy) return; const s=histSnap(); if(HIST.cur===null){ HIST.cur=s; return; } if(s===HIST.cur) return;
   HIST.u.push(HIST.cur); if(HIST.u.length>50) HIST.u.shift(); HIST.cur=s; HIST.r=[]; histBtns(); }
-function histApply(js){ HIST.busy=true; Object.assign(S,JSON.parse(js)); HIST.cur=js; if(typeof mapVer!=='undefined') mapVer++; closeCard&&closeCard(); renderAll(); sync(); dirty=true; updateSaveState(); setTimeout(()=>{ HIST.busy=false; },0); histBtns(); }
+function histApply(js){ HIST.busy=true; Object.assign(S,JSON.parse(js)); HIST.cur=js; if(typeof mapVer!=='undefined') mapVer++; closeCard&&closeCard(); renderAll(); if(typeof drawDgLater==='function'){ drawDgLater(); if(typeof FPS!=='undefined'&&FPS.sprites) FPS.sprites.clear(); fpsLater(); } sync(); dirty=true; updateSaveState(); setTimeout(()=>{ HIST.busy=false; },0); histBtns(); }
 function undo(){ clearTimeout(HIST.t); histPush(); if(!HIST.u.length) return; HIST.r.push(HIST.cur); histApply(HIST.u.pop()); }
 function redo(){ clearTimeout(HIST.t); if(!HIST.r.length) return; HIST.u.push(HIST.cur); histApply(HIST.r.pop()); }
 function histBtns(){ const u=$('b-undo'), r=$('b-redo'); if(u) u.disabled=!HIST.u.length&&!(HIST.cur&&HIST.cur!==histSnap()); if(r) r.disabled=!HIST.r.length; }
@@ -4321,6 +4322,11 @@ function dgToggleDoor(k){ const o=S.dg&&S.dg.d&&S.dg.d[k]; if(!o||dgHid(o)||o.lk
 function dgAutoWalls(D){ const E=D.ew=D.ew||{}; for(const k in D.c){ const f=dgInfo(D.c[k]); if(f.iw) continue; const [i,j]=k.split(',').map(Number);
   [[0,-1],[1,0],[0,1],[-1,0]].forEach(([u,v])=>{ if(D.c[(i+u)+','+(j+v)]) return; const e=dgEK(i,j,i+u,j+v); if(!E[e]) E[e]={t:f.th,h:f.sky?(DG_TH[f.th].wh||1):1}; }); }
   const CL=D.cl=D.cl||{}; for(const k in D.c){ const f=dgInfo(D.c[k]); if(!f.sky&&!CL[k]) CL[k]={t:f.th,h:1}; } }
+/* recentrer : toute la zone construite à l'écran */
+function dgFit(){ const C=S.dg&&S.dg.c||{}, K=Object.keys(C); if(!K.length){ fitBoard(); return; } let a=1e9,b=1e9,c=-1e9,d=-1e9;
+  K.forEach(k=>{ const p=k.indexOf(','), i=+k.slice(0,p), j=+k.slice(p+1); a=Math.min(a,i); b=Math.min(b,j); c=Math.max(c,i+1); d=Math.max(d,j+1); });
+  const r=board.getBoundingClientRect(), dw=document.querySelector('.ldrawer.open'), off=dw?Math.max(0,Math.min(r.width*.6,dw.getBoundingClientRect().right-r.left)):0, aw=r.width-off;
+  const w=(c-a)*CELL, h=(d-b)*CELL; V.z=Math.max(.15,Math.min(1.5,Math.min((aw-60)/w,(r.height-60)/h))); V.x=off+aw/2-(a+c)/2*CELL*V.z; V.y=r.height/2-(b+d)/2*CELL*V.z; applyView(); drawDgLater(); }
 function dgEnsure(){ if(!S.dg) S.dg={on:false,th:'pierre',c:{}}; if(!S.dg.c) S.dg.c={}; return S.dg; }
 const DG_ICO={
   dgn:'<rect x="3" y="4" width="18" height="16" rx="1.5"/><rect x="8.5" y="9" width="7" height="6"/><path d="M3 4l5.5 5M21 4l-5.5 5M3 20l5.5-5M21 20l-5.5-5"/>',
@@ -4328,6 +4334,7 @@ const DG_ICO={
   sdoor:'<path d="M5 21V4.5A1.5 1.5 0 0 1 6.5 3h11A1.5 1.5 0 0 1 19 4.5V21" stroke-dasharray="2.5 2.5"/><path d="M3 21h18"/><path d="M10 9.5a2 2 0 1 1 2.8 1.8c-.5.3-.8.7-.8 1.2V13M12 16h.01"/>',
   sup:'<path d="M3 20h4v-4h4v-4h4V8h4V4"/><path d="M6 9l4-4M10 5H6v4"/>',
   sdown:'<path d="M3 4h4v4h4v4h4v4h4v4"/><path d="M15 6l4 4M19 6v4h-4"/>',
+  fit:'<path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/><circle cx="12" cy="12" r="2.5"/>',
   sign:'<path d="M10 21V4"/><path d="M4 6h12l3 2.5-3 2.5H4z"/><path d="M16 13H6l-2.5 2L6 17h10z" opacity=".7"/>',
   tp:'<ellipse cx="12" cy="18" rx="8" ry="3"/><path d="M6 17V8M18 17V8M12 15V4M9 12V6M15 12V7"/>',
   up:'<path d="M2 20l7-10 4 5 3-3 6 8z"/><path d="M17 3v6M14.5 5.5 17 3l2.5 2.5"/>',
@@ -4463,7 +4470,7 @@ function dgPaint(wx,wy,g){ DG._g=g; if(DG.tool==='sel'){ if(!g.last){ g.last=1; 
   if(g.last){ let [x0,y0]=g.last; const dx=Math.abs(ci-x0), dy=Math.abs(cj-y0), sx=x0<ci?1:-1, sy=y0<cj?1:-1; let er=dx-dy;
     while(x0!==ci||y0!==cj){ const e2=2*er; if(e2>-dy){ er-=dy; x0+=sx; } if(e2<dx){ er+=dx; y0+=sy; } dgStamp(x0,y0,carve); } }
   else dgStamp(ci,cj,carve);
-  g.last=[ci,cj]; DG.hover=[ci,cj]; drawDgLater(); syncLater(); }
+  g.last=[ci,cj]; DG.hover=[ci,cj]; drawDgLater(); syncLater(); markDirty(); }
 /* jetons calés au centre des cases quand le donjon est actif */
 function dgSnap(t){ if(!dgOn()||!['player','mob','npc'].includes(t.type)) return false; const [i,j]=dgCell(t.x,t.y), x=(i+.5)*CELL, y=(j+.5)*CELL; if(t.x===x&&t.y===y) return false; t.x=x; t.y=y; return true; }
 function dgDirEl(t){ return dgOn()&&t.type==='player'&&t.dir!=null?`<i class="dgdir" style="--r:${(t.dir||0)*90}deg"></i>`:''; }
@@ -4605,7 +4612,8 @@ function renderDgPanel(){ const box=$('dg-body'); if(!box) return; const D=S.dg|
   const on_=m=>tool==='dgn'&&DG.tool===m;
   const DGTN={win:'Fenêtre',sel:'Sélection',carve:'Sol',fill:'Sans sol',paint:'Repeindre',wall:'Mur',unwall:'Sans mur',ceil:'Plafond',unceil:'Ciel ouvert'};
   const T=DG.tool, brush=['carve','fill','paint','ceil','unceil'].includes(T), hk=T==='wall'||T==='win'?'wh':T==='ceil'?'ch':null;
-  box.innerHTML=`<div class="subttl">Construction</div>
+  box.innerHTML=`<div class="dg-top"><button type="button" class="ib" id="dg-undo" title="Annuler (Ctrl+Z)">${IB('undo')}</button><button type="button" class="ib" id="dg-redo" title="Rétablir (Ctrl+Y)">${IB('redo')}</button><span></span><button type="button" class="ib" id="dg-fit" title="Recentrer sur la carte">${dgI('fit',1.8)}</button></div>
+    <div class="subttl">Construction</div>
     <div class="wxrow dg-tools">${wb('dg-sel',IB('hand'),'Sélection',on_('sel'))}${wb('dg-carve',IB('brush'),'Sol',on_('carve'))}${wb('dg-fill',IB('eraser'),'Sans sol',on_('fill'))}${wb('dg-paint',dgI('paint',1.7),'Repeindre',on_('paint'))}${wb('dg-wall',dgI('wall',1.7),'Mur',on_('wall'))}${wb('dg-unwall',dgI('iwall',1.7),'Sans mur',on_('unwall'))}${wb('dg-win',dgI('win',1.7),'Fenêtre',on_('win'))}${wb('dg-ceil',dgI('ceil',1.7),'Plafond',on_('ceil'))}${wb('dg-sky',dgI('sky',1.7),'Ciel',on_('unceil'))}</div>
     ${tool==='dgn'&&DGTN[T]?`<div class="dg-tname">${DGTN[T]}</div>`:''}
     ${brush?`<div class="crange"><span class="cap">Taille</span><input type="range" min="1" max="15" step="1" value="${DG.n}" id="dg-n" aria-label="Taille du pinceau"><b id="dg-nv">${DG.n} × ${DG.n}</b></div>`:''}
@@ -4627,6 +4635,7 @@ function renderDgPanel(){ const box=$('dg-body'); if(!box) return; const D=S.dg|
   box.querySelectorAll('[data-veg]').forEach(b=>b.onclick=()=>{ if(tool==='dgn'&&DG.tool==='veg'&&DG.vk===b.dataset.veg){ setTool('dgn'); renderDgPanel(); return; } DG.vk=b.dataset.veg; DG.tool='veg'; if(tool!=='dgn') setTool('dgn'); renderDgPanel(); });
   $('dg-wall').onclick=()=>pick('wall'); $('dg-win').onclick=()=>pick('win'); $('dg-unwall').onclick=()=>pick('unwall'); $('dg-ceil').onclick=()=>pick('ceil'); $('dg-sky').onclick=()=>pick('unceil');
   if($('dg-h')) $('dg-h').oninput=e=>{ DG[hk]=+e.target.value; $('dg-hv').textContent=String(DG[hk]).replace('.',','); };
+  $('dg-undo').onclick=()=>undo(); $('dg-redo').onclick=()=>redo(); $('dg-fit').onclick=()=>dgFit();
   $('dg-sel').onclick=()=>pick('sel'); $('dg-carve').onclick=()=>pick('carve'); $('dg-fill').onclick=()=>pick('fill'); $('dg-paint').onclick=()=>pick('paint'); $('dg-sup').onclick=()=>pick('sup'); $('dg-sdown').onclick=()=>pick('sdown'); $('dg-tp').onclick=()=>pick('tp'); $('dg-sign').onclick=()=>pick('sign');
   const opt=(k,v)=>{ DG[k]=v; if(tool!=='dgn'||DG.tool==='fill'||DG.tool==='door'||DG.tool==='secret'){ DG.tool=DG.tool==='paint'?'paint':'carve'; if(tool!=='dgn') setTool('dgn'); } renderDgPanel(); };
   $('dg-door').onclick=()=>pick('door'); $('dg-sdoor').onclick=()=>pick('secret');
