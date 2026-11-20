@@ -4308,6 +4308,9 @@ function dgDoorClick(wx,wy){ const e=dgEdgeAt(wx,wy); if(!dgOpen(...e.a)||!dgOpe
 function dgHover(wx,wy){ if(['door','secret','wall','unwall'].includes(DG.tool)){ const e=dgEdgeAt(wx,wy); if(DG.hover!==e.k){ DG.hover=e.k; drawDgLater(); } return; }
   const c=dgCell(wx,wy); if(!Array.isArray(DG.hover)||DG.hover[0]!==c[0]||DG.hover[1]!==c[1]){ DG.hover=c; drawDgLater(); } }
 function dgToggleDoor(k){ const o=S.dg&&S.dg.d&&S.dg.d[k]; if(!o||dgHid(o)) return false; o.open=!o.open; drawDgLater(); fpsLater(); markDirty(); sync(); return true; }
+/* murs tracés tout autour d'une zone (carte de test) : texture et hauteur du style de chaque case */
+function dgAutoWalls(D){ const E=D.ew=D.ew||{}; for(const k in D.c){ const f=dgInfo(D.c[k]); if(f.iw) continue; const [i,j]=k.split(',').map(Number);
+  [[0,-1],[1,0],[0,1],[-1,0]].forEach(([u,v])=>{ if(D.c[(i+u)+','+(j+v)]) return; const e=dgEK(i,j,i+u,j+v); if(!E[e]) E[e]={t:f.th,h:f.sky?(DG_TH[f.th].wh||1):1}; }); } }
 function dgEnsure(){ if(!S.dg) S.dg={on:false,th:'pierre',c:{}}; if(!S.dg.c) S.dg.c={}; return S.dg; }
 const DG_ICO={
   dgn:'<rect x="3" y="4" width="18" height="16" rx="1.5"/><rect x="8.5" y="9" width="7" height="6"/><path d="M3 4l5.5 5M21 4l-5.5 5M3 20l5.5-5M21 20l-5.5-5"/>',
@@ -4358,7 +4361,7 @@ function drawDg(){ const cv=$('dgn'); if(!cv) return; const r=board.getBoundingC
   if(S.grid!==false){ x.strokeStyle='rgba(0,0,0,.13)'; x.lineWidth=1.2/V.z; x.beginPath(); cells.forEach(([i,j])=>{ x.rect(i*CELL,j*CELL,CELL,CELL); }); x.stroke(); }
   x.lineCap='square';
   [false,true].forEach(inv=>{ x.strokeStyle=inv?'rgba(255,255,255,.55)':T.wall2d; x.lineWidth=inv?2/V.z+1:Math.max(5,3/V.z); x.setLineDash(inv?[7,6]:[]); x.beginPath();
-    cells.forEach(([i,j])=>{ if(dgWB(i,j)) return; const f=dgAt(i,j); const X=i*CELL, Y=j*CELL, ed=(a,b)=>!dgOpen(a,b)&&!dgWB(a,b)&&!dgEW(i,j,a,b)&&(!!f.iw||dgWNo(a,b)||!!S.dg.v2)===inv;
+    cells.forEach(([i,j])=>{ if(dgWB(i,j)) return; const f=dgAt(i,j); const X=i*CELL, Y=j*CELL, ed=(a,b)=>!dgOpen(a,b)&&!dgWB(a,b)&&!dgEW(i,j,a,b)&&true===inv;
       if(ed(i,j-1)){ x.moveTo(X,Y); x.lineTo(X+CELL,Y); } if(ed(i,j+1)){ x.moveTo(X,Y+CELL); x.lineTo(X+CELL,Y+CELL); }
       if(ed(i-1,j)){ x.moveTo(X,Y); x.lineTo(X,Y+CELL); } if(ed(i+1,j)){ x.moveTo(X+CELL,Y); x.lineTo(X+CELL,Y+CELL); } });
     x.stroke(); }); x.setLineDash([]);
@@ -4550,7 +4553,7 @@ function dgTestLoad(){ window.DGTEST=true; if(!ME) ME='test'; const c={}, d={}, 
   const veg={'17,1':'foret-arbre','22,1':'foret-arbre','17,6':'foret-buisson','23,5':'foret-herbe','16,4':'foret-herbe','21,7':'alien-arbre','18,7':'alien-buisson',
     '6,22':'desert-arbre','11,23':'desert-buisson','13,24':'desert-herbe','9,22':'desert-herbe','0,18':'marais-arbre','4,19':'marais-buisson','1,21':'marais-herbe','3,25':'foret-buisson','4,26':'glace-arbre','0,25':'glace-herbe','16,25':'glace-buisson'};
   const lum={'0,0':'candelabre','4,4':'candelabre','12,1':'brasero','14,4':'lanterne','19,10':'cyber','20,15':'cyber','19,19':'moderne','16,21':'bricole','21,24':'brasero','2,10':'moderne','8,23':'lanterne','2,19':'brasero'};
-  S.dg={on:true,th:'pierre',c,d,m,veg,lum}; S.hour=21; S.weather=''; S.combat=null; S.fight=null; S.dexLock=false; FPS.skys=null; FPS.dst={};
+  S.dg={on:true,th:'pierre',c,d,m,veg,lum}; dgAutoWalls(S.dg); S.hour=21; S.weather=''; S.combat=null; S.fight=null; S.dexLock=false; FPS.skys=null; FPS.dst={};
   const race=(typeof VEHME!=='undefined'&&VEHME&&VEHME.race)||'humain', P=(id,name,race,sexe,x,y,dir)=>({id,type:'player',name,race,sexe,owner:'x'+id,hp:10,hpMax:10,x:(x+.5)*CELL,y:(y+.5)*CELL,s:1,dir});
   S.tokens=[{id:'me',type:'player',name:'Vous',owner:ME,race,sexe:'h',hp:10,hpMax:10,x:2.5*CELL,y:2.5*CELL,dir:1,s:1},
     P('tp1','Kara','humain','f',7,2,3), P('tp2','Grom','troll','h',18,2,2), P('tp3','Ursa','troll','f',21,4,3),
@@ -4902,7 +4905,7 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
   const shL=(c,f,a)=>{ if(!a) return sh(c,f); const r=Math.min(255,(c&255)*Math.min(1.5,f+a[0])), g=Math.min(255,((c>>8)&255)*Math.min(1.5,f+a[1])), b=Math.min(255,((c>>16)&255)*Math.min(1.5,f+a[2])); return 0xff000000|(b<<16)|(g<<8)|r; };
   const LON=LT.length>0;
   const h2=H/2, SK=fpsSky(); let anySky=here.sky;
-  let MAXW=1; for(const k in DG_TH) MAXW=Math.max(MAXW,DG_TH[k].wh||1); for(const k in (S.dg&&S.dg.w||{})){ const w=S.dg.w[k]; if(!w.no) MAXW=Math.max(MAXW,+w.h||1); } for(const k in (S.dg&&S.dg.ew||{})) MAXW=Math.max(MAXW,+S.dg.ew[k].h||1); const V2=!!(S.dg&&S.dg.v2);
+  let MAXW=1; for(const k in DG_TH) MAXW=Math.max(MAXW,DG_TH[k].wh||1); for(const k in (S.dg&&S.dg.w||{})){ const w=S.dg.w[k]; if(!w.no) MAXW=Math.max(MAXW,+w.h||1); } for(const k in (S.dg&&S.dg.ew||{})) MAXW=Math.max(MAXW,+S.dg.ew[k].h||1); const V2=true;   /* sans mur tracé, pas de bordure */
   for(let xx=0;xx<W;xx++){ const cX=2*xx/W-1, rdx=dx+px*cX, rdy=dy+py*cX; let mx=ci, my=cj;
     const ddx=Math.abs(1/rdx), ddy=Math.abs(1/rdy); let stx,sty,sdx,sdy,side=0,n=0,pmx,pmy;
     if(rdx<0){ stx=-1; sdx=(cam.x-mx)*ddx; } else { stx=1; sdx=(mx+1-cam.x)*ddx; }
