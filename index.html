@@ -2844,6 +2844,7 @@ html.incombat #rb-dgn,html.incombat #rb-fond{opacity:.3;pointer-events:none}
 .fighth[aria-pressed="true"]{background:#e04b3a!important;border-color:#e04b3a!important;color:#fff}
 #board.fzone{cursor:crosshair}
 .fps-pad{display:none!important}
+.mkdir{display:grid;grid-template-columns:repeat(3,40px);gap:5px}.mkdir button{height:40px;border:1px solid var(--rule);border-radius:9px;background:var(--paper);font:800 18px sans-serif;color:var(--ink);cursor:pointer;display:grid;place-items:center}.mkdir button i{font-style:normal;display:block}.mkdir button.on{background:#ff5a3c;border-color:#ff5a3c;color:#fff}
 .fps-fade{position:absolute;inset:0;z-index:6;opacity:0;pointer-events:none;transition:opacity .45s ease}.fps-fade.on{opacity:1;transition:opacity .3s ease}
 .fps-joy{position:absolute;left:50%;bottom:22px;width:96px;height:96px;margin-left:-48px;border-radius:50%;background:rgba(255,255,255,.16);border:2px solid rgba(255,255,255,.45);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);box-shadow:0 2px 12px rgba(0,0,0,.25);z-index:4;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
 .fps-joy i{position:absolute;left:50%;top:50%;width:42px;height:42px;margin:-21px 0 0 -21px;border-radius:50%;background:rgba(255,255,255,.55);border:2px solid rgba(255,255,255,.8);box-shadow:0 2px 8px rgba(0,0,0,.3);transition:transform .12s ease-out;pointer-events:none}
@@ -4459,6 +4460,7 @@ function drawDg(){ const cv=$('dgn'); if(!cv) return; const r=board.getBoundingC
     else if(m.k==='tp'){ x.fillStyle='rgba(71,228,255,.25)'; x.fillRect(2,2,CELL-4,CELL-4); x.strokeStyle=c; x.lineWidth=3; x.beginPath(); x.ellipse(CELL/2,CELL/2,CELL*.32,CELL*.32,0,0,7); x.stroke(); x.beginPath(); x.ellipse(CELL/2,CELL/2,CELL*.18,CELL*.18,0,0,7); x.stroke(); }
     else { x.fillStyle='rgba(240,217,168,.55)'; x.fillRect(2,2,CELL-4,CELL-4); x.strokeStyle=c; x.lineWidth=3; x.beginPath(); for(let s2=0;s2<4;s2++){ const yy=m.k==='up'?CELL-12-s2*14:12+s2*14; x.moveTo(10+s2*6,yy); x.lineTo(CELL-10-s2*6,yy); } x.stroke();
       x.fillStyle=c; x.beginPath(); if(m.k==='up'){ x.moveTo(CELL/2,6); x.lineTo(CELL/2-7,16); x.lineTo(CELL/2+7,16); } else { x.moveTo(CELL/2,CELL-6); x.lineTo(CELL/2-7,CELL-16); x.lineTo(CELL/2+7,CELL-16); } x.fill(); }
+    if(m.a!=null){ x.save(); x.translate(CELL/2,CELL/2); x.rotate(m.a*Math.PI/4); x.fillStyle='#ff5a3c'; x.strokeStyle='#fff'; x.lineWidth=2; x.beginPath(); x.moveTo(0,-CELL*.46); x.lineTo(-7,-CELL*.3); x.lineTo(7,-CELL*.3); x.closePath(); x.stroke(); x.fill(); x.restore(); }
     x.font='800 11px Quicksand,sans-serif'; x.textAlign='center'; x.textBaseline='middle'; x.fillStyle='rgba(20,22,30,.85)'; x.fillText(m.code||'',CELL/2,CELL/2-(m.to?7:0)); if(m.to){ x.font='700 10px Quicksand,sans-serif'; x.fillText('→ '+m.to,CELL/2,CELL/2+8); }
     x.restore(); }
   const DD=S.dg.d||{}; for(const k in DD){ const o=DD[k], [ax,ay,bx,by]=dgEdgeSeg(k); if(Math.max(ax,bx)<i0*CELL||Math.min(ax,bx)>i1*CELL||Math.max(ay,by)<j0*CELL||Math.min(ay,by)>j1*CELL) continue;
@@ -4558,20 +4560,22 @@ function dgMarkEdit(k){ const m=S.dg&&S.dg.m&&S.dg.m[k]; if(!m) return; const co
     <div class="mkseg">${Object.entries(MK_LBL).map(([v,l])=>`<button type="button" class="wxb${m.k===v?' on':''}" data-mk="${v}">${mkIco(v)}<span>${l}</span></button>`).join('')}</div>
     <div class="field"><label class="cap" for="mk-code">Code de ce passage</label><input class="line-in" id="mk-code" value="${esc(m.code||'')}" maxlength="16" style="font-weight:800;letter-spacing:.08em;text-transform:uppercase"></div>
     <div class="field"><label class="cap" for="mk-to">Mène à</label><select class="line-in" id="mk-to"><option value="">— nulle part (arrivée seule) —</option>${codes.map(c=>`<option value="${esc(c.code)}" ${c.code===m.to?'selected':''}>${esc(c.code)} · ${esc(MK_LBL[c.kind]||'')} · ${esc(c.title)}</option>`).join('')}${m.to&&!codes.some(c=>c.code===m.to)?`<option value="${esc(m.to)}" selected>${esc(m.to)} (introuvable)</option>`:''}</select></div>
+    <div class="field"><label class="cap">Regard à l'arrivée</label><div class="mkdir">${[7,0,1,6,-1,2,5,4,3].map(v=>v<0?`<button type="button" class="mkd0${m.a==null?' on':''}" data-md="" title="Garder l'orientation">·</button>`:`<button type="button" class="${m.a===v?'on':''}" data-md="${v}" title="Regarder dans cette direction"><i style="transform:rotate(${v*45}deg)">↑</i></button>`).join('')}</div></div>
     <div class="actions"><button class="btn danger" type="button" id="mk-del">${IB('bin')}Supprimer</button><span style="flex:1"></span><button class="btn" type="button" id="mk-ok">OK</button></div>`);
-  let kind=m.k; document.querySelectorAll('[data-mk]').forEach(b=>b.onclick=()=>{ kind=b.dataset.mk; document.querySelectorAll('[data-mk]').forEach(x=>x.classList.toggle('on',x===b)); });
+  let kind=m.k, md=m.a; document.querySelectorAll('[data-md]').forEach(b=>b.onclick=()=>{ md=b.dataset.md===''?null:+b.dataset.md; document.querySelectorAll('[data-md]').forEach(x=>x.classList.toggle('on',x===b)); }); document.querySelectorAll('[data-mk]').forEach(b=>b.onclick=()=>{ kind=b.dataset.mk; document.querySelectorAll('[data-mk]').forEach(x=>x.classList.toggle('on',x===b)); });
   $('mk-del').onclick=()=>{ dlg.close(); delete S.dg.m[k]; drawDgLater(); fpsLater(); markDirty(); sync(); };
   $('mk-ok').onclick=()=>{ const code=String($('mk-code').value||'').trim().toUpperCase().replace(/\s+/g,'');
     if(code&&code!==m.code&&dgCodes().some(c=>c.code===code)){ toast('Ce code existe déjà',true); return; }
-    m.k=kind; m.code=code||m.code; m.to=$('mk-to').value; dlg.close(); drawDgLater(); FPS.sprites.clear(); fpsLater(); markDirty(); sync(); }; }
+    m.k=kind; m.code=code||m.code; m.to=$('mk-to').value; if(md==null) delete m.a; else m.a=md; dlg.close(); drawDgLater(); FPS.sprites.clear(); fpsLater(); markDirty(); sync(); }; }
 /* case libre la plus proche de l'arrivée (personne n'arrive sur la tête d'un autre) */
 function dgFree(di,dj,toks,self){ const busy=(i,j)=>toks.some(o=>o!==self&&o.id!==(self&&self.id)&&!o.inveh&&['player','mob','npc'].includes(o.type)&&!(o.hp!=null&&o.hp<=0&&ALIVE(o))&&Math.floor(o.x/CELL)===i&&Math.floor(o.y/CELL)===j);
   const seen=new Set([di+','+dj]), Q=[[di,dj]]; while(Q.length){ const [i,j]=Q.shift(); if(!busy(i,j)) return [i,j]; if(seen.size>200) break;
     [[1,0],[-1,0],[0,1],[0,-1]].forEach(([u,v])=>{ const k=(i+u)+','+(j+v); if(!seen.has(k)){ seen.add(k); Q.push([i+u,j+v]); } }); } return [di,dj]; }
 /* MJ : un aventurier vient de poser le pied sur un passage */
 function dgArrive(t,ci,cj){ const [i,j]=ci!=null?[ci,cj]:dgCell(t.x,t.y), m=dgMk(i,j); if(!m||!m.to) return false; const dest=dgCodes().find(c=>c.code===m.to); if(!dest){ toast(`${t.name} : destination ${m.to} introuvable`,true); return false; }
-  const [di,dj]=dest.k.split(',').map(Number);
-  if(dest.si===S.scene){ const [fi,fj]=dgFree(di,dj,S.tokens,t); t.x=(fi+.5)*CELL; t.y=(fj+.5)*CELL; dexAnchor(t); setTimeout(sync,0); moveTokenEl(t); tokenEl(t); send({t:'mv',id:t.id,x:t.x,y:t.y,s:t.s,dir:t.dir||0}); fowLater(); markDirty(); return true; }
+  const [di,dj]=dest.k.split(',').map(Number), dm=((dest.si===S.scene?S.dg:(S.scenes[dest.si]||{}).dg)||{}).m||{}, da=dm[dest.k]&&dm[dest.k].a;
+  if(da!=null){ t.ang=da*Math.PI/4; t.dir=((Math.round(da/2)%4)+4)%4; }
+  if(dest.si===S.scene){ const [fi,fj]=dgFree(di,dj,S.tokens,t); t.x=(fi+.5)*CELL; t.y=(fj+.5)*CELL; dexAnchor(t); setTimeout(sync,0); moveTokenEl(t); tokenEl(t); send({t:'mv',id:t.id,x:t.x,y:t.y,s:t.s,dir:t.dir||0,ang:t.ang}); fowLater(); markDirty(); return true; }
   const sc=S.scenes[dest.si]; if(!sc) return false; sc.tokens=(sc.tokens||[]).filter(o=>o.id!==t.id);
   const [fi,fj]=dgFree(di,dj,sc.tokens,null); const o=clone(t); o.x=(fi+.5)*CELL; o.y=(fj+.5)*CELL; o.scene=true; sc.tokens.push(o); if(sc.order&&!sc.order.includes(o.id)) sc.order.push(o.id);
   S.tokens=S.tokens.filter(x=>x.id!==t.id); S.order=S.order.filter(id=>id!==t.id); if(cardId===t.id) closeCard();
@@ -4625,7 +4629,7 @@ const DGT={sc:null,si:0,cell:null};
 function dgTestLoad(){ window.DGTEST=true; if(!ME) ME='test';
   fetch('res/demo/la-plaine.adb').then(r=>r.json()).then(d=>{ if(!d||!Array.isArray(d.scenes)||!d.scenes.length) throw 0; DGT.sc=d.scenes; const m0=Object.entries(d.scenes[0].dg.m||{}).find(([k,m])=>m.k==='sign');
     dgTestScene(0,m0?m0[0].split(',').map(Number):null); toast(`🔷 Démo : ${d.title||'scénario'}`); }).catch(()=>dgTestLoadOld()); }
-function dgTestScene(si,cell){ const sc=DGT.sc&&DGT.sc[si]; if(!sc) return; DGT.si=si; const D=JSON.parse(JSON.stringify(sc.dg||{})); D.on=true; S.dg=D;
+function dgTestScene(si,cell){ const sc=DGT.sc&&DGT.sc[si]; if(!sc) return; DGT.si=si; const D=JSON.parse(JSON.stringify(sc.dg||{})); D.on=true; for(const k in (D.d||{})) D.d[k].open=false; S.dg=D;
   S.blood=JSON.parse(JSON.stringify(sc.blood||[])); S.weather=sc.weather||''; if(S.hour==null||!DGT.hourSet){ S.hour=14; DGT.hourSet=1; } S.combat=null; S.fight=null; S.dexLock=false; FPS.skys=null; FPS.dst={}; FPS.bld=null;
   let c=cell; if(!c||!dgOpen(c[0],c[1])){ const k=Object.keys(D.c||{}).find(k=>dgOpen(...k.split(',').map(Number))); c=k?k.split(',').map(Number):[0,0]; }
   const L=JSON.parse(JSON.stringify(sc.tokens||[])).filter(t=>t.type!=='player'&&!t.hidden), [fi,fj]=typeof dgFree==='function'?dgFree(c[0],c[1],L,null):c;
@@ -4636,7 +4640,9 @@ function dgTestScene(si,cell){ const sc=DGT.sc&&DGT.sc[si]; if(!sc) return; DGT.
 function dgTestArrive(){ if(!DGT.sc) return; const me=S.tokens.find(t=>t.id==='me'); if(!me) return; const i=Math.floor(me.x/CELL), j=Math.floor(me.y/CELL), k=i+','+j; if(k===DGT.cell) return; DGT.cell=k;
   const m=dgMk(i,j); if(!m||!m.to) return; let dest=null; DGT.sc.forEach((sc,si)=>{ for(const kk in ((sc.dg&&sc.dg.m)||{})) if(sc.dg.m[kk].code===m.to&&!dest) dest={si,c:kk.split(',').map(Number)}; });
   if(!dest){ toast(`Destination ${m.to} introuvable`,true); return; }
-  fpsFade(m.k); setTimeout(()=>{ FPS.mv=0; if(dest.si!==DGT.si) dgTestScene(dest.si,dest.c); else { me.x=(dest.c[0]+.5)*CELL; me.y=(dest.c[1]+.5)*CELL; DGT.cell=dest.c.join(','); FPS.cam=null; followMe(); } fpsUnfade(); },340); }
+  const dmk=DGT.sc[dest.si].dg.m[dest.c.join(',')], da=dmk&&dmk.a!=null?dmk.a*Math.PI/4:null;
+  fpsFade(m.k); setTimeout(()=>{ FPS.mv=0; const keep=FPS.cam?FPS.cam.a:0; if(dest.si!==DGT.si) dgTestScene(dest.si,dest.c); else { me.x=(dest.c[0]+.5)*CELL; me.y=(dest.c[1]+.5)*CELL; DGT.cell=dest.c.join(','); FPS.cam=null; followMe(); }
+    const a=da!=null?da:keep; if(FPS.cam) FPS.cam.a=a; const me2=S.tokens.find(t=>t.id==='me'); if(me2) me2.ang=a; fpsLater(); fpsUnfade(); },340); }
 function dgTestLoadOld(){ window.DGTEST=true; DGT.sc=null; if(!ME) ME='test'; const c={}, d={}, m={}, box=(x0,y0,w,h,st)=>{ for(let i=x0;i<x0+w;i++) for(let j=y0;j<y0+h;j++) c[i+','+j]=st; };
   /* une boucle qui traverse tous les styles : pierre → crypte → prairie → ruelle → ruines → désert → jungle → station → pierre */
   box(0,0,5,5,'pierre'); box(5,2,5,1,'pierre'); box(-3,1,3,3,'crypte');
@@ -5294,7 +5300,7 @@ function fpsSync(){ if(!isPlayer||!NETVIEW) return; const me=ME&&S.tokens.find(t
   if(!want){ if(el) el.hidden=true; document.documentElement.classList.remove('fpsmode'); return; }
   el=fpsBuild(board,'play'); el.hidden=false; document.documentElement.classList.add('fpsmode'); FPS.self=me.id; FPS.per=typeof VEHME!=='undefined'&&VEHME&&VEHME.per!=null?+VEHME.per:null; fpsHands();
   const c={x:me.x/CELL,y:me.y/CELL,a:(me.dir||0)*Math.PI/2,z:dgH(Math.floor(me.x/CELL),Math.floor(me.y/CELL))};
-  if(FPS.cam&&FPS.mode==='play'&&Math.hypot(FPS.cam.x-c.x,FPS.cam.y-c.y)>1.6){ FPS.anim=null; if(FPS.fading) fpsUnfade(); else { const cv=el.querySelector('canvas'); if(cv.animate) cv.animate([{filter:'brightness(4) saturate(0)'},{filter:'none'}],{duration:600,easing:'ease-out'}); } }
+  if(FPS.cam&&FPS.mode==='play'&&Math.hypot(FPS.cam.x-c.x,FPS.cam.y-c.y)>1.6){ FPS.anim=null; if(me.ang!=null) FPS.cam.a=+me.ang; if(FPS.fading) fpsUnfade(); else { const cv=el.querySelector('canvas'); if(cv.animate) cv.animate([{filter:'brightness(4) saturate(0)'},{filter:'none'}],{duration:600,easing:'ease-out'}); } }
   const busy=FPS.mv||(FPS.lastMove&&performance.now()-FPS.lastMove<700), far=FPS.cam&&Math.hypot(FPS.cam.x-c.x,FPS.cam.y-c.y)>1.6;
   if(!FPS.cam||FPS.mode!=='play'){ FPS.cam={x:c.x,y:c.y,z:c.z,a:me.ang!=null?+me.ang:c.a}; }
   else if((!busy||far)&&(Math.abs(FPS.cam.x-c.x)>.01||Math.abs(FPS.cam.y-c.y)>.01)){ FPS.cam.x=c.x; FPS.cam.y=c.y; FPS.cam.z=c.z; FPS.anim=null; }
@@ -5304,7 +5310,7 @@ function fpsSync(){ if(!isPlayer||!NETVIEW) return; const me=ME&&S.tokens.find(t
 function fpsPrevArrive(to){ const i=Math.floor(to.x), j=Math.floor(to.y), m=dgMk(i,j); if(!m) return;
   if(!m.to){ toast(`${MK_LBL[m.k]} ${m.code||''} : aucune destination (« Mène à »)`); return; }
   const dest=dgCodes().find(c=>c.code===m.to); if(!dest){ toast(`Destination ${m.to} introuvable`,true); return; }
-  const [di,dj]=dest.k.split(',').map(Number), a=FPS.cam?FPS.cam.a:0; fpsFade(m.k); setTimeout(()=>{
+  const [di,dj]=dest.k.split(',').map(Number), dmk=(((dest.si===S.scene?S.dg:(S.scenes[dest.si]||{}).dg)||{}).m||{})[dest.k], a=dmk&&dmk.a!=null?dmk.a*Math.PI/4:(FPS.cam?FPS.cam.a:0); fpsFade(m.k); setTimeout(()=>{
   if(dest.si!==S.scene){ const sc=S.scenes[dest.si]; loadScene(dest.si); toast(`${MK_LBL[m.k]} → « ${(sc&&sc.title)||'Scène '+(dest.si+1)} »`); }
   FPS.sprites.clear(); FPS.anim=null; FPS.cam={x:di+.5,y:dj+.5,a,z:dgH(di,dj)}; const el=$('fpsprev'); if(el) el.hidden=false; fpsLater(); fpsUnfade(); },340); }
 function fpsPreview(){ if(!dgOn()||!Object.keys(S.dg.c||{}).length){ toast('Creusez d\'abord une zone jouable',true); return; }
