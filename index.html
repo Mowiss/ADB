@@ -4294,6 +4294,8 @@ const DG_TH={
   plage:{lbl:'Plage',sw:'#efd59b',rock:'#2a2215',floor2d:'#ecd49a',wall2d:'#8a6a3e',seed:10,sky:1,wh:2},
   rondins:{lbl:'Troncs',sw:'#7a5230',rock:'#1a120a',floor2d:'#6e5a40',wall2d:'#4a3018',seed:12},
   planches:{lbl:'Planches',sw:'#a8794a',rock:'#1a130b',floor2d:'#9c7a52',wall2d:'#5a3c20',seed:13},
+  trottoir:{lbl:'Trottoir',sw:'#4d5866',rock:'#0b0710',floor2d:'#56606c',wall2d:'#1a1426',seed:14,sky:1},
+  bitume:{lbl:'Route',sw:'#2c333c',rock:'#0b0710',floor2d:'#353c46',wall2d:'#1a1426',seed:15,sky:1},
   mer:{lbl:'Mer',sw:'#2f8fc9',rock:'#06202e',floor2d:'#3a95c8',wall2d:'#1c5a80',seed:11,sky:1,wh:1,water:1}};
 /* style d'une case : « thème » + « |s » (ciel au lieu du plafond) + « |i » (murs invisibles) ; 1 = ancien format */
 const DGP={};
@@ -4779,14 +4781,18 @@ function thImg(k,f){ const key=k+'/'+f; if(!(key in THIM)){ const im=new Image()
   const im=THIM[key]; return im&&im.complete&&im.naturalWidth?im:null; }
 /* vignette d'une texture (sol, mur ou plafond) pour la palette */
 const DGTHUMB={};
-function dgThumb(k,part){ const id=k+'|'+part; if(DGTHUMB[id]) return DGTHUMB[id]; const T=fpsTextures(k), N=T.N, a=T[part]||T.floor, c=document.createElement('canvas'); c.width=c.height=N;
+function dgThumb(k,part){ const id=k+'|'+part; if(DGTHUMB[id]) return DGTHUMB[id]; if(part==='floor'&&FLIMG[k]) return FLIMG[k].src; const T=fpsTextures(k), N=T.N, a=T[part]||T.floor, c=document.createElement('canvas'); c.width=c.height=N;
   const im=c.getContext('2d').createImageData(N,N); new Uint32Array(im.data.buffer).set(a.subarray(0,N*N)); c.getContext('2d').putImageData(im,0,0);
   const o=document.createElement('canvas'); o.width=o.height=40; const x=o.getContext('2d'); x.imageSmoothingEnabled=false; x.drawImage(c,0,0,N/2,N/2,0,0,40,40); return DGTHUMB[id]=o.toDataURL(); }
 /* plafond de feuillage : touffes de feuilles avec des trous (on voit le ciel à travers) */
 function leafCeil(x,N,rnd,h0,h1,l0,l1){ for(let i=0;i<55;i++){ const cx=rnd()*N, cy=rnd()*N, r=4+rnd()*7; for(let k=0;k<9;k++){ const a=rnd()*6.28, d=rnd()*r; x.fillStyle=`hsl(${h0+rnd()*(h1-h0)},${45+rnd()*25}%,${l0+rnd()*(l1-l0)}%)`;
     x.beginPath(); x.ellipse((cx+Math.cos(a)*d+N)%N,(cy+Math.sin(a)*d+N)%N,2+rnd()*3,1+rnd()*1.5,rnd()*3,0,7); x.fill(); } }
   x.fillStyle='rgba(60,40,20,.9)'; for(let i=0;i<3;i++){ let a=rnd()*N, b=rnd()*N; x.fillRect(a|0,b|0,1,1); for(let k=0;k<10;k++){ a+=rnd()*4-2; b+=2; x.fillRect((a+N)%N|0,(b+N)%N|0,1,2); } } }
-function fpsTextures(k){ k=k||(S.dg&&S.dg.th)||'pierre'; FPS.texs=FPS.texs||{}; if(FPS.tex===null) FPS.texs={}; FPS.tex=1; if(FPS.texs[k]) return FPS.texs[k];
+/* sols en image (trottoir, route cyberpunk) : grandes dalles qui couvrent plusieurs cases, sans répétition à chaque mètre */
+const FLIMG={trottoir:{src:'res/themes/ruelle/trottoir.webp',cw:6,ch:.875},bitume:{src:'res/themes/ruelle/route.webp',cw:6,ch:2.125}};
+function flLoad(k){ const o=FLIMG[k]; if(o.im) return; o.im=new Image(); o.im.onload=()=>{ const c=document.createElement('canvas'); c.width=o.im.naturalWidth; c.height=o.im.naturalHeight; c.getContext('2d').drawImage(o.im,0,0);
+  o.px=new Uint32Array(c.getContext('2d').getImageData(0,0,c.width,c.height).data.buffer.slice(0)); o.w=c.width; o.h=c.height; fpsLater(); drawDgLater(); }; o.im.src=o.src; }
+function fpsTextures(k){ k=k||(S.dg&&S.dg.th)||'pierre'; FPS.texs=FPS.texs||{}; if(FPS.tex===null) FPS.texs={}; FPS.tex=1; if(FPS.texs[k]) return FPS.texs[k]; if(FLIMG[k]){ const b=fpsTextures('ruelle'); flLoad(k); return FPS.texs[k]=Object.assign({},b,{img:k}); }
   const N=64, NT=128, buf=c=>{ const o=document.createElement('canvas'); o.width=o.height=NT; const x=o.getContext('2d'); x.imageSmoothingEnabled=false; x.drawImage(c,0,0,NT,NT); return new Uint32Array(x.getImageData(0,0,NT,NT).data.buffer.slice(0)); };
   const mk=draw=>{ const c=document.createElement('canvas'); c.width=c.height=N; const x=c.getContext('2d'); draw(x); return c; };
   let sd=DG_TH[k].seed*9301; const rnd=()=>(sd=(sd*9301+49297)%233280)/233280;
@@ -5138,7 +5144,8 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
       if(eye>fh){ const yA=Math.max(0,Math.ceil(h2+(eye-fh)*PS/d1)), yB=Math.min(H-1,Math.floor(h2+(eye-fh)*PS/d0)), mm=!virt&&dgMk(mx,my), FT=mm&&(mm.k==='down'||mm.k==='tp')?mkTex()[mm.k]:TT.floor;
         for(let y=yA;y<=yB;y++){ const rd=(eye-fh)*PS/(y+.5-h2); let wx=cam.x+rd*rdx, wy=cam.y+rd*rdy; const fx=wx-Math.floor(wx), fy=wy-Math.floor(wy), tx=(fx*N)&(N-1), ty=(fy*N)&(N-1);
           if(REACH&&!virt){ const a=inR(mx,my); if((fx<RE&&a!==inR(mx-1,my))||(fx>1-RE&&a!==inR(mx+1,my))||(fy<RE&&a!==inR(mx,my-1))||(fy>1-RE&&a!==inR(mx,my+1))){ put(y,RC,rd); continue; } }
-          let fc=WAT&&cur.th==='mer'&&!mm?FT[(((((wy+now*.13)*N)|0)&(N-1))*N)+((((wx+Math.sin(wy*2+now)*.06)*N)|0)&(N-1))]:FT[ty*N+tx]; if(bs){ const b=bs(wx,wy); if(b) fc=bmix(fc,b); }
+          const FI=TT.img&&!mm?FLIMG[TT.img]:null;
+          let fc=FI&&FI.px?FI.px[((((wy/FI.ch)%1+1)%1*FI.h)|0)*FI.w+((((wx/FI.cw)%1+1)%1*FI.w)|0)]:WAT&&cur.th==='mer'&&!mm?FT[(((((wy+now*.13)*N)|0)&(N-1))*N)+((((wx+Math.sin(wy*2+now)*.06)*N)|0)&(N-1))]:FT[ty*N+tx]; if(bs){ const b=bs(wx,wy); if(b) fc=bmix(fc,b); }
           put(y,shL(fc,(HUB?hubLit(wx,wy):mm&&mm.k==='tp'?1:lit(rd))*vis(wx,wy),LON?la(wx,wy):null),rd); } }
       /* plafond de la case (ou ciel) */
       const CC=cur.blk?null:virt?VC:dgCeil(mx,my,cur);
