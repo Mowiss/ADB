@@ -623,6 +623,7 @@ dialog::backdrop{background:rgba(47,51,64,.42)}
 .die.fail .o,.die.fail .e{stroke:var(--danger)}.die.fail .k{fill:rgba(244,154,146,.3)}.die.fail b{color:var(--danger)}
 @keyframes pop{from{transform:scale(.4);opacity:0}to{transform:none;opacity:1}}
 .verdict{text-align:center;font-family:var(--f-title);font-size:34px;letter-spacing:.12em;color:var(--ink-strong)}
+.verdict.critf{color:#b0201a}
 .verdict.win{color:var(--ok)}.verdict.lose{color:var(--danger)}
 .meta{text-align:center;color:var(--ink-soft);font-size:13px}
 .inst{display:flex;align-items:center;gap:14px;border:1px solid var(--rule);border-radius:10px;padding:12px 14px}
@@ -1723,14 +1724,23 @@ function useItem(it,fire){
   if(it.bastosCost!==''&&it.bastosCost!=='-'&&!isNaN(it.bastosCost)){ const cost=parseInt(it.bastosCost); if((+C.bastos||0)<cost){ toast('Pas assez de Bastos pour utiliser cet objet.'); return; } C.bastos-=cost; renderDerived(); markDirty(); if(cost>0&&fire&&isWeapon(it)&&handsOf(it).length){ const w=shellBurst(cost); if(w){ setTimeout(()=>rollItem(it.name||'Objet',it.stat,it.diceBonus,it.successThreshold),w); return; } } }
   rollItem(it.name||'Objet',it.stat,it.diceBonus,it.successThreshold);
 }
+/* résultat d'un jet, mêmes règles que les bulles :
+   🏆 seules des réussites sur 10 (on compte les 10) · 👍 réussites classiques (on compte toutes les réussites)
+   👎 aucune réussite, aucun 1 (on compte les échecs) · ♟️ aucune réussite mais des 1 (on compte les 1) */
+function rollRes(rolls,th,crit2){ const ok=rolls.filter(r=>r>=th), cls=ok.filter(r=>r<10).length, ones=rolls.filter(r=>r===1||(crit2&&r===2)).length, s=(n,a,b)=>n+' '+(n>1?b:a);
+  if(ok.length&&!cls) return {e:'🏆',n:ok.length,win:1,t:s(ok.length,'réussite critique','réussites critiques')};
+  if(cls) return {e:'👍',n:ok.length,win:1,t:s(ok.length,'succès','succès')};
+  if(!ones) return {e:'👎',n:rolls.length,win:0,t:s(rolls.length,'échec','échecs')};
+  return {e:'♟️',n:ones,win:0,crit:1,t:s(ones,'échec critique','échecs critiques')}; }
+const verdictHTML=R=>`<div class="verdict ${R.win?'win':'lose'}${R.crit?' critf':''}">${R.e} ${R.t}</div>`;
 function showRoll(label,rolls,th,detail,_re){
-  if(!_re) logRoll(label,rolls,th,rolls.filter(r=>r>=th).length);
-  const crit2=hasFx(C,'pompette3');
+  const crit2=hasFx(C,'pompette3'), RR=rollRes(rolls,th,crit2);
+  if(!_re) logRoll(label,rolls,th,RR);
   const succ=rolls.filter(r=>r>=th).length, tens=rolls.filter(r=>r===10).length, fails=rolls.filter(r=>r===1||(crit2&&r===2)).length;
   openDialog(`<h3>${esc(label)}</h3>
     <p class="meta">${detail?esc(detail)+' · ':''}seuil ${th}+${hasFx(C,'pasTop')?' (Pas top top)':''}</p>
     <div class="dice">${rolls.map((r,i)=>dieHTML(r,r===10?'crit':r>=th?'ok':(r===1||(crit2&&r===2))?'fail':'',i*60)).join('')}</div>
-    <div class="verdict ${succ?'win':'lose'}">${succ} succès</div>
+    ${verdictHTML(RR)}
     <p class="meta">${tens?`${tens} × 10 (critique) · `:''}${fails?`${fails} échec${fails>1?'s':''} critique${fails>1?'s':''} · `:''}${rolls.length} dé${rolls.length>1?'s':''}</p>
     <div class="actions"><button class="btn ghost" type="button" data-close>Fermer</button><button class="btn" type="button" id="reroll">Relancer</button></div>`);
   $('reroll').onclick=()=>showRoll(label,rolls.map(()=>1+Math.floor(Math.random()*10)),th,detail);
@@ -1986,13 +1996,13 @@ $('bank-amt').addEventListener('keydown',e=>{ if(e.key==='Enter') bankMove(-1); 
 document.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>{ const i=$(b.dataset.step), lim=b.dataset.step==='fr-n'?[1,30]:[2,10]; i.value=Math.min(lim[1],Math.max(lim[0],(parseInt(i.value)||0)+(+b.dataset.d))); });
 ['fr-n','fr-t'].forEach(id=>$(id).addEventListener('input',e=>{ e.target.value=e.target.value.replace(/\D/g,''); }));
 let rollHist=[];
-function logRoll(label,rolls,th,succ){ rollHist.unshift({label,rolls,th,succ,t:new Date()}); rollHist=rollHist.slice(0,12);
-  $('fr-hist').innerHTML=rollHist.map(h=>`<div class="h"><b>${esc(h.label)}</b><span class="s ${h.succ?'win':'lose'}">${h.succ} succès</span><span class="r">${h.t.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})} · seuil ${h.th}+ · ${h.rolls.join(' ')}</span></div>`).join(''); }
+function logRoll(label,rolls,th,R){ rollHist.unshift({label,rolls,th,R,t:new Date()}); rollHist=rollHist.slice(0,12);
+  $('fr-hist').innerHTML=rollHist.map(h=>`<div class="h"><b>${esc(h.label)}</b><span class="s ${h.R.win?'win':'lose'}">${h.R.e} ${h.R.t}</span><span class="r">${h.t.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})} · seuil ${h.th}+ · ${h.rolls.join(' ')}</span></div>`).join(''); }
 $('fr-go').onclick=()=>{ const n=Math.min(30,Math.max(1,parseInt($('fr-n').value)||1)), th=Math.min(10,Math.max(2,parseInt($('fr-t').value)||8));
-  const rolls=Array.from({length:n},()=>1+Math.floor(Math.random()*10)), succ=rolls.filter(r=>r>=th).length, tens=rolls.filter(r=>r===10).length, ones=rolls.filter(r=>r===1).length;
+  const rolls=Array.from({length:n},()=>1+Math.floor(Math.random()*10)), succ=rolls.filter(r=>r>=th).length, tens=rolls.filter(r=>r===10).length, ones=rolls.filter(r=>r===1).length, RR=rollRes(rolls,th);
   $('fr-out').innerHTML=`<div class="dice">${rolls.map((r,i)=>dieHTML(r,r===10?'crit':r>=th?'ok':r===1?'fail':'',i*50)).join('')}</div>
-    <div class="verdict ${succ?'win':'lose'}">${succ} succès</div><p class="meta">${tens?`${tens} × 10 · `:''}${ones?`${ones} × 1 · `:''}seuil ${th}+</p>`;
-  logRoll('Jet libre',rolls,th,succ); };
+    ${verdictHTML(RR)}<p class="meta">${tens?`${tens} × 10 · `:''}${ones?`${ones} × 1 · `:''}seuil ${th}+</p>`;
+  logRoll('Jet libre',rolls,th,RR); };
 function newDialog(){
   openDialog(`<h3>Nouvelle fiche</h3><p>La fiche actuelle sera remplacée par une fiche vierge${dirHandle?`, enregistrée ensuite comme un nouveau fichier du dossier « ${esc(dirHandle.name)} »`:''}.${dirty?' <b>Elle contient des modifications non enregistrées.</b>':''}</p>
     <div class="actions"><button class="btn ghost" type="button" data-close>Annuler</button><button class="btn danger" type="button" id="new-go">Créer une fiche vierge</button></div>`);
