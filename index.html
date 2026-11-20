@@ -4286,7 +4286,7 @@ const DG_TH={
   crypte:{lbl:'Crypte',sw:'#7b5f4d',rock:'#1a1513',floor2d:'#8a7461',wall2d:'#3a2a22',seed:2},
   station:{lbl:'Station',sw:'#6f8796',rock:'#12161b',floor2d:'#7d8d97',wall2d:'#2a3a46',seed:3},
   hub:{lbl:'Hub',sw:'#7d7a74',rock:'#050505',floor2d:'#8a8780',wall2d:'#222',seed:5,hidden:true},
-  ruelle:{lbl:'Ruelle',sw:'#d43ad6',rock:'#0b0710',floor2d:'#3b3550',wall2d:'#1a1426',seed:6,sky:1,wh:4},
+  ruelle:{lbl:'Ruelle',hidden:true,sw:'#d43ad6',rock:'#0b0710',floor2d:'#3b3550',wall2d:'#1a1426',seed:6,sky:1,wh:4},
   ruines:{lbl:'Ruines',sw:'#8b7d6b',rock:'#14120f',floor2d:'#7a7064',wall2d:'#3a342c',seed:7,sky:1,wh:2},
   desert:{lbl:'Désert',sw:'#d9a75a',rock:'#2a1d0e',floor2d:'#d8b878',wall2d:'#8a5a2a',seed:8,sky:1,wh:2.5},
   jungle:{lbl:'Jungle',sw:'#2f8a3a',rock:'#0c1a0d',floor2d:'#4d6b33',wall2d:'#163a1a',seed:9,sky:1,wh:3},
@@ -4789,7 +4789,7 @@ function leafCeil(x,N,rnd,h0,h1,l0,l1){ for(let i=0;i<55;i++){ const cx=rnd()*N,
     x.beginPath(); x.ellipse((cx+Math.cos(a)*d+N)%N,(cy+Math.sin(a)*d+N)%N,2+rnd()*3,1+rnd()*1.5,rnd()*3,0,7); x.fill(); } }
   x.fillStyle='rgba(60,40,20,.9)'; for(let i=0;i<3;i++){ let a=rnd()*N, b=rnd()*N; x.fillRect(a|0,b|0,1,1); for(let k=0;k<10;k++){ a+=rnd()*4-2; b+=2; x.fillRect((a+N)%N|0,(b+N)%N|0,1,2); } } }
 /* sols en image (trottoir, route cyberpunk) : grandes dalles qui couvrent plusieurs cases, sans répétition à chaque mètre */
-const FLIMG={trottoir:{src:'res/themes/ruelle/trottoir.webp',cw:3,ch:2.234},bitume:{src:'res/themes/ruelle/route.webp',cw:3.906,ch:4.352}};
+const FLIMG={trottoir:{src:'res/themes/ruelle/trottoir.webp',cw:3,ch:2.234},bitume:{src:'res/themes/ruelle/route.webp',cw:4,ch:4}};
 function flLoad(k){ const o=FLIMG[k]; if(o.im) return; o.im=new Image(); o.im.onload=()=>{ const c=document.createElement('canvas'); c.width=o.im.naturalWidth; c.height=o.im.naturalHeight; c.getContext('2d').drawImage(o.im,0,0);
   o.px=new Uint32Array(c.getContext('2d').getImageData(0,0,c.width,c.height).data.buffer.slice(0)); o.w=c.width; o.h=c.height; fpsLater(); drawDgLater(); }; o.im.src=o.src; }
 function fpsTextures(k){ k=k||(S.dg&&S.dg.th)||'pierre'; FPS.texs=FPS.texs||{}; if(FPS.tex===null) FPS.texs={}; FPS.tex=1; if(FPS.texs[k]) return FPS.texs[k]; if(FLIMG[k]){ const b=fpsTextures('ruelle'); flLoad(k); return FPS.texs[k]=Object.assign({},b,{img:k}); }
@@ -5063,7 +5063,7 @@ function fpsWallCaps(){ const E=S.dg&&S.dg.ew||{}, key=JSON.stringify(E); if(FPS
 /* style des fenêtres selon le mur : bois, métal ou pierre */
 const WINST={}; function winStyle(t){ if(WINST[t]) return WINST[t]; const c=(r,g,b)=>0xff000000|(b<<16)|(g<<8)|r;
   const wood={frame:c(92,58,30),sill:c(130,88,48),fw:.05,mun:1}, metal={frame:c(48,54,62),sill:c(80,88,98),fw:.035,mun:0}, neon={frame:c(40,20,52),sill:c(255,60,172),fw:.035,mun:0}, stone={frame:c(118,112,100),sill:c(170,162,146),fw:.07,mun:0};
-  return WINST[t]=({planches:wood,rondins:wood,plage:wood,crypte:wood,jungle:wood,prairie:wood,station:metal,hub:metal,ruelle:neon,pierre:stone,ruines:stone,desert:stone})[t]||stone; }
+  return WINST[t]=({planches:wood,rondins:wood,plage:wood,crypte:wood,jungle:wood,prairie:wood,station:metal,hub:metal,ruelle:neon,trottoir:neon,bitume:neon,pierre:stone,ruines:stone,desert:stone})[t]||stone; }
 /* façade cyberpunk (murs Ruelle) : une image de 3 étages (boutiques au rez-de-chaussée), étages répétés au-delà de 3 m,
    avec un peu de relief : fenêtres en creux, enseignes et climatiseurs en saillie */
 const FAC={ready:false,M:3,W:3*1998/1116};
@@ -5159,7 +5159,7 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
         /* mur épais : on touche sa face avant, à une demi-épaisseur de la ligne */
         const dW=side===0?(((stx>0?mx:mx+1)-stx*HW)-cam.x)/rdx:(((sty>0?my:my+1)-sty*HW)-cam.y)/rdy, dd=dW>.02?dW:d0;
         if(EW.win){ if(top>fh) faceWin(fh,top,dd,ET.wall,ET.N,winStyle(EW.t)); }   /* fenêtre : cadre au style du mur, on voit à travers */
-        else { if(top>fh){ if(EW.t==='ruelle'){ facLoad(); if(FAC.ready) faceFac(fh,top,dd); else face(fh,top,dd,ET.wall,ET.N); } else face(fh,top,dd,ET.wall,ET.N); } if(top>=cap) break; } }   /* MUR tracé sur l'arête */
+        else { if(top>fh){ if(EW.t==='ruelle'||EW.t==='trottoir'||EW.t==='bitume'){ facLoad(); if(FAC.ready) faceFac(fh,top,dd); else face(fh,top,dd,ET.wall,ET.N); } else face(fh,top,dd,ET.wall,ET.N); } if(top>=cap) break; } }   /* MUR tracé sur l'arête */
       const WB=dgWB(mx,my);
       if(WB){ const WT=fpsTextures(WB.t), cap=CC?+CC.h||1:MAXW, top=Math.min(+WB.h||1,cap); if(top>fh) face(fh,top,d0,WT.wall,WT.N); if(top>=cap) break;   /* bloc de MUR */
         cur={th:WB.t,sky:true,blk:1}; fh=+WB.h||1; TT=WT; virt=false; if(d0>60) break; continue; }
