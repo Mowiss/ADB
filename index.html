@@ -2894,6 +2894,7 @@ html.fpsmode .chatpop{bottom:16px}
 .fps-pad svg{width:24px;height:24px;filter:drop-shadow(0 0 3px currentColor) drop-shadow(0 0 6px currentColor);stroke-width:2.6;shape-rendering:crispEdges}
 .fps-x{position:absolute;top:10px;right:10px;width:38px;height:38px;border-radius:50%;border:0;background:rgba(0,0,0,.6);color:#fff;display:grid;place-items:center;cursor:pointer}
 .fps-x svg{width:20px;height:20px}
+.fps-sim{top:56px}.fps-sim i{font-style:normal;font-size:19px;line-height:1}.fps-sim.on{background:rgba(122,79,196,.85)}
 #fpsprev{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(820px,92vw);height:min(520px,70vh);z-index:60;border-radius:14px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.5)}
 #fpsprev:empty{display:none}
 
@@ -4928,7 +4929,7 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
   /* ombre : au-delà de PER × 2 cases, le noir ; en combat, le cercle s'éclaire lentement (pour qui s'y trouve) */
   const PR=Math.max(2,(FPS.per!=null?+FPS.per:3)*2), FC=S.fight&&S.fight.c, me0=S.tokens.find(t=>t.id===selfId), mx0=me0?me0.x/CELL:cam.x, my0=me0?me0.y/CELL:cam.y;
   if(FC&&!FPS.fk0) FPS.fk0=performance.now(); if(!FC) FPS.fk0=0;
-  const fk=FC?Math.min(1,(performance.now()-FPS.fk0)/3500):0, inF=FC&&Math.hypot(mx0-FC.x,my0-FC.y)<=FC.r+.01, noVis=S.dg&&S.dg.hub||FPS.mode!=='play';
+  const fk=FC?Math.min(1,(performance.now()-FPS.fk0)/3500):0, inF=FC&&Math.hypot(mx0-FC.x,my0-FC.y)<=FC.r+.01, noVis=S.dg&&S.dg.hub||(FPS.mode!=='play'&&!FPS.sim);
   const vis=(wx,wy)=>{ if(noVis) return 1; let v=Math.max(0,Math.min(1,(PR+.5-Math.hypot(wx-mx0,wy-my0))/1.6)); if(inF&&fk>0) v=Math.max(v,fk*Math.max(0,Math.min(1,(FC.r+.4-Math.hypot(wx-FC.x,wy-FC.y))/.8))); return v; };
   if(fk>0&&fk<1) FPS.fkRun=1;
   const HUB=S.dg&&S.dg.hub, lit=d=>Math.min(1,amb+torch/(1+d*d*.09));
@@ -5051,7 +5052,7 @@ function fpsAct(k){ if(!FPS.cam) return; if(fpsSpectating()){ toast('Ce n\'est p
     if(dgH(ni,nj)-dgH(ci,cj)>.5001){ fpsBump(); toast('Trop haut pour grimper'); return; }
     const me=FPS.mode==='play'&&S.tokens.find(t=>t.id===FPS.self);
     if(me&&S.dexLock&&me.dxa&&me.dxm!=null&&!dexReach(me.dxa,me.dxm).has(ni+','+nj)){ fpsBump(); toast('Hors de votre zone de déplacement (DEX)'); return; }
-    if(!dgPass(ci,cj,ni,nj)||(FPS.mode==='play'&&S.tokens.some(t=>t.id!==FPS.self&&!t.inveh&&!t.hidden&&!dgDead(t)&&['player','mob','npc'].includes(t.type)&&Math.floor(t.x/CELL)===ni&&Math.floor(t.y/CELL)===nj))){ fpsBump(); return; }
+    if(!dgPass(ci,cj,ni,nj)||((FPS.mode==='play'||FPS.sim)&&S.tokens.some(t=>t.id!==FPS.self&&!t.inveh&&!t.hidden&&!dgDead(t)&&['player','mob','npc'].includes(t.type)&&Math.floor(t.x/CELL)===ni&&Math.floor(t.y/CELL)===nj))){ fpsBump(); return; }
     to.x=ni+.5; to.y=nj+.5; to.z=dgH(ni,nj); }
   FPS.anim={f:{...c},to,t0:performance.now(),dur:k==='tl'||k==='tr'?190:230}; fpsLater(); fpsStep(k==='tl'||k==='tr');
   if(FPS.mode!=='play'&&k!=='tl'&&k!=='tr') setTimeout(()=>fpsPrevArrive(to),260);
@@ -5074,6 +5075,7 @@ function fpsDoor(){ if(!FPS.cam||FPS.anim) return false; const [i,j,ni,nj]=fpsFa
 function fpsTap(e,cv){ const r=cv.getBoundingClientRect(), u=(e.clientX-r.left)/r.width, v=(e.clientY-r.top)/r.height;
   const h=(FPS.hits||[]).filter(o=>u>=o.x0&&u<=o.x1&&v>=o.y0&&v<=o.y1).sort((a,b)=>a.r-b.r)[0];
   if(h&&FPS.mode==='play'&&(dgItem(h.t)||h.t.shop)){ if(h.r>1.6){ toast('Trop loin, approchez-vous'); return; } openAsk(h.t.id,[r.left+(h.x0+h.x1)/2*r.width,r.top+h.y0*r.height]); return; }
+  if(h&&FPS.mode==='prev'&&typeof toggleCard==='function'&&tok(h.t.id)){ toggleCard(h.t.id); return; }
   if(!h) fpsDoor(); }
 /* position à l'écran d'un jeton vu en 3D (bulle « Prendre / Ouvrir », manque de place) */
 function fpsScreenOf(id){ if(!document.documentElement.classList.contains('fpsmode')||!FPS.el) return null; const h=(FPS.hits||[]).find(o=>o.t.id===id); if(!h) return null; const r=FPS.el.querySelector('canvas').getBoundingClientRect(); return [r.left+(h.x0+h.x1)/2*r.width,r.top+h.y0*r.height]; }
@@ -5090,13 +5092,15 @@ function fpsHands(){ if(!FPS.el) return; const im=FPS.el.querySelector('.fps-han
 function fpsStep(turn){ const im=FPS.el&&FPS.el.querySelector('.fps-hands'); if(im&&!im.hidden&&im.animate) im.animate(turn?[{transform:'translateX(-50%)'},{transform:'translateX(-50%) translateX(3%) rotate(.6deg)'},{transform:'translateX(-50%)'}]:[{transform:'translateX(-50%)'},{transform:'translateX(-50%) translateY(4%)'},{transform:'translateX(-50%)'}],{duration:turn?190:230,easing:'ease-in-out'}); }
 function fpsBump(){ const el=FPS.el&&FPS.el.querySelector('canvas'); if(el&&el.animate) el.animate([{transform:'translateY(0)'},{transform:'translateY(4px)'},{transform:'translateY(0)'}],{duration:160}); }
 function fpsBuild(host,mode){ let el=host.querySelector('.fps'); if(!el){ el=document.createElement('div'); el.className='fps';
-    el.innerHTML=`<canvas></canvas><img class="fps-hands" alt="" hidden><div class="fps-cmp">Nord</div><div class="fps-pad">${['tl','fw','tr','sl','bk','sr'].map(k=>`<button type="button" data-fk="${k}" title="${{tl:'Tourner à gauche (Q)',fw:'Avancer (Z)',tr:'Tourner à droite (D)',sl:'Pas à gauche (A)',bk:'Reculer (S)',sr:'Pas à droite (E)'}[k]}">${dgI(k)}</button>`).join('')}</div>${mode==='prev'?'<button type="button" class="fps-x" title="Fermer l\'aperçu">'+IB('x',2)+'</button>':''}`;
+    el.innerHTML=`<canvas></canvas><img class="fps-hands" alt="" hidden><div class="fps-cmp">Nord</div><div class="fps-pad">${['tl','fw','tr','sl','bk','sr'].map(k=>`<button type="button" data-fk="${k}" title="${{tl:'Tourner à gauche (Q)',fw:'Avancer (Z)',tr:'Tourner à droite (D)',sl:'Pas à gauche (A)',bk:'Reculer (S)',sr:'Pas à droite (E)'}[k]}">${dgI(k)}</button>`).join('')}</div>${mode==='prev'?'<button type="button" class="fps-x" title="Fermer l\'aperçu">'+IB('x',2)+'</button><button type="button" class="fps-x fps-sim" title="Vue MJ (tout voir) / vue joueur (perception, collisions)"></button>':''}`;
     host.appendChild(el);
     el.querySelectorAll('[data-fk]').forEach(b=>b.addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); fpsAct(b.dataset.fk); }));
     const cv=el.querySelector('canvas'); let sw=null;
     if(mode==='prev') cv.addEventListener('pointerdown',e=>{ sw={x:e.clientX,y:e.clientY}; });
     if(mode==='prev') cv.addEventListener('pointerup',e=>{ if(!sw) return; const ddx=e.clientX-sw.x, ddy=e.clientY-sw.y; sw=null; if(Math.max(Math.abs(ddx),Math.abs(ddy))<30){ if(Math.max(Math.abs(ddx),Math.abs(ddy))<8) fpsTap(e,cv); return; } if(Math.abs(ddx)>Math.abs(ddy)) fpsAct(ddx<0?'tr':'tl'); else fpsAct(ddy<0?'fw':'bk'); });
-    if(mode==='prev') el.querySelector('.fps-x').onclick=()=>{ el.remove(); FPS.el=null; FPS.mode=null; }; }
+    if(mode==='prev'){ el.querySelector('.fps-x').onclick=()=>{ el.remove(); FPS.el=null; FPS.mode=null; FPS.sim=false; };
+      const sb=el.querySelector('.fps-sim'), sp=()=>{ sb.innerHTML=FPS.sim?'<i>🎲</i>':'<i>👁</i>'; sb.classList.toggle('on',!!FPS.sim); }; sp();
+      sb.onclick=()=>{ FPS.sim=!FPS.sim; sp(); toast(FPS.sim?'Vue joueur : perception (PER × 2), collisions':'Vue MJ : tout est visible'); FPS.sprites.clear(); fpsLater(); }; } }
   FPS.el=el; FPS.mode=mode; return el; }
 document.addEventListener('keydown',e=>{ if(!FPS.el||FPS.el.hidden||e.target.closest&&e.target.closest('input,textarea,[contenteditable]')) return;
   if(e.key===' '){ e.preventDefault(); e.stopPropagation(); fpsDoor(); return; }
