@@ -5277,7 +5277,7 @@ function fpsBuild(host,mode){ let el=host.querySelector('.fps'); if(!el){ el=doc
       J.addEventListener('touchmove',e=>{ e.preventDefault(); e.stopPropagation(); for(const t of e.changedTouches) if(t.identifier===tid) set(t.clientX,t.clientY); },{passive:false});
       const tend=e=>{ for(const t of e.changedTouches) if(t.identifier===tid){ e.preventDefault(); end(); } }; J.addEventListener('touchend',tend,{passive:false}); J.addEventListener('touchcancel',tend,{passive:false});
       J.addEventListener('pointerdown',e=>{ e.stopPropagation(); if(e.pointerType==='touch') return; e.preventDefault(); pid=e.pointerId; try{ J.setPointerCapture(pid); }catch(er){} set(e.clientX,e.clientY); });
-      J.addEventListener('pointermove',e=>{ if(e.pointerId===pid) set(e.clientX,e.clientY); }); J.addEventListener('pointerup',e=>{ e.stopPropagation(); if(e.pointerId===pid) end(); }); J.addEventListener('pointercancel',e=>{ if(e.pointerId===pid) end(); });
+      J.addEventListener('pointermove',e=>{ e.stopPropagation(); if(e.pointerId===pid) set(e.clientX,e.clientY); }); J.addEventListener('pointerup',e=>{ e.stopPropagation(); if(e.pointerId===pid) end(); }); J.addEventListener('pointercancel',e=>{ e.stopPropagation(); if(e.pointerId===pid) end(); });
       J.addEventListener('contextmenu',e=>e.preventDefault()); }
     el.querySelectorAll('[data-fk]').forEach(b=>b.addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); fpsAct(b.dataset.fk); }));
     const cv=el.querySelector('canvas'); let sw=null;
@@ -9040,16 +9040,17 @@ if(isPlayer){
     /* zoom : molette, ou pincer à deux doigts — la vue reste centrée sur son jeton */
     const PZ=[.06,2.5], touches=new Map(); let pinch=null;
     const pdist=()=>{ const a=[...touches.values()]; return Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)||1; };
-    board.addEventListener('pointerdown',e=>{ touches.set(e.pointerId,{x:e.clientX,y:e.clientY});
-      if(touches.size===2){ if(pd){ pd=false; ptr(e,true); } pinch={d:pdist(),z:V.z}; return; }
+    board.addEventListener('pointerdown',e=>{ const fm=document.documentElement.classList.contains('fpsmode'); if(fm&&(e.target.closest('.fps-joy')||(pd&&FPS.dragPid!=null&&e.pointerId!==FPS.dragPid))) return;   /* vue 3D : un doigt tourne, l'autre est sur le joystick */
+      touches.set(e.pointerId,{x:e.clientX,y:e.clientY});
+      if(touches.size===2&&!fm){ if(pd){ pd=false; ptr(e,true); } pinch={d:pdist(),z:V.z}; return; }
       const oa=$('openask'); if(oa&&!oa.hidden&&!e.target.closest('#openask')) oa.hidden=true;
       if(e.target.closest('#openask')) return;
       /* un appui sur un bouton (croix de déplacement, véhicule, parler…) n'est jamais un pointage */
       if(e.target.closest('button,input,textarea,select,.fps-pad,.fps-joy,.fps-x,.chatpop')) return;
-      pd=true; pdAt={x:e.clientX,y:e.clientY}; try{ board.setPointerCapture(e.pointerId); }catch(err){} if(document.documentElement.classList.contains('fpsmode')){ FPS.dragX=e.clientX; return; } ptr(e); });
+      pd=true; pdAt={x:e.clientX,y:e.clientY}; try{ board.setPointerCapture(e.pointerId); }catch(err){} if(document.documentElement.classList.contains('fpsmode')){ FPS.dragX=e.clientX; FPS.dragPid=e.pointerId; return; } ptr(e); });
     board.addEventListener('pointermove',e=>{ if(touches.has(e.pointerId)) touches.set(e.pointerId,{x:e.clientX,y:e.clientY});
-      if(pinch&&touches.size>=2){ V.z=clamp(pinch.z*pdist()/pinch.d,PZ[0],PZ[1]); followMe(); return; } if(pd){ if(document.documentElement.classList.contains('fpsmode')){ fpsDragTurn(e.clientX); return; } ptr(e); } });
-    const endp=e=>{ touches.delete(e.pointerId); if(touches.size<2) pinch=null; if(!pd) return; pd=false;
+      if(pinch&&touches.size>=2){ V.z=clamp(pinch.z*pdist()/pinch.d,PZ[0],PZ[1]); followMe(); return; } if(pd){ if(document.documentElement.classList.contains('fpsmode')){ if(e.pointerId===FPS.dragPid) fpsDragTurn(e.clientX); return; } ptr(e); } });
+    const endp=e=>{ touches.delete(e.pointerId); if(touches.size<2) pinch=null; if(!pd) return; if(document.documentElement.classList.contains('fpsmode')&&FPS.dragPid!=null&&e.pointerId!==FPS.dragPid) return; pd=false; FPS.dragPid=null;
       if(document.documentElement.classList.contains('fpsmode')){ FPS.dragX=null; if(e.type==='pointerup'&&pdAt){ if(Math.hypot(e.clientX-pdAt.x,e.clientY-pdAt.y)<8){ ptr(e); ptr(e,true); } fpsRelease(e,pdAt); } pdAt=null; return; }
       ptr(e,true);
       if(e.type==='pointerup'&&pdAt&&Math.hypot(e.clientX-pdAt.x,e.clientY-pdAt.y)<8){ const [wx,wy]=toWorld(e.clientX,e.clientY), h=S.tokens.filter(t=>(t.box||t.item||t.shop)&&Math.hypot(t.x-wx,t.y-wy)<36*(t.s||1)+6).sort((a,b)=>Math.hypot(a.x-wx,a.y-wy)-Math.hypot(b.x-wx,b.y-wy))[0]; if(h) openAsk(h.id); } pdAt=null; }; board.addEventListener('pointerup',endp); board.addEventListener('pointercancel',endp);
