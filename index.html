@@ -4831,7 +4831,7 @@ function fpsSky(){ const h=((dgHour()%24)+24)%24, wx=S.weather||'', key=(Math.ro
       D[y*SW+x]=0xff000000|(Q(b)<<16)|(Q(g)<<8)|Q(r); } }
   return FPS.skys[key]={d:D,w:SW,h:SH}; }
 /* pluie et orage dans la vue 3D (seulement à ciel ouvert) */
-function fpsWeather(){ const el=FPS.el; if(!el) return; let cv=el.querySelector('.fps-wx'); const wx=S.weather||'', cam=FPS.cam, out=cam&&(dgAt(Math.floor(cam.x),Math.floor(cam.y))||{}).sky;
+function fpsWeather(){ const el=FPS.el; if(!el) return; let cv=el.querySelector('.fps-wx'); const wx=S.weather||'', cam=FPS.cam, out=cam&&!!dgAt(Math.floor(cam.x),Math.floor(cam.y))&&!dgCeil(Math.floor(cam.x),Math.floor(cam.y));   /* dehors = pas de plafond posé */
   if(!cv){ cv=document.createElement('canvas'); cv.className='fps-wx'; el.querySelector('canvas').after(cv); }
   const on=!!(wx&&out&&!el.hidden); cv.hidden=!on; el.querySelector('canvas').style.filter=on?(wx==='storm'?'brightness(.72) saturate(.75)':'brightness(.85) saturate(.85)'):'';
   if(!on){ cancelAnimationFrame(FPS.wxr); FPS.wxr=0; return; } if(FPS.wxr) return;
@@ -5026,7 +5026,7 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
   const inv=1/(px*dy-dx*py);
   L.forEach(o=>{ const tX=inv*(dy*o.sx-dx*o.sy), tY=inv*(-py*o.sx+px*o.sy); if(tY<=.15) return; const img=fpsSprite(o.t); if(!img) return;
     if(!img._px) img._px=new Uint32Array(img.getContext('2d').getImageData(0,0,img.width,img.height).data.buffer.slice(0));
-    const it=dgItem(o.t), sk=img._k, zb=dgH(Math.floor(o.t.x/CELL),Math.floor(o.t.y/CELL)), scrX=(W/2)*(1+tX/tY), hh=Math.abs(PS/tY)*(sk?(o.t.mk==='lum'&&!(dgAt(Math.floor(o.t.x/CELL),Math.floor(o.t.y/CELL))||{}).sky?.95:(img._hf||SPR_H[sk])):it?.34:.62)*(!it&&!sk&&o.t.s?Math.min(1.6,Math.max(.6,o.t.s)):1), ww=hh*img.width/img.height;
+    const it=dgItem(o.t), sk=img._k, zb=dgH(Math.floor(o.t.x/CELL),Math.floor(o.t.y/CELL)), scrX=(W/2)*(1+tX/tY), hh=Math.abs(PS/tY)*(sk?(o.t.mk==='lum'&&dgCeil(Math.floor(o.t.x/CELL),Math.floor(o.t.y/CELL))?.95:(img._hf||SPR_H[sk])):it?.34:.62)*(!it&&!sk&&o.t.s?Math.min(1.6,Math.max(.6,o.t.s)):1), ww=hh*img.width/img.height;
     const bot=h2+(eye-zb)*PS/tY, top=bot-hh, x0=Math.round(scrX-ww/2), x1=Math.round(scrX+ww/2);
     const pa=LON&&o.t.type!=='mk'?la(o.t.x/CELL,o.t.y/CELL):null, sv=o.t.mk==='lum'?1:Math.max(vis(o.t.x/CELL,o.t.y/CELL),pa?Math.min(1,pa[0]+pa[1]+pa[2]):0); if(sv<.05) return;
     const f=sv*(o.t.mk==='tp'||o.t.mk==='lamp'||o.t.mk==='lum'?1:HUB?Math.max(.25,hubLit(o.t.x/CELL,o.t.y/CELL)):Math.max(.35,lit(o.r))), fade=o.lim===Infinity?1:Math.min(1,(o.lim-o.r)/1.5+.15), IW=img.width, IH=img.height, PX=img._px;
