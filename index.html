@@ -4791,9 +4791,10 @@ function leafCeil(x,N,rnd,h0,h1,l0,l1){ for(let i=0;i<55;i++){ const cx=rnd()*N,
 /* sols en image (trottoir, route cyberpunk) : grandes dalles qui couvrent plusieurs cases, sans répétition à chaque mètre */
 const FLIMG={trottoir:{src:'res/themes/ruelle/trottoir.webp',cw:3,ch:2.234},bitume:{src:'res/themes/ruelle/route.webp',cw:4,ch:4},crypte:{src:'res/themes/crypte/sol.webp',cw:4,ch:2.23}};
 /* murs en image : continus le long du mur (cw cases de large, ch de haut) */
-const WLIMG={crypte:{src:'res/themes/crypte/mur.webp',cw:3.6,ch:1.96}};
+const WLIMG={crypte:{src:'res/themes/crypte/mur.webp',rel:'res/themes/crypte/mur-relief.png',cw:3.6,ch:1.96,dep:.07}};
 function flLoad(k,T){ const o=(T||FLIMG)[k]; if(o.im) return; o.im=new Image(); o.im.onload=()=>{ const c=document.createElement('canvas'); c.width=o.im.naturalWidth; c.height=o.im.naturalHeight; c.getContext('2d').drawImage(o.im,0,0);
-  o.px=new Uint32Array(c.getContext('2d').getImageData(0,0,c.width,c.height).data.buffer.slice(0)); o.w=c.width; o.h=c.height; fpsLater(); drawDgLater(); }; o.im.src=o.src; }
+  o.px=new Uint32Array(c.getContext('2d').getImageData(0,0,c.width,c.height).data.buffer.slice(0)); o.w=c.width; o.h=c.height; fpsLater(); drawDgLater(); }; o.im.src=o.src;
+  if(o.rel){ const r=new Image(); r.onload=()=>{ const c=document.createElement('canvas'); c.width=r.naturalWidth; c.height=r.naturalHeight; const x=c.getContext('2d'); x.drawImage(r,0,0); const d=x.getImageData(0,0,c.width,c.height).data, R=new Float32Array(c.width*c.height); for(let i=0;i<R.length;i++) R[i]=d[i*4]/255; o.rl=R; o.rw=c.width; o.rh=c.height; fpsLater(); }; r.src=o.rel; } }
 function fpsTextures(k){ k=k||(S.dg&&S.dg.th)||'pierre'; FPS.texs=FPS.texs||{}; if(FPS.tex===null) FPS.texs={}; FPS.tex=1; if(FPS.texs[k]) return FPS.texs[k]; if(FLIMG[k]&&!FPS.inTx){ FPS.inTx=1; const b=fpsTextures(k==='crypte'?'crypte~':'ruelle'); FPS.inTx=0; flLoad(k); if(WLIMG[k]) flLoad(k,WLIMG); return FPS.texs[k]=Object.assign({},b,{img:k}); } if(k==='crypte~') k='crypte';
   const N=64, NT=128, buf=c=>{ const o=document.createElement('canvas'); o.width=o.height=NT; const x=o.getContext('2d'); x.imageSmoothingEnabled=false; x.drawImage(c,0,0,NT,NT); return new Uint32Array(x.getImageData(0,0,NT,NT).data.buffer.slice(0)); };
   const mk=draw=>{ const c=document.createElement('canvas'); c.width=c.height=N; const x=c.getContext('2d'); draw(x); return c; };
@@ -5142,7 +5143,13 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
     const faceImg=(z0,z1,d,WI)=>{ const yT=Math.max(0,Math.ceil(h2+(eye-z1)*PS/d)), yB=Math.min(H-1,Math.floor(h2+(eye-z0)*PS/d)); if(yB<yT) return;
       const flip=!(side===0&&rdx>0||side===1&&rdy<0); let uw=side===0?cam.y+d*rdy:cam.x+d*rdx; if(flip) uw=-uw; const tx=((((uw/WI.cw)%1)+1)%1*WI.w)|0, hx=cam.x+d*rdx, hy=cam.y+d*rdy;
       const f=lit(d)*(side?.82:1)*vis(hx,hy), wa=LON?la(hx-(side===0?Math.sign(rdx)*.02:0),hy-(side===1?Math.sign(rdy)*.02:0)):null;
-      for(let y=yT;y<=yB;y++){ const z=eye-(y+.5-h2)*d/PS-z0, ty=((1-(((z/WI.ch)%1)+1)%1)*WI.h|0)%WI.h; put(y,shL(WI.px[ty*WI.w+tx],f,wa),d); } };
+      const RL=WI.rl, nrm=side===0?Math.abs(rdx):Math.abs(rdy), tg=(side===0?rdy:rdx)*(flip?-1:1)/nrm, DP=WI.dep||0;
+      const ix=u=>((((u/WI.cw)%1)+1)%1*WI.w)|0, iy=z=>((1-(((z/WI.ch)%1)+1)%1)*WI.h|0)%WI.h;
+      for(let y=yT;y<=yB;y++){ const z=eye-(y+.5-h2)*d/PS-z0; let X=tx, Y=iy(z), sh2=1;
+        if(RL){ /* relief : les pierres avancent (parallaxe), les joints restent en retrait et dans l'ombre */
+          const r0=RL[Y*WI.w+X], back=DP*(1-r0), zz=z+(z+z0-eye)/d*back/nrm*-1, uu=uw-back*tg; X=ix(uu); Y=iy(zz);
+          const r1=RL[Y*WI.w+X], up=RL[((Y-2+WI.h)%WI.h)*WI.w+X]; sh2=.68+.42*r1; if(up>r1+.25) sh2*=.7; else if(r1>up+.25) sh2*=1.12; }
+        put(y,shL(WI.px[Y*WI.w+X],f*sh2,wa),d); } };
     let cur=here, fh=dgH(mx,my), TT=fpsTextures(cur.th), virt=false, d0=.01, VC=null;
     if(cam.z!=null) fh=Math.min(fh,cam.z);   /* en pleine montée : le sol de départ suit la caméra */
     while(n++<160){ const d1=Math.min(sdx,sdy), N=TT.N;
