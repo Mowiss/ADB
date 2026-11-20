@@ -4496,7 +4496,7 @@ const DGIM={};
 /* véhicules vus en 3D : sprite par facteur (res/vehicules/facteur<n>.png) + pastille du nombre de passagers */
 const VEHSPR=[1];
 function vehKey(t){ const f=t.kind==='vehicle'&&t.veh&&+t.veh.factor; return f&&VEHSPR.includes(f)?'facteur'+f:null; }
-const PERSOS=['humain-h','humain-f','troll-h','troll-f','droide-h','droide-f','demon-h','demon-f','trifide-h','trifide-f'], PERSO_ALIAS={elfe:'humain'};
+const PERSOS=['humain-h','humain-f','troll-h','troll-f','droide-h','droide-f','demon-h','demon-f','trifide-h','trifide-f','elfe-h','elfe-f'], PERSO_ALIAS={};
 function persoKey(t){ if(t.type!=='player') return null; const r=PERSO_ALIAS[t.race]||t.race||'humain', k=r+'-'+(t.sexe==='f'?'f':'h'); return PERSOS.includes(k)?k:null; }
 function persoImg(k){ const id='p:'+k; let im=DGIM[id]; if(!im){ im=DGIM[id]=new Image(); im.onload=()=>{ FPS.sprites.clear(); fpsLater(); }; im.src='res/persos/'+k+'.png'; } return im.complete&&im.naturalWidth?im:null; }
 function dgImg(k){ if(!DGSPR[k]) return null; let im=DGIM[k]; if(!im){ im=DGIM[k]=new Image(); im.onload=()=>{ FPS.sprites.clear(); fpsLater(); }; im.src=DGSPR[k]; } return im.complete&&im.naturalWidth?im:null; }
