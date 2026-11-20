@@ -4144,7 +4144,7 @@ function renderTokens(){
   [...SEL].forEach(id=>{ if(!keep.has(id)) SEL.delete(id); });
   S.tokens.forEach(tokenEl); markTurn(); if(isPlayer){ vehBtnPaint(); const w=$('shopdlg'); if(w&&w.dataset.id) shopDlg(w.dataset.id); }
 }
-function moveTokenEl(t){ bleedTrail(t); if(t.kind==='vehicle') S.tokens.forEach(p=>{ if(p.inveh===t.id){ p.x=t.x; p.y=t.y; } }); const el=document.querySelector(`.tk[data-id="${t.id}"]`); if(el){ el.style.left=t.x+'px'; el.style.top=t.y+'px'; el.style.setProperty('--s',t.s||1); if(t.stamp&&el.dataset.ss!==String(t.s||1)){ el.dataset.ss=String(t.s||1); const f=el.querySelector('.face'); if(f) f.innerHTML=faceHTML(t); const g=el.querySelector('.glow,.beam'); if(g){ const d=lightHTML(t); if(d) g.outerHTML=d; } } } }
+function moveTokenEl(t){ bleedTrail(t); if(typeof FPS!=='undefined'&&FPS.el&&typeof fpsLater==='function') fpsLater(); if(t.kind==='vehicle') S.tokens.forEach(p=>{ if(p.inveh===t.id){ p.x=t.x; p.y=t.y; } }); const el=document.querySelector(`.tk[data-id="${t.id}"]`); if(el){ el.style.left=t.x+'px'; el.style.top=t.y+'px'; el.style.setProperty('--s',t.s||1); if(t.stamp&&el.dataset.ss!==String(t.s||1)){ el.dataset.ss=String(t.s||1); const f=el.querySelector('.face'); if(f) f.innerHTML=faceHTML(t); const g=el.querySelector('.glow,.beam'); if(g){ const d=lightHTML(t); if(d) g.outerHTML=d; } } } }
 function renderBoard(){
   if(S.bg&&!S.bgW){ S.bgW=S.bgH=4000; }   // ancienne table : fond sur 4000 × 4000
   const bg=$('bg'), gr=$('grid');
@@ -4924,6 +4924,14 @@ function fpsSprite(t){ if(t.type==='mk'&&t.mk==='lum'){ const o=lumImg(t.lk); re
     im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96" fill="none" stroke="${col}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${IC[k]}</svg>`); };
   if(t.img){ const im=new Image(); im.onload=()=>draw(im); im.onerror=ico; im.src=t.img; } else ico();
   return null; }
+/* sang en 3D : les taches de la carte, pixellisées (32 px par case), tachent le sol et le pied des murs */
+function fpsBlood(){ const L=S.blood||[]; if(!L.length||typeof bloodShape!=='function') return null; const key=L.length+'|'+L[0].n+'|'+L[L.length-1].n+'|'+L[L.length-1].x;
+  const o=FPS.bld; if(o&&o.key===key) return o.d?o:null; if(o&&o.key===key+'…') return null;
+  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9; L.forEach(b=>{ const m=b.r*2.8+4; x0=Math.min(x0,b.x-m); y0=Math.min(y0,b.y-m); x1=Math.max(x1,b.x+m); y1=Math.max(y1,b.y+m); });
+  let k=32/CELL; const w0=x1-x0, h0=y1-y0; k=Math.min(k,2048/w0,2048/h0); const W=Math.max(1,Math.ceil(w0*k)), H=Math.max(1,Math.ceil(h0*k));
+  const N={key:key+'…'}; FPS.bld=N; const im=new Image();
+  im.onload=()=>{ const c=document.createElement('canvas'); c.width=W; c.height=H; const x=c.getContext('2d'); x.drawImage(im,0,0,W,H); FPS.bld={key,d:new Uint32Array(x.getImageData(0,0,W,H).data.buffer.slice(0)),w:W,h:H,x0,y0,k}; fpsLater(); };
+  im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="${x0} ${y0} ${w0} ${h0}">${L.map(bloodShape).join('')}</svg>`); return null; }
 function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam.y), here=dgAt(ci,cj)||dgInfo(1), W=cv.width, H=cv.height; if(!W||!H) return;
   const x=cv.getContext('2d'); if(!FPS.img||FPS.img.width!==W||FPS.img.height!==H){ FPS.img=x.createImageData(W,H); FPS.buf=new Uint32Array(FPS.img.data.buffer); FPS.dz=new Float32Array(W*H); }
   /* pas d'image étirée : même échelle en largeur et en hauteur ; champ de vision ajusté au format */
@@ -4951,6 +4959,8 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
   const shL=(c,f,a)=>{ if(!a) return sh(c,f); const r=Math.min(255,(c&255)*Math.min(1.5,f+a[0])), g=Math.min(255,((c>>8)&255)*Math.min(1.5,f+a[1])), b=Math.min(255,((c>>16)&255)*Math.min(1.5,f+a[2])); return 0xff000000|(b<<16)|(g<<8)|r; };
   const LON=LT.length>0;
   const h2=H/2, SK=fpsSky(); let anySky=out;
+  const BL=fpsBlood(), bs=BL?(wx,wy)=>{ const X=((wx*CELL-BL.x0)*BL.k)|0, Y=((wy*CELL-BL.y0)*BL.k)|0; return X<0||Y<0||X>=BL.w||Y>=BL.h?0:BL.d[Y*BL.w+X]; }:null;
+  const bmix=(c,b,s)=>{ const a=((b>>>24)/255)*(s==null?1:s)*.92; if(a<=.02) return c; const ia=1-a, a2=a*.7; return 0xff000000|((((c>>16)&255)*ia+((b>>16)&255)*a2)<<16)|((((c>>8)&255)*ia+((b>>8)&255)*a2)<<8)|(((c&255)*ia+(b&255)*a2)|0); };
   let MAXW=1; for(const k in DG_TH) MAXW=Math.max(MAXW,DG_TH[k].wh||1); for(const k in (S.dg&&S.dg.w||{})){ const w=S.dg.w[k]; if(!w.no) MAXW=Math.max(MAXW,+w.h||1); } for(const k in (S.dg&&S.dg.ew||{})) if(!S.dg.ew[k].inv) MAXW=Math.max(MAXW,+S.dg.ew[k].h||1); const V2=true, WSILL=.32, WTOP=.82;   /* sans mur tracé, pas de bordure */
   for(let xx=0;xx<W;xx++){ const cX=2*xx/W-1, rdx=dx+px*cX, rdy=dy+py*cX; let mx=ci, my=cj;
     const ddx=Math.abs(1/rdx), ddy=Math.abs(1/rdy); let stx,sty,sdx,sdy,side=0,n=0,pmx,pmy;
@@ -4961,7 +4971,10 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
     const face=(z0,z1,d,tex,N,off)=>{ const yT=Math.max(0,Math.ceil(h2+(eye-z1)*PS/d)), yB=Math.min(H-1,Math.floor(h2+(eye-z0)*PS/d)); if(yB<yT) return;
       let wx=side===0?cam.y+d*rdy:cam.x+d*rdx; wx-=Math.floor(wx); if(off) wx=Math.max(0,wx-off); let tx=(wx*N)|0; if(side===0&&rdx>0||side===1&&rdy<0) tx=N-tx-1;
       const f=lit(d)*(side?.78:1)*vis(cam.x+d*rdx,cam.y+d*rdy), wa=LON?la(cam.x+d*rdx-(side===0?Math.sign(rdx)*.02:0),cam.y+d*rdy-(side===1?Math.sign(rdy)*.02:0)):null, wa2=wa&&wa.map(v=>v*(side?.78:1));
-      for(let y=yT;y<=yB;y++){ const z=eye-(y+.5-h2)*d/PS; const ty=((1-(z-Math.floor(z)))*N|0)&(N-1); put(y,shL(tex[ty*N+tx],f,wa2),d); } };
+      const hx=cam.x+d*rdx, hy=cam.y+d*rdy, bb=bs&&z0<.7;
+      for(let y=yT;y<=yB;y++){ const z=eye-(y+.5-h2)*d/PS; const ty=((1-(z-Math.floor(z)))*N|0)&(N-1); let c=tex[ty*N+tx];
+        if(bb&&z<.7){ const pb=.04+z*.5, b=bs(hx-rdx*pb,hy-rdy*pb); if(b) c=bmix(c,b,1-z/.7); }
+        put(y,shL(c,f,wa2),d); } };
     let cur=here, fh=dgH(mx,my), TT=fpsTextures(cur.th), virt=false, d0=.01, VC=null;
     if(cam.z!=null) fh=Math.min(fh,cam.z);   /* en pleine montée : le sol de départ suit la caméra */
     while(n++<160){ const d1=Math.min(sdx,sdy), N=TT.N;
@@ -4969,7 +4982,8 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
       if(eye>fh){ const yA=Math.max(0,Math.ceil(h2+(eye-fh)*PS/d1)), yB=Math.min(H-1,Math.floor(h2+(eye-fh)*PS/d0)), mm=!virt&&dgMk(mx,my), FT=mm&&(mm.k==='down'||mm.k==='tp')?mkTex()[mm.k]:TT.floor;
         for(let y=yA;y<=yB;y++){ const rd=(eye-fh)*PS/(y+.5-h2); let wx=cam.x+rd*rdx, wy=cam.y+rd*rdy; const fx=wx-Math.floor(wx), fy=wy-Math.floor(wy), tx=(fx*N)&(N-1), ty=(fy*N)&(N-1);
           if(REACH&&!virt){ const a=inR(mx,my); if((fx<RE&&a!==inR(mx-1,my))||(fx>1-RE&&a!==inR(mx+1,my))||(fy<RE&&a!==inR(mx,my-1))||(fy>1-RE&&a!==inR(mx,my+1))){ put(y,RC,rd); continue; } }
-          put(y,shL(FT[ty*N+tx],(HUB?hubLit(wx,wy):mm&&mm.k==='tp'?1:lit(rd))*vis(wx,wy),LON?la(wx,wy):null),rd); } }
+          let fc=FT[ty*N+tx]; if(bs){ const b=bs(wx,wy); if(b) fc=bmix(fc,b); }
+          put(y,shL(fc,(HUB?hubLit(wx,wy):mm&&mm.k==='tp'?1:lit(rd))*vis(wx,wy),LON?la(wx,wy):null),rd); } }
       /* plafond de la case (ou ciel) */
       const CC=cur.blk?null:virt?VC:dgCeil(mx,my,cur);
       if(CC){ const ch=+CC.h||1, CT=CC.t&&CC.t!==cur.th?fpsTextures(CC.t):TT, CN=CT.N; if(ch>eye){ const yA=Math.max(0,Math.ceil(h2+(eye-ch)*PS/d0)), yB=Math.min(H-1,Math.floor(h2+(eye-ch)*PS/d1));
