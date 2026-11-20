@@ -4764,7 +4764,7 @@ function tpFrame(){ const NF=16, f=Math.floor(performance.now()/70)%NF; FPS.tpf=
 /* sprites de MOB pour la zone de jeu : res/mobs/<clé>.png (la version HD du bestiaire reste dans mobs/<clé>.webp) */
 /* taille en hauteur de case (sinon : proportionnelle au sprite, 361 px ≈ un humain) */
 const MOBSZ={'cyber-gobelin':.55,'gnome-chapardeur':.45};
-const MOBSPR=['cyber-gobelin','gnome-chapardeur','vampire','netrunner'];
+const MOBSPR=['cyber-gobelin','gnome-chapardeur','vampire','netrunner','demon'];
 const slugMob=n=>String(n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
 function mobSprKey(t){ if(t.type!=='mob'&&t.type!=='npc') return null; const m=/mobs\/([\w-]+)\.webp/.exec(t.img||''); let k=m&&m[1]; if(k&&MOBSPR.includes(k)) return k;
   k=slugMob(t.name).replace(/-\d+$/,''); return MOBSPR.includes(k)?k:null; }
