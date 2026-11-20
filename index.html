@@ -5158,10 +5158,10 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
         if(glow){ const l=Math.max(c&255,(c>>8)&255,(c>>16)&255); if(l>120) f=Math.max(f,Math.min(1,.55+l/400)*vv); }
         put(y,shL(c,f,wa),d); } };
     /* fenêtre en image par-dessus le mur : cadre en saillie (parallaxe + ombre portée), vitre qu'on traverse du regard */
-    const winOver=(z0,d,WO)=>{ const Z0=z0+.3, Z1=Z0+WO.h/WO.w, yT=Math.max(0,Math.ceil(h2+(eye-Z1-.05)*PS/d)), yB=Math.min(H-1,Math.floor(h2+(eye-Z0+.05)*PS/d)); if(yB<yT) return;
-      const flip=side===0&&rdx>0||side===1&&rdy<0, nrm=side===0?Math.abs(rdx):Math.abs(rdy), tg=(side===0?rdy:rdx)*(flip?-1:1)/nrm; let u0=side===0?cam.y+d*rdy:cam.x+d*rdx; u0-=Math.floor(u0); if(flip) u0=1-u0;
+    const winOver=(z0,d,WO)=>{ const M=.1, Z0=z0+.32, Z1=Z0+(1-2*M)*WO.h/WO.w, yT=Math.max(0,Math.ceil(h2+(eye-Z1-.05)*PS/d)), yB=Math.min(H-1,Math.floor(h2+(eye-Z0+.05)*PS/d)); if(yB<yT) return;
+      const flip=side===0&&rdx>0||side===1&&rdy<0, nrm=side===0?Math.abs(rdx):Math.abs(rdy), tg=Math.max(-2,Math.min(2,(side===0?rdy:rdx)*(flip?-1:1)/nrm)); let u0=side===0?cam.y+d*rdy:cam.x+d*rdx; u0-=Math.floor(u0); if(flip) u0=1-u0;
       const hx=cam.x+d*rdx, hy=cam.y+d*rdy, f=lit(d)*(side?.82:1)*vis(hx,hy), wa=LON?la(hx,hy):null, P=.045;
-      const at=(u,z)=>{ if(u<0||u>=1||z<Z0||z>=Z1) return -1; return (((1-(z-Z0)/(Z1-Z0))*WO.h|0)*WO.w)+((u*WO.w)|0); };
+      const at=(u,z)=>{ u=(u-M)/(1-2*M); if(u<0||u>=1||z<Z0||z>=Z1) return -1; return (((1-(z-Z0)/(Z1-Z0))*WO.h|0)*WO.w)+((u*WO.w)|0); };   /* marge : le cadre en saillie reste dans la case, même de biais */
       for(let y=yT;y<=yB;y++){ const i=y*W+xx, z=eye-(y+.5-h2)*d/PS, dz=(z-eye)/d*P/nrm;
         const jf=at(u0-P*tg,z-dz), af=jf<0?0:WO.px[jf]>>>24;   /* le cadre avance de P : on le cherche décalé */
         if(af>200){ const c=WO.px[jf], l=Math.max(c&255,(c>>8)&255,(c>>16)&255); B[i]=shL(c,l>150?Math.max(f,.9*vis(hx,hy)):f*1.05,wa); DZ[i]=d-P/nrm*.5; continue; }
