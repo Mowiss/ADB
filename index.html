@@ -3144,13 +3144,17 @@ input.hue{-webkit-appearance:none;appearance:none;height:12px;border-radius:6px;
 .reveal .rv-rays{position:absolute;left:-110px;top:-170px;width:220px;height:220px;border-radius:50%;background:repeating-conic-gradient(rgba(255,226,140,.5) 0 8deg,transparent 8deg 24deg);-webkit-mask:radial-gradient(circle,#000 20%,transparent 68%);mask:radial-gradient(circle,#000 20%,transparent 68%);opacity:0;animation:rvRays 3.6s linear forwards}
 .reveal .rv-chest{position:absolute;left:-30px;top:-30px;width:60px;height:60px;border-radius:14px;background:var(--paper);border:2px solid var(--brown);color:var(--brown);display:grid;place-items:center;animation:rvShake .5s ease-in-out}
 .reveal .rv-chest svg{width:36px;height:36px}
-.reveal .rv-item{position:absolute;left:-30px;top:-30px;width:60px;height:60px;border-radius:14px;background:#fff;border:2px solid #f2c45a;color:var(--brown);display:grid;place-items:center;overflow:hidden;box-shadow:0 0 22px 6px rgba(255,214,110,.75);opacity:0;animation:rvUp 3.6s cubic-bezier(.2,.9,.3,1.2) .35s forwards}
+.reveal .rv-bits{position:absolute;left:0;top:0}.reveal .rv-bits i{position:absolute;left:0;top:0;width:var(--w);height:var(--h);margin:calc(var(--h)/-2) 0 0 calc(var(--w)/-2);box-shadow:inset -1px -1px 0 rgba(0,0,0,.35);animation:rvBit .9s cubic-bezier(.2,.7,.4,1) forwards}
+.reveal .rv-float{position:absolute;left:0;top:0;animation:rvBob 2.4s ease-in-out 2.15s infinite}
+.reveal .rv-item{position:absolute;left:-30px;top:-30px;width:60px;height:60px;border-radius:14px;background:#fff;border:2px solid #f2c45a;color:var(--brown);display:grid;place-items:center;overflow:hidden;box-shadow:0 0 22px 6px rgba(255,214,110,.75);opacity:0;animation:rvUp 1.9s cubic-bezier(.25,.8,.35,1) .25s forwards}
 .reveal .rv-item svg,.reveal .rv-item img{width:40px;height:40px;object-fit:cover}.reveal .rv-item img{width:100%;height:100%}
 .reveal .rv-name{position:absolute;left:0;top:-178px;transform:translateX(-50%);white-space:nowrap;background:var(--ink-strong,#2f3340);color:#fff;font:700 13px Quicksand,sans-serif;padding:5px 11px;border-radius:9px;display:flex;flex-direction:column;align-items:center;opacity:0;animation:rvName 3.2s ease-out .8s forwards}
 .reveal .rv-name small{font-weight:500;font-size:10.5px;opacity:.75}
 .reveal.out{opacity:0;transition:opacity .7s}
 @keyframes rvShake{0%,100%{transform:rotate(0)}25%{transform:rotate(-7deg)}50%{transform:rotate(6deg)}75%{transform:rotate(-3deg)}}
-@keyframes rvUp{0%{opacity:0;transform:translateY(0) scale(.35)}25%{opacity:1}55%{transform:translateY(-92px) scale(1.25)}100%{opacity:1;transform:translateY(-82px) scale(1.15)}}
+@keyframes rvUp{0%{opacity:0;transform:translateY(6px) scale(.35)}20%{opacity:1;transform:translateY(-10px) scale(.8)}100%{opacity:1;transform:translateY(-84px) scale(1.15)}}
+@keyframes rvBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+@keyframes rvBit{0%{opacity:1;transform:translate(0,0) rotate(0)}45%{opacity:1;transform:translate(calc(var(--x)*.7),var(--y)) rotate(calc(var(--r)*.5))}100%{opacity:0;transform:translate(var(--x),var(--g)) rotate(var(--r))}}
 @keyframes rvHalo{0%{opacity:0;transform:scale(.3)}30%{opacity:1;transform:scale(1.1)}100%{opacity:.85;transform:scale(1)}}
 @keyframes rvRays{0%{opacity:0;transform:rotate(0)}30%{opacity:1}100%{opacity:.6;transform:rotate(90deg)}}
 @keyframes rvName{0%{opacity:0;transform:translate(-50%,8px)}100%{opacity:1;transform:translate(-50%,0)}}
@@ -5139,7 +5143,7 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
   const DP=FPS.dp||(FPS.dp=new Map()); let moving=false;
   const pos=t=>{ let q=DP.get(t.id); if(!q){ q={x:t.x,y:t.y}; DP.set(t.id,q); } const ex=t.x-q.x, ey=t.y-q.y, d=Math.hypot(ex,ey);
     if(d<.5||d>CELL*8){ q.x=t.x; q.y=t.y; } else { q.x+=ex*.2; q.y+=ey*.2; moving=true; } return q; };
-  const L=S.tokens.filter(t=>t.id!==selfId&&!t.hidden&&!t.inveh&&(['player','mob','npc'].includes(t.type)||(t.type==='prop'&&t.kind!=='deco'&&(t.kind!=='vehicle'||vehKey(t))))).map(t=>{ const q=pos(t); return {t,sx:q.x/CELL-cam.x,sy:q.y/CELL-cam.y}; }).map(o=>({...o,d:o.sx*o.sx+o.sy*o.sy})).map(o=>({...o,r:Math.sqrt(o.d),lim:rng(o.t)})).filter(o=>o.r<=o.lim);
+  const RVH=FPS.rvHide||{}, nowH=performance.now(); const L=S.tokens.filter(t=>t.id!==selfId&&!t.hidden&&!(RVH[t.id]>nowH)&&!t.inveh&&(['player','mob','npc'].includes(t.type)||(t.type==='prop'&&t.kind!=='deco'&&(t.kind!=='vehicle'||vehKey(t))))).map(t=>{ const q=pos(t); return {t,sx:q.x/CELL-cam.x,sy:q.y/CELL-cam.y}; }).map(o=>({...o,d:o.sx*o.sx+o.sy*o.sy})).map(o=>({...o,r:Math.sqrt(o.d),lim:rng(o.t)})).filter(o=>o.r<=o.lim);
   for(const k in (S.dg&&S.dg.ob||{})){ const p=k.indexOf(','), t={id:'ob'+k,type:'mk',mk:'ob',ok:S.dg.ob[k],x:(+k.slice(0,p)+.5)*CELL,y:(+k.slice(p+1)+.5)*CELL}, sx=t.x/CELL-cam.x, sy=t.y/CELL-cam.y, d=sx*sx+sy*sy; L.push({t,sx,sy,d,r:Math.sqrt(d),lim:Infinity}); }
   for(const k in (S.dg&&S.dg.lum||{})){ const p=k.indexOf(','), t={id:'lum'+k,type:'mk',mk:'lum',lk:S.dg.lum[k],x:(+k.slice(0,p)+.5)*CELL,y:(+k.slice(p+1)+.5)*CELL}, sx=t.x/CELL-cam.x, sy=t.y/CELL-cam.y, d=sx*sx+sy*sy; L.push({t,sx,sy,d,r:Math.sqrt(d),lim:Infinity}); }
   for(const k in (S.dg&&S.dg.m||{})){ const m=S.dg.m[k]; if(m.k==='down') continue; const p=k.indexOf(','), t={id:'mk'+k,type:'mk',mk:m.k,x:(+k.slice(0,p)+.5)*CELL,y:(+k.slice(p+1)+.5)*CELL}, sx=t.x/CELL-cam.x, sy=t.y/CELL-cam.y, d=sx*sx+sy*sy; L.push({t,sx,sy,d,r:Math.sqrt(d),lim:Infinity}); }
@@ -5227,7 +5231,7 @@ function fpsFx(){ if(!FPS.el||typeof stHTML!=='function') return; let box=FPS.el
     if(el.dataset.sig!==sig){ el.dataset.sig=sig; el.innerHTML=stHTML(t); }
     const ph=(h.y1-h.y0)*r.height; el.style.left=(r.left-b.left+(h.x0+h.x1)/2*r.width)+'px'; el.style.top=(r.top-b.top+(h.y0+(h.y1-h.y0)*.58)*r.height)+'px'; el.style.setProperty('--s',(ph*.62/72).toFixed(3)); el.style.zIndex=Math.round(1000-h.r*10); });
   box.querySelectorAll('[data-fid]').forEach(el=>{ if(!seen.has(el.dataset.fid)) el.remove(); }); }
-function fpsScreenOf(id){ if(!FPS.el||FPS.el.hidden||!FPS.el.isConnected) return null; const h=(FPS.hits||[]).find(o=>o.t.id===id); if(!h) return null; const r=FPS.el.querySelector('canvas').getBoundingClientRect(); return [r.left+(h.x0+h.x1)/2*r.width,r.top+h.y0*r.height]; }
+function fpsScreenOf(id,mid){ if(!FPS.el||FPS.el.hidden||!FPS.el.isConnected) return null; const h=(FPS.hits||[]).find(o=>o.t.id===id); if(!h) return null; const r=FPS.el.querySelector('canvas').getBoundingClientRect(); return [r.left+(h.x0+h.x1)/2*r.width,r.top+(mid?(h.y0+h.y1)/2:h.y0)*r.height]; }
 /* fin d'un appui sur la vue 3D du joueur : toucher (objet, porte) ou glisser (se déplacer) */
 function fpsRelease(e,s0){ if(!FPS.el||FPS.el.hidden) return; const cv=FPS.el.querySelector('canvas'), r=cv.getBoundingClientRect();
   if(s0.x<r.left||s0.x>r.right||s0.y<r.top||s0.y>r.bottom) return;
@@ -8001,10 +8005,13 @@ function openAsk(id,at){ const t=tok(id); if(!t) return; if(t.shop){ shopDlg(t.i
   a.querySelector('.oa-x').onpointerdown=e=>{ e.stopPropagation(); a.hidden=true; }; }
 function noRoom(id){ const el=document.querySelector(`.tk[data-id="${id}"]`); if(el){ el.classList.remove('nofit'); void el.offsetWidth; el.classList.add('nofit'); setTimeout(()=>el.classList.remove('nofit'),900); }
   const t=tok(id); if(!t) return; openAsk(id); const a=$('openask'); a.classList.add('full'); a.innerHTML=`${IB('o_backpack',1.8)}<b>Plus de place</b>`; clearTimeout(noRoom.T); noRoom.T=setTimeout(()=>{ a.hidden=true; },1800); }
-function reveal(id,it,by){ const t=tok(id); if(!t) return; const fa=typeof fpsScreenOf==='function'&&fpsScreenOf(id); const [sx,sy]=fa?[fa[0],fa[1]+40]:toScreen(t.x,t.y), b=board.getBoundingClientRect(), k=fa?1.3:clamp(V.z*(t.s||1)*1.4,1,2.2);
+function reveal(id,it,by){ const t=tok(id); if(!t) return; const fa=typeof fpsScreenOf==='function'&&fpsScreenOf(id,1); if(fa&&typeof FPS!=='undefined'){ (FPS.rvHide=FPS.rvHide||{})[id]=performance.now()+5600; setTimeout(()=>fpsLater(),5700); } const [sx,sy]=fa?[fa[0],fa[1]]:toScreen(t.x,t.y), b=board.getBoundingClientRect(), k=fa?1.3:clamp(V.z*(t.s||1)*1.4,1,2.2);
   const el=document.createElement('div'); el.className='reveal'; el.style.left=(sx-b.left)+'px'; el.style.top=(sy-b.top)+'px'; el.style.setProperty('--k',k);
-  el.innerHTML=`<i class="rv-halo"></i><i class="rv-rays"></i><div class="rv-chest">${IB('chest',1.6)}</div><div class="rv-item">${faceHTML(Object.assign({type:'prop'},it))}</div><b class="rv-name">${esc(it.name||'Objet')}${by?`<small>${esc(by)}</small>`:''}</b>`;
-  board.appendChild(el); setTimeout(()=>el.classList.add('out'),3400); setTimeout(()=>el.remove(),4100); }
+  /* le contenant éclate en petits morceaux ; l'objet monte doucement et flotte dans un halo de lumière */
+  const PAL={tech:['#5b6670','#8a96a0','#2fd4e8','#3a434b'],jarre:['#b4602e','#d9824a','#7a3a1a','#e8a46a'],coffre:['#7a4a22','#a8743c','#d4a24a','#4a2c12'],caisse:['#8a5a2c','#b5803e','#d9a65a','#5a3818']}[t.ct]||['#8a5a2c','#b5803e','#d9a65a','#5a3818'];
+  let bits=''; for(let i=0;i<22;i++){ const a=Math.random()*Math.PI*2, d=26+Math.random()*46, sz=3+Math.random()*6; bits+=`<i style="--x:${(Math.cos(a)*d).toFixed(0)}px;--y:${(-20-Math.random()*40).toFixed(0)}px;--g:${(30+Math.random()*30).toFixed(0)}px;--r:${(Math.random()*720-360).toFixed(0)}deg;--w:${sz.toFixed(1)}px;--h:${(sz*(.5+Math.random())).toFixed(1)}px;background:${PAL[i%PAL.length]};animation-delay:${(Math.random()*.05).toFixed(2)}s"></i>`; }
+  el.innerHTML=`<i class="rv-halo"></i><i class="rv-rays"></i><span class="rv-bits">${bits}</span><div class="rv-float"><div class="rv-item">${faceHTML(Object.assign({type:'prop'},it))}</div></div><b class="rv-name">${esc(it.name||'Objet')}${by?`<small>${esc(by)}</small>`:''}</b>`;
+  board.appendChild(el); setTimeout(()=>el.classList.add('out'),5200); setTimeout(()=>el.remove(),6000); }
 /* bulles de BD au-dessus du jeton du joueur (ou en bas de l'écran s'il n'a pas de jeton) */
 function bubble(pid,html,cls,who){ const t=pid&&S.tokens.find(x=>x.owner===pid&&x.kind!=='vehicle'); const el=document.createElement('div'); el.className='bub '+(cls||'');
   const fpm=document.documentElement.classList.contains('fpsmode'); if(t&&fpm) who=who||t.name;
