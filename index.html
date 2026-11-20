@@ -2796,6 +2796,7 @@ html.incombat #rb-dgn,html.incombat #rb-fond{opacity:.3;pointer-events:none}
 #board.fzone{cursor:crosshair}
 .fps-pad{display:none!important}   /* déplacements au toucher (glisser) et au clavier : plus de croix */
 .fps-hud,.fps-cmp{display:none!important}
+.vegpick{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:6px}.vegb{height:62px;border:1px solid var(--rule);border-radius:10px;background:var(--paper);display:grid;place-items:center;padding:4px;cursor:pointer}.vegb{overflow:hidden}.vegb img{display:block;width:100%;height:52px;object-fit:contain;image-rendering:pixelated}.vegb.on{border-color:var(--c-sav,#2f8a3a);box-shadow:inset 0 0 0 2px var(--c-sav,#2f8a3a)}
 .dexh{margin-left:10px}
 .scenenav .scnb{border:0;margin:0 2px;padding:4px 8px}
 .dexh{font:800 12px Quicksand,sans-serif!important;letter-spacing:.06em;padding:0 10px!important;border:1px solid var(--rule)!important;border-radius:9px;gap:5px;display:inline-flex;align-items:center;height:32px}.dexh i{font-style:normal;font-size:14px}.dexh[aria-pressed="true"]{background:var(--c-dex,#d9a400);border-color:var(--c-dex,#d9a400)!important;color:#fff}
@@ -4212,12 +4213,21 @@ const dgEK=(i,j,ni,nj)=>ni===i?`${i},${Math.max(j,nj)},h`:`${Math.max(i,ni)},${j
 const dgDoor=(i,j,ni,nj)=>S.dg&&S.dg.d?S.dg.d[dgEK(i,j,ni,nj)]:null;
 const dgHid=o=>!!o&&(o.w||(o.s&&!o.f));                    /* porte cachée pas encore trouvée : un mur comme les autres */
 const dgShut=o=>!!o&&(o.w||!o.open);
-const dgPass=(i,j,ni,nj)=>dgOpen(ni,nj)&&!dgShut(dgDoor(i,j,ni,nj));
+/* ---------- végétation : sprites croisés en X (deux plans à 45°, façon N64), un par case ---------- */
+const VEG_BIO={foret:'Forêt',marais:'Marais',alien:'Alien',desert:'Désert',glace:'Glace'}, VEG_K={arbre:'Arbre',buisson:'Buisson',herbe:'Herbes'};
+const VEG_H={arbre:2.6,buisson:.95,herbe:.6};
+const vegAt=(i,j)=>S.dg&&S.dg.veg?S.dg.veg[i+','+j]:null;
+const vegBlocks=(i,j)=>{ const v=vegAt(i,j); return !!v&&v.endsWith('-arbre'); };
+const VEGIM={};
+function vegImg(k){ let o=VEGIM[k]; if(!o){ o=VEGIM[k]={im:new Image(),px:null}; o.im.onload=()=>{ const c=document.createElement('canvas'); c.width=o.im.naturalWidth; c.height=o.im.naturalHeight; const x=c.getContext('2d'); x.drawImage(o.im,0,0); o.px=new Uint32Array(x.getImageData(0,0,c.width,c.height).data.buffer.slice(0)); o.w=c.width; o.h=c.height; drawDgLater(); fpsLater(); }; o.im.src='res/vege/'+k+'.png'; } return o; }
+function vegClick(wx,wy){ const [i,j]=dgCell(wx,wy); if(!dgOpen(i,j)){ toast('La végétation se pose sur une case creusée',true); return; } const D=dgEnsure(); D.veg=D.veg||{}; const k=dgK(i,j);
+  if(D.veg[k]===DG.vk) delete D.veg[k]; else D.veg[k]=DG.vk; drawDgLater(); fpsLater(); markDirty(); sync(); }
+const dgPass=(i,j,ni,nj)=>dgOpen(ni,nj)&&!dgShut(dgDoor(i,j,ni,nj))&&!vegBlocks(ni,nj);
 function dgEdgeAt(wx,wy){ const fx=wx/CELL, fy=wy/CELL, dh=Math.abs(fy-Math.round(fy)), dv=Math.abs(fx-Math.round(fx));
   if(dh<dv){ const i=Math.floor(fx), j=Math.round(fy); return {k:`${i},${j},h`,a:[i,j-1],b:[i,j]}; }
   const i=Math.round(fx), j=Math.floor(fy); return {k:`${i},${j},v`,a:[i-1,j],b:[i,j]}; }
 const dgEdgeSeg=k=>{ const [i,j,o]=k.split(','), X=+i*CELL, Y=+j*CELL; return o==='h'?[X,Y,X+CELL,Y]:[X,Y,X,Y+CELL]; };
-function dgPub(){ if(!S.dg) return null; const d={}; for(const k in (S.dg.d||{})){ const o=S.dg.d[k]; d[k]=dgHid(o)?{w:1}:{open:!!o.open}; } return {on:!!S.dg.on,hub:!!S.dg.hub,th:S.dg.th,c:S.dg.c,m:S.dg.m||null,d}; }
+function dgPub(){ if(!S.dg) return null; const d={}; for(const k in (S.dg.d||{})){ const o=S.dg.d[k]; d[k]=dgHid(o)?{w:1}:{open:!!o.open}; } return {on:!!S.dg.on,hub:!!S.dg.hub,th:S.dg.th,c:S.dg.c,m:S.dg.m||null,veg:S.dg.veg||null,d}; }
 function dgDoorClick(wx,wy){ const e=dgEdgeAt(wx,wy); if(!dgOpen(...e.a)||!dgOpen(...e.b)){ toast('Une porte se place entre deux cases creusées',true); return; }
   const D=dgEnsure(); D.d=D.d||{}; const o=D.d[e.k];
   if(DG.tool==='door'){ if(!o) D.d[e.k]={open:false}; else if(o.s){ delete o.s; delete o.f; } else if(!o.open) o.open=true; else delete D.d[e.k]; }
@@ -4277,6 +4287,9 @@ function drawDg(){ const cv=$('dgn'); if(!cv) return; const r=board.getBoundingC
       if(!dgOpen(i,j-1)){ x.moveTo(X,Y); x.lineTo(X+CELL,Y); } if(!dgOpen(i,j+1)){ x.moveTo(X,Y+CELL); x.lineTo(X+CELL,Y+CELL); }
       if(!dgOpen(i-1,j)){ x.moveTo(X,Y); x.lineTo(X,Y+CELL); } if(!dgOpen(i+1,j)){ x.moveTo(X+CELL,Y); x.lineTo(X+CELL,Y+CELL); } });
     x.stroke(); }); x.setLineDash([]);
+  /* végétation */
+  const VV=S.dg.veg||{}; for(const k in VV){ const p=k.indexOf(','), i=+k.slice(0,p), j=+k.slice(p+1); if(i<i0||i>i1||j<j0||j>j1) continue; const o=vegImg(VV[k]); if(!o.px) continue;
+    const big=VV[k].endsWith('-arbre'), sz=CELL*(big?1.25:.85), r=o.w/o.h, w=r>1?sz:sz*r, h=r>1?sz/r:sz; x.save(); x.imageSmoothingEnabled=false; x.globalAlpha=.95; x.drawImage(o.im,(i+.5)*CELL-w/2,(j+.5)*CELL+CELL*.42-h,w,h); x.restore(); }
   /* passages */
   const MM=S.dg.m||{}; for(const k in MM){ const m=MM[k], p=k.indexOf(','), i=+k.slice(0,p), j=+k.slice(p+1); if(i<i0||i>i1||j<j0||j>j1) continue; const X=i*CELL, Y=j*CELL, c=m.k==='tp'?'#18b8d8':'#7a5a2c';
     x.save(); x.translate(X,Y);
@@ -4312,8 +4325,9 @@ function dgRelief(ci,cj){ const D=dgEnsure(); D.h=D.h||{}; const [a,b]=dgBrush(c
     [[1,0],[-1,0],[0,1],[0,-1]].forEach(([u,v])=>{ const k=dgK(i+u,j+v), hn=get(k); if(sgn>0?hn<hv-st-1e-6:hn>hv+st+1e-6){ set(k,hv-sgn*st); Q.push([i+u,j+v]); } }); } }
   return seeds.length; }
 function dgStamp(ci,cj,carve){ if(DG.tool==='up'||DG.tool==='down') return dgRelief(ci,cj); const [a,b]=dgBrush(ci,cj), C=dgEnsure().c, st=dgStyle(); let n=0;
-  for(let i=a;i<a+DG.n;i++) for(let j=b;j<b+DG.n;j++){ const k=dgK(i,j); if(DG.tool==='paint'){ if(C[k]&&C[k]!==st){ C[k]=st; n++; } } else if(carve){ if(C[k]!==st){ C[k]=st; n++; } } else if(C[k]){ delete C[k]; n++; if(S.dg.d) [dgEK(i,j,i,j-1),dgEK(i,j,i,j+1),dgEK(i,j,i-1,j),dgEK(i,j,i+1,j)].forEach(e=>delete S.dg.d[e]); if(S.dg.m) delete S.dg.m[k]; } } return n; }
-function dgPaint(wx,wy,g){ DG._g=g; if(['sup','sdown','tp'].includes(DG.tool)){ if(!g.last){ g.last=1; dgMarkClick(wx,wy); } return; }
+  for(let i=a;i<a+DG.n;i++) for(let j=b;j<b+DG.n;j++){ const k=dgK(i,j); if(DG.tool==='paint'){ if(C[k]&&C[k]!==st){ C[k]=st; n++; } } else if(carve){ if(C[k]!==st){ C[k]=st; n++; } } else if(C[k]){ delete C[k]; n++; if(S.dg.d) [dgEK(i,j,i,j-1),dgEK(i,j,i,j+1),dgEK(i,j,i-1,j),dgEK(i,j,i+1,j)].forEach(e=>delete S.dg.d[e]); if(S.dg.m) delete S.dg.m[k]; if(S.dg.veg) delete S.dg.veg[k]; } } return n; }
+function dgPaint(wx,wy,g){ DG._g=g; if(DG.tool==='veg'){ if(!g.last){ g.last=1; vegClick(wx,wy); } return; }
+  if(['sup','sdown','tp'].includes(DG.tool)){ if(!g.last){ g.last=1; dgMarkClick(wx,wy); } return; }
   if(DG.tool==='door'||DG.tool==='secret'){ if(!g.last){ g.last=1; dgDoorClick(wx,wy); } return; }
   const [ci,cj]=dgCell(wx,wy), carve=DG.tool==='carve';
   if(g.last){ let [x0,y0]=g.last; const dx=Math.abs(ci-x0), dy=Math.abs(cj-y0), sx=x0<ci?1:-1, sy=y0<cj?1:-1; let er=dx-dy;
@@ -4411,7 +4425,9 @@ function dgTestLoad(){ window.DGTEST=true; if(!ME) ME='test'; const c={}, d={}, 
   d[dgEK(19,7,19,8)]={open:false}; d[dgEK(20,7,20,8)]={open:false}; d[dgEK(2,8,2,9)]={open:true}; d[dgEK(2,13,2,14)]={open:false};
   m['2,12']={k:'tp',code:'TEST1',to:'TEST2'}; m['22,6']={k:'tp',code:'TEST2',to:'TEST1'};
   m['13,5']={k:'down',code:'TEST3',to:'TEST4'}; m['21,25']={k:'up',code:'TEST4',to:'TEST3'};
-  S.dg={on:true,th:'pierre',c,d,m}; S.hour=18.5; S.weather=''; S.combat=null; S.fight=null; S.dexLock=false; FPS.skys=null; FPS.dst={};
+  const veg={'17,1':'foret-arbre','22,1':'foret-arbre','17,6':'foret-buisson','23,5':'foret-herbe','16,4':'foret-herbe','21,7':'alien-arbre','18,7':'alien-buisson',
+    '6,22':'desert-arbre','11,23':'desert-buisson','13,24':'desert-herbe','9,22':'desert-herbe','0,18':'marais-arbre','4,19':'marais-buisson','1,21':'marais-herbe','3,25':'foret-buisson','4,26':'glace-arbre','0,25':'glace-herbe','16,25':'glace-buisson'};
+  S.dg={on:true,th:'pierre',c,d,m,veg}; S.hour=18.5; S.weather=''; S.combat=null; S.fight=null; S.dexLock=false; FPS.skys=null; FPS.dst={};
   const race=(typeof VEHME!=='undefined'&&VEHME&&VEHME.race)||'humain', P=(id,name,race,sexe,x,y,dir)=>({id,type:'player',name,race,sexe,owner:'x'+id,hp:10,hpMax:10,x:(x+.5)*CELL,y:(y+.5)*CELL,s:1,dir});
   S.tokens=[{id:'me',type:'player',name:'Vous',owner:ME,race,sexe:'h',hp:10,hpMax:10,x:2.5*CELL,y:2.5*CELL,dir:1,s:1},
     P('tp1','Kara','humain','f',7,2,3), P('tp2','Grom','troll','h',18,2,2), P('tp3','Ursa','troll','f',21,4,3),
@@ -4439,6 +4455,8 @@ function renderDgPanel(){ const box=$('dg-body'); if(!box) return; const D=S.dg|
     <div class="wxrow dg-th">${Object.entries(DG_TH).filter(([k,t])=>!t.hidden).map(([k,t])=>`<button type="button" class="wxb${dgBrushTh()===k?' on':''}" data-th="${k}" title="${t.lbl}"><i class="gsw" style="background:${t.sw}"></i><span>${t.lbl}</span></button>`).join('')}</div>
     <div class="wxrow">${wb('dg-ceil',dgI('ceil',1.7),'Plafond',!DG.sky)}${wb('dg-sky',dgI('sky',1.7),'Ciel',DG.sky)}</div>
     <div class="wxrow">${wb('dg-wall',dgI('wall',1.7),'Murs',!DG.iw)}${wb('dg-iw',dgI('iwall',1.7),'Murs invisibles',DG.iw)}</div>
+    <div class="subttl">Végétation</div>
+    <div class="vegpick">${Object.keys(VEG_BIO).map(b=>Object.keys(VEG_K).map(k=>{ const key=b+'-'+k; return `<button type="button" class="vegb${tool==='dgn'&&DG.tool==='veg'&&DG.vk===key?' on':''}" data-veg="${key}" title="${VEG_K[k]} · ${VEG_BIO[b]}"><img src="res/vege/${key}.png" alt=""></button>`; }).join('')).join('')}</div>
     <div class="subttl">Portes</div>
     <div class="wxrow">${wb('dg-door',dgI('door',1.7),'Porte',tool==='dgn'&&DG.tool==='door')}${wb('dg-sdoor',dgI('sdoor',1.7),'Porte cachée',tool==='dgn'&&DG.tool==='secret')}</div>
     <div class="subttl">Passages</div>
@@ -4447,6 +4465,7 @@ function renderDgPanel(){ const box=$('dg-body'); if(!box) return; const D=S.dg|
     <div class="wxrow">${wb('dg-prev',IB('eye'),'Aperçu de la vue 3D',false)}</div>
     <button class="btn ghost wide" type="button" id="dg-clear">${IB('bin')}Tout reboucher</button>`;
   const pick=m=>{ if(!dgOn()){ dgEnsure().on=true; } if(tool==='dgn'&&DG.tool===m) setTool('dgn'); else { DG.tool=m; if(tool!=='dgn') setTool('dgn'); } drawDgLater(); renderDgPanel(); };
+  box.querySelectorAll('[data-veg]').forEach(b=>b.onclick=()=>{ if(tool==='dgn'&&DG.tool==='veg'&&DG.vk===b.dataset.veg){ setTool('dgn'); renderDgPanel(); return; } DG.vk=b.dataset.veg; DG.tool='veg'; if(tool!=='dgn') setTool('dgn'); renderDgPanel(); });
   $('dg-carve').onclick=()=>pick('carve'); $('dg-fill').onclick=()=>pick('fill'); $('dg-paint').onclick=()=>pick('paint'); $('dg-sup').onclick=()=>pick('sup'); $('dg-sdown').onclick=()=>pick('sdown'); $('dg-tp').onclick=()=>pick('tp');
   const opt=(k,v)=>{ DG[k]=v; if(tool!=='dgn'||DG.tool==='fill'||DG.tool==='door'||DG.tool==='secret'){ DG.tool=DG.tool==='paint'?'paint':'carve'; if(tool!=='dgn') setTool('dgn'); } renderDgPanel(); };
   $('dg-ceil').onclick=()=>opt('sky',false); $('dg-sky').onclick=()=>opt('sky',true); $('dg-wall').onclick=()=>opt('iw',false); $('dg-iw').onclick=()=>opt('iw',true); $('dg-door').onclick=()=>pick('door'); $('dg-sdoor').onclick=()=>pick('secret');
@@ -4764,6 +4783,15 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
   /* ce qui reste : ciel (ou nuit noire sous terre) */
   const su=new Int32Array(W); for(let xx=0;xx<W;xx++){ const cX=2*xx/W-1; let a=(cam.a+Math.atan(cX*K))/(2*Math.PI); a-=Math.floor(a); su[xx]=(a*SK.w)|0; }
   for(let y=0;y<H;y++){ const sr=Math.min(SK.h-1,Math.max(0,(y/h2*SK.h)|0))*SK.w, o=y*W; for(let xx=0;xx<W;xx++){ if(DZ[o+xx]!==Infinity) continue; B[o+xx]=anySky?SK.d[sr+su[xx]]:0xff000000; } }
+  /* végétation en X : deux plans croisés par case, testés colonne par colonne */
+  { const VV=S.dg&&S.dg.veg; if(VV){ const L2=[]; for(const k in VV){ const p=k.indexOf(','), i=+k.slice(0,p), j=+k.slice(p+1), cx=i+.5-cam.x, cy=j+.5-cam.y, dd=cx*cx+cy*cy; if(dd>900) continue; const o=vegImg(VV[k]); if(!o.px) continue; if(vis(i+.5,j+.5)<.05) continue; L2.push({i,j,o,key:VV[k],dd}); }
+    for(const g of L2){ const kind=g.key.split('-')[1], hg=VEG_H[kind]*(g.key==='desert-arbre'?.95:1), wd=Math.min(1.45,hg*g.o.w/g.o.h), hw=wd/2/Math.SQRT2, cx=g.i+.5, cy=g.j+.5, sv=vis(cx,cy);
+      const segs=[[cx-hw,cy-hw,cx+hw,cy+hw],[cx+hw,cy-hw,cx-hw,cy+hw]], IW=g.o.w, IH=g.o.h, PX=g.o.px, zb=0;
+      for(const [ax,ay,bx,by] of segs){ const ex=bx-ax, ey=by-ay;
+        for(let xx=0;xx<W;xx++){ const cX=2*xx/W-1, rdx=dx+px*cX, rdy=dy+py*cX, den=rdx*ey-rdy*ex; if(Math.abs(den)<1e-6) continue;
+          const t=((ax-cam.x)*ey-(ay-cam.y)*ex)/den, u=((ax-cam.x)*rdy-(ay-cam.y)*rdx)/den; if(t<=.08||u<0||u>1) continue;
+          const tx=Math.min(IW-1,(u*IW)|0), top=h2+(eye-(zb+hg))*PS/t, bot=h2+(eye-zb)*PS/t, yA=Math.max(0,Math.ceil(top)), yB=Math.min(H-1,Math.floor(bot)), f=lit(t)*sv, hh=bot-top;
+          for(let y=yA;y<=yB;y++){ const i2=y*W+xx; if(DZ[i2]<=t) continue; const c=PX[Math.min(IH-1,((y-top)/hh*IH)|0)*IW+tx]; if((c>>>24)<128) continue; B[i2]=sh(c,f); DZ[i2]=t; } } } } } }
   /* personnages et objets (masqués par le décor pixel par pixel) */
   /* perception : PNJ et MOB visibles jusqu'à PER × 10 m, objets jusqu'à PER × 5 m ; les aventuriers se voient toujours */
   const per=FPS.per, rng=t=>t.type==='player'?Infinity:per==null?Infinity:dgItem(t)?Math.max(1,per*5):Math.max(1,per*10);
