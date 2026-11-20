@@ -4083,12 +4083,13 @@ const HPPREV=new Map(), BLEED=new Map();
 function splatBurst(t){ const w=document.createElement('div'); w.className='splat'; w.style.left=t.x+'px'; w.style.top=t.y+'px'; const sc=t.s||1, r=rnd(Date.now()|0);
   let h=''; for(let i=0;i<22;i++){ const a=r()*Math.PI*2, d=(30+r()*70)*sc; h+=`<i style="--x:${(Math.cos(a)*d).toFixed(0)}px;--y:${(Math.sin(a)*d).toFixed(0)}px;--w:${(3+r()*7)*sc}px;animation-delay:${(r()*.08).toFixed(2)}s"></i>`; }
   w.innerHTML=h; $('world').appendChild(w); setTimeout(()=>w.remove(),900); }
-function addBlood(b){ (S.blood=S.blood||[]).push(b); if(S.blood.length>500) S.blood.splice(0,S.blood.length-500); renderBlood(); markDirty(); syncLater(); }
+function addBlood(b){ (S.blood=S.blood||[]).push(b); if(S.blood.length>1500) S.blood.splice(0,S.blood.length-1500); renderBlood(); markDirty(); syncLater(); }
 function splat(t){ splatBurst(t); if(!isPlayer) addBlood({k:'s',x:Math.round(t.x),y:Math.round(t.y),r:Math.round(34*(t.s||1)),n:hashStr(t.id+Date.now())%100000}); }
 function bleedTrail(t){ if(isPlayer) return; const E=effSt(t); if(E.includes('maladie')) trail(t,'m'); if(!E.includes('saignement')) return; trail(t,'d'); }
 function trail(t,k){ const id=t.id+k, p=BLEED.get(id);
-  if(!p){ BLEED.set(id,[t.x,t.y]); return; } if(Math.hypot(t.x-p[0],t.y-p[1])<38) return; BLEED.set(id,[t.x,t.y]);
-  addBlood({k,x:Math.round(t.x+(Math.random()-.5)*20),y:Math.round(t.y+(Math.random()-.5)*20),r:3+Math.round(Math.random()*4),n:(Math.random()*1e5)|0}); }
+  if(!p){ BLEED.set(id,[t.x,t.y]); return; } const dd=Math.hypot(t.x-p[0],t.y-p[1]); if(dd<38) return; BLEED.set(id,[t.x,t.y]);
+  /* gouttes semées le long du chemin parcouru */
+  const n=Math.min(8,2+Math.round(dd/30)); for(let i=0;i<n;i++){ const u=(i+Math.random())/n; addBlood({k,x:Math.round(p[0]+(t.x-p[0])*u+(Math.random()-.5)*18),y:Math.round(p[1]+(t.y-p[1])*u+(Math.random()-.5)*18),r:3+Math.round(Math.random()*4),n:(Math.random()*1e5)|0}); } }
 function bloodShape(b){ const r=rnd(b.n||1), col=b.k==='s'?'#7c0b0e':b.k==='b'?'#141210':b.k==='m'?'#5a3a17':'#8a0f12';
   if(b.k==='d'||b.k==='m'){ let h=`<circle cx="${b.x}" cy="${b.y}" r="${b.r}" fill="${col}" opacity=".85"/>`; for(let i=0;i<2;i++){ const a=r()*6.28, d=b.r*(1.4+r()); h+=`<circle cx="${(b.x+Math.cos(a)*d).toFixed(1)}" cy="${(b.y+Math.sin(a)*d).toFixed(1)}" r="${(b.r*(.25+r()*.3)).toFixed(1)}" fill="${col}" opacity=".8"/>`; } return h; }
   const R=b.r, pts=[]; const n=14; for(let i=0;i<n;i++){ const a=i/n*Math.PI*2, rr=R*(.55+r()*.5); pts.push([b.x+Math.cos(a)*rr,b.y+Math.sin(a)*rr]); }
@@ -4928,7 +4929,7 @@ function fpsSprite(t){ if(t.type==='mk'&&t.mk==='lum'){ const o=lumImg(t.lk); re
 function fpsBlood(){ const L=S.blood||[]; if(!L.length||typeof bloodShape!=='function') return null; const key=L.length+'|'+L[0].n+'|'+L[L.length-1].n+'|'+L[L.length-1].x;
   const o=FPS.bld; if(o&&o.key===key) return o.d?o:null; if(o&&o.key===key+'…') return null;
   let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9; L.forEach(b=>{ const m=b.r*2.8+4; x0=Math.min(x0,b.x-m); y0=Math.min(y0,b.y-m); x1=Math.max(x1,b.x+m); y1=Math.max(y1,b.y+m); });
-  let k=32/CELL; const w0=x1-x0, h0=y1-y0; k=Math.min(k,2048/w0,2048/h0); const W=Math.max(1,Math.ceil(w0*k)), H=Math.max(1,Math.ceil(h0*k));
+  let k=56/CELL; const w0=x1-x0, h0=y1-y0; k=Math.min(k,2048/w0,2048/h0); const W=Math.max(1,Math.ceil(w0*k)), H=Math.max(1,Math.ceil(h0*k));
   const N={key:key+'…'}; FPS.bld=N; const im=new Image();
   im.onload=()=>{ const c=document.createElement('canvas'); c.width=W; c.height=H; const x=c.getContext('2d'); x.drawImage(im,0,0,W,H); FPS.bld={key,d:new Uint32Array(x.getImageData(0,0,W,H).data.buffer.slice(0)),w:W,h:H,x0,y0,k}; fpsLater(); };
   im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="${x0} ${y0} ${w0} ${h0}">${L.map(bloodShape).join('')}</svg>`); return null; }
