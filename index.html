@@ -2844,6 +2844,7 @@ html.incombat #rb-dgn,html.incombat #rb-fond{opacity:.3;pointer-events:none}
 .fighth[aria-pressed="true"]{background:#e04b3a!important;border-color:#e04b3a!important;color:#fff}
 #board.fzone{cursor:crosshair}
 .fps-pad{display:none!important}
+.fps-fade{position:absolute;inset:0;z-index:6;opacity:0;pointer-events:none;transition:opacity .45s ease}.fps-fade.on{opacity:1;transition:opacity .3s ease}
 .fps-joy{position:absolute;left:50%;bottom:22px;width:96px;height:96px;margin-left:-48px;border-radius:50%;background:rgba(255,255,255,.16);border:2px solid rgba(255,255,255,.45);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);box-shadow:0 2px 12px rgba(0,0,0,.25);z-index:4;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
 .fps-joy i{position:absolute;left:50%;top:50%;width:42px;height:42px;margin:-21px 0 0 -21px;border-radius:50%;background:rgba(255,255,255,.55);border:2px solid rgba(255,255,255,.8);box-shadow:0 2px 8px rgba(0,0,0,.3);transition:transform .12s ease-out;pointer-events:none}
 .fps-joy.on{background:rgba(255,255,255,.24)}.fps-joy.on i{transition:none;background:rgba(255,255,255,.75)}
@@ -4635,7 +4636,7 @@ function dgTestScene(si,cell){ const sc=DGT.sc&&DGT.sc[si]; if(!sc) return; DGT.
 function dgTestArrive(){ if(!DGT.sc) return; const me=S.tokens.find(t=>t.id==='me'); if(!me) return; const i=Math.floor(me.x/CELL), j=Math.floor(me.y/CELL), k=i+','+j; if(k===DGT.cell) return; DGT.cell=k;
   const m=dgMk(i,j); if(!m||!m.to) return; let dest=null; DGT.sc.forEach((sc,si)=>{ for(const kk in ((sc.dg&&sc.dg.m)||{})) if(sc.dg.m[kk].code===m.to&&!dest) dest={si,c:kk.split(',').map(Number)}; });
   if(!dest){ toast(`Destination ${m.to} introuvable`,true); return; }
-  setTimeout(()=>{ FPS.mv=0; if(dest.si!==DGT.si) dgTestScene(dest.si,dest.c); else { me.x=(dest.c[0]+.5)*CELL; me.y=(dest.c[1]+.5)*CELL; DGT.cell=dest.c.join(','); FPS.cam=null; followMe(); } toast(`${MK_LBL[m.k]||'Passage'} → ${(DGT.sc[dest.si].title)||''}`); },200); }
+  fpsFade(m.k); setTimeout(()=>{ FPS.mv=0; if(dest.si!==DGT.si) dgTestScene(dest.si,dest.c); else { me.x=(dest.c[0]+.5)*CELL; me.y=(dest.c[1]+.5)*CELL; DGT.cell=dest.c.join(','); FPS.cam=null; followMe(); } fpsUnfade(); },340); }
 function dgTestLoadOld(){ window.DGTEST=true; DGT.sc=null; if(!ME) ME='test'; const c={}, d={}, m={}, box=(x0,y0,w,h,st)=>{ for(let i=x0;i<x0+w;i++) for(let j=y0;j<y0+h;j++) c[i+','+j]=st; };
   /* une boucle qui traverse tous les styles : pierre → crypte → prairie → ruelle → ruines → désert → jungle → station → pierre */
   box(0,0,5,5,'pierre'); box(5,2,5,1,'pierre'); box(-3,1,3,3,'crypte');
@@ -5242,7 +5243,13 @@ function fpsMoveBy(dist,side){ const c=FPS.cam; if(!c||(!dist&&!side)) return; s
   if(Math.abs(x-x0)<1e-4&&Math.abs(y-y0)<1e-4){ if(!FPS.bumped){ FPS.bumped=1; fpsBump(); } return; } FPS.bumped=0;
   const nc=Math.floor(x)!==ci||Math.floor(y)!==cj; c.x=x; c.y=y; c.z=dgH(Math.floor(x),Math.floor(y)); FPS.lastMove=performance.now();
   FPS.walk=(FPS.walk||0)+Math.hypot(dist,side); if(FPS.walk>.9){ FPS.walk=0; fpsStep(false); }
-  if(FPS.mode!=='play'&&nc) fpsPrevArrive(c); fpsSendMove(nc); }
+  if(FPS.mode!=='play'&&nc) fpsPrevArrive(c);
+  if(FPS.mode==='play'&&nc&&!window.DGTEST){ const m=dgMk(Math.floor(x),Math.floor(y)); if(m&&m.to) fpsFade(m.k); }
+  fpsSendMove(nc); }
+/* passage : fondu blanc (zone TP, escalier qui monte), fondu noir (escalier qui descend, panneau) */
+function fpsFade(k){ if(!FPS.el) return; let f=FPS.el.querySelector('.fps-fade'); if(!f){ f=document.createElement('div'); f.className='fps-fade'; FPS.el.appendChild(f); }
+  f.style.background=k==='tp'||k==='up'?'#fff':'#000'; f.classList.add('on'); FPS.fading=1; FPS.mv=0; FPS.joy=null; clearTimeout(FPS.fadeT); FPS.fadeT=setTimeout(fpsUnfade,2500); }
+function fpsUnfade(){ clearTimeout(FPS.fadeT); FPS.fading=0; const f=FPS.el&&FPS.el.querySelector('.fps-fade'); if(f) setTimeout(()=>f.classList.remove('on'),60); }
 function fpsSendMove(force){ if(FPS.mode!=='play'||!FPS.cam) return; const now=performance.now(); if(!force&&FPS.sent&&now-FPS.sent<90){ clearTimeout(FPS.sendT); FPS.sendT=setTimeout(()=>fpsSendMove(true),95); return; } FPS.sent=now;
   const c=FPS.cam, nd=(((Math.round(c.a/(Math.PI/2))%4)+4)%4), m={t:'dmove',x:Math.round(c.x*CELL),y:Math.round(c.y*CELL),dir:nd,ang:+c.a.toFixed(3)};
   up(m); if(window.DGTEST){ const me=S.tokens.find(t=>t.id===FPS.self); if(me){ me.x=m.x; me.y=m.y; me.dir=nd; me.ang=m.ang; dgTestArrive(); } } }
@@ -5287,7 +5294,7 @@ function fpsSync(){ if(!isPlayer||!NETVIEW) return; const me=ME&&S.tokens.find(t
   if(!want){ if(el) el.hidden=true; document.documentElement.classList.remove('fpsmode'); return; }
   el=fpsBuild(board,'play'); el.hidden=false; document.documentElement.classList.add('fpsmode'); FPS.self=me.id; FPS.per=typeof VEHME!=='undefined'&&VEHME&&VEHME.per!=null?+VEHME.per:null; fpsHands();
   const c={x:me.x/CELL,y:me.y/CELL,a:(me.dir||0)*Math.PI/2,z:dgH(Math.floor(me.x/CELL),Math.floor(me.y/CELL))};
-  if(FPS.cam&&FPS.mode==='play'&&Math.hypot(FPS.cam.x-c.x,FPS.cam.y-c.y)>1.6){ FPS.anim=null; const cv=el.querySelector('canvas'); if(cv.animate) cv.animate([{filter:'brightness(4) saturate(0)'},{filter:'none'}],{duration:600,easing:'ease-out'}); }
+  if(FPS.cam&&FPS.mode==='play'&&Math.hypot(FPS.cam.x-c.x,FPS.cam.y-c.y)>1.6){ FPS.anim=null; if(FPS.fading) fpsUnfade(); else { const cv=el.querySelector('canvas'); if(cv.animate) cv.animate([{filter:'brightness(4) saturate(0)'},{filter:'none'}],{duration:600,easing:'ease-out'}); } }
   const busy=FPS.mv||(FPS.lastMove&&performance.now()-FPS.lastMove<700), far=FPS.cam&&Math.hypot(FPS.cam.x-c.x,FPS.cam.y-c.y)>1.6;
   if(!FPS.cam||FPS.mode!=='play'){ FPS.cam={x:c.x,y:c.y,z:c.z,a:me.ang!=null?+me.ang:c.a}; }
   else if((!busy||far)&&(Math.abs(FPS.cam.x-c.x)>.01||Math.abs(FPS.cam.y-c.y)>.01)){ FPS.cam.x=c.x; FPS.cam.y=c.y; FPS.cam.z=c.z; FPS.anim=null; }
@@ -5297,9 +5304,9 @@ function fpsSync(){ if(!isPlayer||!NETVIEW) return; const me=ME&&S.tokens.find(t
 function fpsPrevArrive(to){ const i=Math.floor(to.x), j=Math.floor(to.y), m=dgMk(i,j); if(!m) return;
   if(!m.to){ toast(`${MK_LBL[m.k]} ${m.code||''} : aucune destination (« Mène à »)`); return; }
   const dest=dgCodes().find(c=>c.code===m.to); if(!dest){ toast(`Destination ${m.to} introuvable`,true); return; }
-  const [di,dj]=dest.k.split(',').map(Number), a=FPS.cam?FPS.cam.a:0;
+  const [di,dj]=dest.k.split(',').map(Number), a=FPS.cam?FPS.cam.a:0; fpsFade(m.k); setTimeout(()=>{
   if(dest.si!==S.scene){ const sc=S.scenes[dest.si]; loadScene(dest.si); toast(`${MK_LBL[m.k]} → « ${(sc&&sc.title)||'Scène '+(dest.si+1)} »`); }
-  FPS.sprites.clear(); FPS.anim=null; FPS.cam={x:di+.5,y:dj+.5,a,z:dgH(di,dj)}; const el=$('fpsprev'); if(el) el.hidden=false; fpsLater(); }
+  FPS.sprites.clear(); FPS.anim=null; FPS.cam={x:di+.5,y:dj+.5,a,z:dgH(di,dj)}; const el=$('fpsprev'); if(el) el.hidden=false; fpsLater(); fpsUnfade(); },340); }
 function fpsPreview(){ if(!dgOn()||!Object.keys(S.dg.c||{}).length){ toast('Creusez d\'abord une zone jouable',true); return; }
   let t=cardId&&tok(cardId); if(!t||!dgOpen(...dgCell(t.x,t.y))) t=S.tokens.find(x=>x.type==='player'&&dgOpen(...dgCell(x.x,x.y)));
   let cam; if(t) cam={x:Math.floor(t.x/CELL)+.5,y:Math.floor(t.y/CELL)+.5,a:(t.dir||0)*Math.PI/2,z:dgH(Math.floor(t.x/CELL),Math.floor(t.y/CELL))};
