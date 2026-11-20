@@ -4762,6 +4762,8 @@ function tpFrame(){ const NF=16, f=Math.floor(performance.now()/70)%NF; FPS.tpf=
     x.globalAlpha=Math.min(1,a*1.3); x.fillStyle=wht?'#ffffff':'#7ff0ff'; x.fillRect((px+Math.sin(wob+u*9)*2.5)|0,yy|0,1+(i%3===0),len); }
   x.globalAlpha=1; c._k='mktp'; return FPS.tpf[f]=c; }
 /* sprites de MOB pour la zone de jeu : res/mobs/<clé>.png (la version HD du bestiaire reste dans mobs/<clé>.webp) */
+/* taille en hauteur de case (sinon : proportionnelle au sprite, 361 px ≈ un humain) */
+const MOBSZ={'cyber-gobelin':.55,'gnome-chapardeur':.45};
 const MOBSPR=['cyber-gobelin','gnome-chapardeur','vampire','netrunner'];
 const slugMob=n=>String(n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
 function mobSprKey(t){ if(t.type!=='mob'&&t.type!=='npc') return null; const m=/mobs\/([\w-]+)\.webp/.exec(t.img||''); let k=m&&m[1]; if(k&&MOBSPR.includes(k)) return k;
@@ -4785,7 +4787,7 @@ function fpsSprite(t){ if(t.type==='mk'&&t.mk==='lum'){ const o=lumImg(t.lk); re
     const cv=document.createElement('canvas'), x=cv.getContext('2d'), nm=(t.name||'').slice(0,18); x.font='700 15px sans-serif'; const lw=nm?Math.ceil(x.measureText(nm).width)+16:0, LH=nm?26:0;
     cv.width=Math.max(im.naturalWidth,lw); cv.height=im.naturalHeight+LH+4; x.imageSmoothingEnabled=false; x.drawImage(im,(cv.width-im.naturalWidth)/2|0,LH+4);
     if(nm){ x.fillStyle='rgba(255,255,255,.94)'; x.beginPath(); x.roundRect?x.roundRect((cv.width-lw)/2,0,lw,LH-2,11):x.rect((cv.width-lw)/2,0,lw,LH-2); x.fill(); x.fillStyle='#222'; x.textAlign='center'; x.textBaseline='middle'; x.fillText(nm,cv.width/2,LH/2); }
-    cv._k='perso'; cv._hf=.95*cv.height/361; FPS.sprites.set(t.id,{key:key2,cv,ready:true}); return cv; } if(im===null) return null; }
+    cv._k='perso'; cv._hf=(MOBSZ[mk]?MOBSZ[mk]*cv.height/im.naturalHeight:.95*cv.height/361); FPS.sprites.set(t.id,{key:key2,cv,ready:true}); return cv; } if(im===null) return null; }
   if(sk){ const im=dgImg(sk); if(!im) return null; s={key,cv:document.createElement('canvas'),ready:true,img:1}; s.cv.width=im.naturalWidth; s.cv.height=im.naturalHeight; s.cv.getContext('2d').drawImage(im,0,0); s.cv._k=sk; FPS.sprites.set(t.id,s); return s.cv; }
   s={key,cv:document.createElement('canvas'),ready:false}; FPS.sprites.set(t.id,s); s.cv.width=128; s.cv.height=176;
   const cv0=TYPES[t.type]&&TYPES[t.type].col.match(/--[\w-]+/), col=(cv0&&getComputedStyle(document.documentElement).getPropertyValue(cv0[0]).trim())||'#888';
