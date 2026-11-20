@@ -4305,7 +4305,7 @@ function dgDoorClick(wx,wy){ const e=dgEdgeAt(wx,wy); if(!dgOpen(...e.a)||!dgOpe
   if(DG.tool==='door'){ if(!o) D.d[e.k]={open:false}; else if(o.s){ delete o.s; delete o.f; } else if(!o.open) o.open=true; else delete D.d[e.k]; }
   else { if(!o) D.d[e.k]={s:1,open:false}; else if(!o.s){ o.s=1; o.f=0; o.open=false; } else if(!o.f){ o.f=1; toast('Porte cachée découverte'); } else delete D.d[e.k]; }
   drawDgLater(); fpsLater(); markDirty(); sync(); }
-function dgHover(wx,wy){ if(['door','secret','wall','unwall'].includes(DG.tool)){ const e=dgEdgeAt(wx,wy); if(DG.hover!==e.k){ DG.hover=e.k; drawDgLater(); } return; }
+function dgHover(wx,wy){ if(['door','secret','wall','unwall','win'].includes(DG.tool)){ const e=dgEdgeAt(wx,wy); if(DG.hover!==e.k){ DG.hover=e.k; drawDgLater(); } return; }
   const c=dgCell(wx,wy); if(!Array.isArray(DG.hover)||DG.hover[0]!==c[0]||DG.hover[1]!==c[1]){ DG.hover=c; drawDgLater(); } }
 function dgToggleDoor(k){ const o=S.dg&&S.dg.d&&S.dg.d[k]; if(!o||dgHid(o)) return false; o.open=!o.open; drawDgLater(); fpsLater(); markDirty(); sync(); return true; }
 /* murs tracés tout autour d'une zone (carte de test) : texture et hauteur du style de chaque case */
@@ -4327,6 +4327,7 @@ const DG_ICO={
   ceil:'<path d="M3 5h18M5 5v4M19 5v4M3 20h18"/><path d="M8 9h8" stroke-dasharray="2 2"/>',
   sky:'<path d="M7 18h10a4 4 0 0 0 .5-8A5.5 5.5 0 0 0 7 9.5 4.3 4.3 0 0 0 7 18z"/><path d="M17 3v2M21 6.5l-1.5 1"/>',
   wall:'<path d="M3 5h18v14H3zM3 9.7h18M3 14.3h18M9 5v4.7M15 5v4.7M6 9.7v4.6M12 9.7v4.6M18 9.7v4.6M9 14.3V19M15 14.3V19"/>',
+  win:'<path d="M3 4h18v16H3z"/><path d="M7 8h10v7H7z"/><path d="M12 8v7M7 11.5h10"/>',
   iwall:'<path d="M3 5h18v14H3z" stroke-dasharray="2.5 2.5"/><path d="M8 12h8M12 8v8" opacity=".5"/>',
   fw:'<path d="M12 19V5M6 11l6-6 6 6"/>', bk:'<path d="M12 5v14M6 13l6 6 6-6"/>',
   sl:'<path d="M19 12H5M11 6l-6 6 6 6"/>', sr:'<path d="M5 12h14M13 6l6 6-6 6"/>',
@@ -4368,7 +4369,8 @@ function drawDg(){ const cv=$('dgn'); if(!cv) return; const r=board.getBoundingC
   /* MURS tracés sur les arêtes */
   { const EE=S.dg.ew||{}; x.save(); x.lineCap='round';
     for(const pass of [0,1]) for(const k in EE){ const o=EE[k], [ax,ay,bx,by]=dgEdgeSeg(k); if(Math.max(ax,bx)<i0*CELL||Math.min(ax,bx)>(i1+1)*CELL||Math.max(ay,by)<j0*CELL||Math.min(ay,by)>(j1+1)*CELL) continue; const th=DG_TH[o.t]||DG_TH.pierre;
-      x.strokeStyle=pass?th.sw:'rgba(0,0,0,.7)'; x.lineWidth=pass?Math.max(5,3/V.z)+2:Math.max(5,3/V.z)+6; x.beginPath(); x.moveTo(ax,ay); x.lineTo(bx,by); x.stroke(); }
+      x.strokeStyle=pass?th.sw:'rgba(0,0,0,.7)'; x.lineWidth=pass?Math.max(5,3/V.z)+2:Math.max(5,3/V.z)+6; x.beginPath(); x.moveTo(ax,ay); x.lineTo(bx,by); x.stroke();
+      if(pass&&o.win){ const mx=(ax+bx)/2, my=(ay+by)/2, hx=(bx-ax)*.3, hy=(by-ay)*.3; x.strokeStyle='#bfe8ff'; x.lineWidth=Math.max(2,1.5/V.z)+1; x.beginPath(); x.moveTo(mx-hx,my-hy); x.lineTo(mx+hx,my+hy); x.stroke(); } }
     if(V.z*CELL>=80){ x.font='800 11px Quicksand,sans-serif'; x.textAlign='center'; x.textBaseline='middle'; for(const k in EE){ const [ax,ay,bx,by]=dgEdgeSeg(k); x.fillStyle='rgba(20,20,30,.8)'; x.fillText(String(EE[k].h).replace('.',','),(ax+bx)/2+(ax===bx?9:0),(ay+by)/2+(ay===by?-9:0)); } }
     x.restore(); }
   /* blocs de MUR : pleins, couleur de leur texture, hauteur */
@@ -4407,7 +4409,9 @@ function drawDg(){ const cv=$('dgn'); if(!cv) return; const r=board.getBoundingC
   if(S.fight&&S.fight.c){ const F=S.fight.c; x.save(); x.fillStyle='rgba(0,0,0,.35)'; x.beginPath(); x.rect(i0*CELL,j0*CELL,(i1-i0)*CELL,(j1-j0)*CELL); x.arc(F.x*CELL,F.y*CELL,F.r*CELL,0,7,true); x.fill('evenodd');
     x.strokeStyle='#e04b3a'; x.lineWidth=3/V.z+1; x.setLineDash([12/V.z,8/V.z]); x.beginPath(); x.arc(F.x*CELL,F.y*CELL,F.r*CELL,0,7); x.stroke(); x.restore(); }
   if(DG.lasso&&DG.lasso.length>1){ x.save(); x.strokeStyle='#ff6b5a'; x.lineWidth=3/V.z+1; x.lineJoin='round'; x.beginPath(); DG.lasso.forEach((p,k)=>k?x.lineTo(p[0],p[1]):x.moveTo(p[0],p[1])); x.stroke(); x.restore(); }
-  if(!isPlayer&&tool==='dgn'&&typeof DG.hover==='string'){ const [ax,ay,bx,by]=dgEdgeSeg(DG.hover); x.strokeStyle=DG.tool==='secret'?'#b88cff':DG.tool==='wall'?'#e0a96a':DG.tool==='unwall'?'#ff6b5a':'#ffd34d'; x.lineWidth=5/V.z+4; x.lineCap='round'; x.globalAlpha=.8; x.beginPath(); x.moveTo(ax,ay); x.lineTo(bx,by); x.stroke(); x.globalAlpha=1; }
+  if(!isPlayer&&tool==='dgn'&&DG.wline){ const L=DG.wline; x.save(); x.lineCap='round'; x.strokeStyle=DG.tool==='unwall'?'#ff6b5a':DG.tool==='win'?'#7fd0ff':'#e0a96a'; x.lineWidth=Math.max(5,3/V.z)+4; x.globalAlpha=.85; x.beginPath(); x.moveTo(L.a[0]*CELL,L.a[1]*CELL); x.lineTo(L.b[0]*CELL,L.b[1]*CELL); x.stroke();
+    x.globalAlpha=1; x.fillStyle='#fff'; [L.a,L.b].forEach(p=>{ x.beginPath(); x.arc(p[0]*CELL,p[1]*CELL,4/V.z+3,0,7); x.fill(); }); x.restore(); }
+  if(!isPlayer&&tool==='dgn'&&typeof DG.hover==='string'){ const [ax,ay,bx,by]=dgEdgeSeg(DG.hover); x.strokeStyle=DG.tool==='secret'?'#b88cff':DG.tool==='win'?'#7fd0ff':DG.tool==='wall'?'#e0a96a':DG.tool==='unwall'?'#ff6b5a':'#ffd34d'; x.lineWidth=5/V.z+4; x.lineCap='round'; x.globalAlpha=.8; x.beginPath(); x.moveTo(ax,ay); x.lineTo(bx,by); x.stroke(); x.globalAlpha=1; }
   if(!isPlayer&&tool==='dgn'&&DG.tool==='sel'){ const H=Array.isArray(DG.hover)?DG.hover:null; x.save(); x.setLineDash([]); if(H){ x.lineWidth=2/V.z; x.strokeStyle='rgba(120,220,255,.7)'; x.strokeRect(H[0]*CELL,H[1]*CELL,CELL,CELL); } if(DG.sel){ x.lineWidth=4/V.z+1; x.strokeStyle='#47e4ff'; x.fillStyle='rgba(71,228,255,.14)'; x.fillRect(DG.sel[0]*CELL,DG.sel[1]*CELL,CELL,CELL); x.strokeRect(DG.sel[0]*CELL,DG.sel[1]*CELL,CELL,CELL); } x.restore(); }
   if(!isPlayer&&tool==='dgn'&&Array.isArray(DG.hover)&&['carve','fill','paint','sup','sdown','tp','ceil','unceil'].includes(DG.tool)){ const [a,b]=dgBrush(DG.hover[0],DG.hover[1]); x.setLineDash([8/V.z,6/V.z]); x.lineWidth=2.5/V.z; x.strokeStyle=DG.tool==='wall'?'#e0a96a':DG.tool==='ceil'?'#b9b0ff':DG.tool==='unwall'||DG.tool==='unceil'?'#ff6b5a':DG.tool==='carve'?'#ffd34d':DG.tool==='paint'?'#7fd0ff':DG.tool==='tp'?'#47e4ff':DG.tool==='sup'||DG.tool==='sdown'?'#f0d9a8':'#ff6b5a'; const nb=['sup','sdown','tp'].includes(DG.tool)?1:DG.n; x.strokeRect(a*CELL,b*CELL,nb*CELL,nb*CELL); x.setLineDash([]); }
 }
@@ -4428,13 +4432,20 @@ function dgStamp(ci,cj,carve){ if(DG.tool==='up'||DG.tool==='down') return dgRel
       else CL[k]={no:1}; n++; }
     FPS.sprites.clear(); fpsLater(); return n; }
   for(let i=a;i<a+DG.n;i++) for(let j=b;j<b+DG.n;j++){ const k=dgK(i,j); if(DG.tool==='paint'){ if(C[k]&&C[k]!==st){ C[k]=st; n++; } } else if(carve){ if(C[k]!==st){ C[k]=st; n++; } } else if(C[k]){ delete C[k]; n++; if(S.dg.d) [dgEK(i,j,i,j-1),dgEK(i,j,i,j+1),dgEK(i,j,i-1,j),dgEK(i,j,i+1,j)].forEach(e=>delete S.dg.d[e]); if(S.dg.m) delete S.dg.m[k]; if(S.dg.veg) delete S.dg.veg[k]; if(S.dg.lum) delete S.dg.lum[k]; } } return n; }
+function dgPaintEnd(g){ const L=g&&g.wl; if(!L) return; DG.wline=null; const D=dgEnsure(), E=D.ew=D.ew||{}, add=DG.tool==='wall', ks=[];
+  if(L.a[0]===L.b[0]&&L.a[1]===L.b[1]) ks.push(dgEdgeAt(L.x,L.y).k);
+  else if(L.a[1]===L.b[1]){ for(let i=Math.min(L.a[0],L.b[0]);i<Math.max(L.a[0],L.b[0]);i++) ks.push(`${i},${L.a[1]},h`); }
+  else for(let j=Math.min(L.a[1],L.b[1]);j<Math.max(L.a[1],L.b[1]);j++) ks.push(`${L.a[0]},${j},v`);
+  const win=DG.tool==='win', one=ks.length===1&&L.a[0]===L.b[0]&&L.a[1]===L.b[1];
+  ks.forEach(k=>{ if(win){ if(one&&E[k]&&E[k].win) delete E[k].win; else E[k]=Object.assign(E[k]||{t:dgBrushTh(),h:DG.wh||2},{win:1}); } else if(add) E[k]={t:dgBrushTh(),h:DG.wh||2}; else delete E[k]; });
+  FPS.sprites.clear(); drawDgLater(); fpsLater(); markDirty(); sync(); }
 function dgPaint(wx,wy,g){ DG._g=g; if(DG.tool==='sel'){ if(!g.last){ g.last=1; dgSelClick(wx,wy); } return; } if(DG.tool==='lum'){ if(!g.last){ g.last=1; lumClick(wx,wy); } return; }
   if(DG.tool==='veg'){ if(!g.last){ g.last=1; vegClick(wx,wy); } return; }
   if(['sup','sdown','tp'].includes(DG.tool)){ if(!g.last){ g.last=1; dgMarkClick(wx,wy); } return; }
   if(DG.tool==='door'||DG.tool==='secret'){ if(!g.last){ g.last=1; dgDoorClick(wx,wy); } return; }
-  if(DG.tool==='wall'||DG.tool==='unwall'){ const e=dgEdgeAt(wx,wy), D=dgEnsure(), E=D.ew=D.ew||{}; DG.hover=e.k;
-    if(DG.tool==='wall'){ const v={t:dgBrushTh(),h:DG.wh||2}; if(!E[e.k]||E[e.k].t!==v.t||E[e.k].h!==v.h){ E[e.k]=v; FPS.sprites.clear(); fpsLater(); } } else if(E[e.k]){ delete E[e.k]; fpsLater(); }
-    drawDgLater(); syncLater(); return; }
+  if(DG.tool==='wall'||DG.tool==='unwall'||DG.tool==='win'){ const v=[Math.round(wx/CELL),Math.round(wy/CELL)];   /* clic maintenu → relâché : mur en ligne droite */
+    if(!g.wl) g.wl={a:v,b:v,x:wx,y:wy}; else { const A=g.wl.a; g.wl.b=Math.abs(v[0]-A[0])>=Math.abs(v[1]-A[1])?[v[0],A[1]]:[A[0],v[1]]; }
+    DG.wline=g.wl; DG.hover=null; drawDgLater(); return; }
   const [ci,cj]=dgCell(wx,wy), carve=DG.tool==='carve';
   if(g.last){ let [x0,y0]=g.last; const dx=Math.abs(ci-x0), dy=Math.abs(cj-y0), sx=x0<ci?1:-1, sy=y0<cj?1:-1; let er=dx-dy;
     while(x0!==ci||y0!==cj){ const e2=2*er; if(e2>-dy){ er-=dy; x0+=sx; } if(e2<dx){ er+=dx; y0+=sy; } dgStamp(x0,y0,carve); } }
@@ -4451,7 +4462,7 @@ function dgSelItems(i,j){ const D=S.dg||{}, k=dgK(i,j), L=[];
   if(D.veg&&D.veg[k]){ const [b,t]=D.veg[k].split('-'); L.push({id:'veg',img:`res/vege/${D.veg[k]}.png`,l:`${VEG_K[t]||'Végétation'} · ${VEG_BIO[b]||''}`,del:()=>delete D.veg[k]}); }
   if(D.lum&&D.lum[k]) L.push({id:'lum',img:`res/lum/${D.lum[k]}.png`,l:(LUM[D.lum[k]]||{}).l||'Lumière',del:()=>delete D.lum[k]});
   if(D.m&&D.m[k]){ const m=D.m[k]; L.push({id:'mk',ico:dgI(m.k==='tp'?'tp':m.k==='up'?'sup':'sdown',1.7),l:`${MK_LBL[m.k]} · ${m.code||''}${m.to?' → '+m.to:''}`,edit:()=>dgMarkEdit(k),del:()=>delete D.m[k]}); }
-  [[0,-1,'nord'],[1,0,'est'],[0,1,'sud'],[-1,0,'ouest']].forEach(([di,dj,n])=>{ const e=dgEK(i,j,i+di,j+dj), w=D.ew&&D.ew[e]; if(w) L.push({id:'w'+n,ico:dgI('wall',1.7),l:`Mur ${(DG_TH[w.t]||{}).lbl||''} · ${String(w.h).replace('.',',')} · côté ${n}`,del:()=>delete D.ew[e]}); });
+  [[0,-1,'nord'],[1,0,'est'],[0,1,'sud'],[-1,0,'ouest']].forEach(([di,dj,n])=>{ const e=dgEK(i,j,i+di,j+dj), w=D.ew&&D.ew[e]; if(w) L.push({id:'w'+n,ico:dgI('wall',1.7),l:`${w.win?'Fenêtre':'Mur'} ${(DG_TH[w.t]||{}).lbl||''} · ${String(w.h).replace('.',',')} · côté ${n}`,del:()=>delete D.ew[e]}); });
   if(D.cl&&D.cl[k]&&!D.cl[k].no) L.push({id:'cl',ico:dgI('ceil',1.7),l:`Plafond ${(DG_TH[D.cl[k].t]||{}).lbl||''} · ${String(D.cl[k].h).replace('.',',')}`,del:()=>delete D.cl[k]});
   [[0,-1,'nord'],[1,0,'est'],[0,1,'sud'],[-1,0,'ouest']].forEach(([di,dj,n])=>{ const e=dgEK(i,j,i+di,j+dj), o=D.d&&D.d[e]; if(o) L.push({id:'d'+n,ico:dgI(o.s?'sdoor':'door',1.7),l:`${o.s?'Porte cachée':'Porte'} · côté ${n}`,del:()=>delete D.d[e]}); });
   return L; }
@@ -4574,18 +4585,18 @@ function dgTestMove(x,y,dir){ const me=S.tokens.find(t=>t.owner===ME&&t.type==='
 /* ---------- volet du MJ ---------- */
 function renderDgPanel(){ const box=$('dg-body'); if(!box) return; const D=S.dg||{}, on=!!D.on, nC=Object.keys(D.c||{}).length;
   const wb=(id,ico,lbl,act)=>`<button type="button" class="wxb${act?' on':''}" id="${id}" title="${lbl}" aria-pressed="${act?'true':'false'}">${ico}<span>${lbl}</span></button>`;
-  const part=DG.tool==='wall'?'wall':DG.tool==='ceil'?'ceil':'floor';
+  const part=DG.tool==='wall'||DG.tool==='win'?'wall':DG.tool==='ceil'?'ceil':'floor';
   const ths=(attr,cur)=>`<div class="dg-pal">${Object.entries(DG_TH).filter(([k,t])=>!t.hidden).map(([k,t])=>`<button type="button" class="${cur===k?'on':''}" data-${attr}="${k}" title="${t.lbl}" aria-label="${t.lbl}"><img src="${dgThumb(k,part)}" alt=""></button>`).join('')}</div>`;
   const hr=(id,v,lbl)=>`<div class="crange"><span class="cap">${lbl}</span><input type="range" min="1" max="8" step=".5" value="${v}" id="${id}" aria-label="${lbl}"><b id="${id}v">${String(v).replace('.',',')}</b></div>`;
   const on_=m=>tool==='dgn'&&DG.tool===m;
-  const DGTN={sel:'Sélection',carve:'Sol',fill:'Sans sol',paint:'Repeindre',wall:'Mur',unwall:'Sans mur',ceil:'Plafond',unceil:'Ciel ouvert'};
-  const T=DG.tool, brush=['carve','fill','paint','ceil','unceil'].includes(T), hk=T==='wall'?'wh':T==='ceil'?'ch':null;
+  const DGTN={win:'Fenêtre',sel:'Sélection',carve:'Sol',fill:'Sans sol',paint:'Repeindre',wall:'Mur',unwall:'Sans mur',ceil:'Plafond',unceil:'Ciel ouvert'};
+  const T=DG.tool, brush=['carve','fill','paint','ceil','unceil'].includes(T), hk=T==='wall'||T==='win'?'wh':T==='ceil'?'ch':null;
   box.innerHTML=`<div class="subttl">Construction</div>
-    <div class="wxrow dg-tools">${wb('dg-sel',IB('hand'),'Sélection',on_('sel'))}${wb('dg-carve',IB('brush'),'Sol',on_('carve'))}${wb('dg-fill',IB('eraser'),'Sans sol',on_('fill'))}${wb('dg-paint',dgI('paint',1.7),'Repeindre',on_('paint'))}${wb('dg-wall',dgI('wall',1.7),'Mur',on_('wall'))}${wb('dg-unwall',dgI('iwall',1.7),'Sans mur',on_('unwall'))}${wb('dg-ceil',dgI('ceil',1.7),'Plafond',on_('ceil'))}${wb('dg-sky',dgI('sky',1.7),'Ciel',on_('unceil'))}</div>
+    <div class="wxrow dg-tools">${wb('dg-sel',IB('hand'),'Sélection',on_('sel'))}${wb('dg-carve',IB('brush'),'Sol',on_('carve'))}${wb('dg-fill',IB('eraser'),'Sans sol',on_('fill'))}${wb('dg-paint',dgI('paint',1.7),'Repeindre',on_('paint'))}${wb('dg-wall',dgI('wall',1.7),'Mur',on_('wall'))}${wb('dg-unwall',dgI('iwall',1.7),'Sans mur',on_('unwall'))}${wb('dg-win',dgI('win',1.7),'Fenêtre',on_('win'))}${wb('dg-ceil',dgI('ceil',1.7),'Plafond',on_('ceil'))}${wb('dg-sky',dgI('sky',1.7),'Ciel',on_('unceil'))}</div>
     ${tool==='dgn'&&DGTN[T]?`<div class="dg-tname">${DGTN[T]}</div>`:''}
     ${brush?`<div class="crange"><span class="cap">Taille</span><input type="range" min="1" max="15" step="1" value="${DG.n}" id="dg-n" aria-label="Taille du pinceau"><b id="dg-nv">${DG.n} × ${DG.n}</b></div>`:''}
     ${hk?hr('dg-h',DG[hk]||2,'Hauteur'):''}
-    ${['carve','paint','wall','ceil'].includes(T)&&tool==='dgn'?ths('th',dgBrushTh()):''}
+    ${['carve','paint','wall','win','ceil'].includes(T)&&tool==='dgn'?ths('th',dgBrushTh()):''}
     <div class="subttl">Végétation</div>
     <div class="vegpick">${Object.keys(VEG_BIO).map(b=>Object.keys(VEG_K).map(k=>{ const key=b+'-'+k; return `<button type="button" class="vegb${tool==='dgn'&&DG.tool==='veg'&&DG.vk===key?' on':''}" data-veg="${key}" title="${VEG_K[k]} · ${VEG_BIO[b]}"><img src="res/vege/${key}.png" alt=""></button>`; }).join('')).join('')}</div>
     <div class="subttl">Lumières</div>
@@ -4600,7 +4611,7 @@ function renderDgPanel(){ const box=$('dg-body'); if(!box) return; const D=S.dg|
   const pick=m=>{ DG.sel=null; if(!dgOn()){ dgEnsure().on=true; } if(tool==='dgn'&&DG.tool===m) setTool('dgn'); else { DG.tool=m; if(tool!=='dgn') setTool('dgn'); } drawDgLater(); renderDgPanel(); };
   box.querySelectorAll('[data-lum]').forEach(b=>b.onclick=()=>{ if(tool==='dgn'&&DG.tool==='lum'&&DG.lk===b.dataset.lum){ setTool('dgn'); renderDgPanel(); return; } DG.lk=b.dataset.lum; DG.tool='lum'; if(tool!=='dgn') setTool('dgn'); renderDgPanel(); });
   box.querySelectorAll('[data-veg]').forEach(b=>b.onclick=()=>{ if(tool==='dgn'&&DG.tool==='veg'&&DG.vk===b.dataset.veg){ setTool('dgn'); renderDgPanel(); return; } DG.vk=b.dataset.veg; DG.tool='veg'; if(tool!=='dgn') setTool('dgn'); renderDgPanel(); });
-  $('dg-wall').onclick=()=>pick('wall'); $('dg-unwall').onclick=()=>pick('unwall'); $('dg-ceil').onclick=()=>pick('ceil'); $('dg-sky').onclick=()=>pick('unceil');
+  $('dg-wall').onclick=()=>pick('wall'); $('dg-win').onclick=()=>pick('win'); $('dg-unwall').onclick=()=>pick('unwall'); $('dg-ceil').onclick=()=>pick('ceil'); $('dg-sky').onclick=()=>pick('unceil');
   if($('dg-h')) $('dg-h').oninput=e=>{ DG[hk]=+e.target.value; $('dg-hv').textContent=String(DG[hk]).replace('.',','); };
   $('dg-sel').onclick=()=>pick('sel'); $('dg-carve').onclick=()=>pick('carve'); $('dg-fill').onclick=()=>pick('fill'); $('dg-paint').onclick=()=>pick('paint'); $('dg-sup').onclick=()=>pick('sup'); $('dg-sdown').onclick=()=>pick('sdown'); $('dg-tp').onclick=()=>pick('tp');
   const opt=(k,v)=>{ DG[k]=v; if(tool!=='dgn'||DG.tool==='fill'||DG.tool==='door'||DG.tool==='secret'){ DG.tool=DG.tool==='paint'?'paint':'carve'; if(tool!=='dgn') setTool('dgn'); } renderDgPanel(); };
@@ -4905,7 +4916,7 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
   const shL=(c,f,a)=>{ if(!a) return sh(c,f); const r=Math.min(255,(c&255)*Math.min(1.5,f+a[0])), g=Math.min(255,((c>>8)&255)*Math.min(1.5,f+a[1])), b=Math.min(255,((c>>16)&255)*Math.min(1.5,f+a[2])); return 0xff000000|(b<<16)|(g<<8)|r; };
   const LON=LT.length>0;
   const h2=H/2, SK=fpsSky(); let anySky=here.sky;
-  let MAXW=1; for(const k in DG_TH) MAXW=Math.max(MAXW,DG_TH[k].wh||1); for(const k in (S.dg&&S.dg.w||{})){ const w=S.dg.w[k]; if(!w.no) MAXW=Math.max(MAXW,+w.h||1); } for(const k in (S.dg&&S.dg.ew||{})) MAXW=Math.max(MAXW,+S.dg.ew[k].h||1); const V2=true;   /* sans mur tracé, pas de bordure */
+  let MAXW=1; for(const k in DG_TH) MAXW=Math.max(MAXW,DG_TH[k].wh||1); for(const k in (S.dg&&S.dg.w||{})){ const w=S.dg.w[k]; if(!w.no) MAXW=Math.max(MAXW,+w.h||1); } for(const k in (S.dg&&S.dg.ew||{})) MAXW=Math.max(MAXW,+S.dg.ew[k].h||1); const V2=true, WSILL=.32, WTOP=.82;   /* sans mur tracé, pas de bordure */
   for(let xx=0;xx<W;xx++){ const cX=2*xx/W-1, rdx=dx+px*cX, rdy=dy+py*cX; let mx=ci, my=cj;
     const ddx=Math.abs(1/rdx), ddy=Math.abs(1/rdy); let stx,sty,sdx,sdy,side=0,n=0,pmx,pmy;
     if(rdx<0){ stx=-1; sdx=(cam.x-mx)*ddx; } else { stx=1; sdx=(mx+1-cam.x)*ddx; }
@@ -4932,7 +4943,9 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
       VC=CC;
       pmx=mx; pmy=my; if(sdx<sdy){ sdx+=ddx; mx+=stx; side=0; } else { sdy+=ddy; my+=sty; side=1; } d0=d1;
       const EW=dgEWk(dgEK(pmx,pmy,mx,my));
-      if(EW){ const ET=fpsTextures(EW.t), cap=CC?+CC.h||1:MAXW, top=Math.min(+EW.h||1,cap); if(top>fh) face(fh,top,d0,ET.wall,ET.N); if(top>=cap) break; }   /* MUR tracé sur l'arête */
+      if(EW){ const ET=fpsTextures(EW.t), cap=CC?+CC.h||1:MAXW, top=Math.min(+EW.h||1,cap);
+        if(EW.win){ face(fh,fh+WSILL,d0,ET.wall,ET.N); if(top>fh+WTOP) face(fh+WTOP,top,d0,ET.wall,ET.N); }   /* fenêtre : allège et linteau, on voit à travers */
+        else { if(top>fh) face(fh,top,d0,ET.wall,ET.N); if(top>=cap) break; } }   /* MUR tracé sur l'arête */
       const WB=dgWB(mx,my);
       if(WB){ const WT=fpsTextures(WB.t), cap=CC?+CC.h||1:MAXW, top=Math.min(+WB.h||1,cap); if(top>fh) face(fh,top,d0,WT.wall,WT.N); if(top>=cap) break;   /* bloc de MUR */
         cur={th:WB.t,sky:true,blk:1}; fh=+WB.h||1; TT=WT; virt=false; if(d0>60) break; continue; }
@@ -5190,6 +5203,7 @@ function boardMove(e){
 }
 function boardUp(e){
   if(!gesture) return; const g=gesture; gesture=null; board.classList.remove('panning');
+  if(g.k==='dgn'&&typeof dgPaintEnd==='function') dgPaintEnd(g);
   if(g.k==='map'){ mapUp(e,g); return; }
   if(g.k==='rsel'){ rselAt=Date.now(); $('selbox').hidden=true;
     if(!g.moved){ ping(g.x1,g.y1); send({t:'ping',x:g.x1,y:g.y1}); return; }
