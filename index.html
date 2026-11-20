@@ -3679,7 +3679,7 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
   </div>
   <div class="spacer"></div>
   <div class="tools">
-    <span class="undo2" id="undo2"><button class="tool icon" type="button" id="b-undo" title="Annuler (Ctrl+Z)" disabled></button><button class="tool icon" type="button" id="b-redo" title="Rétablir (Ctrl+Y)" disabled></button></span><span class="sep" id="undosep"></span>
+    <span class="undo2" id="undo2"><button class="tool icon" type="button" id="b-undo" title="Annuler (Ctrl+Z)" disabled></button><button class="tool icon" type="button" id="b-redo" title="Rétablir (Ctrl+Y)" disabled></button><button class="tool icon" type="button" id="b-fit" title="Recentrer sur la carte"></button><button class="tool icon" type="button" id="b-prev" title="Aperçu 3D"></button></span><span class="sep" id="undosep"></span>
     <button class="tool icon netb" type="button" id="b-net"><i class="nd"></i><b id="net-n"></b></button>
     <button class="tool" type="button" id="b-player" title="Ouvrir la vue joueur (second écran)"></button>
     <button class="tool icon" type="button" id="b-full" title="Plein écran"></button>
@@ -4615,8 +4615,7 @@ function renderDgPanel(){ const box=$('dg-body'); if(!box) return; const D=S.dg|
   const on_=m=>tool==='dgn'&&DG.tool===m;
   const DGTN={win:'Fenêtre',sel:'Sélection',carve:'Sol',fill:'Sans sol',paint:'Repeindre',wall:'Mur',unwall:'Sans mur',ceil:'Plafond',unceil:'Ciel ouvert'};
   const T=DG.tool, brush=['carve','fill','paint','ceil','unceil'].includes(T), hk=T==='wall'||T==='win'?'wh':T==='ceil'?'ch':null;
-  box.innerHTML=`<div class="dg-top"><button type="button" class="ib" id="dg-undo" title="Annuler (Ctrl+Z)">${IB('undo')}</button><button type="button" class="ib" id="dg-redo" title="Rétablir (Ctrl+Y)">${IB('redo')}</button><span></span><button type="button" class="ib" id="dg-fit" title="Recentrer sur la carte">${dgI('fit',1.8)}</button></div>
-    <div class="subttl">Construction</div>
+  box.innerHTML=`<div class="subttl">Construction</div>
     <div class="wxrow dg-tools">${wb('dg-sel',IB('hand'),'Sélection',on_('sel'))}${wb('dg-carve',IB('brush'),'Sol',on_('carve'))}${wb('dg-fill',IB('eraser'),'Sans sol',on_('fill'))}${wb('dg-paint',dgI('paint',1.7),'Repeindre',on_('paint'))}${wb('dg-wall',dgI('wall',1.7),'Mur',on_('wall'))}${wb('dg-unwall',dgI('iwall',1.7),'Sans mur',on_('unwall'))}${wb('dg-win',dgI('win',1.7),'Fenêtre',on_('win'))}${wb('dg-ceil',dgI('ceil',1.7),'Plafond',on_('ceil'))}${wb('dg-sky',dgI('sky',1.7),'Ciel',on_('unceil'))}</div>
     ${tool==='dgn'&&DGTN[T]?`<div class="dg-tname">${DGTN[T]}</div>`:''}
     ${brush?`<div class="crange"><span class="cap">Taille</span><input type="range" min="1" max="15" step="1" value="${DG.n}" id="dg-n" aria-label="Taille du pinceau"><b id="dg-nv">${DG.n} × ${DG.n}</b></div>`:''}
@@ -4630,21 +4629,17 @@ function renderDgPanel(){ const box=$('dg-body'); if(!box) return; const D=S.dg|
     <div class="wxrow">${wb('dg-door',dgI('door',1.7),'Porte',tool==='dgn'&&DG.tool==='door')}${wb('dg-sdoor',dgI('sdoor',1.7),'Porte cachée',tool==='dgn'&&DG.tool==='secret')}</div>
     <div class="subttl">Passages</div>
     <div class="wxrow">${wb('dg-sup',dgI('sup',1.7),'Escalier ↑',tool==='dgn'&&DG.tool==='sup')}${wb('dg-sdown',dgI('sdown',1.7),'Escalier ↓',tool==='dgn'&&DG.tool==='sdown')}${wb('dg-sign',dgI('sign',1.7),'Panneau',tool==='dgn'&&DG.tool==='sign')}${wb('dg-tp',dgI('tp',1.7),'Zone TP',tool==='dgn'&&DG.tool==='tp')}</div>
-    <div class="subttl">Vue des joueurs <small>${nC} m²</small></div>
-    <div class="wxrow">${wb('dg-prev',IB('eye'),'Aperçu de la vue 3D',false)}</div>
     <button class="btn ghost wide" type="button" id="dg-clear">${IB('bin')}Tout reboucher</button>`;
   const pick=m=>{ DG.sel=null; if(!dgOn()){ dgEnsure().on=true; } if(tool==='dgn'&&DG.tool===m) setTool('dgn'); else { DG.tool=m; if(tool!=='dgn') setTool('dgn'); } drawDgLater(); renderDgPanel(); };
   box.querySelectorAll('[data-lum]').forEach(b=>b.onclick=()=>{ if(tool==='dgn'&&DG.tool==='lum'&&DG.lk===b.dataset.lum){ setTool('dgn'); renderDgPanel(); return; } DG.lk=b.dataset.lum; DG.tool='lum'; if(tool!=='dgn') setTool('dgn'); renderDgPanel(); });
   box.querySelectorAll('[data-veg]').forEach(b=>b.onclick=()=>{ if(tool==='dgn'&&DG.tool==='veg'&&DG.vk===b.dataset.veg){ setTool('dgn'); renderDgPanel(); return; } DG.vk=b.dataset.veg; DG.tool='veg'; if(tool!=='dgn') setTool('dgn'); renderDgPanel(); });
   $('dg-wall').onclick=()=>pick('wall'); $('dg-win').onclick=()=>pick('win'); $('dg-unwall').onclick=()=>pick('unwall'); $('dg-ceil').onclick=()=>pick('ceil'); $('dg-sky').onclick=()=>pick('unceil');
   if($('dg-h')) $('dg-h').oninput=e=>{ DG[hk]=+e.target.value; $('dg-hv').textContent=String(DG[hk]).replace('.',','); };
-  $('dg-undo').onclick=()=>undo(); $('dg-redo').onclick=()=>redo(); $('dg-fit').onclick=()=>dgFit();
   $('dg-sel').onclick=()=>pick('sel'); $('dg-carve').onclick=()=>pick('carve'); $('dg-fill').onclick=()=>pick('fill'); $('dg-paint').onclick=()=>pick('paint'); $('dg-sup').onclick=()=>pick('sup'); $('dg-sdown').onclick=()=>pick('sdown'); $('dg-tp').onclick=()=>pick('tp'); $('dg-sign').onclick=()=>pick('sign');
   const opt=(k,v)=>{ DG[k]=v; if(tool!=='dgn'||DG.tool==='fill'||DG.tool==='door'||DG.tool==='secret'){ DG.tool=DG.tool==='paint'?'paint':'carve'; if(tool!=='dgn') setTool('dgn'); } renderDgPanel(); };
   $('dg-door').onclick=()=>pick('door'); $('dg-sdoor').onclick=()=>pick('secret');
   if($('dg-n')) $('dg-n').oninput=e=>{ brushSize(+e.target.value); $('dg-nv').textContent=`${DG.n} × ${DG.n}`; drawDgLater(); };
   box.querySelectorAll('[data-th]').forEach(b=>b.onclick=()=>{ DG.th=b.dataset.th; DG.sky=b.dataset.th==='prairie'||!!DG_TH[b.dataset.th].sky; DG.iw=false; renderDgPanel(); });
-  $('dg-prev').onclick=()=>fpsPreview();
   $('dg-clear').onclick=()=>confirmDialog('Tout reboucher','Toute la zone creusée de cette scène redevient de la roche.','Tout reboucher',()=>{ const D=dgEnsure(); D.c={}; D.w={}; D.cl={}; D.ew={}; drawDgLater(); renderDgPanel(); markDirty(); sync(); }); }
 
 /* ---------- outils communs : type de scène, heure, taille de pinceau ---------- */
@@ -8159,7 +8154,7 @@ function wireTouch(){ if(isPlayer) return;
   const zc=f=>{ const r=board.getBoundingClientRect(); zoomAt(r.left+r.width/2,r.top+r.height/2,f); };
   $('zf-in').onclick=()=>zc(1.25); $('zf-out').onclick=()=>zc(.8); $('zf-fit').onclick=()=>fitBoard();
   touchLayout(); let t=0; addEventListener('resize',()=>{ clearTimeout(t); t=setTimeout(touchLayout,120); }); }
-function wire(){ wireTouch(); $('b-undo').innerHTML=IB('undo'); $('b-redo').innerHTML=IB('redo'); $('b-undo').onclick=undo; $('b-redo').onclick=redo;
+function wire(){ wireTouch(); $('b-undo').innerHTML=IB('undo'); $('b-redo').innerHTML=IB('redo'); $('b-undo').onclick=undo; $('b-redo').onclick=redo; $('b-fit').innerHTML=dgI('fit',1.8); $('b-fit').onclick=()=>dgOn()?dgFit():fitBoard(); $('b-prev').innerHTML=IB('eye'); $('b-prev').onclick=()=>{ const el=$('fpsprev'); if(el&&el.querySelector('.fps')){ el.querySelector('.fps-x').click(); return; } fpsPreview(); };
   if($('mb-ico')){ $('mb-ico').innerHTML=IB('mega',1.7); $('mb-go').innerHTML=IB('send',1.8); $('mb-go').onclick=sysSend;
     const ac=$('mb-ac'); let acL=[], acI=0;
     const acHide=()=>{ ac.hidden=true; acL=[]; };
