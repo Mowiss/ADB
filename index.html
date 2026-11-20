@@ -4371,7 +4371,13 @@ function dgDoorEdit(k){ const o=S.dg&&S.dg.d&&S.dg.d[k]; if(!o) return; const st
     <div class="wxrow dpseg">${opt('open',dgI('iwall',1.7),'Ouverte')}${opt('shut',dgI('door',1.7),'Fermée')}${opt('lk','<i class="dplk">🔒</i>','Verrouillée')}</div>`);
   document.querySelectorAll('[data-dp]').forEach(b=>b.onclick=()=>{ const v=b.dataset.dp; o.open=v==='open'; o.lk=v==='lk'; if(!o.lk) delete o.lk; dlg.close(); drawDgLater(); fpsLater(); markDirty(); sync(); });
   $('dp-del').onclick=()=>{ delete S.dg.d[k]; dlg.close(); drawDgLater(); fpsLater(); markDirty(); sync(); }; }
-function dgToggleDoor(k){ const o=S.dg&&S.dg.d&&S.dg.d[k]; if(!o||dgHid(o)||o.lk) return false; o.open=!o.open; drawDgLater(); fpsLater(); markDirty(); sync(); return true; }
+/* une porte ouverte au clic se referme seule au bout de 3 s (pas si quelqu'un est dans l'encadrement) */
+function dgAutoClose(k){ clearTimeout((FPS.dct=FPS.dct||{})[k]); FPS.dct[k]=setTimeout(function tick(){ const o=S.dg&&S.dg.d&&S.dg.d[k]; if(!o||!o.open) return;
+    const [a,b,ori]=k.split(','), i=+a, j=+b, near=(x,y)=>ori==='h'?Math.abs(y-j)<.45&&x>i-.1&&x<i+1.1:Math.abs(x-i)<.45&&y>j-.1&&y<j+1.1;
+    const busy=S.tokens.some(t=>['player','mob','npc'].includes(t.type)&&!t.inveh&&near(t.x/CELL,t.y/CELL))||(FPS.cam&&FPS.mode==='play'&&near(FPS.cam.x,FPS.cam.y));
+    if(busy){ FPS.dct[k]=setTimeout(tick,800); return; }
+    o.open=false; drawDgLater(); fpsLater(); if(!isPlayer){ markDirty(); sync(); } },3000); }
+function dgToggleDoor(k){ const o=S.dg&&S.dg.d&&S.dg.d[k]; if(!o||dgHid(o)||o.lk) return false; o.open=!o.open; if(o.open) dgAutoClose(k); drawDgLater(); fpsLater(); markDirty(); sync(); return true; }
 /* murs tracés tout autour d'une zone (carte de test) : texture et hauteur du style de chaque case */
 function dgAutoWalls(D){ const E=D.ew=D.ew||{}; for(const k in D.c){ const f=dgInfo(D.c[k]); if(f.iw) continue; const [i,j]=k.split(',').map(Number);
   [[0,-1],[1,0],[0,1],[-1,0]].forEach(([u,v])=>{ if(D.c[(i+u)+','+(j+v)]) return; const e=dgEK(i,j,i+u,j+v); if(!E[e]) E[e]={t:f.th,h:f.sky?(DG_TH[f.th].wh||1):1}; }); }
@@ -5318,7 +5324,7 @@ function fpsWorldAt(cx,cy){ if(!FPS.el||FPS.el.hidden||!FPS.lastCam||!FPS.dz) re
 function fpsFacing(){ const c=FPS.cam, d=(((Math.round(c.a/(Math.PI/2))%4)+4)%4), V4=[[0,-1],[1,0],[0,1],[-1,0]], i=Math.floor(c.x), j=Math.floor(c.y); return [i,j,i+V4[d][0],j+V4[d][1]]; }
 function fpsDoor(){ if(!FPS.cam||FPS.anim) return false; const [i,j,ni,nj]=fpsFacing(), o=dgDoor(i,j,ni,nj); if(!o||dgHid(o)){ fpsBump(); return false; }
   if(o.lk){ fpsBump(); toast('🔒 Porte verrouillée'); return true; }
-  if(FPS.mode==='play'){ o.open=!o.open; fpsLater(); up({t:'ddoor',x:(i+.5)*CELL,y:(j+.5)*CELL,nx:(ni+.5)*CELL,ny:(nj+.5)*CELL}); } else dgToggleDoor(dgEK(i,j,ni,nj)); return true; }
+  if(FPS.mode==='play'){ o.open=!o.open; if(o.open&&window.DGTEST) dgAutoClose(dgEK(i,j,ni,nj)); fpsLater(); up({t:'ddoor',x:(i+.5)*CELL,y:(j+.5)*CELL,nx:(ni+.5)*CELL,ny:(nj+.5)*CELL}); } else dgToggleDoor(dgEK(i,j,ni,nj)); return true; }
 /* toucher l'écran : ramasser l'objet visé (à portée de main) ou manœuvrer la porte */
 function fpsTap(e,cv){ const r=cv.getBoundingClientRect(), u=(e.clientX-r.left)/r.width, v=(e.clientY-r.top)/r.height;
   const h=(FPS.hits||[]).filter(o=>u>=o.x0&&u<=o.x1&&v>=o.y0&&v<=o.y1).sort((a,b)=>a.r-b.r)[0];
