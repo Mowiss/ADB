@@ -2645,12 +2645,12 @@ svg.i{width:18px;height:18px;flex:none}
 /* ===== Interface tactile (tablette / téléphone) ===== */
 .bbx,.zoomfl,.flnav,.fltr{display:none}
 .undo2{display:flex;gap:2px}.undo2 .tool:disabled{opacity:.3;cursor:default}
-html:not(.player){--tim:0px;--bot:58px}   /* barre du bas compacte partout : messages et sabliers en boutons */
-html:not(.player) .msgbar,html:not(.player) .timbar{display:none}
-html:not(.player) .msgbar.popd,html:not(.player) .timbar.popd{display:flex;left:auto;right:calc(var(--tabs) + 14px);bottom:calc(var(--bot) + 10px);width:min(480px,calc(100vw - var(--rail) - var(--tabs) - 28px));height:54px;box-sizing:border-box;border:1px solid var(--rule);border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.3);background:var(--paper)!important;z-index:45;padding:0 8px 0 14px}
-html:not(.player) .msgbar.popd input{font-size:15px}html:not(.player) .msgbar.popd .mb-go{width:44px;height:44px;background:var(--c-per);color:#fff;border-radius:10px}html:not(.player) .msgbar.popd .mb-go:hover{background:var(--c-per)}
-html:not(.player) .timbar.popd{overflow-x:auto}
-html:not(.player) .bbx{display:flex;gap:8px;margin-left:auto;flex:none;align-items:center}
+html.tui:not(.player){--tim:0px}   /* tablette : messages et sabliers en boutons */
+html.tui:not(.player) .msgbar,html.tui:not(.player) .timbar{display:none}
+html.tui:not(.player) .msgbar.popd,html.tui:not(.player) .timbar.popd{display:flex;left:auto;right:calc(var(--tabs) + 14px);bottom:calc(var(--bot) + 10px);width:min(480px,calc(100vw - var(--rail) - var(--tabs) - 28px));height:54px;box-sizing:border-box;border:1px solid var(--rule);border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.3);background:var(--paper)!important;z-index:45;padding:0 8px 0 14px}
+html.tui:not(.player) .msgbar.popd input{font-size:15px}html.tui:not(.player) .msgbar.popd .mb-go{width:44px;height:44px;background:var(--c-per);color:#fff;border-radius:10px}html.tui:not(.player) .msgbar.popd .mb-go:hover{background:var(--c-per)}
+html.tui:not(.player) .timbar.popd{overflow-x:auto}
+html.tui:not(.player) .bbx{display:flex;gap:8px;margin-left:auto;flex:none;align-items:center}
 .bbt{position:relative;display:flex;align-items:center;gap:8px;height:44px;padding:0 14px;border:1px solid var(--rule);border-radius:12px;background:var(--paper);font:700 13px var(--f-body);color:var(--ink);cursor:pointer}
 .bbt svg{width:19px;height:19px;flex:none}.bbt.sab svg{color:#d9a520}.bbt.msg{color:var(--c-per);border-color:var(--c-per)}
 .bbt[aria-expanded="true"]{background:var(--ink-strong);color:#fff;border-color:var(--ink-strong)}.bbt[aria-expanded="true"] svg{color:#fff}
@@ -3196,7 +3196,7 @@ input.hue{-webkit-appearance:none;appearance:none;height:12px;border-radius:6px;
 
 /* Barre du bas : initiative + sabliers */
 .bottom{position:fixed;left:0;right:var(--tabs);bottom:0;height:var(--bot);background:var(--paper);border-top:1px solid var(--rule);display:flex;align-items:center;gap:12px;padding:0 14px;z-index:10}
-.bottom .ttl{width:112px;height:22px;flex:none}
+.bottom .ttl{display:none}
 .bottom .ttl text{font-size:14px;letter-spacing:.3em}
 .bsec{display:flex;align-items:center;gap:8px;min-width:0}
 .bsec.ini{flex:1}
