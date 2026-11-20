@@ -4619,7 +4619,24 @@ const fightCur=()=>S.fight?orderToks()[S.turn]||null:null;
 /* hors du tour d'un combattant : on regarde l'action, sans se déplacer */
 function fpsSpectating(){ if(FPS.mode!=='play'||!S.fight) return false; const c=fightCur(); return !c||c.id!==FPS.self; }
 /* ---------- mode test (joueur, en développement) : un bout de complexe à explorer sans MJ ---------- */
-function dgTestLoad(){ window.DGTEST=true; if(!ME) ME='test'; const c={}, d={}, m={}, box=(x0,y0,w,h,st)=>{ for(let i=x0;i<x0+w;i++) for(let j=y0;j<y0+h;j++) c[i+','+j]=st; };
+/* ---------- mode test 🔷 : le scénario de démonstration « La plaine » (res/demo), scènes reliées par leurs passages ---------- */
+const DGT={sc:null,si:0,cell:null};
+function dgTestLoad(){ window.DGTEST=true; if(!ME) ME='test';
+  fetch('res/demo/la-plaine.adb').then(r=>r.json()).then(d=>{ if(!d||!Array.isArray(d.scenes)||!d.scenes.length) throw 0; DGT.sc=d.scenes; const m0=Object.entries(d.scenes[0].dg.m||{}).find(([k,m])=>m.k==='sign');
+    dgTestScene(0,m0?m0[0].split(',').map(Number):null); toast(`🔷 Démo : ${d.title||'scénario'}`); }).catch(()=>dgTestLoadOld()); }
+function dgTestScene(si,cell){ const sc=DGT.sc&&DGT.sc[si]; if(!sc) return; DGT.si=si; const D=JSON.parse(JSON.stringify(sc.dg||{})); D.on=true; S.dg=D;
+  S.blood=JSON.parse(JSON.stringify(sc.blood||[])); S.weather=sc.weather||''; if(S.hour==null||!DGT.hourSet){ S.hour=14; DGT.hourSet=1; } S.combat=null; S.fight=null; S.dexLock=false; FPS.skys=null; FPS.dst={}; FPS.bld=null;
+  let c=cell; if(!c||!dgOpen(c[0],c[1])){ const k=Object.keys(D.c||{}).find(k=>dgOpen(...k.split(',').map(Number))); c=k?k.split(',').map(Number):[0,0]; }
+  const L=JSON.parse(JSON.stringify(sc.tokens||[])).filter(t=>t.type!=='player'&&!t.hidden), [fi,fj]=typeof dgFree==='function'?dgFree(c[0],c[1],L,null):c;
+  const race=(typeof VEHME!=='undefined'&&VEHME&&VEHME.race)||'humain';
+  S.tokens=[{id:'me',type:'player',name:'Vous',owner:ME,race,sexe:'h',hp:10,hpMax:10,x:(fi+.5)*CELL,y:(fj+.5)*CELL,dir:0,s:1},...L];
+  DGT.cell=fi+','+fj; S.order=[]; S.turn=-1; FPS.cam=null; FPS.dp=null; FPS.sprites&&FPS.sprites.clear(); renderTokens(); followMe(); if(si) toast(`🔷 ${sc.title||'Scène '+(si+1)}`); }
+/* mode test : en entrant sur un passage (escalier, TP, panneau), on part vers sa destination, même dans une autre scène */
+function dgTestArrive(){ if(!DGT.sc) return; const me=S.tokens.find(t=>t.id==='me'); if(!me) return; const i=Math.floor(me.x/CELL), j=Math.floor(me.y/CELL), k=i+','+j; if(k===DGT.cell) return; DGT.cell=k;
+  const m=dgMk(i,j); if(!m||!m.to) return; let dest=null; DGT.sc.forEach((sc,si)=>{ for(const kk in ((sc.dg&&sc.dg.m)||{})) if(sc.dg.m[kk].code===m.to&&!dest) dest={si,c:kk.split(',').map(Number)}; });
+  if(!dest){ toast(`Destination ${m.to} introuvable`,true); return; }
+  setTimeout(()=>{ FPS.mv=0; if(dest.si!==DGT.si) dgTestScene(dest.si,dest.c); else { me.x=(dest.c[0]+.5)*CELL; me.y=(dest.c[1]+.5)*CELL; DGT.cell=dest.c.join(','); FPS.cam=null; followMe(); } toast(`${MK_LBL[m.k]||'Passage'} → ${(DGT.sc[dest.si].title)||''}`); },200); }
+function dgTestLoadOld(){ window.DGTEST=true; DGT.sc=null; if(!ME) ME='test'; const c={}, d={}, m={}, box=(x0,y0,w,h,st)=>{ for(let i=x0;i<x0+w;i++) for(let j=y0;j<y0+h;j++) c[i+','+j]=st; };
   /* une boucle qui traverse tous les styles : pierre → crypte → prairie → ruelle → ruines → désert → jungle → station → pierre */
   box(0,0,5,5,'pierre'); box(5,2,5,1,'pierre'); box(-3,1,3,3,'crypte');
   box(10,0,6,6,'crypte'); box(16,0,8,8,'prairie|s|i');
@@ -5228,7 +5245,7 @@ function fpsMoveBy(dist){ const c=FPS.cam; if(!c||!dist) return; if(fpsSpectatin
   if(FPS.mode!=='play'&&nc) fpsPrevArrive(c); fpsSendMove(nc); }
 function fpsSendMove(force){ if(FPS.mode!=='play'||!FPS.cam) return; const now=performance.now(); if(!force&&FPS.sent&&now-FPS.sent<90){ clearTimeout(FPS.sendT); FPS.sendT=setTimeout(()=>fpsSendMove(true),95); return; } FPS.sent=now;
   const c=FPS.cam, nd=(((Math.round(c.a/(Math.PI/2))%4)+4)%4), m={t:'dmove',x:Math.round(c.x*CELL),y:Math.round(c.y*CELL),dir:nd,ang:+c.a.toFixed(3)};
-  up(m); if(window.DGTEST){ const me=S.tokens.find(t=>t.id===FPS.self); if(me){ me.x=m.x; me.y=m.y; me.dir=nd; me.ang=m.ang; } } }
+  up(m); if(window.DGTEST){ const me=S.tokens.find(t=>t.id===FPS.self); if(me){ me.x=m.x; me.y=m.y; me.dir=nd; me.ang=m.ang; dgTestArrive(); } } }
 function fpsTick(dt){ let go=false; if(FPS.rot){ FPS.cam.a+=FPS.rot*FPS_TURN*dt; FPS.turned=performance.now(); fpsSendMove(false); go=true; } if(FPS.mv){ fpsMoveBy(FPS.mv*FPS_V*dt); go=true; } return go; }
 /* mains du personnage selon sa race */
 function fpsHands(){ if(!FPS.el) return; const im=FPS.el.querySelector('.fps-hands'); if(!im) return; const r=FPS.mode==='play'&&typeof VEHME!=='undefined'&&VEHME&&VEHME.race, src=r&&(HANDS[r]||HANDS.humain);

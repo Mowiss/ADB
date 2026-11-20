@@ -14,3 +14,5 @@ Fichiers chargés par l'appli à la demande (pas codés dans index.html).
   Un fichier absent garde la texture dessinée par l'appli.
 
 Garder les noms en minuscules, sans accent.
+
+- `demo/la-plaine.adb` : scénario de démonstration chargé par le mode test 🔷 (5 scènes reliées par leurs passages).
