@@ -3530,7 +3530,11 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 
 /* ===== états des jetons ===== */
 .tk .fx{position:absolute;inset:0;pointer-events:none}
-.fps-fx{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:2}.fps-fx .tk.fx3{pointer-events:none!important;cursor:default;background:none;border:0;box-shadow:none}
+.fps-fx{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:2}
+.fps-fx .ihalo{position:absolute;transform:translate(-50%,-50%);pointer-events:none;transition:opacity .3s;mix-blend-mode:screen}
+.fps-fx .ihalo i{position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle,rgba(255,236,170,.75) 0%,rgba(255,206,110,.4) 30%,rgba(255,200,90,0) 65%);animation:ihPulse 2.4s ease-in-out infinite}
+.fps-fx .ihalo b{position:absolute;inset:-10%;border-radius:50%;background:repeating-conic-gradient(rgba(255,226,140,.38) 0 8deg,transparent 8deg 24deg);-webkit-mask:radial-gradient(circle,#000 15%,transparent 62%);mask:radial-gradient(circle,#000 15%,transparent 62%);animation:ihSpin 14s linear infinite}
+@keyframes ihPulse{0%,100%{transform:scale(.92)}50%{transform:scale(1.06)}}@keyframes ihSpin{to{transform:rotate(360deg)}}.fps-fx .tk.fx3{pointer-events:none!important;cursor:default;background:none;border:0;box-shadow:none}
 .tk .fx i,.tk .fx svg{position:absolute;pointer-events:none}
 /* brûlure : petites flammèches */
 .fx-brulure i{width:15px;height:21px;margin:-18px 0 0 -7.5px;border-radius:50% 50% 50% 50%/62% 62% 38% 38%;background:radial-gradient(circle at 50% 72%,#fff6c2 0 14%,#ffc23a 30%,#ff6a1a 58%,rgba(255,60,10,0) 72%);transform-origin:50% 100%;animation:fxFlame var(--d,.6s) ease-in-out var(--t,0s) infinite alternate;filter:drop-shadow(0 0 3px rgba(255,120,30,.8))}
@@ -5152,6 +5156,7 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
   L.forEach(o=>{ const tX=inv*(dy*o.sx-dx*o.sy), tY=inv*(-py*o.sx+px*o.sy); if(tY<=.15) return; const img=fpsSprite(o.t); if(!img) return;
     if(!img._px) img._px=new Uint32Array(img.getContext('2d').getImageData(0,0,img.width,img.height).data.buffer.slice(0));
     let it=dgItem(o.t), sk=img._k, zb=dgH(Math.floor(o.t.x/CELL),Math.floor(o.t.y/CELL)), scrX=(W/2)*(1+tX/tY), hh0=0, hh=Math.abs(PS/tY)*(sk?(o.t.mk==='lum'&&dgCeil(Math.floor(o.t.x/CELL),Math.floor(o.t.y/CELL))?.95:(img._hf||SPR_H[sk])):it?.34:.62)*(!it&&!sk&&o.t.s?Math.min(1.6,Math.max(.6,o.t.s)):1), ww=hh*img.width/img.height;
+    if(it&&!sk){ zb+=.3+Math.sin(performance.now()/480+(o.t.x+o.t.y)*.01)*.045; FPS.fkRun=1; }   /* butin découvert : il flotte dans les airs */
     const shk=FPS.shk&&FPS.shk.get(o.t.id), sa=shk?Math.max(0,1-(performance.now()-shk)/450):0; if(sa>0){ FPS.fkRun=1; scrX+=sa*Math.sin(performance.now()/22)*ww*.1; }   /* touché : le sprite tremble */
     const bot=h2+(eye-zb)*PS/tY, top=bot-hh, x0=Math.round(scrX-ww/2), x1=Math.round(scrX+ww/2);
     const pa=LON&&(o.t.type!=='mk'||o.t.mk==='ob')?la(o.t.x/CELL,o.t.y/CELL):null, sv=o.t.mk==='lum'?1:Math.max(vis(o.t.x/CELL,o.t.y/CELL),pa?Math.min(1,pa[0]+pa[1]+pa[2]):0); if(sv<.05) return; if(o.t.type!=='mk'&&sv<.45) return;   /* au loin, le décor se devine en noir ; MOB, PNJ et butin ne se voient pas */
@@ -5225,6 +5230,9 @@ function prevAsk(t,at){ if(t.shop&&typeof shopDlg==='function'){ shopDlg(t.id); 
 /* effets actifs (brûlure, saignement, maladie…) : les mêmes animations que sur la carte, posées sur le sprite en 3D */
 function fpsFx(){ if(!FPS.el||typeof stHTML!=='function') return; let box=FPS.el.querySelector('.fps-fx'); if(!box){ box=document.createElement('div'); box.className='fps-fx'; FPS.el.insertBefore(box,FPS.el.querySelector('.fps-hands')); }
   const cv=FPS.el.querySelector('canvas'), r=cv.getBoundingClientRect(), b=FPS.el.getBoundingClientRect(), seen=new Set();
+  (FPS.hits||[]).forEach(h=>{ const t=tok(h.t.id); if(!t||!dgItem(t)||t.box||t.inbox||h.r>2.6) return; const id='h'+t.id; seen.add(id);   /* halo du butin : seulement quand on s'approche */
+    let el=box.querySelector(`[data-fid="${id}"]`); if(!el){ el=document.createElement('div'); el.className='ihalo'; el.dataset.fid=id; el.innerHTML='<i></i><b></b>'; box.prepend(el); }
+    const ph=(h.y1-h.y0)*r.height, sz=Math.min(260,Math.max(40,ph*2.4)); el.style.left=(r.left-b.left+(h.x0+h.x1)/2*r.width)+'px'; el.style.top=(r.top-b.top+(h.y0+h.y1)/2*r.height)+'px'; el.style.width=el.style.height=sz+'px'; el.style.opacity=(.85*Math.max(0,Math.min(1,(2.6-h.r)/1.2))).toFixed(2); });
   (FPS.hits||[]).forEach(h=>{ const t=tok(h.t.id); if(!t||!ALIVE(t)||dgDead(t)) return; const L=effSt(t); if(!L.length) return; seen.add(t.id);
     let el=box.querySelector(`[data-fid="${t.id}"]`); const sig=L.slice().sort().join(',');
     if(!el){ el=document.createElement('div'); el.className='tk fx3'; el.dataset.fid=t.id; box.appendChild(el); }
