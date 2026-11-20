@@ -4319,6 +4319,7 @@ const DG_ICO={
   sdoor:'<path d="M5 21V4.5A1.5 1.5 0 0 1 6.5 3h11A1.5 1.5 0 0 1 19 4.5V21" stroke-dasharray="2.5 2.5"/><path d="M3 21h18"/><path d="M10 9.5a2 2 0 1 1 2.8 1.8c-.5.3-.8.7-.8 1.2V13M12 16h.01"/>',
   sup:'<path d="M3 20h4v-4h4v-4h4V8h4V4"/><path d="M6 9l4-4M10 5H6v4"/>',
   sdown:'<path d="M3 4h4v4h4v4h4v4h4v4"/><path d="M15 6l4 4M19 6v4h-4"/>',
+  sign:'<path d="M10 21V4"/><path d="M4 6h12l3 2.5-3 2.5H4z"/><path d="M16 13H6l-2.5 2L6 17h10z" opacity=".7"/>',
   tp:'<ellipse cx="12" cy="18" rx="8" ry="3"/><path d="M6 17V8M18 17V8M12 15V4M9 12V6M15 12V7"/>',
   up:'<path d="M2 20l7-10 4 5 3-3 6 8z"/><path d="M17 3v6M14.5 5.5 17 3l2.5 2.5"/>',
   down:'<path d="M2 20l7-10 4 5 3-3 6 8z"/><path d="M17 3v6M14.5 6.5 17 9l2.5-2.5"/>',
@@ -4390,7 +4391,8 @@ function drawDg(){ const cv=$('dgn'); if(!cv) return; const r=board.getBoundingC
   /* passages */
   const MM=S.dg.m||{}; for(const k in MM){ const m=MM[k], p=k.indexOf(','), i=+k.slice(0,p), j=+k.slice(p+1); if(i<i0||i>i1||j<j0||j>j1) continue; const X=i*CELL, Y=j*CELL, c=m.k==='tp'?'#18b8d8':'#7a5a2c';
     x.save(); x.translate(X,Y);
-    if(m.k==='tp'){ x.fillStyle='rgba(71,228,255,.25)'; x.fillRect(2,2,CELL-4,CELL-4); x.strokeStyle=c; x.lineWidth=3; x.beginPath(); x.ellipse(CELL/2,CELL/2,CELL*.32,CELL*.32,0,0,7); x.stroke(); x.beginPath(); x.ellipse(CELL/2,CELL/2,CELL*.18,CELL*.18,0,0,7); x.stroke(); }
+    if(m.k==='sign'){ x.fillStyle='rgba(150,100,50,.22)'; x.fillRect(2,2,CELL-4,CELL-4); x.drawImage(mkSprite('sign'),CELL*.2,CELL*.05,CELL*.6,CELL*.9); }
+    else if(m.k==='tp'){ x.fillStyle='rgba(71,228,255,.25)'; x.fillRect(2,2,CELL-4,CELL-4); x.strokeStyle=c; x.lineWidth=3; x.beginPath(); x.ellipse(CELL/2,CELL/2,CELL*.32,CELL*.32,0,0,7); x.stroke(); x.beginPath(); x.ellipse(CELL/2,CELL/2,CELL*.18,CELL*.18,0,0,7); x.stroke(); }
     else { x.fillStyle='rgba(240,217,168,.55)'; x.fillRect(2,2,CELL-4,CELL-4); x.strokeStyle=c; x.lineWidth=3; x.beginPath(); for(let s2=0;s2<4;s2++){ const yy=m.k==='up'?CELL-12-s2*14:12+s2*14; x.moveTo(10+s2*6,yy); x.lineTo(CELL-10-s2*6,yy); } x.stroke();
       x.fillStyle=c; x.beginPath(); if(m.k==='up'){ x.moveTo(CELL/2,6); x.lineTo(CELL/2-7,16); x.lineTo(CELL/2+7,16); } else { x.moveTo(CELL/2,CELL-6); x.lineTo(CELL/2-7,CELL-16); x.lineTo(CELL/2+7,CELL-16); } x.fill(); }
     x.font='800 11px Quicksand,sans-serif'; x.textAlign='center'; x.textBaseline='middle'; x.fillStyle='rgba(20,22,30,.85)'; x.fillText(m.code||'',CELL/2,CELL/2-(m.to?7:0)); if(m.to){ x.font='700 10px Quicksand,sans-serif'; x.fillText('→ '+m.to,CELL/2,CELL/2+8); }
@@ -4414,9 +4416,9 @@ function drawDg(){ const cv=$('dgn'); if(!cv) return; const r=board.getBoundingC
     x.globalAlpha=1; x.fillStyle='#fff'; [L.a,L.b].forEach(p=>{ x.beginPath(); x.arc(p[0]*CELL,p[1]*CELL,4/V.z+3,0,7); x.fill(); }); x.restore(); }
   if(!isPlayer&&tool==='dgn'&&typeof DG.hover==='string'){ const [ax,ay,bx,by]=dgEdgeSeg(DG.hover); x.strokeStyle=DG.tool==='secret'?'#b88cff':DG.tool==='win'?'#7fd0ff':DG.tool==='wall'?'#e0a96a':DG.tool==='unwall'?'#ff6b5a':'#ffd34d'; x.lineWidth=5/V.z+4; x.lineCap='round'; x.globalAlpha=.8; x.beginPath(); x.moveTo(ax,ay); x.lineTo(bx,by); x.stroke(); x.globalAlpha=1; }
   if(!isPlayer&&tool==='dgn'&&DG.tool==='sel'){ const H=Array.isArray(DG.hover)?DG.hover:null; x.save(); x.setLineDash([]); if(H){ x.lineWidth=2/V.z; x.strokeStyle='rgba(120,220,255,.7)'; x.strokeRect(H[0]*CELL,H[1]*CELL,CELL,CELL); } if(DG.sel){ x.lineWidth=4/V.z+1; x.strokeStyle='#47e4ff'; x.fillStyle='rgba(71,228,255,.14)'; x.fillRect(DG.sel[0]*CELL,DG.sel[1]*CELL,CELL,CELL); x.strokeRect(DG.sel[0]*CELL,DG.sel[1]*CELL,CELL,CELL); } x.restore(); }
-  if(!isPlayer&&tool==='dgn'&&Array.isArray(DG.hover)&&['carve','fill','paint','sup','sdown','tp','ceil','unceil'].includes(DG.tool)){ const [a,b]=dgBrush(DG.hover[0],DG.hover[1]); x.setLineDash([8/V.z,6/V.z]); x.lineWidth=2.5/V.z; x.strokeStyle=DG.tool==='wall'?'#e0a96a':DG.tool==='ceil'?'#b9b0ff':DG.tool==='unwall'||DG.tool==='unceil'?'#ff6b5a':DG.tool==='carve'?'#ffd34d':DG.tool==='paint'?'#7fd0ff':DG.tool==='tp'?'#47e4ff':DG.tool==='sup'||DG.tool==='sdown'?'#f0d9a8':'#ff6b5a'; const nb=['sup','sdown','tp'].includes(DG.tool)?1:DG.n; x.strokeRect(a*CELL,b*CELL,nb*CELL,nb*CELL); x.setLineDash([]); }
+  if(!isPlayer&&tool==='dgn'&&Array.isArray(DG.hover)&&['carve','fill','paint','sup','sdown','tp','sign','ceil','unceil'].includes(DG.tool)){ const [a,b]=dgBrush(DG.hover[0],DG.hover[1]); x.setLineDash([8/V.z,6/V.z]); x.lineWidth=2.5/V.z; x.strokeStyle=DG.tool==='wall'?'#e0a96a':DG.tool==='ceil'?'#b9b0ff':DG.tool==='unwall'||DG.tool==='unceil'?'#ff6b5a':DG.tool==='carve'?'#ffd34d':DG.tool==='paint'?'#7fd0ff':DG.tool==='tp'?'#47e4ff':DG.tool==='sup'||DG.tool==='sdown'?'#f0d9a8':'#ff6b5a'; const nb=['sup','sdown','tp','sign'].includes(DG.tool)?1:DG.n; x.strokeRect(a*CELL,b*CELL,nb*CELL,nb*CELL); x.setLineDash([]); }
 }
-const dgBrush=(ci,cj)=>['sup','sdown','tp'].includes(DG.tool)?[ci,cj]:[ci-Math.floor((DG.n-1)/2),cj-Math.floor((DG.n-1)/2)];
+const dgBrush=(ci,cj)=>['sup','sdown','tp','sign'].includes(DG.tool)?[ci,cj]:[ci-Math.floor((DG.n-1)/2),cj-Math.floor((DG.n-1)/2)];
 /* relief : monter / descendre ; en « pente », les cases voisines suivent marche par marche */
 function dgRelief(ci,cj){ const D=dgEnsure(); D.h=D.h||{}; const [a,b]=dgBrush(ci,cj), g=DG._g||{}, vis=g.vis||(g.vis=new Set()), sgn=DG.tool==='up'?1:-1, st=DG.step;
   const get=k=>+D.h[k]||0, set=(k,v)=>{ v=Math.round(v*4)/4; if(Math.abs(v)<.001) delete D.h[k]; else D.h[k]=v; };
@@ -4442,7 +4444,7 @@ function dgPaintEnd(g){ const L=g&&g.wl; if(!L) return; DG.wline=null; const D=d
   FPS.sprites.clear(); drawDgLater(); fpsLater(); markDirty(); sync(); }
 function dgPaint(wx,wy,g){ DG._g=g; if(DG.tool==='sel'){ if(!g.last){ g.last=1; dgSelClick(wx,wy); } return; } if(DG.tool==='lum'){ if(!g.last){ g.last=1; lumClick(wx,wy); } return; }
   if(DG.tool==='veg'){ if(!g.last){ g.last=1; vegClick(wx,wy); } return; }
-  if(['sup','sdown','tp'].includes(DG.tool)){ if(!g.last){ g.last=1; dgMarkClick(wx,wy); } return; }
+  if(['sup','sdown','tp','sign'].includes(DG.tool)){ if(!g.last){ g.last=1; dgMarkClick(wx,wy); } return; }
   if(DG.tool==='door'||DG.tool==='secret'){ if(!g.last){ g.last=1; dgDoorClick(wx,wy); } return; }
   if(DG.tool==='wall'||DG.tool==='unwall'||DG.tool==='win'){ const v=[Math.round(wx/CELL),Math.round(wy/CELL)];   /* clic maintenu → relâché : mur en ligne droite */
     if(!g.wl) g.wl={a:v,b:v,x:wx,y:wy}; else { const A=g.wl.a; g.wl.b=Math.abs(v[0]-A[0])>=Math.abs(v[1]-A[1])?[v[0],A[1]]:[A[0],v[1]]; }
@@ -4457,12 +4459,13 @@ function dgSnap(t){ if(!dgOn()||!['player','mob','npc'].includes(t.type)) return
 function dgDirEl(t){ return dgOn()&&t.type==='player'&&t.dir!=null?`<i class="dgdir" style="--r:${(t.dir||0)*90}deg"></i>`:''; }
 
 /* ---------- passages : escaliers et zones TP, reliés par code (destination possible sur une autre scène) ---------- */
-const MK_LBL={up:'Escalier qui monte',down:'Escalier qui descend',tp:'Zone TP'};
+const MK_LBL={up:'Escalier qui monte',down:'Escalier qui descend',tp:'Zone TP',sign:'Panneau'};
+const mkIco=k=>dgI(k==='tp'?'tp':k==='sign'?'sign':k==='up'?'sup':'sdown',1.7);
 /* ---------- sélection : ce qui est posé sur une case (végétation, lumière, passage, portes) et sa suppression ---------- */
 function dgSelItems(i,j){ const D=S.dg||{}, k=dgK(i,j), L=[];
   if(D.veg&&D.veg[k]){ const [b,t]=D.veg[k].split('-'); L.push({id:'veg',img:`res/vege/${D.veg[k]}.png`,l:`${VEG_K[t]||'Végétation'} · ${VEG_BIO[b]||''}`,del:()=>delete D.veg[k]}); }
   if(D.lum&&D.lum[k]) L.push({id:'lum',img:`res/lum/${D.lum[k]}.png`,l:(LUM[D.lum[k]]||{}).l||'Lumière',del:()=>delete D.lum[k]});
-  if(D.m&&D.m[k]){ const m=D.m[k]; L.push({id:'mk',ico:dgI(m.k==='tp'?'tp':m.k==='up'?'sup':'sdown',1.7),l:`${MK_LBL[m.k]} · ${m.code||''}${m.to?' → '+m.to:''}`,edit:()=>dgMarkEdit(k),del:()=>delete D.m[k]}); }
+  if(D.m&&D.m[k]){ const m=D.m[k]; L.push({id:'mk',ico:mkIco(m.k),l:`${MK_LBL[m.k]} · ${m.code||''}${m.to?' → '+m.to:''}`,edit:()=>dgMarkEdit(k),del:()=>delete D.m[k]}); }
   [[0,-1,'nord'],[1,0,'est'],[0,1,'sud'],[-1,0,'ouest']].forEach(([di,dj,n])=>{ const e=dgEK(i,j,i+di,j+dj), w=D.ew&&D.ew[e]; if(w) L.push({id:'w'+n,ico:dgI('wall',1.7),l:`${w.win?'Fenêtre':'Mur'} ${(DG_TH[w.t]||{}).lbl||''} · ${String(w.h).replace('.',',')} · côté ${n}`,del:()=>delete D.ew[e]}); });
   if(D.cl&&D.cl[k]&&!D.cl[k].no) L.push({id:'cl',ico:dgI('ceil',1.7),l:`Plafond ${(DG_TH[D.cl[k].t]||{}).lbl||''} · ${String(D.cl[k].h).replace('.',',')}`,del:()=>delete D.cl[k]});
   [[0,-1,'nord'],[1,0,'est'],[0,1,'sud'],[-1,0,'ouest']].forEach(([di,dj,n])=>{ const e=dgEK(i,j,i+di,j+dj), o=D.d&&D.d[e]; if(o) L.push({id:'d'+n,ico:dgI(o.s?'sdoor':'door',1.7),l:`${o.s?'Porte cachée':'Porte'} · côté ${n}`,del:()=>delete D.d[e]}); });
@@ -4482,11 +4485,11 @@ function dgCodes(){ const L=[], add=(dg,si,title)=>{ const M=dg&&dg.m||{}; for(c
   add(S.dg,S.scene,'cette scène'); (S.scenes||[]).forEach((sc,i)=>{ if(i!==S.scene) add(sc.dg,i,sc.title||`Scène ${i+1}`); }); return L; }
 function dgNewCode(){ const used=new Set(dgCodes().map(c=>c.code)); for(let n=0;n<17576;n++){ const c='TP'+String.fromCharCode(65+(n/676|0)%26,65+(n/26|0)%26,65+n%26); if(!used.has(c)) return c; } return 'TP'+Date.now(); }
 function dgMarkClick(wx,wy){ const [i,j]=dgCell(wx,wy); if(!dgOpen(i,j)){ toast('Un passage se pose sur une case creusée',true); return; } const D=dgEnsure(); D.m=D.m||{}; const k=dgK(i,j);
-  if(!D.m[k]){ D.m[k]={k:DG.tool==='tp'?'tp':DG.tool==='sup'?'up':'down',code:dgNewCode(),to:''}; drawDgLater(); markDirty(); sync(); }
+  if(!D.m[k]){ D.m[k]={k:DG.tool==='tp'?'tp':DG.tool==='sign'?'sign':DG.tool==='sup'?'up':'down',code:dgNewCode(),to:''}; drawDgLater(); markDirty(); sync(); }
   dgMarkEdit(k); }
 function dgMarkEdit(k){ const m=S.dg&&S.dg.m&&S.dg.m[k]; if(!m) return; const codes=dgCodes().filter(c=>!(c.si===S.scene&&c.k===k));
   openDialog(`<h3>${MK_LBL[m.k]}</h3>
-    <div class="mkseg">${Object.entries(MK_LBL).map(([v,l])=>`<button type="button" class="wxb${m.k===v?' on':''}" data-mk="${v}">${dgI(v==='tp'?'tp':v==='up'?'sup':'sdown',1.7)}<span>${l}</span></button>`).join('')}</div>
+    <div class="mkseg">${Object.entries(MK_LBL).map(([v,l])=>`<button type="button" class="wxb${m.k===v?' on':''}" data-mk="${v}">${mkIco(v)}<span>${l}</span></button>`).join('')}</div>
     <div class="field"><label class="cap" for="mk-code">Code de ce passage</label><input class="line-in" id="mk-code" value="${esc(m.code||'')}" maxlength="16" style="font-weight:800;letter-spacing:.08em;text-transform:uppercase"></div>
     <div class="field"><label class="cap" for="mk-to">Mène à</label><select class="line-in" id="mk-to"><option value="">— nulle part (arrivée seule) —</option>${codes.map(c=>`<option value="${esc(c.code)}" ${c.code===m.to?'selected':''}>${esc(c.code)} · ${esc(MK_LBL[c.kind]||'')} · ${esc(c.title)}</option>`).join('')}${m.to&&!codes.some(c=>c.code===m.to)?`<option value="${esc(m.to)}" selected>${esc(m.to)} (introuvable)</option>`:''}</select></div>
     <div class="actions"><button class="btn danger" type="button" id="mk-del">${IB('bin')}Supprimer</button><span style="flex:1"></span><button class="btn" type="button" id="mk-ok">OK</button></div>`);
@@ -4605,7 +4608,7 @@ function renderDgPanel(){ const box=$('dg-body'); if(!box) return; const D=S.dg|
     <div class="subttl">Portes</div>
     <div class="wxrow">${wb('dg-door',dgI('door',1.7),'Porte',tool==='dgn'&&DG.tool==='door')}${wb('dg-sdoor',dgI('sdoor',1.7),'Porte cachée',tool==='dgn'&&DG.tool==='secret')}</div>
     <div class="subttl">Passages</div>
-    <div class="wxrow">${wb('dg-sup',dgI('sup',1.7),'Escalier ↑',tool==='dgn'&&DG.tool==='sup')}${wb('dg-sdown',dgI('sdown',1.7),'Escalier ↓',tool==='dgn'&&DG.tool==='sdown')}${wb('dg-tp',dgI('tp',1.7),'Zone TP',tool==='dgn'&&DG.tool==='tp')}</div>
+    <div class="wxrow">${wb('dg-sup',dgI('sup',1.7),'Escalier ↑',tool==='dgn'&&DG.tool==='sup')}${wb('dg-sdown',dgI('sdown',1.7),'Escalier ↓',tool==='dgn'&&DG.tool==='sdown')}${wb('dg-sign',dgI('sign',1.7),'Panneau',tool==='dgn'&&DG.tool==='sign')}${wb('dg-tp',dgI('tp',1.7),'Zone TP',tool==='dgn'&&DG.tool==='tp')}</div>
     <div class="subttl">Vue des joueurs <small>${nC} m²</small></div>
     <div class="wxrow">${wb('dg-prev',IB('eye'),'Aperçu de la vue 3D',false)}</div>
     <button class="btn ghost wide" type="button" id="dg-clear">${IB('bin')}Tout reboucher</button>`;
@@ -4614,7 +4617,7 @@ function renderDgPanel(){ const box=$('dg-body'); if(!box) return; const D=S.dg|
   box.querySelectorAll('[data-veg]').forEach(b=>b.onclick=()=>{ if(tool==='dgn'&&DG.tool==='veg'&&DG.vk===b.dataset.veg){ setTool('dgn'); renderDgPanel(); return; } DG.vk=b.dataset.veg; DG.tool='veg'; if(tool!=='dgn') setTool('dgn'); renderDgPanel(); });
   $('dg-wall').onclick=()=>pick('wall'); $('dg-win').onclick=()=>pick('win'); $('dg-unwall').onclick=()=>pick('unwall'); $('dg-ceil').onclick=()=>pick('ceil'); $('dg-sky').onclick=()=>pick('unceil');
   if($('dg-h')) $('dg-h').oninput=e=>{ DG[hk]=+e.target.value; $('dg-hv').textContent=String(DG[hk]).replace('.',','); };
-  $('dg-sel').onclick=()=>pick('sel'); $('dg-carve').onclick=()=>pick('carve'); $('dg-fill').onclick=()=>pick('fill'); $('dg-paint').onclick=()=>pick('paint'); $('dg-sup').onclick=()=>pick('sup'); $('dg-sdown').onclick=()=>pick('sdown'); $('dg-tp').onclick=()=>pick('tp');
+  $('dg-sel').onclick=()=>pick('sel'); $('dg-carve').onclick=()=>pick('carve'); $('dg-fill').onclick=()=>pick('fill'); $('dg-paint').onclick=()=>pick('paint'); $('dg-sup').onclick=()=>pick('sup'); $('dg-sdown').onclick=()=>pick('sdown'); $('dg-tp').onclick=()=>pick('tp'); $('dg-sign').onclick=()=>pick('sign');
   const opt=(k,v)=>{ DG[k]=v; if(tool!=='dgn'||DG.tool==='fill'||DG.tool==='door'||DG.tool==='secret'){ DG.tool=DG.tool==='paint'?'paint':'carve'; if(tool!=='dgn') setTool('dgn'); } renderDgPanel(); };
   $('dg-door').onclick=()=>pick('door'); $('dg-sdoor').onclick=()=>pick('secret');
   if($('dg-n')) $('dg-n').oninput=e=>{ brushSize(+e.target.value); $('dg-nv').textContent=`${DG.n} × ${DG.n}`; drawDgLater(); };
@@ -4837,6 +4840,18 @@ function mkSprite(kind){ FPS.mks=FPS.mks||{}; if(FPS.mks[kind]) return FPS.mks[k
   }
   else if(kind==='up'){ c.width=128; c.height=128; for(let s=0;s<8;s++){ const w=124-s*9, y=128-(s+1)*15, l=120-s*9; x.fillStyle=`rgb(${l},${l-6},${l-14})`; x.fillRect(64-w/2,y,w,15); x.fillStyle=`rgb(${l+35},${l+30},${l+20})`; x.fillRect(64-w/2,y,w,3); x.fillStyle='#1b1b1e'; x.fillRect(64-w/2,y+14,w,1); }
     x.fillStyle='#08080a'; x.fillRect(64-28,0,56,10); }
+  else if(kind==='sign'){ const w=40, h=60, o=document.createElement('canvas'); o.width=w; o.height=h; const g=o.getContext('2d'); let sd=7; const rnd=()=>(sd=(sd*9301+49297)%233280)/233280;
+    const P=(xx,yy,ww,hh,c)=>{ g.fillStyle=c; g.fillRect(xx,yy,ww,hh); };
+    /* poteau */ P(18,8,5,52,'#3b2414'); P(19,8,3,52,'#6b4425'); P(19,8,1,52,'#84552f'); for(let y=12;y<60;y+=7) P(20,y,1,3,'#4c2f1a'); P(15,57,11,3,'#2e1c10'); P(13,58,4,2,'#476b2a'); P(24,57,5,3,'#4f7a2e');
+    /* planche-flèche vers la droite */
+    const plank=(y0,dir,len)=>{ const x0=dir>0?6:40-6-len; for(let yy=0;yy<8;yy++) for(let xx=0;xx<len+6;xx++){ const tip=dir>0?xx-len:len-xx+0, ax=dir>0?x0+xx:x0+len-xx+6-6;
+        const lim=dir>0?(xx<len?true:Math.abs(yy-3.5)<=(len+6-xx)*.75):(xx<len?true:Math.abs(yy-3.5)<=(len+6-xx)*.75); if(!lim) continue;
+        const X=dir>0?6+xx:31-xx, edge=yy===0||yy===7, l=edge?62:92+((xx*3+yy*7)%11)-(yy===3||yy===4?6:0)+(rnd()<.06?-25:0);
+        g.fillStyle=`rgb(${l+40},${l+8},${Math.max(0,l-30)})`; g.fillRect(X,y0+yy,1,1); }
+      const M=v=>dir>0?6+v:31-v; g.fillStyle='#d8d0bf'; g.fillRect(M(3),y0+3,1,1); g.fillRect(M(len-6),y0+3,1,1);
+      g.fillStyle='rgba(30,15,5,.55)'; for(let k=0;k<4;k++) g.fillRect(Math.min(M(7+k*4),M(9+k*4)),y0+3,3,1); };
+    plank(10,1,26); plank(24,-1,22);
+    c.width=80; c.height=120; x.imageSmoothingEnabled=false; x.drawImage(o,0,0,80,120); c._hf=.85; }
   else return null;
   c._k='mk'+kind; return FPS.mks[kind]=c; }
 /* image d'un personnage : sa pastille debout, avec son nom */
@@ -4932,7 +4947,7 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
     if(cam.z!=null) fh=Math.min(fh,cam.z);   /* en pleine montée : le sol de départ suit la caméra */
     while(n++<160){ const d1=Math.min(sdx,sdy), N=TT.N;
       /* sol de la case */
-      if(eye>fh){ const yA=Math.max(0,Math.ceil(h2+(eye-fh)*PS/d1)), yB=Math.min(H-1,Math.floor(h2+(eye-fh)*PS/d0)), mm=!virt&&dgMk(mx,my), FT=mm&&mm.k!=='up'?mkTex()[mm.k]:TT.floor;
+      if(eye>fh){ const yA=Math.max(0,Math.ceil(h2+(eye-fh)*PS/d1)), yB=Math.min(H-1,Math.floor(h2+(eye-fh)*PS/d0)), mm=!virt&&dgMk(mx,my), FT=mm&&(mm.k==='down'||mm.k==='tp')?mkTex()[mm.k]:TT.floor;
         for(let y=yA;y<=yB;y++){ const rd=(eye-fh)*PS/(y+.5-h2); let wx=cam.x+rd*rdx, wy=cam.y+rd*rdy; const fx=wx-Math.floor(wx), fy=wy-Math.floor(wy), tx=(fx*N)&(N-1), ty=(fy*N)&(N-1);
           if(REACH&&!virt){ const a=inR(mx,my); if((fx<RE&&a!==inR(mx-1,my))||(fx>1-RE&&a!==inR(mx+1,my))||(fy<RE&&a!==inR(mx,my-1))||(fy>1-RE&&a!==inR(mx,my+1))){ put(y,RC,rd); continue; } }
           put(y,shL(FT[ty*N+tx],(HUB?hubLit(wx,wy):mm&&mm.k==='tp'?1:lit(rd))*vis(wx,wy),LON?la(wx,wy):null),rd); } }
