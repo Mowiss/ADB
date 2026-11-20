@@ -5046,12 +5046,24 @@ function fpsBlood(){ const L=S.blood||[]; if(!L.length||typeof bloodShape!=='fun
   const N={key:key+'…'}; FPS.bld=N; const im=new Image();
   im.onload=()=>{ const c=document.createElement('canvas'); c.width=W; c.height=H; const x=c.getContext('2d'); x.drawImage(im,0,0,W,H); FPS.bld={key,d:new Uint32Array(x.getImageData(0,0,W,H).data.buffer.slice(0)),w:W,h:H,x0,y0,k}; fpsLater(); };
   im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="${x0} ${y0} ${w0} ${h0}">${L.map(bloodShape).join('')}</svg>`); return null; }
+/* murs épais : demi-épaisseur (en cases) et faces des bouts */
+const WALL_HW=.07;
+function fpsWallCaps(){ const E=S.dg&&S.dg.ew||{}, key=JSON.stringify(E); if(FPS.capK===key&&FPS.caps) return FPS.caps; const out=[], h=WALL_HW;
+  const has=k=>{ const w=E[k]; return w&&!w.inv; };
+  for(const k in E){ const w=E[k]; if(w.inv) continue; const [a,b,o]=k.split(','), i=+a, j=+b;
+    if(o==='v'){ /* arête verticale x=i, de y=j à j+1 */ [[j,`${i},${j-1},v`,[`${i-1},${j},h`,`${i},${j},h`]],[j+1,`${i},${j+1},v`,[`${i-1},${j+1},h`,`${i},${j+1},h`]]].forEach(([y,nxt,perp])=>{ if(has(nxt)||perp.some(has)) return; out.push({s:[i-h,y,i+h,y],t:w.t,h:+w.h||1,o:(i*7+y*3)%8/8}); }); }
+    else { [[i,`${i-1},${j},h`,[`${i},${j-1},v`,`${i},${j},v`]],[i+1,`${i+1},${j},h`,[`${i+1},${j-1},v`,`${i+1},${j},v`]]].forEach(([x,nxt,perp])=>{ if(has(nxt)||perp.some(has)) return; out.push({s:[x,j-h,x,j+h],t:w.t,h:+w.h||1,o:(x*5+j*3)%8/8}); }); } }
+  FPS.capK=key; FPS.caps=out; return out; }
+/* style des fenêtres selon le mur : bois, métal ou pierre */
+const WINST={}; function winStyle(t){ if(WINST[t]) return WINST[t]; const c=(r,g,b)=>0xff000000|(b<<16)|(g<<8)|r;
+  const wood={frame:c(92,58,30),sill:c(130,88,48),fw:.05,mun:1}, metal={frame:c(48,54,62),sill:c(80,88,98),fw:.035,mun:0}, neon={frame:c(40,20,52),sill:c(255,60,172),fw:.035,mun:0}, stone={frame:c(118,112,100),sill:c(170,162,146),fw:.07,mun:0};
+  return WINST[t]=({planches:wood,rondins:wood,plage:wood,crypte:wood,jungle:wood,prairie:wood,station:metal,hub:metal,ruelle:neon,pierre:stone,ruines:stone,desert:stone})[t]||stone; }
 function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam.y), here=dgAt(ci,cj)||dgInfo(1), W=cv.width, H=cv.height; if(!W||!H) return;
-  const x=cv.getContext('2d'); if(!FPS.img||FPS.img.width!==W||FPS.img.height!==H){ FPS.img=x.createImageData(W,H); FPS.buf=new Uint32Array(FPS.img.data.buffer); FPS.dz=new Float32Array(W*H); }
+  const x=cv.getContext('2d'); if(!FPS.img||FPS.img.width!==W||FPS.img.height!==H){ FPS.img=x.createImageData(W,H); FPS.buf=new Uint32Array(FPS.img.data.buffer); FPS.dz=new Float32Array(W*H); FPS.gd=new Float32Array(W*H); FPS.gs=new Uint8Array(W*H); }
   /* pas d'image étirée : même échelle en largeur et en hauteur ; champ de vision ajusté au format */
   const K=FPS.K=Math.max(.42,Math.min(.8,.72*(W/H)/1.58)), PS=W/(2*K);
   const B=FPS.buf, DZ=FPS.dz, dx=Math.sin(cam.a), dy=-Math.cos(cam.a), px=Math.cos(cam.a)*K, py=Math.sin(cam.a)*K;
-  DZ.fill(Infinity);
+  DZ.fill(Infinity); const GD=FPS.gd, GS=FPS.gs; let GLASS=false; if(FPS.glassOn){ GS.fill(0); FPS.glassOn=0; }
   const eye=(cam.z!=null?cam.z:dgH(ci,cj))+.5;
   const dl=dgDay(dgHour()), night=dl<.35, out=dgOpenSky(ci,cj), amb=out?(.14+.58*dl)*((S.weather||'')==='storm'?.7:(S.weather||'')==='rain'?.82:1):(night?.07:.2), torch=out?1-.6*dl:(night?1.15:1.3);
   /* DEX lock : cases encore atteignables ce tour, bordées d'un trait au sol */
@@ -5075,7 +5087,7 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
   const h2=H/2, SK=fpsSky(); let anySky=out;
   const BL=fpsBlood(), bs=BL?(wx,wy)=>{ const X=((wx*CELL-BL.x0)*BL.k)|0, Y=((wy*CELL-BL.y0)*BL.k)|0; return X<0||Y<0||X>=BL.w||Y>=BL.h?0:BL.d[Y*BL.w+X]; }:null;
   const bmix=(c,b,s)=>{ const a=((b>>>24)/255)*(s==null?1:s)*.92; if(a<=.02) return c; const ia=1-a, a2=a*.7; return 0xff000000|((((c>>16)&255)*ia+((b>>16)&255)*a2)<<16)|((((c>>8)&255)*ia+((b>>8)&255)*a2)<<8)|(((c&255)*ia+(b&255)*a2)|0); };
-  let MAXW=1; for(const k in DG_TH) MAXW=Math.max(MAXW,DG_TH[k].wh||1); for(const k in (S.dg&&S.dg.w||{})){ const w=S.dg.w[k]; if(!w.no) MAXW=Math.max(MAXW,+w.h||1); } for(const k in (S.dg&&S.dg.ew||{})) if(!S.dg.ew[k].inv) MAXW=Math.max(MAXW,+S.dg.ew[k].h||1); const V2=true, WSILL=.32, WTOP=.82;   /* sans mur tracé, pas de bordure */
+  let MAXW=1; for(const k in DG_TH) MAXW=Math.max(MAXW,DG_TH[k].wh||1); for(const k in (S.dg&&S.dg.w||{})){ const w=S.dg.w[k]; if(!w.no) MAXW=Math.max(MAXW,+w.h||1); } for(const k in (S.dg&&S.dg.ew||{})) if(!S.dg.ew[k].inv) MAXW=Math.max(MAXW,+S.dg.ew[k].h||1); const V2=true, WSILL=.32, WTOP=.82, HW=WALL_HW;   /* sans mur tracé, pas de bordure */
   for(let xx=0;xx<W;xx++){ const cX=2*xx/W-1, rdx=dx+px*cX, rdy=dy+py*cX; let mx=ci, my=cj;
     const ddx=Math.abs(1/rdx), ddy=Math.abs(1/rdy); let stx,sty,sdx,sdy,side=0,n=0,pmx,pmy;
     if(rdx<0){ stx=-1; sdx=(cam.x-mx)*ddx; } else { stx=1; sdx=(mx+1-cam.x)*ddx; }
@@ -5089,6 +5101,15 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
       for(let y=yT;y<=yB;y++){ const z=eye-(y+.5-h2)*d/PS; const ty=((1-(z-Math.floor(z)))*N|0)&(N-1); let c=tex[ty*N+tx];
         if(bb&&z<.45){ const pb=.03+z*.3, b=bs(hx-rdx*pb,hy-rdy*pb); if(b) c=bmix(c,b,(1-z/.45)*.85); }
         put(y,shL(c,f,wa2),d); } };
+    /* fenêtre : ouverture au milieu du mur, cadre + croisillons selon le style */
+    const faceWin=(z0,z1,d,tex,N,st)=>{ const yT=Math.max(0,Math.ceil(h2+(eye-z1)*PS/d)), yB=Math.min(H-1,Math.floor(h2+(eye-z0)*PS/d)); if(yB<yT) return;
+      let u=side===0?cam.y+d*rdy:cam.x+d*rdx; u-=Math.floor(u); let tx=(u*N)|0; if(side===0&&rdx>0||side===1&&rdy<0) tx=N-tx-1;
+      const f=lit(d)*(side?.78:1)*vis(cam.x+d*rdx,cam.y+d*rdy), wa=LON?la(cam.x+d*rdx,cam.y+d*rdy):null, U0=.2, U1=.8, FW=st.fw, inU=u>U0&&u<U1, fr=inU&&(u<U0+FW||u>U1-FW);
+      for(let y=yT;y<=yB;y++){ const z=eye-(y+.5-h2)*d/PS; let c;
+        if(inU&&z>z0+WSILL&&z<z0+WTOP){ const zz=z-z0, edge=fr||zz<WSILL+FW*.8||zz>WTOP-FW*.8, mun=st.mun&&(Math.abs(u-.5)<.018||Math.abs(zz-(WSILL+WTOP)/2)<.014);
+          if(edge) c=zz<WSILL+FW*.8?st.sill:st.frame; else if(mun) c=st.frame; else { const i=y*W+xx; if(DZ[i]===Infinity&&!GS[i]){ GD[i]=d; GS[i]=((u*9+zz*5)%1)<.13?2:1; GLASS=true; } continue; } }
+        else { const ty=((1-(z-Math.floor(z)))*N|0)&(N-1); c=tex[ty*N+tx]; }
+        put(y,shL(c,f,wa),d); } };
     let cur=here, fh=dgH(mx,my), TT=fpsTextures(cur.th), virt=false, d0=.01, VC=null;
     if(cam.z!=null) fh=Math.min(fh,cam.z);   /* en pleine montée : le sol de départ suit la caméra */
     while(n++<160){ const d1=Math.min(sdx,sdy), N=TT.N;
@@ -5107,8 +5128,10 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
       pmx=mx; pmy=my; if(sdx<sdy){ sdx+=ddx; mx+=stx; side=0; } else { sdy+=ddy; my+=sty; side=1; } d0=d1;
       const EW=dgEWk(dgEK(pmx,pmy,mx,my)), DR0=EW&&dgDoor(pmx,pmy,mx,my);
       if(EW&&!EW.inv&&!(DR0&&!dgHid(DR0))){ const ET=fpsTextures(EW.t), cap=CC?+CC.h||1:MAXW, top=Math.min(+EW.h||1,cap);
-        if(EW.win){ face(fh,fh+WSILL,d0,ET.wall,ET.N); if(top>fh+WTOP) face(fh+WTOP,top,d0,ET.wall,ET.N); }   /* fenêtre : allège et linteau, on voit à travers */
-        else { if(top>fh) face(fh,top,d0,ET.wall,ET.N); if(top>=cap) break; } }   /* MUR tracé sur l'arête */
+        /* mur épais : on touche sa face avant, à une demi-épaisseur de la ligne */
+        const dW=side===0?(((stx>0?mx:mx+1)-stx*HW)-cam.x)/rdx:(((sty>0?my:my+1)-sty*HW)-cam.y)/rdy, dd=dW>.02?dW:d0;
+        if(EW.win){ if(top>fh) faceWin(fh,top,dd,ET.wall,ET.N,winStyle(EW.t)); }   /* fenêtre : cadre au style du mur, on voit à travers */
+        else { if(top>fh) face(fh,top,dd,ET.wall,ET.N); if(top>=cap) break; } }   /* MUR tracé sur l'arête */
       const WB=dgWB(mx,my);
       if(WB){ const WT=fpsTextures(WB.t), cap=CC?+CC.h||1:MAXW, top=Math.min(+WB.h||1,cap); if(top>fh) face(fh,top,d0,WT.wall,WT.N); if(top>=cap) break;   /* bloc de MUR */
         cur={th:WB.t,sky:true,blk:1}; fh=+WB.h||1; TT=WT; virt=false; if(d0>60) break; continue; }
@@ -5131,6 +5154,12 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
   /* ce qui reste : ciel (ou nuit noire sous terre) */
   const su=new Int32Array(W); for(let xx=0;xx<W;xx++){ const cX=2*xx/W-1; let a=(cam.a+Math.atan(cX*K))/(2*Math.PI); a-=Math.floor(a); su[xx]=(a*SK.w)|0; }
   for(let y=0;y<H;y++){ const sr=Math.min(SK.h-1,Math.max(0,(y/h2*SK.h)|0))*SK.w, o=y*W; for(let xx=0;xx<W;xx++){ if(DZ[o+xx]!==Infinity) continue; B[o+xx]=anySky?SK.d[sr+su[xx]]:0xff000000; } }
+  /* bouts des murs épais (fin de mur, bords d'une porte) : petites faces dessinées avec le test de profondeur */
+  { const CP=fpsWallCaps(); for(const q of CP){ const [ax,ay,bx,by]=q.s, ex=bx-ax, ey=by-ay, TX=fpsTextures(q.t), N=TX.N, hgt=q.h;
+      for(let xx=0;xx<W;xx++){ const cX=2*xx/W-1, rdx=dx+px*cX, rdy=dy+py*cX, den=rdx*ey-rdy*ex; if(Math.abs(den)<1e-6) continue;
+        const t=((ax-cam.x)*ey-(ay-cam.y)*ex)/den, u=((ax-cam.x)*rdy-(ay-cam.y)*rdx)/den; if(t<=.05||u<0||u>1) continue;
+        const top=h2+(eye-hgt)*PS/t, bot=h2+eye*PS/t, yA=Math.max(0,Math.ceil(top)), yB=Math.min(H-1,Math.floor(bot)), f=lit(t)*.7*vis(cam.x+t*rdx,cam.y+t*rdy), tx=((u*.12+q.o)*N|0)&(N-1);
+        for(let y=yA;y<=yB;y++){ const i2=y*W+xx; if(DZ[i2]<=t) continue; const z=eye-(y+.5-h2)*t/PS, ty=((1-(z-Math.floor(z)))*N|0)&(N-1); B[i2]=sh(TX.wall[ty*N+tx],f); DZ[i2]=t; } } } }
   /* végétation en X : deux plans croisés par case, testés colonne par colonne */
   { const VV=S.dg&&S.dg.veg; if(VV){ const L2=[]; for(const k in VV){ const p=k.indexOf(','), i=+k.slice(0,p), j=+k.slice(p+1), cx=i+.5-cam.x, cy=j+.5-cam.y, dd=cx*cx+cy*cy; if(dd>900) continue; const o=vegImg(VV[k]); if(!o.px) continue; if(vis(i+.5,j+.5)<.05&&!(LON&&la(i+.5,j+.5))) continue; L2.push({i,j,o,key:VV[k],dd}); }
     for(const g of L2){ const kind=g.key.split('-')[1], hg=VEG_H[kind]*(g.key==='desert-arbre'?.95:1), wd=Math.min(1.45,hg*g.o.w/g.o.h), hw=wd/2/Math.SQRT2, cx=g.i+.5, cy=g.j+.5, sv=vis(cx,cy);
@@ -5166,6 +5195,9 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
     const yA=Math.max(0,Math.ceil(top)), yB=Math.min(H-1,Math.floor(bot));
     for(let sx=Math.max(0,x0);sx<Math.min(W,x1);sx++){ const u=Math.min(IW-1,((sx-x0)/(x1-x0)*IW)|0);
       for(let y=yA;y<=yB;y++){ const i=y*W+sx; if(DZ[i]<=tY) continue; if(fade<1&&((sx*7+y*13)%10)/10>=fade) continue; const c=PX[Math.min(IH-1,((y-top)/hh*IH)|0)*IW+u]; if((c>>>24)<128) continue; B[i]=shL(c,f,pa); DZ[i]=tY; } } });
+  /* vitres : teinte bleutée et reflets sur ce qui est derrière */
+  if(GLASS){ FPS.glassOn=1; for(let i=0;i<W*H;i++){ const g=GS[i]; if(!g||DZ[i]<GD[i]) continue; const c=B[i], a=g===2?.42:.2, ia=1-a, rr=g===2?235:175, gg=g===2?245:212, bb=g===2?255:235;
+      B[i]=0xff000000|((((c>>16)&255)*ia+bb*a)<<16)|((((c>>8)&255)*ia+gg*a)<<8)|(((c&255)*ia+rr*a)|0); } }
   x.putImageData(FPS.img,0,0); if(moving||FPS.fkRun){ FPS.fkRun=0; fpsLater(); } }
 /* ouverture des portes : le battant coulisse dans le mur (≈ 0,4 s) */
 function doorP(k,o){ FPS.dst=FPS.dst||{}; const now=performance.now(); let a=FPS.dst[k]; const open=!!o.open;
@@ -5253,7 +5285,7 @@ function fpsDragTurn(x){ if(!FPS.cam||FPS.dragX==null) return; const dx=x-FPS.dr
 function fpsBlocked(ci,cj,ni,nj){ if(!dgPass(ci,cj,ni,nj)) return true;
   const me=FPS.mode==='play'&&S.tokens.find(t=>t.id===FPS.self); if(me&&S.dexLock&&me.dxa&&me.dxm!=null&&!dexReach(me.dxa,me.dxm).has(ni+','+nj)){ if(!FPS.dexMsg||performance.now()-FPS.dexMsg>1500){ FPS.dexMsg=performance.now(); toast('Hors de votre zone de déplacement (DEX)'); } return true; } return false; }
 function fpsMoveBy(dist,side){ const c=FPS.cam; if(!c||(!dist&&!side)) return; side=side||0; if(fpsSpectating()){ FPS.mv=0; toast('Ce n\'est pas votre tour'); return; }
-  const R=FPS_R, x0=c.x, y0=c.y, ci=Math.floor(x0), cj=Math.floor(y0); let x=x0+Math.sin(c.a)*dist+Math.cos(c.a)*side, y=y0-Math.cos(c.a)*dist+Math.sin(c.a)*side;
+  const R=FPS_R+WALL_HW, x0=c.x, y0=c.y, ci=Math.floor(x0), cj=Math.floor(y0); let x=x0+Math.sin(c.a)*dist+Math.cos(c.a)*side, y=y0-Math.cos(c.a)*dist+Math.sin(c.a)*side;
   if(x-R<ci&&fpsBlocked(ci,cj,ci-1,cj)) x=Math.max(x,ci+R); if(x+R>ci+1&&fpsBlocked(ci,cj,ci+1,cj)) x=Math.min(x,ci+1-R);
   const ci2=Math.floor(x); if(y-R<cj&&fpsBlocked(ci2,cj,ci2,cj-1)) y=Math.max(y,cj+R); if(y+R>cj+1&&fpsBlocked(ci2,cj,ci2,cj+1)) y=Math.min(y,cj+1-R);
   if(Math.floor(y)!==cj&&Math.floor(x)!==ci&&fpsBlocked(ci,Math.floor(y),Math.floor(x),Math.floor(y))){ x=x0; }
