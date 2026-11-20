@@ -4299,15 +4299,23 @@ function dgEdgeAt(wx,wy){ const fx=wx/CELL, fy=wy/CELL, dh=Math.abs(fy-Math.roun
   if(dh<dv){ const i=Math.floor(fx), j=Math.round(fy); return {k:`${i},${j},h`,a:[i,j-1],b:[i,j]}; }
   const i=Math.round(fx), j=Math.floor(fy); return {k:`${i},${j},v`,a:[i-1,j],b:[i,j]}; }
 const dgEdgeSeg=k=>{ const [i,j,o]=k.split(','), X=+i*CELL, Y=+j*CELL; return o==='h'?[X,Y,X+CELL,Y]:[X,Y,X,Y+CELL]; };
-function dgPub(){ if(!S.dg) return null; const d={}; for(const k in (S.dg.d||{})){ const o=S.dg.d[k]; d[k]=dgHid(o)?{w:1}:{open:!!o.open}; } return {on:!!S.dg.on,hub:!!S.dg.hub,th:S.dg.th,c:S.dg.c,m:S.dg.m||null,veg:S.dg.veg||null,lum:S.dg.lum||null,w:S.dg.w||null,ew:S.dg.ew||null,v2:!!S.dg.v2,cl:S.dg.cl||null,d}; }
+function dgPub(){ if(!S.dg) return null; const d={}; for(const k in (S.dg.d||{})){ const o=S.dg.d[k]; d[k]=dgHid(o)?{w:1}:{open:!!o.open,lk:o.lk?1:0}; } return {on:!!S.dg.on,hub:!!S.dg.hub,th:S.dg.th,c:S.dg.c,m:S.dg.m||null,veg:S.dg.veg||null,lum:S.dg.lum||null,w:S.dg.w||null,ew:S.dg.ew||null,v2:!!S.dg.v2,cl:S.dg.cl||null,d}; }
 function dgDoorClick(wx,wy){ const e=dgEdgeAt(wx,wy); if(!dgOpen(...e.a)||!dgOpen(...e.b)){ toast('Une porte se place entre deux cases creusées',true); return; }
   const D=dgEnsure(); D.d=D.d||{}; const o=D.d[e.k];
-  if(DG.tool==='door'){ if(!o) D.d[e.k]={open:false}; else if(o.s){ delete o.s; delete o.f; } else if(!o.open) o.open=true; else delete D.d[e.k]; }
+  if(DG.tool==='door'){ if(!o) D.d[e.k]={open:false}; else if(o.s){ delete o.s; delete o.f; } else { dgDoorEdit(e.k); return; } }
   else { if(!o) D.d[e.k]={s:1,open:false}; else if(!o.s){ o.s=1; o.f=0; o.open=false; } else if(!o.f){ o.f=1; toast('Porte cachée découverte'); } else delete D.d[e.k]; }
   drawDgLater(); fpsLater(); markDirty(); sync(); }
 function dgHover(wx,wy){ if(['door','secret','wall','unwall','win'].includes(DG.tool)){ const e=dgEdgeAt(wx,wy); if(DG.hover!==e.k){ DG.hover=e.k; drawDgLater(); } return; }
   const c=dgCell(wx,wy); if(!Array.isArray(DG.hover)||DG.hover[0]!==c[0]||DG.hover[1]!==c[1]){ DG.hover=c; drawDgLater(); } }
-function dgToggleDoor(k){ const o=S.dg&&S.dg.d&&S.dg.d[k]; if(!o||dgHid(o)) return false; o.open=!o.open; drawDgLater(); fpsLater(); markDirty(); sync(); return true; }
+/* réglages d'une porte : ouverte / fermée, verrouillée ou non */
+function dgDoorEdit(k){ const o=S.dg&&S.dg.d&&S.dg.d[k]; if(!o) return; const done=()=>{ drawDgLater(); fpsLater(); markDirty(); sync(); };
+  const draw=()=>openDialog(`<h3>Porte</h3>
+    <div class="wxrow"><button type="button" class="wxb${!o.open?' on':''}" data-dp="shut">${dgI('door',1.7)}<span>Fermée</span></button><button type="button" class="wxb${o.open?' on':''}" data-dp="open">${dgI('iwall',1.7)}<span>Ouverte</span></button></div>
+    <div class="wxrow" style="margin-top:8px"><button type="button" class="wxb${o.lk?' on':''}" data-dp="lk"><i style="font-style:normal;font-size:20px">🔒</i><span>${o.lk?'Verrouillée':'Non verrouillée'}</span></button></div>
+    <div class="actions"><button class="btn danger" type="button" id="dp-del">${IB('bin')}Supprimer</button><span style="flex:1"></span><button class="btn" type="button" data-close>OK</button></div>`);
+  draw(); const wire=()=>{ document.querySelectorAll('[data-dp]').forEach(b=>b.onclick=()=>{ const v=b.dataset.dp; if(v==='lk'){ o.lk=!o.lk; if(o.lk) o.open=false; } else { o.open=v==='open'; if(o.open) o.lk=false; } done(); draw(); wire(); });
+    $('dp-del').onclick=()=>{ delete S.dg.d[k]; dlg.close(); done(); }; }; wire(); }
+function dgToggleDoor(k){ const o=S.dg&&S.dg.d&&S.dg.d[k]; if(!o||dgHid(o)||o.lk) return false; o.open=!o.open; drawDgLater(); fpsLater(); markDirty(); sync(); return true; }
 /* murs tracés tout autour d'une zone (carte de test) : texture et hauteur du style de chaque case */
 function dgAutoWalls(D){ const E=D.ew=D.ew||{}; for(const k in D.c){ const f=dgInfo(D.c[k]); if(f.iw) continue; const [i,j]=k.split(',').map(Number);
   [[0,-1],[1,0],[0,1],[-1,0]].forEach(([u,v])=>{ if(D.c[(i+u)+','+(j+v)]) return; const e=dgEK(i,j,i+u,j+v); if(!E[e]) E[e]={t:f.th,h:f.sky?(DG_TH[f.th].wh||1):1}; }); }
@@ -4408,7 +4416,8 @@ function drawDg(){ const cv=$('dgn'); if(!cv) return; const r=board.getBoundingC
     x.fillStyle='#a06a36'; x.strokeStyle=ink; x.lineWidth=2;
     if(!o.open){ if(hz){ x.fillRect(ax+m,ay-5,L,10); x.strokeRect(ax+m,ay-5,L,10); } else { x.fillRect(ax-5,ay+m,10,L); x.strokeRect(ax-5,ay+m,10,L); } }
     else { if(hz){ x.fillRect(ax+m,ay,6,L*.92); x.strokeRect(ax+m,ay,6,L*.92); } else { x.fillRect(ax,ay+m,L*.92,6); x.strokeRect(ax,ay+m,L*.92,6); }
-      x.setLineDash([3,4]); x.strokeStyle='rgba(43,26,14,.5)'; x.lineWidth=1.5; x.beginPath(); if(hz) x.arc(ax+m,ay,L,0,Math.PI/2); else x.arc(ax,ay+m,L,0,Math.PI/2); x.stroke(); x.setLineDash([]); } }
+      x.setLineDash([3,4]); x.strokeStyle='rgba(43,26,14,.5)'; x.lineWidth=1.5; x.beginPath(); if(hz) x.arc(ax+m,ay,L,0,Math.PI/2); else x.arc(ax,ay+m,L,0,Math.PI/2); x.stroke(); x.setLineDash([]); }
+    if(o.lk){ x.font='14px sans-serif'; x.textAlign='center'; x.textBaseline='middle'; x.fillText('🔒',(ax+bx)/2+(hz?0:14),(ay+by)/2+(hz?-14:0)); } }
   if(S.fight&&S.fight.c){ const F=S.fight.c; x.save(); x.fillStyle='rgba(0,0,0,.35)'; x.beginPath(); x.rect(i0*CELL,j0*CELL,(i1-i0)*CELL,(j1-j0)*CELL); x.arc(F.x*CELL,F.y*CELL,F.r*CELL,0,7,true); x.fill('evenodd');
     x.strokeStyle='#e04b3a'; x.lineWidth=3/V.z+1; x.setLineDash([12/V.z,8/V.z]); x.beginPath(); x.arc(F.x*CELL,F.y*CELL,F.r*CELL,0,7); x.stroke(); x.restore(); }
   if(DG.lasso&&DG.lasso.length>1){ x.save(); x.strokeStyle='#ff6b5a'; x.lineWidth=3/V.z+1; x.lineJoin='round'; x.beginPath(); DG.lasso.forEach((p,k)=>k?x.lineTo(p[0],p[1]):x.moveTo(p[0],p[1])); x.stroke(); x.restore(); }
@@ -4468,7 +4477,7 @@ function dgSelItems(i,j){ const D=S.dg||{}, k=dgK(i,j), L=[];
   if(D.m&&D.m[k]){ const m=D.m[k]; L.push({id:'mk',ico:mkIco(m.k),l:`${MK_LBL[m.k]} · ${m.code||''}${m.to?' → '+m.to:''}`,edit:()=>dgMarkEdit(k),del:()=>delete D.m[k]}); }
   [[0,-1,'nord'],[1,0,'est'],[0,1,'sud'],[-1,0,'ouest']].forEach(([di,dj,n])=>{ const e=dgEK(i,j,i+di,j+dj), w=D.ew&&D.ew[e]; if(w) L.push({id:'w'+n,ico:dgI('wall',1.7),l:`${w.win?'Fenêtre':'Mur'} ${(DG_TH[w.t]||{}).lbl||''} · ${String(w.h).replace('.',',')} · côté ${n}`,del:()=>delete D.ew[e]}); });
   if(D.cl&&D.cl[k]&&!D.cl[k].no) L.push({id:'cl',ico:dgI('ceil',1.7),l:`Plafond ${(DG_TH[D.cl[k].t]||{}).lbl||''} · ${String(D.cl[k].h).replace('.',',')}`,del:()=>delete D.cl[k]});
-  [[0,-1,'nord'],[1,0,'est'],[0,1,'sud'],[-1,0,'ouest']].forEach(([di,dj,n])=>{ const e=dgEK(i,j,i+di,j+dj), o=D.d&&D.d[e]; if(o) L.push({id:'d'+n,ico:dgI(o.s?'sdoor':'door',1.7),l:`${o.s?'Porte cachée':'Porte'} · côté ${n}`,del:()=>delete D.d[e]}); });
+  [[0,-1,'nord'],[1,0,'est'],[0,1,'sud'],[-1,0,'ouest']].forEach(([di,dj,n])=>{ const e=dgEK(i,j,i+di,j+dj), o=D.d&&D.d[e]; if(o) L.push({id:'d'+n,ico:dgI(o.s?'sdoor':'door',1.7),l:`${o.s?'Porte cachée':'Porte'}${o.lk?' 🔒':''} · côté ${n}`,edit:o.s?null:()=>dgDoorEdit(e),del:()=>delete D.d[e]}); });
   return L; }
 function dgSelClick(wx,wy){ const [i,j]=dgCell(wx,wy), L=dgSelItems(i,j); DG.sel=[i,j]; drawDgLater();
   if(!L.length){ toast('Rien de posé sur cette case'); return; }
@@ -5039,7 +5048,6 @@ function fpsAct(k){ if(!FPS.cam) return; if(fpsSpectating()){ toast('Ce n\'est p
   if(k==='tl'||k==='tr'){ to.a=c.a+(k==='tl'?-1:1)*Math.PI/2; }
   else { const m={fw:d,bk:(d+2)%4,sl:(d+3)%4,sr:(d+1)%4}[k]; const [ax,ay]=V4[m], ni=Math.floor(c.x)+ax, nj=Math.floor(c.y)+ay;
     const ci=Math.floor(c.x), cj=Math.floor(c.y), o=dgDoor(ci,cj,ni,nj);
-    if(dgOpen(ni,nj)&&dgShut(o)&&!dgHid(o)&&k==='fw'){ fpsDoor(); return; }
     if(dgH(ni,nj)-dgH(ci,cj)>.5001){ fpsBump(); toast('Trop haut pour grimper'); return; }
     const me=FPS.mode==='play'&&S.tokens.find(t=>t.id===FPS.self);
     if(me&&S.dexLock&&me.dxa&&me.dxm!=null&&!dexReach(me.dxa,me.dxm).has(ni+','+nj)){ fpsBump(); toast('Hors de votre zone de déplacement (DEX)'); return; }
@@ -5059,6 +5067,7 @@ function fpsWorldAt(cx,cy){ if(!FPS.el||FPS.el.hidden||!FPS.lastCam||!FPS.dz) re
 /* ouvrir / fermer la porte d'en face */
 function fpsFacing(){ const c=FPS.cam, d=(((Math.round(c.a/(Math.PI/2))%4)+4)%4), V4=[[0,-1],[1,0],[0,1],[-1,0]], i=Math.floor(c.x), j=Math.floor(c.y); return [i,j,i+V4[d][0],j+V4[d][1]]; }
 function fpsDoor(){ if(!FPS.cam||FPS.anim) return false; const [i,j,ni,nj]=fpsFacing(), o=dgDoor(i,j,ni,nj); if(!o||dgHid(o)){ fpsBump(); return false; }
+  if(o.lk){ fpsBump(); toast('🔒 Porte verrouillée'); return true; }
   if(FPS.mode==='play'){ o.open=!o.open; fpsLater(); up({t:'ddoor',x:(i+.5)*CELL,y:(j+.5)*CELL,nx:(ni+.5)*CELL,ny:(nj+.5)*CELL}); } else dgToggleDoor(dgEK(i,j,ni,nj)); return true; }
 /* toucher l'écran : ramasser l'objet visé (à portée de main) ou manœuvrer la porte */
 function fpsTap(e,cv){ const r=cv.getBoundingClientRect(), u=(e.clientX-r.left)/r.width, v=(e.clientY-r.top)/r.height;
