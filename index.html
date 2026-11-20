@@ -4302,6 +4302,8 @@ const dgEW=(i,j,ni,nj)=>dgEWk(dgEK(i,j,ni,nj));
 const dgWNo=(i,j)=>{ const w=S.dg&&S.dg.w&&S.dg.w[i+','+j]; return !!(w&&w.no); };
 const dgOpen=(i,j)=>!!(S.dg&&S.dg.c&&S.dg.c[dgK(i,j)])&&!dgWB(i,j);
 /* CIEL : plafond d'une case (texture + hauteur), {no:1} = ciel ouvert ; sinon le style de la case décide */
+/* dehors : pas de plafond, ou un plafond de feuillage (jungle, prairie) */
+function dgOpenSky(i,j){ const c=dgCeil(i,j); return !c||c.t==='jungle'||c.t==='prairie'; }
 function dgCeil(i,j){ const o=S.dg&&S.dg.cl&&S.dg.cl[i+','+j]; return o&&!o.no?o:null; }   /* pas de plafond sans plafond posé */
 /* hauteur des murs de part et d'autre d'une porte (le linteau monte jusque-là ; la porte reste 1 × 1) */
 function dgFlank(i,j,ni,nj){ const k=dgEK(i,j,ni,nj).split(','), a=+k[0], b=+k[1], L=k[2]==='v'?[k.join(','),`${a},${b-1},v`,`${a},${b+1},v`]:[k.join(','),`${a-1},${b},h`,`${a+1},${b},h`]; let h=0, t=null;
@@ -4748,6 +4750,10 @@ const DGTHUMB={};
 function dgThumb(k,part){ const id=k+'|'+part; if(DGTHUMB[id]) return DGTHUMB[id]; const T=fpsTextures(k), N=T.N, a=T[part]||T.floor, c=document.createElement('canvas'); c.width=c.height=N;
   const im=c.getContext('2d').createImageData(N,N); new Uint32Array(im.data.buffer).set(a.subarray(0,N*N)); c.getContext('2d').putImageData(im,0,0);
   const o=document.createElement('canvas'); o.width=o.height=40; const x=o.getContext('2d'); x.imageSmoothingEnabled=false; x.drawImage(c,0,0,N/2,N/2,0,0,40,40); return DGTHUMB[id]=o.toDataURL(); }
+/* plafond de feuillage : touffes de feuilles avec des trous (on voit le ciel à travers) */
+function leafCeil(x,N,rnd,h0,h1,l0,l1){ for(let i=0;i<55;i++){ const cx=rnd()*N, cy=rnd()*N, r=4+rnd()*7; for(let k=0;k<9;k++){ const a=rnd()*6.28, d=rnd()*r; x.fillStyle=`hsl(${h0+rnd()*(h1-h0)},${45+rnd()*25}%,${l0+rnd()*(l1-l0)}%)`;
+    x.beginPath(); x.ellipse((cx+Math.cos(a)*d+N)%N,(cy+Math.sin(a)*d+N)%N,2+rnd()*3,1+rnd()*1.5,rnd()*3,0,7); x.fill(); } }
+  x.fillStyle='rgba(60,40,20,.9)'; for(let i=0;i<3;i++){ let a=rnd()*N, b=rnd()*N; x.fillRect(a|0,b|0,1,1); for(let k=0;k<10;k++){ a+=rnd()*4-2; b+=2; x.fillRect((a+N)%N|0,(b+N)%N|0,1,2); } } }
 function fpsTextures(k){ k=k||(S.dg&&S.dg.th)||'pierre'; FPS.texs=FPS.texs||{}; if(FPS.tex===null) FPS.texs={}; FPS.tex=1; if(FPS.texs[k]) return FPS.texs[k];
   const N=64, NT=128, buf=c=>{ const o=document.createElement('canvas'); o.width=o.height=NT; const x=o.getContext('2d'); x.imageSmoothingEnabled=false; x.drawImage(c,0,0,NT,NT); return new Uint32Array(x.getImageData(0,0,NT,NT).data.buffer.slice(0)); };
   const mk=draw=>{ const c=document.createElement('canvas'); c.width=c.height=N; const x=c.getContext('2d'); draw(x); return c; };
@@ -4815,7 +4821,7 @@ function fpsTextures(k){ k=k||(S.dg&&S.dg.th)||'pierre'; FPS.texs=FPS.texs||{}; 
       x.strokeStyle='#4a3a1c'; x.lineWidth=2; for(let i=0;i<2;i++){ const a=rnd()*N; x.beginPath(); x.moveTo(a,0); x.bezierCurveTo(a+8,20,a-8,40,a+4,64); x.stroke(); }
       for(let i=0;i<6;i++){ x.fillStyle=rnd()<.5?'#ff5a8a':'#ffd34d'; x.fillRect(rnd()*N|0,rnd()*N|0,2,2); } });
     floor=mk(x=>{ x.fillStyle='#2e2416'; x.fillRect(0,0,N,N); for(let i=0;i<60;i++){ x.fillStyle=`hsl(${90+rnd()*40},40%,${15+rnd()*20}%)`; x.beginPath(); x.ellipse(rnd()*N,rnd()*N,2+rnd()*4,1+rnd()*2,rnd()*3,0,7); x.fill(); } noise(x,'0,0,0',.3,200); });
-    ceil=mk(x=>{ x.fillStyle='#0c1f0e'; x.fillRect(0,0,N,N); });
+    ceil=mk(x=>leafCeil(x,N,rnd,95,140,10,30));
     door=mk(x=>{ x.fillStyle='rgba(0,0,0,0)'; x.fillStyle='#0f2a12'; x.fillRect(0,0,N,N); for(let i=0;i<12;i++){ const a=i*5.4+2; x.strokeStyle=`hsl(${100+rnd()*30},50%,${22+rnd()*20}%)`; x.lineWidth=2; x.beginPath(); x.moveTo(a,0); for(let y=0;y<=N;y+=8) x.lineTo(a+Math.sin(y*.3+i)*2,y); x.stroke(); for(let y=4;y<N;y+=9){ x.fillStyle=`hsl(${100+rnd()*30},55%,${28+rnd()*15}%)`; x.fillRect(a-2,y,4,3); } } }); }
   else if(k==='hub'){
     /* béton brut : taches, fissures, éclats */
@@ -4831,7 +4837,7 @@ function fpsTextures(k){ k=k||(S.dg&&S.dg.th)||'pierre'; FPS.texs=FPS.texs||{}; 
     const g=(x,b,n,lo,hi)=>{ x.fillStyle=b; x.fillRect(0,0,N,N); for(let i=0;i<n;i++){ const L=lo+rnd()*(hi-lo); x.fillStyle=`hsl(${85+rnd()*30},${45+rnd()*20}%,${L}%)`; x.fillRect(rnd()*N|0,rnd()*N|0,1+(rnd()*2|0),2+(rnd()*3|0)); } };
     wall=mk(x=>{ g(x,'#2f4f22',900,14,38); for(let i=0;i<26;i++){ x.fillStyle=`rgba(${rnd()<.5?'255,240,140':'255,170,200'},.9)`; x.fillRect(rnd()*N|0,rnd()*N|0,2,2); } x.fillStyle='rgba(0,0,0,.25)'; x.fillRect(0,58,N,6); });
     floor=mk(x=>{ g(x,'#5f8a36',700,30,52); x.fillStyle='rgba(120,90,50,.25)'; for(let i=0;i<10;i++) x.fillRect(rnd()*N|0,rnd()*N|0,3,2); });
-    ceil=mk(x=>{ g(x,'#3b5f2a',600,18,36); });
+    ceil=mk(x=>leafCeil(x,N,rnd,85,120,20,42));
     side=mk(x=>{ x.fillStyle='#6b4a2e'; x.fillRect(0,0,N,N); for(let i=0;i<500;i++){ x.fillStyle=`hsl(${25+rnd()*12},${30+rnd()*15}%,${18+rnd()*18}%)`; x.fillRect(rnd()*N|0,rnd()*N|0,1+(rnd()*2|0),1+(rnd()*2|0)); }
       x.fillStyle='#8a8478'; for(let i=0;i<8;i++){ x.fillRect(rnd()*N|0,10+rnd()*50|0,3+(rnd()*3|0),2+(rnd()*2|0)); } g2(x); });
     door=mk(x=>{ x.fillStyle='#2f4f22'; x.fillRect(0,0,N,N); x.fillStyle='#8a6638'; for(let i=0;i<5;i++) x.fillRect(6+i*12,8,6,56); x.fillRect(4,16,56,5); x.fillRect(4,44,56,5); x.save(); x.translate(6,44); x.rotate(-.5); x.fillRect(0,0,64,5); x.restore(); noise(x,'0,0,0',.25,140); }); }
@@ -4907,7 +4913,7 @@ function fpsSky(){ const h=((dgHour()%24)+24)%24, wx=S.weather||'', key=(Math.ro
       D[y*SW+x]=0xff000000|(Q(b)<<16)|(Q(g)<<8)|Q(r); } }
   return FPS.skys[key]={d:D,w:SW,h:SH}; }
 /* pluie et orage dans la vue 3D (seulement à ciel ouvert) */
-function fpsWeather(){ const el=FPS.el; if(!el) return; let cv=el.querySelector('.fps-wx'); const wx=S.weather||'', cam=FPS.cam, out=cam&&!!dgAt(Math.floor(cam.x),Math.floor(cam.y))&&!dgCeil(Math.floor(cam.x),Math.floor(cam.y));   /* dehors = pas de plafond posé */
+function fpsWeather(){ const el=FPS.el; if(!el) return; let cv=el.querySelector('.fps-wx'); const wx=S.weather||'', cam=FPS.cam, out=cam&&!!dgAt(Math.floor(cam.x),Math.floor(cam.y))&&dgOpenSky(Math.floor(cam.x),Math.floor(cam.y));   /* dehors = pas de plafond posé */
   if(!cv){ cv=document.createElement('canvas'); cv.className='fps-wx'; el.querySelector('canvas').after(cv); }
   const on=!!(wx&&out&&!el.hidden); cv.hidden=!on; el.querySelector('canvas').style.filter=on?(wx==='storm'?'brightness(.72) saturate(.75)':'brightness(.85) saturate(.85)'):'';
   if(!on){ cancelAnimationFrame(FPS.wxr); FPS.wxr=0; return; } if(FPS.wxr) return;
@@ -5015,7 +5021,7 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
   const B=FPS.buf, DZ=FPS.dz, dx=Math.sin(cam.a), dy=-Math.cos(cam.a), px=Math.cos(cam.a)*K, py=Math.sin(cam.a)*K;
   DZ.fill(Infinity);
   const eye=(cam.z!=null?cam.z:dgH(ci,cj))+.5;
-  const dl=dgDay(dgHour()), night=dl<.35, out=!dgCeil(ci,cj), amb=out?(.14+.58*dl)*((S.weather||'')==='storm'?.7:(S.weather||'')==='rain'?.82:1):(night?.07:.2), torch=out?1-.6*dl:(night?1.15:1.3);
+  const dl=dgDay(dgHour()), night=dl<.35, out=dgOpenSky(ci,cj), amb=out?(.14+.58*dl)*((S.weather||'')==='storm'?.7:(S.weather||'')==='rain'?.82:1):(night?.07:.2), torch=out?1-.6*dl:(night?1.15:1.3);
   /* DEX lock : cases encore atteignables ce tour, bordées d'un trait au sol */
   let REACH=null; { const me=FPS.mode==='play'&&S.dexLock&&S.tokens.find(t=>t.id===selfId); if(me&&me.dxa&&me.dxm!=null) REACH=dexReach(me.dxa,me.dxm); }
   const RC=0xff38d6ff, RE=.045, inR=(i,j)=>REACH.has(i+','+j);
@@ -5063,7 +5069,7 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
       /* plafond de la case (ou ciel) */
       const CC=cur.blk?null:virt?VC:dgCeil(mx,my,cur);
       if(CC){ const ch=+CC.h||1, CT=CC.t&&CC.t!==cur.th?fpsTextures(CC.t):TT, CN=CT.N; if(ch>eye){ const yA=Math.max(0,Math.ceil(h2+(eye-ch)*PS/d0)), yB=Math.min(H-1,Math.floor(h2+(eye-ch)*PS/d1));
-        for(let y=yA;y<=yB;y++){ const rd=(eye-ch)*PS/(y+.5-h2); let wx=cam.x+rd*rdx, wy=cam.y+rd*rdy; const tx=((wx-Math.floor(wx))*CN)&(CN-1), ty=((wy-Math.floor(wy))*CN)&(CN-1); put(y,shL(CT.ceil[ty*CN+tx],lit(rd)*.85*vis(wx,wy),LON?la(wx,wy):null),rd); } } }
+        for(let y=yA;y<=yB;y++){ const rd=(eye-ch)*PS/(y+.5-h2); let wx=cam.x+rd*rdx, wy=cam.y+rd*rdy; const tx=((wx-Math.floor(wx))*CN)&(CN-1), ty=((wy-Math.floor(wy))*CN)&(CN-1); const cc=CT.ceil[ty*CN+tx]; if((cc>>>24)<128){ anySky=true; continue; } put(y,shL(cc,lit(rd)*.85*vis(wx,wy),LON?la(wx,wy):null),rd); } } }
       else anySky=true;
       VC=CC;
       pmx=mx; pmy=my; if(sdx<sdy){ sdx+=ddx; mx+=stx; side=0; } else { sdy+=ddy; my+=sty; side=1; } d0=d1;
