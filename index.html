@@ -3988,7 +3988,7 @@ const tok=id=>S.tokens.find(t=>t.id===id);
 let dirty=false, lastSaved=null, fileName=null;
 let V={x:0,y:0,z:1};          // vue : écran = monde*z + (x,y)
 
-function markDirty(){ dirty=true; updateSaveState(); histLater(); }
+function markDirty(){ dirty=true; updateSaveState(); histLater(); if(typeof FPS!=='undefined'&&FPS.el&&typeof fpsLater==='function') fpsLater(); }
 /* annuler / rétablir : instantanés du plateau (jetons, dessins, fond, ordre) */
 const HIST={u:[],r:[],cur:null,busy:false,t:0};
 const histSnap=()=>JSON.stringify({seen:S.seen,blood:S.blood,tokens:S.tokens,drawings:S.drawings,ground:S.ground,bg:S.bg,bgScale:S.bgScale,geo:S.geo,weather:S.weather,light:S.light,order:S.order,turn:S.turn,grid:S.grid,dg:S.dg||null,hour:S.hour});
@@ -7811,7 +7811,7 @@ function receive(m){ if(!m) return; if(m.t==='test'&&isPlayer){ dgTestLoad(); re
     if(m.bg!==undefined) S.bg=m.bg;
     Object.assign(S,{fight:m.fight||null,combat:m.combat||null,dexLock:!!m.dexLock,dg:m.dg||null,hour:m.hour,seen:m.seen||{},blood:m.blood||[],bgKind:m.bgKind||'',bgW:m.bgW||0,bgH:m.bgH||0,geo:m.geo||null,light:m.light,weather:m.weather||'',ground:m.ground||null,grid:m.grid,drawings:m.drawings,tokens:m.tokens,order:m.order}); const L=orderToks(); S.turn=L.findIndex(t=>t.id===m.turn);
     if(myDrag){ const t=tok(myDrag.id); if(t){ t.x=myDrag.x; t.y=myDrag.y; } }
-    followMe.got=1; followMe.closed=0; renderAllBoard(); if(NETVIEW) followMe(); else if(m.view) setPlayerView(m.view); }
+    followMe.got=1; followMe.closed=0; renderAllBoard(); if(NETVIEW) followMe(); else if(m.view) setPlayerView(m.view); if(typeof FPS!=='undefined'&&FPS.el) fpsLater(); }
   else if(m.t==='opened'){ reveal(m.id,m.item||{},m.by); }
   else if(m.t==='roll') bubble(m.pid,m.e?rollHTML(0,m.rn,m.e):rollHTML(m.succ,m.dn),'',m.who);
   else if(m.t==='boom') boomFx(m.x,m.y,m.s);
