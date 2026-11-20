@@ -4496,8 +4496,8 @@ function dgTestLoad(){ window.DGTEST=true; if(!ME) ME='test'; const c={}, d={}, 
   S.tokens=[{id:'me',type:'player',name:'Vous',owner:ME,race,sexe:'h',hp:10,hpMax:10,x:2.5*CELL,y:2.5*CELL,dir:1,s:1},
     P('tp1','Kara','humain','f',7,2,3), P('tp2','Grom','troll','h',18,2,2), P('tp3','Ursa','troll','f',21,4,3),
     P('tp4','Bzzt','droide','h',20,13,0), P('tp5','Kiku','droide','f',19,17,0), P('tp6','Azar','demon','h',9,23,1), P('tp7','Lilith','demon','f',12,24,3),
-    {id:'tm1',type:'mob',name:'Goule',hp:6,hpMax:6,x:13.5*CELL,y:2.5*CELL,s:1,ico:'skull'},
-    {id:'tm2',type:'mob',name:'Rôdeur',hp:8,hpMax:8,x:2.5*CELL,y:22.5*CELL,s:1,ico:'skull'},
+    {id:'tm1',type:'mob',name:'Cyber-Gobelin',img:'mobs/cyber-gobelin.webp',hp:6,hpMax:6,x:13.5*CELL,y:2.5*CELL,s:1,ico:'skull'},
+    {id:'tm2',type:'mob',name:'Gnome Chapardeur',img:'mobs/gnome-chapardeur.webp',hp:8,hpMax:8,x:2.5*CELL,y:22.5*CELL,s:1,ico:'skull'},
     {id:'tn1',type:'npc',name:'Vieux sage',hp:5,hpMax:5,x:20.5*CELL,y:2.5*CELL,s:1,ico:'user'},
     {id:'tv1',type:'prop',kind:'vehicle',name:'Moto',ico:'car',x:17.5*CELL,y:22.5*CELL,s:1.6,veh:{factor:1,seats:2,pax:0}},
     {id:'ti1',type:'prop',kind:'item',inbox:true,ct:'caisse',name:'Caisse',x:-2.5*CELL,y:2.5*CELL,s:1,ico:'chest',data:{name:'Médikit'}},
@@ -4761,6 +4761,13 @@ function tpFrame(){ const NF=16, f=Math.floor(performance.now()/70)%NF; FPS.tpf=
     const u=((ph+f/NF*sp)%1), yy=128-u*128, a=Math.sin(u*Math.PI)*(1-u*.4); if(a<.15) continue;
     x.globalAlpha=Math.min(1,a*1.3); x.fillStyle=wht?'#ffffff':'#7ff0ff'; x.fillRect((px+Math.sin(wob+u*9)*2.5)|0,yy|0,1+(i%3===0),len); }
   x.globalAlpha=1; c._k='mktp'; return FPS.tpf[f]=c; }
+/* sprites de MOB pour la zone de jeu : res/mobs/<clé>.png (la version HD du bestiaire reste dans mobs/<clé>.webp) */
+const MOBSPR=['cyber-gobelin','gnome-chapardeur'];
+const slugMob=n=>String(n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+function mobSprKey(t){ if(t.type!=='mob'&&t.type!=='npc') return null; const m=/mobs\/([\w-]+)\.webp/.exec(t.img||''); let k=m&&m[1]; if(k&&MOBSPR.includes(k)) return k;
+  k=slugMob(t.name).replace(/-\d+$/,''); return MOBSPR.includes(k)?k:null; }
+function mobSprImg(k){ const id='m:'+k; let im=DGIM[id]; if(!im){ im=DGIM[id]=new Image(); im.onload=()=>{ FPS.sprites.clear(); fpsLater(); }; im.onerror=()=>{ im._bad=1; FPS.sprites.clear(); fpsLater(); }; im.src='res/mobs/'+k+'.png'; }
+  if(im._bad) return false; return im.complete&&im.naturalWidth?im:null; }
 function fpsSprite(t){ if(t.type==='mk'&&t.mk==='lum'){ const o=lumImg(t.lk); return o.cv; } if(t.type==='mk'){ if(t.mk==='tp'){ FPS.fkRun=1; return tpFrame(); } return mkSprite(t.mk); } const sk=dgSprK(t), key=t.id+'|'+(t.img||'')+'|'+(t.name||'')+'|'+t.type+'|'+(t.ico||'')+'|'+(sk||''); let s=FPS.sprites.get(t.id); if(s&&s.key===key) return s.ready?s.cv:null;
   const vk=vehKey(t); if(vk){ const id='v:'+vk; let im=DGIM[id]; if(!im){ im=DGIM[id]=new Image(); im.onload=()=>{ FPS.sprites.clear(); fpsLater(); }; im.src='res/vehicules/'+vk+'.png'; } if(!im.complete||!im.naturalWidth) return null;
     const pax=(t.veh.pax!=null?+t.veh.pax:S.tokens.filter(x=>x.inveh===t.id).length), seats=+t.veh.seats||0, key2=key+'|'+vk+'|'+pax+'/'+seats; if(s&&s.key===key2) return s.cv;
@@ -4774,6 +4781,11 @@ function fpsSprite(t){ if(t.type==='mk'&&t.mk==='lum'){ const o=lumImg(t.lk); re
     cv.width=Math.max(im.naturalWidth,lw); cv.height=im.naturalHeight+LH+4; x.imageSmoothingEnabled=false; x.drawImage(im,(cv.width-im.naturalWidth)/2|0,LH+4);
     if(nm){ x.font='700 15px sans-serif'; x.fillStyle='rgba(255,255,255,.94)'; x.beginPath(); x.roundRect?x.roundRect((cv.width-lw)/2,0,lw,LH-2,11):x.rect((cv.width-lw)/2,0,lw,LH-2); x.fill(); x.fillStyle='#222'; x.textAlign='center'; x.textBaseline='middle'; x.fillText(nm,cv.width/2,LH/2); }
     cv._k='perso'; cv._hf=.95*cv.height/361; FPS.sprites.set(t.id,{key:key2,cv,ready:true}); return cv; }
+  const mk=!sk&&mobSprKey(t); if(mk){ const im=mobSprImg(mk); if(im){ const key2=key+'|m:'+mk; if(s&&s.key===key2) return s.cv;
+    const cv=document.createElement('canvas'), x=cv.getContext('2d'), nm=(t.name||'').slice(0,18); x.font='700 15px sans-serif'; const lw=nm?Math.ceil(x.measureText(nm).width)+16:0, LH=nm?26:0;
+    cv.width=Math.max(im.naturalWidth,lw); cv.height=im.naturalHeight+LH+4; x.imageSmoothingEnabled=false; x.drawImage(im,(cv.width-im.naturalWidth)/2|0,LH+4);
+    if(nm){ x.fillStyle='rgba(255,255,255,.94)'; x.beginPath(); x.roundRect?x.roundRect((cv.width-lw)/2,0,lw,LH-2,11):x.rect((cv.width-lw)/2,0,lw,LH-2); x.fill(); x.fillStyle='#222'; x.textAlign='center'; x.textBaseline='middle'; x.fillText(nm,cv.width/2,LH/2); }
+    cv._k='perso'; cv._hf=.95*cv.height/361; FPS.sprites.set(t.id,{key:key2,cv,ready:true}); return cv; } if(im===null) return null; }
   if(sk){ const im=dgImg(sk); if(!im) return null; s={key,cv:document.createElement('canvas'),ready:true,img:1}; s.cv.width=im.naturalWidth; s.cv.height=im.naturalHeight; s.cv.getContext('2d').drawImage(im,0,0); s.cv._k=sk; FPS.sprites.set(t.id,s); return s.cv; }
   s={key,cv:document.createElement('canvas'),ready:false}; FPS.sprites.set(t.id,s); s.cv.width=128; s.cv.height=176;
   const cv0=TYPES[t.type]&&TYPES[t.type].col.match(/--[\w-]+/), col=(cv0&&getComputedStyle(document.documentElement).getPropertyValue(cv0[0]).trim())||'#888';
