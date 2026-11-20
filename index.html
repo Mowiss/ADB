@@ -4268,7 +4268,7 @@ const dgOpen=(i,j)=>!!(S.dg&&S.dg.c&&S.dg.c[dgK(i,j)])&&!dgWB(i,j);
 /* CIEL : plafond d'une case (texture + hauteur), {no:1} = ciel ouvert ; sinon le style de la case décide */
 function dgCeil(i,j){ const o=S.dg&&S.dg.cl&&S.dg.cl[i+','+j]; return o&&!o.no?o:null; }   /* pas de plafond sans plafond posé */
 /* hauteur des murs de part et d'autre d'une porte (le linteau monte jusque-là ; la porte reste 1 × 1) */
-function dgFlank(i,j,ni,nj){ const k=dgEK(i,j,ni,nj).split(','), a=+k[0], b=+k[1], L=k[2]==='v'?[`${a},${b-1},v`,`${a},${b+1},v`]:[`${a-1},${b},h`,`${a+1},${b},h`]; let h=0, t=null;
+function dgFlank(i,j,ni,nj){ const k=dgEK(i,j,ni,nj).split(','), a=+k[0], b=+k[1], L=k[2]==='v'?[k.join(','),`${a},${b-1},v`,`${a},${b+1},v`]:[k.join(','),`${a-1},${b},h`,`${a+1},${b},h`]; let h=0, t=null;
   L.forEach(e=>{ const w=dgEWk(e); if(w&&(+w.h||1)>h){ h=+w.h||1; t=w.t; } }); return {h,t}; }
 const dgCell=(wx,wy)=>[Math.floor(wx/CELL),Math.floor(wy/CELL)];
 const dgTheme=()=>DG_TH[(S.dg&&S.dg.th)||'pierre']||DG_TH.pierre;
@@ -4294,7 +4294,7 @@ const LUMIM={};
 function lumImg(k){ let o=LUMIM[k]; if(!o){ o=LUMIM[k]={im:new Image(),cv:null}; o.im.onload=()=>{ const c=document.createElement('canvas'); c.width=o.im.naturalWidth; c.height=o.im.naturalHeight; c.getContext('2d').drawImage(o.im,0,0); c._k='lum_'+k; c._hf=LUM[k].h; o.cv=c; drawDgLater(); fpsLater(); }; o.im.src='res/lum/'+k+'.png'; } return o; }
 function lumClick(wx,wy){ const [i,j]=dgCell(wx,wy); if(!dgOpen(i,j)){ toast('Une lumière se pose sur une case creusée',true); return; } const D=dgEnsure(); D.lum=D.lum||{}; const k=dgK(i,j);
   if(D.lum[k]===DG.lk) delete D.lum[k]; else D.lum[k]=DG.lk; drawDgLater(); fpsLater(); markDirty(); sync(); }
-const dgPass=(i,j,ni,nj)=>dgOpen(ni,nj)&&!dgEW(i,j,ni,nj)&&!dgShut(dgDoor(i,j,ni,nj))&&!vegBlocks(ni,nj);
+const dgPass=(i,j,ni,nj)=>dgOpen(ni,nj)&&!(dgEW(i,j,ni,nj)&&!dgDoor(i,j,ni,nj))&&!dgShut(dgDoor(i,j,ni,nj))&&!vegBlocks(ni,nj);
 function dgEdgeAt(wx,wy){ const fx=wx/CELL, fy=wy/CELL, dh=Math.abs(fy-Math.round(fy)), dv=Math.abs(fx-Math.round(fx));
   if(dh<dv){ const i=Math.floor(fx), j=Math.round(fy); return {k:`${i},${j},h`,a:[i,j-1],b:[i,j]}; }
   const i=Math.round(fx), j=Math.floor(fy); return {k:`${i},${j},v`,a:[i-1,j],b:[i,j]}; }
@@ -4943,8 +4943,8 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
       else anySky=true;
       VC=CC;
       pmx=mx; pmy=my; if(sdx<sdy){ sdx+=ddx; mx+=stx; side=0; } else { sdy+=ddy; my+=sty; side=1; } d0=d1;
-      const EW=dgEWk(dgEK(pmx,pmy,mx,my));
-      if(EW){ const ET=fpsTextures(EW.t), cap=CC?+CC.h||1:MAXW, top=Math.min(+EW.h||1,cap);
+      const EW=dgEWk(dgEK(pmx,pmy,mx,my)), DR0=EW&&dgDoor(pmx,pmy,mx,my);
+      if(EW&&!(DR0&&!dgHid(DR0))){ const ET=fpsTextures(EW.t), cap=CC?+CC.h||1:MAXW, top=Math.min(+EW.h||1,cap);
         if(EW.win){ face(fh,fh+WSILL,d0,ET.wall,ET.N); if(top>fh+WTOP) face(fh+WTOP,top,d0,ET.wall,ET.N); }   /* fenêtre : allège et linteau, on voit à travers */
         else { if(top>fh) face(fh,top,d0,ET.wall,ET.N); if(top>=cap) break; } }   /* MUR tracé sur l'arête */
       const WB=dgWB(mx,my);
