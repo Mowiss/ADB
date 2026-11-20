@@ -5058,6 +5058,16 @@ function fpsWallCaps(){ const E=S.dg&&S.dg.ew||{}, key=JSON.stringify(E); if(FPS
 const WINST={}; function winStyle(t){ if(WINST[t]) return WINST[t]; const c=(r,g,b)=>0xff000000|(b<<16)|(g<<8)|r;
   const wood={frame:c(92,58,30),sill:c(130,88,48),fw:.05,mun:1}, metal={frame:c(48,54,62),sill:c(80,88,98),fw:.035,mun:0}, neon={frame:c(40,20,52),sill:c(255,60,172),fw:.035,mun:0}, stone={frame:c(118,112,100),sill:c(170,162,146),fw:.07,mun:0};
   return WINST[t]=({planches:wood,rondins:wood,plage:wood,crypte:wood,jungle:wood,prairie:wood,station:metal,hub:metal,ruelle:neon,pierre:stone,ruines:stone,desert:stone})[t]||stone; }
+/* façade cyberpunk (murs Ruelle) : une image de 3 étages (boutiques au rez-de-chaussée), étages répétés au-delà de 3 m,
+   avec un peu de relief : fenêtres en creux, enseignes et climatiseurs en saillie */
+const FAC={ready:false,M:3,W:3*1998/1116};
+(function(){ const R=[[1045,105,1280,255],[235,420,405,565],[570,420,745,565],[1040,410,1285,565],[1520,420,1735,565],[0,105,80,255],[230,105,405,255],[570,105,800,255],[1880,105,1998,255],[0,420,80,565],[1880,420,1998,565],[1545,100,1685,225],[540,875,795,1015],[990,830,1190,1110],[1450,830,1690,1110],[0,820,95,1110],[1900,820,1998,1110],[1250,855,1375,1110]],
+  P=[[192,668,432,758],[488,672,835,758],[1205,668,1448,752],[1435,768,1718,828],[0,698,142,762],[1855,698,1998,762],[142,103,202,398],[162,420,202,655],[1393,38,1447,308],[1398,340,1448,602],[866,578,916,822],[1245,795,1385,852],[292,0,402,78],[1025,10,1135,88],[1178,558,1285,640],[192,778,292,852],[1298,100,1368,162],[468,768,868,838],[1465,225,1840,330],[1465,525,1840,620]];
+  FAC.rects=[R,P]; })();
+function facLoad(){ if(FAC.im) return; const im=FAC.im=new Image(); im.onload=()=>{ const w=512, h=Math.round(w*im.naturalHeight/im.naturalWidth), c=document.createElement('canvas'); c.width=w; c.height=h; const x=c.getContext('2d'); x.drawImage(im,0,0,w,h);
+    FAC.px=new Uint32Array(x.getImageData(0,0,w,h).data.buffer.slice(0)); FAC.w=w; FAC.h=h; const m=new Uint8Array(w*h);
+    FAC.rects.forEach((L,k)=>L.forEach(([a,b,c2,d])=>{ const x0=Math.round(a/1998*w), y0=Math.round(b/1116*h), x1=Math.round(c2/1998*w), y1=Math.round(d/1116*h); for(let yy=y0;yy<y1;yy++) for(let xx=x0;xx<x1;xx++) m[yy*w+xx]=k+1; }));
+    FAC.m=m; FAC.ready=true; FPS.sprites&&FPS.sprites.clear(); fpsLater(); }; im.src='res/themes/ruelle/facade.webp'; }
 function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam.y), here=dgAt(ci,cj)||dgInfo(1), W=cv.width, H=cv.height; if(!W||!H) return;
   const x=cv.getContext('2d'); if(!FPS.img||FPS.img.width!==W||FPS.img.height!==H){ FPS.img=x.createImageData(W,H); FPS.buf=new Uint32Array(FPS.img.data.buffer); FPS.dz=new Float32Array(W*H); FPS.gd=new Float32Array(W*H); FPS.gs=new Uint8Array(W*H); }
   /* pas d'image étirée : même échelle en largeur et en hauteur ; champ de vision ajusté au format */
@@ -5110,6 +5120,17 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
           if(edge) c=zz<WSILL+FW*.8?st.sill:st.frame; else if(mun) c=st.frame; else { const i=y*W+xx; if(DZ[i]===Infinity&&!GS[i]){ GD[i]=d; GS[i]=((u*9+zz*5)%1)<.13?2:1; GLASS=true; } continue; } }
         else { const ty=((1-(z-Math.floor(z)))*N|0)&(N-1); c=tex[ty*N+tx]; }
         put(y,shL(c,f,wa),d); } };
+    /* façade : coordonnée réelle le long du mur, relief (creux / saillie) par décalage de parallaxe */
+    const faceFac=(z0,z1,d)=>{ const yT=Math.max(0,Math.ceil(h2+(eye-z1)*PS/d)), yB=Math.min(H-1,Math.floor(h2+(eye-z0)*PS/d)); if(yB<yT) return;
+      const flip=!(side===0&&rdx>0||side===1&&rdy<0), nrm=side===0?Math.abs(rdx):Math.abs(rdy), tg=(side===0?rdy:rdx)*(flip?-1:1)/nrm;
+      let uw=side===0?cam.y+d*rdy:cam.x+d*rdx; if(flip) uw=-uw; const FW=FAC.w, FH=FAC.h, PX=FAC.px, MK=FAC.m, WM=FAC.W;
+      const hx=cam.x+d*rdx, hy=cam.y+d*rdy, f0=lit(d)*(side?.82:1)*vis(hx,hy), wa=LON?la(hx-(side===0?Math.sign(rdx)*.02:0),hy-(side===1?Math.sign(rdy)*.02:0)):null, vv=vis(hx,hy);
+      const at=(u,z)=>{ const zz=z<0?0:z<3?z:1+((z-3)%2); let tx=((u/WM)%1+1)%1*FW|0, ty=((1-zz/3)*FH)|0; if(ty<0) ty=0; if(ty>=FH) ty=FH-1; return ty*FW+tx; };
+      for(let y=yT;y<=yB;y++){ const z=eye-(y+.5-h2)*d/PS-z0; let i=at(uw,z), k=MK[i], c=PX[i], f=f0, glow=false;
+        if(k===1){ const dep=.07, j=at(uw+dep*tg,z+(z+z0-eye)/d*dep/nrm); if(MK[j]===1){ c=PX[j]; glow=true; } else c=sh(PX[i],.35); }        /* fenêtre en creux : on voit l'intérieur décalé, les bords d'embrasure sont sombres */
+        else { const dep=.05, j=at(uw-dep*tg,z-(z+z0-eye)/d*dep/nrm); if(MK[j]===2){ c=PX[j]; glow=true; } else if(k===2) c=sh(PX[i],.45); }   /* enseigne en saillie : elle avance, son ombre reste sur le mur */
+        if(glow){ const l=Math.max(c&255,(c>>8)&255,(c>>16)&255); if(l>120) f=Math.max(f,Math.min(1,.55+l/400)*vv); }
+        put(y,shL(c,f,wa),d); } };
     let cur=here, fh=dgH(mx,my), TT=fpsTextures(cur.th), virt=false, d0=.01, VC=null;
     if(cam.z!=null) fh=Math.min(fh,cam.z);   /* en pleine montée : le sol de départ suit la caméra */
     while(n++<160){ const d1=Math.min(sdx,sdy), N=TT.N;
@@ -5131,7 +5152,7 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
         /* mur épais : on touche sa face avant, à une demi-épaisseur de la ligne */
         const dW=side===0?(((stx>0?mx:mx+1)-stx*HW)-cam.x)/rdx:(((sty>0?my:my+1)-sty*HW)-cam.y)/rdy, dd=dW>.02?dW:d0;
         if(EW.win){ if(top>fh) faceWin(fh,top,dd,ET.wall,ET.N,winStyle(EW.t)); }   /* fenêtre : cadre au style du mur, on voit à travers */
-        else { if(top>fh) face(fh,top,dd,ET.wall,ET.N); if(top>=cap) break; } }   /* MUR tracé sur l'arête */
+        else { if(top>fh){ if(EW.t==='ruelle'){ facLoad(); if(FAC.ready) faceFac(fh,top,dd); else face(fh,top,dd,ET.wall,ET.N); } else face(fh,top,dd,ET.wall,ET.N); } if(top>=cap) break; } }   /* MUR tracé sur l'arête */
       const WB=dgWB(mx,my);
       if(WB){ const WT=fpsTextures(WB.t), cap=CC?+CC.h||1:MAXW, top=Math.min(+WB.h||1,cap); if(top>fh) face(fh,top,d0,WT.wall,WT.N); if(top>=cap) break;   /* bloc de MUR */
         cur={th:WB.t,sky:true,blk:1}; fh=+WB.h||1; TT=WT; virt=false; if(d0>60) break; continue; }
