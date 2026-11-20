@@ -2896,7 +2896,10 @@ html.fpsmode .chatpop{bottom:16px}
 .fps-x{position:absolute;top:10px;right:10px;width:38px;height:38px;border-radius:50%;border:0;background:rgba(0,0,0,.6);color:#fff;display:grid;place-items:center;cursor:pointer}
 .fps-x svg{width:20px;height:20px}
 .fps-sim{top:56px}.fps-sim i{font-style:normal;font-size:19px;line-height:1}.fps-sim.on{background:rgba(122,79,196,.85)}
-#fpsprev{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(820px,92vw);height:min(520px,70vh);z-index:60;border-radius:14px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+#fpsprev{position:fixed;right:0;top:var(--bar);bottom:0;width:min(520px,100vw);z-index:60;overflow:hidden;box-shadow:-12px 0 40px rgba(0,0,0,.35);border-left:1px solid var(--rule);animation:prevIn .28s cubic-bezier(.2,.8,.2,1)}
+@keyframes prevIn{from{transform:translateX(100%)}to{transform:none}}
+#prevask{position:fixed;z-index:75;transform:translate(-50%,-100%);display:flex;gap:4px;padding:5px;background:var(--paper);border:1px solid var(--rule);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.3);align-items:center}
+#prevask[hidden]{display:none}#prevask .oa-n{font:700 13px var(--f-body);padding:0 6px}#prevask button{display:flex;align-items:center;gap:6px;height:38px;padding:0 12px;border:1px solid var(--rule);border-radius:9px;background:var(--paper);font:700 13px var(--f-body);color:var(--ink);cursor:pointer}#prevask .oa-x{padding:0 9px}#prevask svg{width:18px;height:18px}
 #fpsprev:empty{display:none}
 
 .map-text-input{position:absolute;z-index:9;background:#ece0c3;color:#241a12;border:1.5px dashed #241a12;border-radius:6px;font-family:monospace;line-height:1.22;resize:none;outline:none;padding:4px 8px;min-width:40px;overflow:hidden}
@@ -5084,8 +5087,17 @@ function fpsDoor(){ if(!FPS.cam||FPS.anim) return false; const [i,j,ni,nj]=fpsFa
 function fpsTap(e,cv){ const r=cv.getBoundingClientRect(), u=(e.clientX-r.left)/r.width, v=(e.clientY-r.top)/r.height;
   const h=(FPS.hits||[]).filter(o=>u>=o.x0&&u<=o.x1&&v>=o.y0&&v<=o.y1).sort((a,b)=>a.r-b.r)[0];
   if(h&&FPS.mode==='play'&&(dgItem(h.t)||h.t.shop)){ if(h.r>1.6){ toast('Trop loin, approchez-vous'); return; } openAsk(h.t.id,[r.left+(h.x0+h.x1)/2*r.width,r.top+h.y0*r.height]); return; }
-  if(h&&FPS.mode==='prev'&&typeof toggleCard==='function'&&tok(h.t.id)){ toggleCard(h.t.id); return; }
+  if(h&&FPS.mode==='prev'&&tok(h.t.id)){ const t=tok(h.t.id);
+    if(t.inbox||dgItem(t)||t.shop){ if(FPS.sim&&h.r>1.6){ toast('Trop loin, approchez-vous'); return; } prevAsk(t,[r.left+(h.x0+h.x1)/2*r.width,r.top+h.y0*r.height]); return; }
+    if(typeof toggleCard==='function') toggleCard(t.id); return; }
   if(!h) fpsDoor(); }
+/* aperçu du MJ : mêmes bulles que le joueur (Ouvrir ? / Prendre), sans rien modifier sur la table */
+function prevAsk(t,at){ if(t.shop&&typeof shopDlg==='function'){ shopDlg(t.id); return; } let a=$('prevask'); if(!a){ a=document.createElement('div'); a.id='prevask'; document.body.appendChild(a); }
+  a.style.left=at[0]+'px'; a.style.top=(at[1]-8)+'px'; const nm=t.name||'Objet';
+  a.innerHTML=t.inbox?`<button type="button" class="oa-go">${IB('chest',1.8)}Ouvrir ?</button><button type="button" class="oa-x" title="Laisser fermé">${IB('x',2)}</button>`
+    :`<b class="oa-n">${esc(nm)}</b><button type="button" class="oa-go">${IB('o_backpack',1.8)}Prendre</button><button type="button" class="oa-x" title="Laisser">${IB('x',2)}</button>`; a.hidden=false;
+  a.querySelector('.oa-go').onclick=()=>{ a.hidden=true; toast(t.inbox?`Aperçu : le contenant révèle « ${nm} »`:`Aperçu : « ${nm} » irait dans le sac du joueur`); };
+  a.querySelector('.oa-x').onclick=()=>{ a.hidden=true; }; clearTimeout(prevAsk.T); prevAsk.T=setTimeout(()=>{ a.hidden=true; },6000); }
 /* position à l'écran d'un jeton vu en 3D (bulle « Prendre / Ouvrir », manque de place) */
 function fpsScreenOf(id){ if(!document.documentElement.classList.contains('fpsmode')||!FPS.el) return null; const h=(FPS.hits||[]).find(o=>o.t.id===id); if(!h) return null; const r=FPS.el.querySelector('canvas').getBoundingClientRect(); return [r.left+(h.x0+h.x1)/2*r.width,r.top+h.y0*r.height]; }
 /* fin d'un appui sur la vue 3D du joueur : toucher (objet, porte) ou glisser (se déplacer) */
@@ -5107,7 +5119,7 @@ function fpsBuild(host,mode){ let el=host.querySelector('.fps'); if(!el){ el=doc
     const cv=el.querySelector('canvas'); let sw=null;
     if(mode==='prev') cv.addEventListener('pointerdown',e=>{ sw={x:e.clientX,y:e.clientY}; });
     if(mode==='prev') cv.addEventListener('pointerup',e=>{ if(!sw) return; const ddx=e.clientX-sw.x, ddy=e.clientY-sw.y; sw=null; if(Math.max(Math.abs(ddx),Math.abs(ddy))<30){ if(Math.max(Math.abs(ddx),Math.abs(ddy))<8) fpsTap(e,cv); return; } if(Math.abs(ddx)>Math.abs(ddy)) fpsAct(ddx<0?'tr':'tl'); else fpsAct(ddy<0?'fw':'bk'); });
-    if(mode==='prev'){ el.querySelector('.fps-x').onclick=()=>{ el.remove(); FPS.el=null; FPS.mode=null; FPS.sim=false; };
+    if(mode==='prev'){ el.querySelector('.fps-x').onclick=()=>{ el.remove(); FPS.el=null; FPS.mode=null; FPS.sim=false; const pa=$('prevask'); if(pa) pa.hidden=true; };
       const sb=el.querySelector('.fps-sim'), sp=()=>{ sb.innerHTML=FPS.sim?'<i>🎲</i>':'<i>👁</i>'; sb.classList.toggle('on',!!FPS.sim); }; sp();
       sb.onclick=()=>{ FPS.sim=!FPS.sim; sp(); toast(FPS.sim?'Vue joueur : perception (PER × 2), collisions':'Vue MJ : tout est visible'); FPS.sprites.clear(); fpsLater(); }; } }
   FPS.el=el; FPS.mode=mode; return el; }
