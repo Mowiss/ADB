@@ -4282,6 +4282,8 @@ const DG_TH={
   jungle:{lbl:'Jungle',sw:'#2f8a3a',rock:'#0c1a0d',floor2d:'#4d6b33',wall2d:'#163a1a',seed:9,sky:1,wh:3},
   prairie:{lbl:'Prairie',sw:'#6f9a3e',rock:'#1b2416',floor2d:'#86a95a',wall2d:'#2f4a22',seed:4},
   plage:{lbl:'Plage',sw:'#efd59b',rock:'#2a2215',floor2d:'#ecd49a',wall2d:'#8a6a3e',seed:10,sky:1,wh:2},
+  rondins:{lbl:'Rondins',sw:'#7a5230',rock:'#1a120a',floor2d:'#6e5a40',wall2d:'#4a3018',seed:12},
+  planches:{lbl:'Planches',sw:'#a8794a',rock:'#1a130b',floor2d:'#9c7a52',wall2d:'#5a3c20',seed:13},
   mer:{lbl:'Mer',sw:'#2f8fc9',rock:'#06202e',floor2d:'#3a95c8',wall2d:'#1c5a80',seed:11,sky:1,wh:1,water:1}};
 /* style d'une case : « thème » + « |s » (ciel au lieu du plafond) + « |i » (murs invisibles) ; 1 = ancien format */
 const DGP={};
@@ -4776,6 +4778,25 @@ function fpsTextures(k){ k=k||(S.dg&&S.dg.th)||'pierre'; FPS.texs=FPS.texs||{}; 
     floor=mk(x=>{ x.fillStyle='#d9b878'; x.fillRect(0,0,N,N); for(let y=0;y<N;y+=6){ x.strokeStyle='rgba(160,110,50,.35)'; x.beginPath(); x.moveTo(0,y); for(let xx=0;xx<=N;xx+=8) x.lineTo(xx,y+Math.sin(xx*.2+y)*2); x.stroke(); } for(let i=0;i<300;i++){ x.fillStyle=`rgba(${rnd()<.5?'255,240,200':'150,100,50'},.3)`; x.fillRect(rnd()*N|0,rnd()*N|0,1,1); } });
     ceil=mk(x=>{ x.fillStyle='#8a5a2a'; x.fillRect(0,0,N,N); });
     door=mk(x=>{ x.fillStyle='#b5874a'; x.fillRect(0,0,N,N); for(let i=0;i<5;i++){ const v=(rnd()*20)|0; x.fillStyle=`hsl(30,40%,${32+v/2}%)`; x.fillRect(4+i*12,2,10,60); } x.fillStyle='#4a3420'; x.fillRect(2,14,60,4); x.fillRect(2,46,60,4); x.fillStyle='#d9c08a'; x.fillRect(30,0,4,6); }); }
+  else if(k==='rondins'){
+    /* murs de troncs empilés : bois rond, écorce, extrémités sciées */
+    wall=mk(x=>{ x.fillStyle='#2a1a0c'; x.fillRect(0,0,N,N); const H=16; for(let r=0;r<4;r++){ const y=r*H, sh=(r%2)*10;
+        for(let yy=0;yy<H;yy++){ const u=(yy+.5)/H, l=Math.sin(u*Math.PI); x.fillStyle=`hsl(${26+rnd()*4},${42+rnd()*8}%,${10+l*30}%)`; x.fillRect(0,y+yy,N,1); }
+        for(let i=0;i<40;i++){ x.fillStyle=`rgba(${rnd()<.5?'30,18,8':'170,120,70'},.35)`; x.fillRect(rnd()*N|0,y+2+rnd()*(H-4)|0,3+(rnd()*6|0),1); }
+        x.fillStyle='rgba(40,24,10,.6)'; for(let i=0;i<3;i++){ const kx=rnd()*N|0; x.beginPath(); x.ellipse(kx,y+H*.5,2.5,1.5,0,0,7); x.fill(); }
+        x.fillStyle='rgba(0,0,0,.55)'; x.fillRect(0,y+H-1,N,1); } });
+    floor=mk(x=>{ x.fillStyle='#5a4630'; x.fillRect(0,0,N,N); noise(x,'0,0,0',.35,500); for(let i=0;i<40;i++){ x.fillStyle=`hsl(${70+rnd()*30},30%,${20+rnd()*15}%)`; x.fillRect(rnd()*N|0,rnd()*N|0,2,1); } });
+    ceil=mk(x=>{ x.fillStyle='#3a2512'; x.fillRect(0,0,N,N); for(let i=0;i<4;i++){ for(let xx=0;xx<16;xx++){ const l=Math.sin((xx+.5)/16*Math.PI); x.fillStyle=`hsl(26,40%,${8+l*22}%)`; x.fillRect(i*16+xx,0,1,N); } } noise(x,'0,0,0',.3,200); });
+    door=mk(x=>{ x.fillStyle='#4a3018'; x.fillRect(0,0,N,N); for(let i=0;i<5;i++){ for(let xx=0;xx<12;xx++){ const l=Math.sin((xx+.5)/12*Math.PI); x.fillStyle=`hsl(28,40%,${12+l*24}%)`; x.fillRect(2+i*12+xx,0,1,N); } } x.fillStyle='#2a1a0c'; x.fillRect(0,14,N,4); x.fillRect(0,46,N,4); x.fillStyle='#111'; x.fillRect(50,30,4,6); }); }
+  else if(k==='planches'){
+    /* planches clouées */
+    const board=(x,vert,base)=>{ const W=vert?10:12; for(let p=0;p*W<N;p++){ const hue=26+rnd()*8, L=base+rnd()*12; x.fillStyle=`hsl(${hue},45%,${L}%)`; if(vert) x.fillRect(p*W,0,W,N); else x.fillRect(0,p*W,N,W);
+        for(let i=0;i<26;i++){ x.fillStyle=`hsla(${hue},40%,${L-10+rnd()*20}%,.6)`; if(vert) x.fillRect(p*W+1+rnd()*(W-2)|0,rnd()*N|0,1,4+(rnd()*10|0)); else x.fillRect(rnd()*N|0,p*W+1+rnd()*(W-2)|0,4+(rnd()*10|0),1); }
+        x.fillStyle='rgba(30,18,8,.85)'; if(vert) x.fillRect(p*W,0,1,N); else x.fillRect(0,p*W,N,1);
+        x.fillStyle='#2b2b2b'; if(vert){ x.fillRect(p*W+2,6,2,2); x.fillRect(p*W+W-4,6,2,2); x.fillRect(p*W+2,56,2,2); x.fillRect(p*W+W-4,56,2,2); } else { const o=(p*17)%40+6; x.fillRect(o,p*W+2,2,2); x.fillRect(o,p*W+W-4,2,2); } } };
+    wall=mk(x=>{ board(x,true,32); x.fillStyle='rgba(40,25,10,.9)'; x.fillRect(0,8,N,4); x.fillRect(0,52,N,4); });
+    floor=mk(x=>board(x,false,30)); ceil=mk(x=>board(x,false,22));
+    door=mk(x=>{ board(x,true,40); x.fillStyle='#3a2410'; x.fillRect(4,14,56,5); x.fillRect(4,46,56,5); x.save(); x.translate(8,46); x.rotate(-.55); x.fillRect(0,0,58,5); x.restore(); x.fillStyle='#111'; x.fillRect(50,30,4,5); }); }
   else if(k==='plage'){
     floor=mk(x=>{ x.fillStyle='#ead39b'; x.fillRect(0,0,N,N); for(let i=0;i<700;i++){ x.fillStyle=`rgba(${rnd()<.55?'255,248,220':'170,130,70'},${.25+rnd()*.35})`; x.fillRect(rnd()*N|0,rnd()*N|0,1,1); }
       x.strokeStyle='rgba(190,150,90,.35)'; for(let y=8;y<N;y+=14){ x.beginPath(); x.moveTo(0,y); for(let xx=0;xx<=N;xx+=8) x.lineTo(xx,y+Math.sin(xx*.18+y)*1.5); x.stroke(); }
