@@ -4837,7 +4837,7 @@ function leafCeil(x,N,rnd,h0,h1,l0,l1){ for(let i=0;i<55;i++){ const cx=rnd()*N,
 /* sols en image (trottoir, route cyberpunk) : grandes dalles qui couvrent plusieurs cases, sans répétition à chaque mètre */
 const FLIMG={trottoir:{src:'res/themes/ruelle/trottoir.webp',cw:3,ch:2.234},bitume:{src:'res/themes/ruelle/route.webp',cw:4,ch:4},crypte:{src:'res/themes/crypte/sol.webp',cw:4,ch:2.23},interieur:{src:'res/themes/ruelle/sol-interieur.webp',cw:4,ch:3}};
 /* fenêtre en image (cyberpunk) : cadre en relief, vitre transparente (alpha 128 dans l'image) */
-const WINIMG={cyber:{src:'res/themes/ruelle/fenetre.png'}}, WIN_OF={trottoir:'cyber',bitume:'cyber',ruelle:'cyber'};
+const WINIMG={cyber:{src:'res/themes/ruelle/fenetre.png'}}, WIN_OF={trottoir:'cyber',bitume:'cyber',ruelle:'cyber',interieur:'cyber'};
 function winImgLoad(k){ const o=WINIMG[k]; if(o.im) return o.px?o:null; o.im=new Image(); o.im.onload=()=>{ const c=document.createElement('canvas'); c.width=o.im.naturalWidth; c.height=o.im.naturalHeight; c.getContext('2d').drawImage(o.im,0,0);
   o.px=new Uint32Array(c.getContext('2d').getImageData(0,0,c.width,c.height).data.buffer.slice(0)); o.w=c.width; o.h=c.height; fpsLater(); }; o.im.src=o.src; return null; }
 /* portes en image : remplacent la texture de porte du set (le battant coulisse comme les autres) */
@@ -5184,12 +5184,13 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
         if(bb&&z<.45){ const pb=.03+z*.3, b=bs(hx-rdx*pb,hy-rdy*pb); if(b) c=bmix(c,b,(1-z/.45)*.85); }
         put(y,shL(c,f,wa2),d); } };
     /* fenêtre : ouverture au milieu du mur, cadre + croisillons selon le style */
-    const faceWin=(z0,z1,d,tex,N,st)=>{ const yT=Math.max(0,Math.ceil(h2+(eye-z1)*PS/d)), yB=Math.min(H-1,Math.floor(h2+(eye-z0)*PS/d)); if(yB<yT) return;
+    const faceWin=(z0,z1,d,tex,N,st,WI)=>{ const yT=Math.max(0,Math.ceil(h2+(eye-z1)*PS/d)), yB=Math.min(H-1,Math.floor(h2+(eye-z0)*PS/d)); if(yB<yT) return;
       let u=side===0?cam.y+d*rdy:cam.x+d*rdx; u-=Math.floor(u); let tx=(u*N)|0; if(side===0&&rdx>0||side===1&&rdy<0) tx=N-tx-1;
       const f=lit(d)*(side?.78:1)*vis(cam.x+d*rdx,cam.y+d*rdy), wa=LON?la(cam.x+d*rdx,cam.y+d*rdy):null, U0=.2, U1=.8, FW=st.fw, inU=u>U0&&u<U1, fr=inU&&(u<U0+FW||u>U1-FW);
       for(let y=yT;y<=yB;y++){ const z=eye-(y+.5-h2)*d/PS; let c;
         if(inU&&z>z0+WSILL&&z<z0+WTOP){ const zz=z-z0, edge=fr||zz<WSILL+FW*.8||zz>WTOP-FW*.8, mun=st.mun&&(Math.abs(u-.5)<.018||Math.abs(zz-(WSILL+WTOP)/2)<.014);
           if(edge) c=zz<WSILL+FW*.8?st.sill:st.frame; else if(mun) c=st.frame; else { const i=y*W+xx; if(DZ[i]===Infinity&&!GS[i]){ GD[i]=d; GS[i]=((u*9+zz*5)%1)<.13?2:1; GLASS=true; } continue; } }
+        else if(WI&&WI.px){ let uw=side===0?cam.y+d*rdy:cam.x+d*rdx; if(!(side===0&&rdx>0||side===1&&rdy<0)) uw=-uw; const zz=z-z0; c=WI.px[(((1-(((zz/WI.ch)%1)+1)%1)*WI.h|0)%WI.h)*WI.w+(((((uw/WI.cw)%1)+1)%1*WI.w)|0)]; }   /* mur en image autour de la fenêtre */
         else { const ty=((1-(z-Math.floor(z)))*N|0)&(N-1); c=tex[ty*N+tx]; }
         put(y,shL(c,f,wa),d); } };
     /* façade : coordonnée réelle le long du mur, relief (creux / saillie) par décalage de parallaxe */
@@ -5259,7 +5260,7 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
       if(EW&&!EW.inv&&!(DR0&&!dgHid(DR0))){ const ET=fpsTextures(EWT), cap=CC?+CC.h||1:MAXW, top=Math.min(+EW.h||1,cap);
         /* mur épais : on touche sa face avant, à une demi-épaisseur de la ligne */
         const dW=side===0?(((stx>0?mx:mx+1)-stx*HW)-cam.x)/rdx:(((sty>0?my:my+1)-sty*HW)-cam.y)/rdy, dd=dW>.02?dW:d0;
-        if(EW.win){ const WO=WIN_OF[EWT]&&winImgLoad(WIN_OF[EWT]); if(WO&&top>fh){ facLoad(); if(FAC.ready) faceFac(fh,top,dd); else face(fh,top,dd,ET.wall,ET.N); winOver(fh,dd,WO); } else if(top>fh) faceWin(fh,top,dd,ET.wall,ET.N,winStyle(EWT)); }   /* fenêtre : cadre au style du mur, on voit à travers */
+        if(EW.win){ const WO=WIN_OF[EWT]&&winImgLoad(WIN_OF[EWT]); if(WO&&top>fh){ const WI=WLIMG[EWT]; if(WI&&WI.px) faceImg(fh,top,dd,WI); else { facLoad(); if(FAC.ready) faceFac(fh,top,dd); else face(fh,top,dd,ET.wall,ET.N); } winOver(fh,dd,WO); } else if(top>fh) faceWin(fh,top,dd,ET.wall,ET.N,winStyle(EWT),WLIMG[EWT]); }   /* fenêtre : cadre au style du mur, on voit à travers */
         else { if(top>fh){ const WI=WLIMG[EWT]; if(WI&&WI.px) faceImg(fh,top,dd,WI); else if(EWT==='ruelle'||EWT==='trottoir'||EWT==='bitume'){ facLoad(); if(FAC.ready) faceFac(fh,top,dd); else face(fh,top,dd,ET.wall,ET.N); } else face(fh,top,dd,ET.wall,ET.N); } if(top>=cap) break; } }   /* MUR tracé sur l'arête */
       const WB=dgWB(mx,my);
       if(WB){ const WT=fpsTextures(WB.t), cap=CC?+CC.h||1:MAXW, top=Math.min(+WB.h||1,cap); if(top>fh) face(fh,top,d0,WT.wall,WT.N); if(top>=cap) break;   /* bloc de MUR */
