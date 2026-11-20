@@ -4789,7 +4789,7 @@ function leafCeil(x,N,rnd,h0,h1,l0,l1){ for(let i=0;i<55;i++){ const cx=rnd()*N,
     x.beginPath(); x.ellipse((cx+Math.cos(a)*d+N)%N,(cy+Math.sin(a)*d+N)%N,2+rnd()*3,1+rnd()*1.5,rnd()*3,0,7); x.fill(); } }
   x.fillStyle='rgba(60,40,20,.9)'; for(let i=0;i<3;i++){ let a=rnd()*N, b=rnd()*N; x.fillRect(a|0,b|0,1,1); for(let k=0;k<10;k++){ a+=rnd()*4-2; b+=2; x.fillRect((a+N)%N|0,(b+N)%N|0,1,2); } } }
 /* sols en image (trottoir, route cyberpunk) : grandes dalles qui couvrent plusieurs cases, sans répétition à chaque mètre */
-const FLIMG={trottoir:{src:'res/themes/ruelle/trottoir.webp',cw:6,ch:.875},bitume:{src:'res/themes/ruelle/route.webp',cw:6,ch:2.125}};
+const FLIMG={trottoir:{src:'res/themes/ruelle/trottoir.webp',cw:3,ch:2.234},bitume:{src:'res/themes/ruelle/route.webp',cw:3.906,ch:4.352}};
 function flLoad(k){ const o=FLIMG[k]; if(o.im) return; o.im=new Image(); o.im.onload=()=>{ const c=document.createElement('canvas'); c.width=o.im.naturalWidth; c.height=o.im.naturalHeight; c.getContext('2d').drawImage(o.im,0,0);
   o.px=new Uint32Array(c.getContext('2d').getImageData(0,0,c.width,c.height).data.buffer.slice(0)); o.w=c.width; o.h=c.height; fpsLater(); drawDgLater(); }; o.im.src=o.src; }
 function fpsTextures(k){ k=k||(S.dg&&S.dg.th)||'pierre'; FPS.texs=FPS.texs||{}; if(FPS.tex===null) FPS.texs={}; FPS.tex=1; if(FPS.texs[k]) return FPS.texs[k]; if(FLIMG[k]){ const b=fpsTextures('ruelle'); flLoad(k); return FPS.texs[k]=Object.assign({},b,{img:k}); }
