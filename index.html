@@ -4781,7 +4781,7 @@ function thImg(k,f){ const key=k+'/'+f; if(!(key in THIM)){ const im=new Image()
   const im=THIM[key]; return im&&im.complete&&im.naturalWidth?im:null; }
 /* vignette d'une texture (sol, mur ou plafond) pour la palette */
 const DGTHUMB={};
-function dgThumb(k,part){ const id=k+'|'+part; if(DGTHUMB[id]) return DGTHUMB[id]; if(part==='floor'&&FLIMG[k]) return FLIMG[k].src; if(part==='ceil'&&CLIMG[k]) return CLIMG[k].src; if(part==='wall'&&WLIMG[k]) return WLIMG[k].src; const T=fpsTextures(k), N=T.N, a=T[part]||T.floor, c=document.createElement('canvas'); c.width=c.height=N;
+function dgThumb(k,part){ const id=k+'|'+part; if(DGTHUMB[id]) return DGTHUMB[id]; if(part==='floor'&&FLIMG[k]) return FLIMG[k].src; if(part==='door'&&DOORIMG[k]) return DOORIMG[k]; if(part==='ceil'&&CLIMG[k]) return CLIMG[k].src; if(part==='wall'&&WLIMG[k]) return WLIMG[k].src; const T=fpsTextures(k), N=T.N, a=T[part]||T.floor, c=document.createElement('canvas'); c.width=c.height=N;
   const im=c.getContext('2d').createImageData(N,N); new Uint32Array(im.data.buffer).set(a.subarray(0,N*N)); c.getContext('2d').putImageData(im,0,0);
   const o=document.createElement('canvas'); o.width=o.height=40; const x=o.getContext('2d'); x.imageSmoothingEnabled=false; x.drawImage(c,0,0,N/2,N/2,0,0,40,40); return DGTHUMB[id]=o.toDataURL(); }
 /* plafond de feuillage : touffes de feuilles avec des trous (on voit le ciel à travers) */
@@ -4794,6 +4794,9 @@ const FLIMG={trottoir:{src:'res/themes/ruelle/trottoir.webp',cw:3,ch:2.234},bitu
 const WINIMG={cyber:{src:'res/themes/ruelle/fenetre.png'}}, WIN_OF={trottoir:'cyber',bitume:'cyber',ruelle:'cyber'};
 function winImgLoad(k){ const o=WINIMG[k]; if(o.im) return o.px?o:null; o.im=new Image(); o.im.onload=()=>{ const c=document.createElement('canvas'); c.width=o.im.naturalWidth; c.height=o.im.naturalHeight; c.getContext('2d').drawImage(o.im,0,0);
   o.px=new Uint32Array(c.getContext('2d').getImageData(0,0,c.width,c.height).data.buffer.slice(0)); o.w=c.width; o.h=c.height; fpsLater(); }; o.im.src=o.src; return null; }
+/* portes en image : remplacent la texture de porte du set (le battant coulisse comme les autres) */
+const DOORIMG={trottoir:'res/themes/ruelle/porte.webp',bitume:'res/themes/ruelle/porte.webp',ruelle:'res/themes/ruelle/porte.webp'};
+function doorImg(k,T){ const im=new Image(); im.onload=()=>{ const N=T.N, c=document.createElement('canvas'); c.width=c.height=N; const x=c.getContext('2d'); x.imageSmoothingEnabled=false; x.drawImage(im,0,0,N,N); T.door=new Uint32Array(x.getImageData(0,0,N,N).data.buffer.slice(0)); fpsLater(); }; im.src=DOORIMG[k]; }
 /* plafonds en image */
 const CLIMG={trottoir:{src:'res/themes/ruelle/plafond.webp',cw:4,ch:2.23}}; CLIMG.bitume=CLIMG.ruelle=CLIMG.trottoir;
 /* murs en image : continus le long du mur (cw cases de large, ch de haut) */
@@ -4801,7 +4804,7 @@ const WLIMG={crypte:{src:'res/themes/crypte/mur.webp',rel:'res/themes/crypte/mur
 function flLoad(k,T){ const o=(T||FLIMG)[k]; if(o.im) return; o.im=new Image(); o.im.onload=()=>{ const c=document.createElement('canvas'); c.width=o.im.naturalWidth; c.height=o.im.naturalHeight; c.getContext('2d').drawImage(o.im,0,0);
   o.px=new Uint32Array(c.getContext('2d').getImageData(0,0,c.width,c.height).data.buffer.slice(0)); o.w=c.width; o.h=c.height; fpsLater(); drawDgLater(); }; o.im.src=o.src;
   if(o.rel){ const r=new Image(); r.onload=()=>{ const c=document.createElement('canvas'); c.width=r.naturalWidth; c.height=r.naturalHeight; const x=c.getContext('2d'); x.drawImage(r,0,0); const d=x.getImageData(0,0,c.width,c.height).data, R=new Float32Array(c.width*c.height); for(let i=0;i<R.length;i++) R[i]=d[i*4]/255; o.rl=R; o.rw=c.width; o.rh=c.height; fpsLater(); }; r.src=o.rel; } }
-function fpsTextures(k){ k=k||(S.dg&&S.dg.th)||'pierre'; FPS.texs=FPS.texs||{}; if(FPS.tex===null) FPS.texs={}; FPS.tex=1; if(FPS.texs[k]) return FPS.texs[k]; if(CLIMG[k]) flLoad(k,CLIMG); if(FLIMG[k]&&!FPS.inTx){ FPS.inTx=1; const b=fpsTextures(k==='crypte'?'crypte~':'ruelle'); FPS.inTx=0; flLoad(k); if(WLIMG[k]) flLoad(k,WLIMG); return FPS.texs[k]=Object.assign({},b,{img:k}); } if(k==='crypte~') k='crypte';
+function fpsTextures(k){ k=k||(S.dg&&S.dg.th)||'pierre'; FPS.texs=FPS.texs||{}; if(FPS.tex===null) FPS.texs={}; FPS.tex=1; if(FPS.texs[k]) return FPS.texs[k]; if(CLIMG[k]) flLoad(k,CLIMG); if(FLIMG[k]&&!FPS.inTx){ FPS.inTx=1; const b=fpsTextures(k==='crypte'?'crypte~':'ruelle'); FPS.inTx=0; flLoad(k); if(WLIMG[k]) flLoad(k,WLIMG); const T2=FPS.texs[k]=Object.assign({},b,{img:k}); if(DOORIMG[k]) doorImg(k,T2); return T2; } if(k==='crypte~') k='crypte';
   const N=64, NT=128, buf=c=>{ const o=document.createElement('canvas'); o.width=o.height=NT; const x=o.getContext('2d'); x.imageSmoothingEnabled=false; x.drawImage(c,0,0,NT,NT); return new Uint32Array(x.getImageData(0,0,NT,NT).data.buffer.slice(0)); };
   const mk=draw=>{ const c=document.createElement('canvas'); c.width=c.height=N; const x=c.getContext('2d'); draw(x); return c; };
   let sd=DG_TH[k].seed*9301; const rnd=()=>(sd=(sd*9301+49297)%233280)/233280;
@@ -5200,7 +5203,7 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
       if(door&&!dgHid(door)){ const p=doorP(dgEK(pmx,pmy,mx,my),door); if(p<1){ let u=side===0?cam.y+d0*rdy:cam.x+d0*rdx; u-=Math.floor(u); if(u>=p){ wt=TT.door; doff=p; } } }
       else if(door&&dgShut(door)) wt=TT.wall;
       const WH=CC?+CC.h||1:1;
-      if(door&&!dgHid(door)){ const fl=dgFlank(pmx,pmy,mx,my), lt=Math.min(CC?+CC.h||1:99,Math.max(WH,fl.h)), LX=fl.t&&fl.h>=WH?fpsTextures(fl.t):TT; if(lt>fh+1) face(fh+1,lt,d0,LX.wall,LX.N); }   /* linteau : la porte reste 1 × 1 */
+      if(door&&!dgHid(door)){ const fl=dgFlank(pmx,pmy,mx,my), lt=Math.min(CC?+CC.h||1:99,Math.max(WH,fl.h)), LX=fl.t&&fl.h>=WH?fpsTextures(fl.t):TT; if(lt>fh+1){ const ft=fl.t||cur.th; if((ft==='trottoir'||ft==='bitume'||ft==='ruelle')&&FAC.ready) faceFac(fh+1,lt,d0); else face(fh+1,lt,d0,LX.wall,LX.N); } }   /* linteau : la porte reste 1 × 1 */
       if(wt){ face(fh,wt===TT.door?fh+1:fh+WH,d0,wt,N,doff); break; }
       const nfh=virt?(S.dg.h&&S.dg.h[mx+','+my]!=null?+S.dg.h[mx+','+my]:fh):dgH(mx,my), NT=fpsTextures(nf.th);
       if(nfh>fh) face(fh,nfh,d0,NT.side,NT.N);                                   /* marche qui monte */
