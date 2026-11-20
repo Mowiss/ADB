@@ -3520,6 +3520,7 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 
 /* ===== états des jetons ===== */
 .tk .fx{position:absolute;inset:0;pointer-events:none}
+.fps-fx{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:2}.fps-fx .tk.fx3{pointer-events:none!important;cursor:default;background:none;border:0;box-shadow:none}
 .tk .fx i,.tk .fx svg{position:absolute;pointer-events:none}
 /* brûlure : petites flammèches */
 .fx-brulure i{width:15px;height:21px;margin:-18px 0 0 -7.5px;border-radius:50% 50% 50% 50%/62% 62% 38% 38%;background:radial-gradient(circle at 50% 72%,#fff6c2 0 14%,#ffc23a 30%,#ff6a1a 58%,rgba(255,60,10,0) 72%);transform-origin:50% 100%;animation:fxFlame var(--d,.6s) ease-in-out var(--t,0s) infinite alternate;filter:drop-shadow(0 0 3px rgba(255,120,30,.8))}
@@ -5086,7 +5087,7 @@ function fpsDraw(){ if(!FPS.el||FPS.el.hidden||!FPS.cam) return; const cv=FPS.el
     const tgt=(Math.hypot(ax-cam.x,ay-cam.y)>.3)?Math.atan2(ax-cam.x,-(ay-cam.y)):cam.a; if(FPS.specA==null) FPS.specA=cam.a;
     let dd=tgt-FPS.specA; dd=Math.atan2(Math.sin(dd),Math.cos(dd)); FPS.specA+=dd*.1; if(Math.abs(dd)>.003) fpsLater(); cam={...cam,a:FPS.specA}; }
   else if(FPS.specA!=null&&!FPS.anim){ let f=FPS.specA, t=FPS.cam.a; f=t+Math.atan2(Math.sin(f-t),Math.cos(f-t)); FPS.specA=null; FPS.anim={f:{...FPS.cam,a:f},to:{...FPS.cam},t0:performance.now(),dur:450}; cam={...cam,a:f}; fpsLater(); }
-  FPS.lastCam=cam; fpsRender(cv,cam,FPS.self); fpsWeather();
+  FPS.lastCam=cam; fpsRender(cv,cam,FPS.self); fpsWeather(); fpsFx();
   const cp=FPS.el.querySelector('.fps-cmp'); if(cp){ const d=(((Math.round(FPS.cam.a/(Math.PI/2))%4)+4)%4); cp.textContent=['Nord','Est','Sud','Ouest'][d]; } }
 /* déplacements : avancer, reculer, pas de côté, quart de tour */
 function fpsAct(k){ if(!FPS.cam) return; if(fpsSpectating()){ toast('Ce n\'est pas votre tour'); return; } if(FPS.anim){ FPS.queue=k; return; } const c=FPS.cam, d=(((Math.round(c.a/(Math.PI/2))%4)+4)%4), V4=[[0,-1],[1,0],[0,1],[-1,0]];
@@ -5132,6 +5133,15 @@ function prevAsk(t,at){ if(t.shop&&typeof shopDlg==='function'){ shopDlg(t.id); 
   a.querySelector('.oa-go').onclick=()=>{ a.hidden=true; toast(t.inbox?`Aperçu : le contenant révèle « ${nm} »`:`Aperçu : « ${nm} » irait dans le sac du joueur`); };
   a.querySelector('.oa-x').onclick=()=>{ a.hidden=true; }; clearTimeout(prevAsk.T); prevAsk.T=setTimeout(()=>{ a.hidden=true; },6000); }
 /* position à l'écran d'un jeton vu en 3D (bulle « Prendre / Ouvrir », manque de place) */
+/* effets actifs (brûlure, saignement, maladie…) : les mêmes animations que sur la carte, posées sur le sprite en 3D */
+function fpsFx(){ if(!FPS.el||typeof stHTML!=='function') return; let box=FPS.el.querySelector('.fps-fx'); if(!box){ box=document.createElement('div'); box.className='fps-fx'; FPS.el.insertBefore(box,FPS.el.querySelector('.fps-hands')); }
+  const cv=FPS.el.querySelector('canvas'), r=cv.getBoundingClientRect(), b=FPS.el.getBoundingClientRect(), seen=new Set();
+  (FPS.hits||[]).forEach(h=>{ const t=tok(h.t.id); if(!t||!ALIVE(t)||dgDead(t)) return; const L=effSt(t); if(!L.length) return; seen.add(t.id);
+    let el=box.querySelector(`[data-fid="${t.id}"]`); const sig=L.slice().sort().join(',');
+    if(!el){ el=document.createElement('div'); el.className='tk fx3'; el.dataset.fid=t.id; box.appendChild(el); }
+    if(el.dataset.sig!==sig){ el.dataset.sig=sig; el.innerHTML=stHTML(t); }
+    const ph=(h.y1-h.y0)*r.height; el.style.left=(r.left-b.left+(h.x0+h.x1)/2*r.width)+'px'; el.style.top=(r.top-b.top+(h.y0+(h.y1-h.y0)*.58)*r.height)+'px'; el.style.setProperty('--s',(ph*.62/72).toFixed(3)); el.style.zIndex=Math.round(1000-h.r*10); });
+  box.querySelectorAll('[data-fid]').forEach(el=>{ if(!seen.has(el.dataset.fid)) el.remove(); }); }
 function fpsScreenOf(id){ if(!FPS.el||FPS.el.hidden||!FPS.el.isConnected) return null; const h=(FPS.hits||[]).find(o=>o.t.id===id); if(!h) return null; const r=FPS.el.querySelector('canvas').getBoundingClientRect(); return [r.left+(h.x0+h.x1)/2*r.width,r.top+h.y0*r.height]; }
 /* fin d'un appui sur la vue 3D du joueur : toucher (objet, porte) ou glisser (se déplacer) */
 function fpsRelease(e,s0){ if(!FPS.el||FPS.el.hidden) return; const cv=FPS.el.querySelector('canvas'), r=cv.getBoundingClientRect();
