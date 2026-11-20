@@ -4628,7 +4628,7 @@ function fpsSpectating(){ if(FPS.mode!=='play'||!S.fight) return false; const c=
 const DGT={sc:null,si:0,cell:null};
 function dgTestLoad(){ window.DGTEST=true; if(!ME) ME='test';
   fetch('res/demo/la-plaine.adb').then(r=>r.json()).then(d=>{ if(!d||!Array.isArray(d.scenes)||!d.scenes.length) throw 0; DGT.sc=d.scenes; const m0=Object.entries(d.scenes[0].dg.m||{}).find(([k,m])=>m.k==='sign');
-    dgTestScene(0,m0?m0[0].split(',').map(Number):null); toast(`🔷 Démo : ${d.title||'scénario'}`); }).catch(()=>dgTestLoadOld()); }
+    dgTestScene(0,m0?m0[0].split(',').map(Number):null); const me=S.tokens.find(t=>t.id==='me'); if(me){ me.ang=3*Math.PI/4; me.dir=1; } FPS.cam=null; followMe(); toast(`🔷 Démo : ${d.title||'scénario'}`); }).catch(()=>dgTestLoadOld()); }
 function dgTestScene(si,cell){ const sc=DGT.sc&&DGT.sc[si]; if(!sc) return; DGT.si=si; const D=JSON.parse(JSON.stringify(sc.dg||{})); D.on=true; for(const k in (D.d||{})) D.d[k].open=false; S.dg=D;
   S.blood=JSON.parse(JSON.stringify(sc.blood||[])); S.weather=sc.weather||''; if(S.hour==null||!DGT.hourSet){ S.hour=14; DGT.hourSet=1; } S.combat=null; S.fight=null; S.dexLock=false; FPS.skys=null; FPS.dst={}; FPS.bld=null;
   let c=cell; if(!c||!dgOpen(c[0],c[1])){ const k=Object.keys(D.c||{}).find(k=>dgOpen(...k.split(',').map(Number))); c=k?k.split(',').map(Number):[0,0]; }
