@@ -5163,13 +5163,17 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
         if(a0>200){ B[i]=sh(B[i],.45); continue; }                         /* ombre du cadre sur le mur */
         if(a0>60&&a0<200&&DZ[i]>=d-.01){ DZ[i]=Infinity; if(!GS[i]){ GD[i]=d; GS[i]=((u0*9+(z-Z0)*5)%1)<.12?2:1; GLASS=true; } } } };   /* vitre : on voit à travers */
     /* porte en relief réel : cadre et boîtier avancent (jusqu'à 7 cm), leurs flancs se voient de biais */
+    /* porte en relief réel : le cadre (fixe) et le boîtier / la poignée (sur le battant qui coulisse) avancent ; flancs dans l'ombre */
     const faceDoor=(z0,d,off,TX)=>{ const N=TX.N, yT=Math.max(0,Math.ceil(h2+(eye-z0-1)*PS/d)), yB=Math.min(H-1,Math.floor(h2+(eye-z0)*PS/d)); if(yB<yT) return;
       const flip=side===0&&rdx>0||side===1&&rdy<0, nrm=side===0?Math.abs(rdx):Math.abs(rdy), tg=(side===0?rdy:rdx)*(flip?-1:1)/nrm;
-      let w0=side===0?cam.y+d*rdy:cam.x+d*rdx; w0-=Math.floor(w0); if(flip) w0=1-w0; const hx=cam.x+d*rdx, hy=cam.y+d*rdy, f=lit(d)*(side?.82:1)*vis(hx,hy), wa=LON?la(hx,hy):null, DR=TX.drel;
-      const tx=(u,z)=>{ u=1-u; if(off){ u-=off; if(u<0) return -1; } if(u<0||u>=1||z<0||z>=1) return -1; return ((1-z)*N|0)*N+((u*N)|0); };
-      for(let y=yT;y<=yB;y++){ const z=eye-(y+.5-h2)*d/PS-z0, i0=tx(w0,z); let c=-1, ff=f;
-        for(const h of [.07,.056,.042]){ const dz=(z+z0-eye)/d*h/nrm, j=tx(w0-h*tg,z-dz); if(j>=0&&DR[j]>=h-.004){ c=TX.door[j]; ff=f*1.08; break; } }
-        if(c===-1){ if(i0<0) continue; if(DR[i0]>.01){ c=TX.door[i0]; ff=f*.45; } else c=TX.door[i0]; }   /* flanc d'un élément en saillie : dans l'ombre */
+      let w0=side===0?cam.y+d*rdy:cam.x+d*rdx; w0-=Math.floor(w0); if(flip) w0=1-w0; const hx=cam.x+d*rdx, hy=cam.y+d*rdy, f=lit(d)*(side?.82:1)*vis(hx,hy), wa=LON?la(hx,hy):null, DR=TX.drel, FR=.05;
+      const tn=(u,z)=>{ u=1-u; if(u<0||u>=1||z<0||z>=1) return -1; return ((1-z)*N|0)*N+((u*N)|0); };
+      const to=(u,z)=>{ u=1-u+off; if(u<0||u>=1||z<0||z>=1) return -1; return ((1-z)*N|0)*N+((u*N)|0); };   /* battant décalé de l'ouverture */
+      for(let y=yT;y<=yB;y++){ const z=eye-(y+.5-h2)*d/PS-z0, k=(z+z0-eye)/d/nrm; let c=-1, ff=f;
+        { const h=.055, j=tn(w0-h*tg,z-k*h); if(j>=0&&DR[j]>=FR){ c=TX.door[j]; ff=f*1.08; } }
+        if(c===-1&&off<1) for(const h of [.044,.033]){ const j=to(w0-h*tg,z-k*h), jn=tn(w0-h*tg,z-k*h); if(j>=0&&DR[j]<FR&&DR[j]>=h-.004&&!(jn>=0&&DR[jn]>=FR)){ c=TX.door[j]; ff=f*1.06; break; } }
+        if(c===-1){ const i0=tn(w0,z); if(i0<0) continue; if(DR[i0]>=FR){ c=TX.door[i0]; ff=f*.42; }
+          else { if(off>=1) continue; const i1=to(w0,z); if(i1<0||DR[i1]>=FR) continue; c=TX.door[i1]; if(DR[i1]>.01) ff=f*.45; } }
         put(y,shL(c,ff,wa),d); } };
     const faceImg=(z0,z1,d,WI)=>{ const yT=Math.max(0,Math.ceil(h2+(eye-z1)*PS/d)), yB=Math.min(H-1,Math.floor(h2+(eye-z0)*PS/d)); if(yB<yT) return;
       const flip=!(side===0&&rdx>0||side===1&&rdy<0); let uw=side===0?cam.y+d*rdy:cam.x+d*rdx; if(flip) uw=-uw; const tx=((((uw/WI.cw)%1)+1)%1*WI.w)|0, hx=cam.x+d*rdx, hy=cam.y+d*rdy;
@@ -5211,7 +5215,7 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
       if(!nf&&cur.blk) break;
       if(!nf){ if(V2||cur.iw||virt||dgWNo(mx,my)){ nf=cur; virt=true; } else wt=TT.wall; } else virt=false;
       let doff=0;
-      if(door&&!dgHid(door)){ const p=doorP(dgEK(pmx,pmy,mx,my),door); if(p<1){ let u=side===0?cam.y+d0*rdy:cam.x+d0*rdx; u-=Math.floor(u); if(u>=p){ wt=TT.door; doff=p; } } }
+      if(door&&!dgHid(door)){ const p=doorP(dgEK(pmx,pmy,mx,my),door); if(TT.drel&&TT.door){ faceDoor(fh,d0,p,TT); } else if(p<1){ let u=side===0?cam.y+d0*rdy:cam.x+d0*rdx; u-=Math.floor(u); if(u>=p){ wt=TT.door; doff=p; } } }
       else if(door&&dgShut(door)) wt=TT.wall;
       const WH=CC?+CC.h||1:1;
       if(door&&!dgHid(door)){ const fl=dgFlank(pmx,pmy,mx,my), lt=Math.min(CC?+CC.h||1:99,Math.max(WH,fl.h)), LX=fl.t&&fl.h>=WH?fpsTextures(fl.t):TT; if(lt>fh+1){ const ft=fl.t||cur.th; if((ft==='trottoir'||ft==='bitume'||ft==='ruelle')&&FAC.ready) faceFac(fh+1,lt,d0); else face(fh+1,lt,d0,LX.wall,LX.N); } }   /* linteau : la porte reste 1 × 1 */
