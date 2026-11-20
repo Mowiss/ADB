@@ -4747,10 +4747,8 @@ function renderDgPanel(){ const box=$('dg-body'); if(!box) return; const D=S.dg|
     ${sub}
     <div class="subttl">Végétation</div>
     <div class="vegpick">${Object.keys(VEG_BIO).map(b=>Object.keys(VEG_K).map(k=>{ const key=b+'-'+k; return `<button type="button" class="vegb${tool==='dgn'&&DG.tool==='veg'&&DG.vk===key?' on':''}" data-veg="${key}" title="${VEG_K[k]} · ${VEG_BIO[b]}"><img src="res/vege/${key}.png" alt=""></button>`; }).join('')).join('')}</div>
-    <div class="subttl">Lumières</div>
-    <div class="vegpick">${Object.entries(LUM).map(([k,d])=>`<button type="button" class="vegb${tool==='dgn'&&DG.tool==='lum'&&DG.lk===k?' on':''}" data-lum="${k}" title="${d.l}"><img src="res/lum/${k}.png" alt=""></button>`).join('')}</div>
-    <div class="subttl">Objets</div>
-    <div class="vegpick">${Object.entries(OBJ).map(([k,d])=>`<button type="button" class="vegb${tool==='dgn'&&DG.tool==='ob'&&DG.ok===k?' on':''}" data-ob="${k}" title="${d.l}"><img src="res/sprites/${k}.png" alt=""></button>`).join('')}</div>
+    <div class="subttl">Mobilier</div>
+    <div class="vegpick">${Object.entries(LUM).map(([k,d])=>`<button type="button" class="vegb${tool==='dgn'&&DG.tool==='lum'&&DG.lk===k?' on':''}" data-lum="${k}" title="${d.l}"><img src="res/lum/${k}.png" alt=""></button>`).join('')}${Object.entries(OBJ).map(([k,d])=>`<button type="button" class="vegb${tool==='dgn'&&DG.tool==='ob'&&DG.ok===k?' on':''}" data-ob="${k}" title="${d.l}"><img src="res/sprites/${k}.png" alt=""></button>`).join('')}</div>
     <div class="subttl">Portes</div>
     <div class="wxrow">${wb('dg-door',dgI('door',1.7),'Porte',tool==='dgn'&&DG.tool==='door')}${wb('dg-sdoor',dgI('sdoor',1.7),'Porte cachée',tool==='dgn'&&DG.tool==='secret')}</div>
     <div class="subttl">Passages</div>
