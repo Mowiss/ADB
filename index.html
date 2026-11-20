@@ -5134,7 +5134,7 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
           for(let y=yA;y<=yB;y++){ const i2=y*W+xx; if(DZ[i2]<=t) continue; const c=PX[Math.min(IH-1,((y-top)/hh*IH)|0)*IW+tx]; if((c>>>24)<128) continue; B[i2]=shL(c,f,va); DZ[i2]=t; } } } } } }
   /* personnages et objets (masqués par le décor pixel par pixel) */
   /* perception : PNJ et MOB visibles jusqu'à PER × 10 m, objets jusqu'à PER × 5 m ; les aventuriers se voient toujours */
-  const per=FPS.per, rng=t=>t.type==='player'?Infinity:per==null?Infinity:dgItem(t)?Math.max(1,per*5):Math.max(1,per*10);
+  const per=FPS.per==null?null:Math.max(1,+FPS.per), rng=t=>t.type==='player'?Infinity:per==null?Infinity:dgItem(t)?Math.max(1,per*5):Math.max(1,per*10);
   /* positions affichées : glissent vers la position réelle (déplacements du MJ vus en continu) */
   const DP=FPS.dp||(FPS.dp=new Map()); let moving=false;
   const pos=t=>{ let q=DP.get(t.id); if(!q){ q={x:t.x,y:t.y}; DP.set(t.id,q); } const ex=t.x-q.x, ey=t.y-q.y, d=Math.hypot(ex,ey);
@@ -7989,9 +7989,15 @@ const PTRS=new Map();
 /* Contenant : « Ouvrir ? » puis l'objet sort par le dessus, dans un halo */
 function openAsk(id,at){ const t=tok(id); if(!t) return; if(t.shop){ shopDlg(t.id); return; } let a=$('openask'); if(!a){ a=document.createElement('div'); a.id='openask'; board.appendChild(a); }
   const b=board.getBoundingClientRect(); at=at||(typeof fpsScreenOf==='function'&&fpsScreenOf(id)); if(at){ a.style.left=(at[0]-b.left)+'px'; a.style.top=(at[1]-b.top-8)+'px'; } else { const [sx,sy]=toScreen(t.x,t.y); a.style.left=(sx-b.left)+'px'; a.style.top=(sy-b.top-(t.s||1)*V.z*36-14)+'px'; }
-  a.classList.remove('full'); a.innerHTML=t.box?`<button type="button" class="oa-go">${IB('chest',1.8)}Ouvrir ?</button><button type="button" class="oa-x" title="Laisser fermé">${IB('x',2)}</button>`
+  const box=t.box||t.inbox; a.classList.remove('full'); a.innerHTML=box?`<button type="button" class="oa-go">${IB('chest',1.8)}Ouvrir ?</button><button type="button" class="oa-x" title="Laisser fermé">${IB('x',2)}</button>`
     :`<b class="oa-n">${esc(t.name||'Objet')}</b><button type="button" class="oa-go">${IB('o_backpack',1.8)}Prendre</button><button type="button" class="oa-x" title="Laisser">${IB('x',2)}</button>`; a.hidden=false;
-  a.querySelector('.oa-go').onpointerdown=e=>{ e.stopPropagation(); a.hidden=true; up(t.box?{t:'open',id}:{t:'take',id}); };
+  a.querySelector('.oa-go').onpointerdown=e=>{ e.stopPropagation(); a.hidden=true;
+    if(window.DGTEST){ /* mode test : pas de MJ, on joue l'ouverture et la prise sur place */
+      const it={name:(t.data&&t.data.name)||t.name||'Objet',ico:t.ico,img:t.img||null,type:'prop'};
+      if(box){ t.box=false; t.inbox=false; if(t.data&&t.data.name) t.name=t.data.name; if(typeof FPS!=='undefined'&&FPS.sprites) FPS.sprites.clear(); renderTokens(); reveal(t.id,it,'Vous'); }
+      else { S.tokens=S.tokens.filter(x=>x.id!==t.id); renderTokens(); toast(`${t.name||'Objet'} : ramassé (test, rien n'est ajouté au sac)`); }
+      if(typeof fpsLater==='function') fpsLater(); return; }
+    up(box?{t:'open',id}:{t:'take',id}); };
   a.querySelector('.oa-x').onpointerdown=e=>{ e.stopPropagation(); a.hidden=true; }; }
 function noRoom(id){ const el=document.querySelector(`.tk[data-id="${id}"]`); if(el){ el.classList.remove('nofit'); void el.offsetWidth; el.classList.add('nofit'); setTimeout(()=>el.classList.remove('nofit'),900); }
   const t=tok(id); if(!t) return; openAsk(id); const a=$('openask'); a.classList.add('full'); a.innerHTML=`${IB('o_backpack',1.8)}<b>Plus de place</b>`; clearTimeout(noRoom.T); noRoom.T=setTimeout(()=>{ a.hidden=true; },1800); }
