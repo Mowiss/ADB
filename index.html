@@ -4665,10 +4665,17 @@ function mkSprite(kind){ FPS.mks=FPS.mks||{}; if(FPS.mks[kind]) return FPS.mks[k
   }
   else if(kind==='up'){ c.width=128; c.height=128; for(let s=0;s<8;s++){ const w=124-s*9, y=128-(s+1)*15, l=120-s*9; x.fillStyle=`rgb(${l},${l-6},${l-14})`; x.fillRect(64-w/2,y,w,15); x.fillStyle=`rgb(${l+35},${l+30},${l+20})`; x.fillRect(64-w/2,y,w,3); x.fillStyle='#1b1b1e'; x.fillRect(64-w/2,y+14,w,1); }
     x.fillStyle='#08080a'; x.fillRect(64-28,0,56,10); }
-  else { c.width=64; c.height=128; let sd=3; const rnd=()=>(sd=(sd*9301+49297)%233280)/233280; for(let i=0;i<260;i++){ const yy=rnd()*128, k=1-yy/128; if(rnd()>.25+k*.75) continue; x.fillStyle=rnd()<.3?'#ffffff':'#7ff0ff'; x.fillRect(8+rnd()*48|0,yy|0,1+(rnd()*2|0),2+(rnd()*4|0)); } }
+  else return null;
   c._k='mk'+kind; return FPS.mks[kind]=c; }
 /* image d'un personnage : sa pastille debout, avec son nom */
-function fpsSprite(t){ if(t.type==='mk') return mkSprite(t.mk); const sk=dgSprK(t), key=t.id+'|'+(t.img||'')+'|'+(t.name||'')+'|'+t.type+'|'+(t.ico||'')+'|'+(sk||''); let s=FPS.sprites.get(t.id); if(s&&s.key===key) return s.ready?s.cv:null;
+/* colonne de la zone TP : particules qui montent en boucle (16 images, ~14 i/s) */
+function tpFrame(){ const NF=16, f=Math.floor(performance.now()/70)%NF; FPS.tpf=FPS.tpf||[]; if(FPS.tpf[f]) return FPS.tpf[f];
+  const c=document.createElement('canvas'); c.width=64; c.height=128; const x=c.getContext('2d'); let sd=3; const rnd=()=>(sd=(sd*9301+49297)%233280)/233280;
+  for(let i=0;i<150;i++){ const px=8+rnd()*48, sp=.5+rnd(), ph=rnd(), wob=rnd()*6.28, len=2+(rnd()*4|0), wht=rnd()<.3;
+    const u=((ph+f/NF*sp)%1), yy=128-u*128, a=Math.sin(u*Math.PI)*(1-u*.4); if(a<.15) continue;
+    x.globalAlpha=Math.min(1,a*1.3); x.fillStyle=wht?'#ffffff':'#7ff0ff'; x.fillRect((px+Math.sin(wob+u*9)*2.5)|0,yy|0,1+(i%3===0),len); }
+  x.globalAlpha=1; c._k='mktp'; return FPS.tpf[f]=c; }
+function fpsSprite(t){ if(t.type==='mk'){ if(t.mk==='tp'){ FPS.fkRun=1; return tpFrame(); } return mkSprite(t.mk); } const sk=dgSprK(t), key=t.id+'|'+(t.img||'')+'|'+(t.name||'')+'|'+t.type+'|'+(t.ico||'')+'|'+(sk||''); let s=FPS.sprites.get(t.id); if(s&&s.key===key) return s.ready?s.cv:null;
   const vk=vehKey(t); if(vk){ const id='v:'+vk; let im=DGIM[id]; if(!im){ im=DGIM[id]=new Image(); im.onload=()=>{ FPS.sprites.clear(); fpsLater(); }; im.src='res/vehicules/'+vk+'.png'; } if(!im.complete||!im.naturalWidth) return null;
     const pax=(t.veh.pax!=null?+t.veh.pax:S.tokens.filter(x=>x.inveh===t.id).length), seats=+t.veh.seats||0, key2=key+'|'+vk+'|'+pax+'/'+seats; if(s&&s.key===key2) return s.cv;
     const cv=document.createElement('canvas'), x=cv.getContext('2d'), R=34; cv.width=im.naturalWidth; cv.height=im.naturalHeight+R*2+6; x.imageSmoothingEnabled=false; x.drawImage(im,0,R*2+6);
