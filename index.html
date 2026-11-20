@@ -2797,6 +2797,10 @@ html.incombat #rb-dgn,html.incombat #rb-fond{opacity:.3;pointer-events:none}
 .fps-pad{display:none!important}   /* déplacements au toucher (glisser) et au clavier : plus de croix */
 .fps-hud,.fps-cmp{display:none!important}
 .vegpick{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:6px}.vegb{height:62px;border:1px solid var(--rule);border-radius:10px;background:var(--paper);display:grid;place-items:center;padding:4px;cursor:pointer}.vegb{overflow:hidden}.vegb img{display:block;width:100%;height:52px;object-fit:contain;image-rendering:pixelated}.vegb.on{border-color:var(--c-sav,#2f8a3a);box-shadow:inset 0 0 0 2px var(--c-sav,#2f8a3a)}
+.ldrawer .subttl.foldh{cursor:pointer;user-select:none;display:flex;align-items:center;gap:6px}
+.ldrawer .subttl.foldh::after{content:"";margin-left:auto;width:7px;height:7px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg) translate(-2px,-2px);opacity:.55;transition:transform .15s}
+.ldrawer .subttl.foldh.shut::after{transform:rotate(-45deg)}
+.ldrawer .foldhid{display:none!important}
 .dexh{margin-left:10px}
 .scenenav .scnb{border:0;margin:0 2px;padding:4px 8px}
 .dexh{font:800 12px Quicksand,sans-serif!important;letter-spacing:.06em;padding:0 10px!important;border:1px solid var(--rule)!important;border-radius:9px;gap:5px;display:inline-flex;align-items:center;height:32px}.dexh i{font-style:normal;font-size:14px}.dexh[aria-pressed="true"]{background:var(--c-dex,#d9a400);border-color:var(--c-dex,#d9a400)!important;color:#fff}
@@ -7504,6 +7508,15 @@ document.addEventListener('pointerdown',e=>{ if(isPlayer||!document.querySelecto
   if(!t.closest||t.closest('.ldrawer,[data-left],.rail,dialog,#card,#openask,#fpsprev,.msgbar,.timbar,.bbx,.toast,#covertip,.chatac,.fracfly,#selbox')) return;
   if(t.closest('#board')&&(tool||(typeof jetStampOn!=='undefined'&&jetStampOn))) return;
   closeLeft(); },true);
+/* volets de création : chaque section (titre .subttl) se replie ; l'état est retenu */
+const FOLD=(()=>{ try{ return new Set(JSON.parse(localStorage.getItem('adb-fold')||'[]')); }catch(e){ return new Set(); } })();
+function foldify(box){ if(!box) return; let key=null; const did=(box.closest('.ldrawer')||{}).id||'';
+  [...box.children].forEach(el=>{ if(el.classList.contains('subttl')){ key=did+'|'+(el.firstChild&&el.firstChild.nodeType===3?el.firstChild.textContent:el.textContent).trim(); el.classList.add('foldh'); el.dataset.fk=key; el.classList.toggle('shut',FOLD.has(key)); return; }
+    if(key){ el.dataset.fsec=key; el.classList.toggle('foldhid',FOLD.has(key)); } }); }
+document.addEventListener('click',e=>{ const h=e.target.closest('.ldrawer .subttl.foldh'); if(!h) return; const k=h.dataset.fk; if(FOLD.has(k)) FOLD.delete(k); else FOLD.add(k);
+  try{ localStorage.setItem('adb-fold',JSON.stringify([...FOLD])); }catch(_){} foldify(h.parentElement); });
+new MutationObserver(ms=>{ const S2=new Set(); ms.forEach(m=>{ const b=m.target.closest&&m.target.closest('.ldrawer .dscroll'); if(b) S2.add(b); }); S2.forEach(b=>foldify(b.firstElementChild&&b.firstElementChild.classList.contains('subttl')||b.querySelector(':scope>.subttl')?b:b.querySelector('.subttl')?.parentElement)); })
+  .observe(document.body,{childList:true,subtree:true});
 function openDrawer(id,force){ if(!id){ closeLeft(); return; } openLeft(id,force); }
 function drawerOpened(id){ {
     if(id==='regles') rgRender();
