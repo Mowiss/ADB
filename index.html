@@ -2754,6 +2754,7 @@ input,textarea,select,[contenteditable],[contenteditable] *,.rg-txt,.rg-txt *,.n
 #fond .btn{align-self:flex-start}
 .wxrow{display:flex;flex-wrap:wrap;gap:8px}
 .dg-pal{display:grid;grid-template-columns:repeat(8,1fr);gap:5px}.dg-pal button{padding:0;border:2px solid transparent;border-radius:9px;background:none;aspect-ratio:1;overflow:hidden;cursor:pointer}.dg-pal button img{width:100%;height:100%;display:block;image-rendering:pixelated;border-radius:7px}.dg-pal button.on{border-color:var(--danger);box-shadow:0 0 0 2px rgba(224,75,58,.18)}
+.dphead{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}.dphead h3{margin:0}.dpseg{flex-wrap:nowrap}.dpseg .wxb{flex:1 1 0}.dplk{font-style:normal;font-size:20px;line-height:1}
 .wxrow.dg-tools{flex-wrap:nowrap;gap:4px}.dg-tools .wxb{flex:1 1 0;min-width:0;padding:8px 0;min-height:0}.dg-tools .wxb span{display:none}.dg-tools .wxb svg{width:22px;height:22px}
 .dg-tname{font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft,#777);margin:2px 2px 0}
 .gsw{display:block;width:30px;height:22px;border-radius:6px;border:1px solid var(--rule)}
@@ -4308,13 +4309,12 @@ function dgDoorClick(wx,wy){ const e=dgEdgeAt(wx,wy); if(!dgOpen(...e.a)||!dgOpe
 function dgHover(wx,wy){ if(['door','secret','wall','unwall','win'].includes(DG.tool)){ const e=dgEdgeAt(wx,wy); if(DG.hover!==e.k){ DG.hover=e.k; drawDgLater(); } return; }
   const c=dgCell(wx,wy); if(!Array.isArray(DG.hover)||DG.hover[0]!==c[0]||DG.hover[1]!==c[1]){ DG.hover=c; drawDgLater(); } }
 /* réglages d'une porte : ouverte / fermée, verrouillée ou non */
-function dgDoorEdit(k){ const o=S.dg&&S.dg.d&&S.dg.d[k]; if(!o) return; const done=()=>{ drawDgLater(); fpsLater(); markDirty(); sync(); };
-  const draw=()=>openDialog(`<h3>Porte</h3>
-    <div class="wxrow"><button type="button" class="wxb${!o.open?' on':''}" data-dp="shut">${dgI('door',1.7)}<span>Fermée</span></button><button type="button" class="wxb${o.open?' on':''}" data-dp="open">${dgI('iwall',1.7)}<span>Ouverte</span></button></div>
-    <div class="wxrow" style="margin-top:8px"><button type="button" class="wxb${o.lk?' on':''}" data-dp="lk"><i style="font-style:normal;font-size:20px">🔒</i><span>${o.lk?'Verrouillée':'Non verrouillée'}</span></button></div>
-    <div class="actions"><button class="btn danger" type="button" id="dp-del">${IB('bin')}Supprimer</button><span style="flex:1"></span><button class="btn" type="button" data-close>OK</button></div>`);
-  draw(); const wire=()=>{ document.querySelectorAll('[data-dp]').forEach(b=>b.onclick=()=>{ const v=b.dataset.dp; if(v==='lk'){ o.lk=!o.lk; if(o.lk) o.open=false; } else { o.open=v==='open'; if(o.open) o.lk=false; } done(); draw(); wire(); });
-    $('dp-del').onclick=()=>{ delete S.dg.d[k]; dlg.close(); done(); }; }; wire(); }
+function dgDoorEdit(k){ const o=S.dg&&S.dg.d&&S.dg.d[k]; if(!o) return; const st=o.lk?'lk':o.open?'open':'shut';
+  const opt=(v,ico,l)=>`<button type="button" class="wxb${st===v?' on':''}" data-dp="${v}">${ico}<span>${l}</span></button>`;
+  openDialog(`<div class="dphead"><h3>Porte</h3><button class="ib" type="button" id="dp-del" title="Supprimer la porte">${IB('bin')}</button></div>
+    <div class="wxrow dpseg">${opt('open',dgI('iwall',1.7),'Ouverte')}${opt('shut',dgI('door',1.7),'Fermée')}${opt('lk','<i class="dplk">🔒</i>','Verrouillée')}</div>`);
+  document.querySelectorAll('[data-dp]').forEach(b=>b.onclick=()=>{ const v=b.dataset.dp; o.open=v==='open'; o.lk=v==='lk'; if(!o.lk) delete o.lk; dlg.close(); drawDgLater(); fpsLater(); markDirty(); sync(); });
+  $('dp-del').onclick=()=>{ delete S.dg.d[k]; dlg.close(); drawDgLater(); fpsLater(); markDirty(); sync(); }; }
 function dgToggleDoor(k){ const o=S.dg&&S.dg.d&&S.dg.d[k]; if(!o||dgHid(o)||o.lk) return false; o.open=!o.open; drawDgLater(); fpsLater(); markDirty(); sync(); return true; }
 /* murs tracés tout autour d'une zone (carte de test) : texture et hauteur du style de chaque case */
 function dgAutoWalls(D){ const E=D.ew=D.ew||{}; for(const k in D.c){ const f=dgInfo(D.c[k]); if(f.iw) continue; const [i,j]=k.split(',').map(Number);
