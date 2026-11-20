@@ -4296,6 +4296,7 @@ const DG_TH={
   planches:{lbl:'Planches',sw:'#a8794a',rock:'#1a130b',floor2d:'#9c7a52',wall2d:'#5a3c20',seed:13},
   trottoir:{lbl:'Trottoir',sw:'#4d5866',rock:'#0b0710',floor2d:'#56606c',wall2d:'#1a1426',seed:14,sky:1},
   bitume:{lbl:'Route',sw:'#2c333c',rock:'#0b0710',floor2d:'#353c46',wall2d:'#1a1426',seed:15,sky:1},
+  interieur:{lbl:'Intérieur cyber',sw:'#3c5260',rock:'#0b0710',floor2d:'#3f5560',wall2d:'#1a2430',seed:16},
   mer:{lbl:'Mer',sw:'#2f8fc9',rock:'#06202e',floor2d:'#3a95c8',wall2d:'#1c5a80',seed:11,sky:1,wh:1,water:1}};
 /* style d'une case : « thème » + « |s » (ciel au lieu du plafond) + « |i » (murs invisibles) ; 1 = ancien format */
 const DGP={};
@@ -4795,24 +4796,24 @@ function leafCeil(x,N,rnd,h0,h1,l0,l1){ for(let i=0;i<55;i++){ const cx=rnd()*N,
     x.beginPath(); x.ellipse((cx+Math.cos(a)*d+N)%N,(cy+Math.sin(a)*d+N)%N,2+rnd()*3,1+rnd()*1.5,rnd()*3,0,7); x.fill(); } }
   x.fillStyle='rgba(60,40,20,.9)'; for(let i=0;i<3;i++){ let a=rnd()*N, b=rnd()*N; x.fillRect(a|0,b|0,1,1); for(let k=0;k<10;k++){ a+=rnd()*4-2; b+=2; x.fillRect((a+N)%N|0,(b+N)%N|0,1,2); } } }
 /* sols en image (trottoir, route cyberpunk) : grandes dalles qui couvrent plusieurs cases, sans répétition à chaque mètre */
-const FLIMG={trottoir:{src:'res/themes/ruelle/trottoir.webp',cw:3,ch:2.234},bitume:{src:'res/themes/ruelle/route.webp',cw:4,ch:4},crypte:{src:'res/themes/crypte/sol.webp',cw:4,ch:2.23}};
+const FLIMG={trottoir:{src:'res/themes/ruelle/trottoir.webp',cw:3,ch:2.234},bitume:{src:'res/themes/ruelle/route.webp',cw:4,ch:4},crypte:{src:'res/themes/crypte/sol.webp',cw:4,ch:2.23},interieur:{src:'res/themes/ruelle/sol-interieur.webp',cw:4,ch:3}};
 /* fenêtre en image (cyberpunk) : cadre en relief, vitre transparente (alpha 128 dans l'image) */
 const WINIMG={cyber:{src:'res/themes/ruelle/fenetre.png'}}, WIN_OF={trottoir:'cyber',bitume:'cyber',ruelle:'cyber'};
 function winImgLoad(k){ const o=WINIMG[k]; if(o.im) return o.px?o:null; o.im=new Image(); o.im.onload=()=>{ const c=document.createElement('canvas'); c.width=o.im.naturalWidth; c.height=o.im.naturalHeight; c.getContext('2d').drawImage(o.im,0,0);
   o.px=new Uint32Array(c.getContext('2d').getImageData(0,0,c.width,c.height).data.buffer.slice(0)); o.w=c.width; o.h=c.height; fpsLater(); }; o.im.src=o.src; return null; }
 /* portes en image : remplacent la texture de porte du set (le battant coulisse comme les autres) */
-const DOORIMG={trottoir:'res/themes/ruelle/porte.webp',bitume:'res/themes/ruelle/porte.webp',ruelle:'res/themes/ruelle/porte.webp'};
-const DOORREL={trottoir:'res/themes/ruelle/porte-relief.png'}; DOORREL.bitume=DOORREL.ruelle=DOORREL.trottoir;
+const DOORIMG={trottoir:'res/themes/ruelle/porte.webp',bitume:'res/themes/ruelle/porte.webp',interieur:'res/themes/ruelle/porte.webp',ruelle:'res/themes/ruelle/porte.webp'};
+const DOORREL={trottoir:'res/themes/ruelle/porte-relief.png'}; DOORREL.bitume=DOORREL.ruelle=DOORREL.interieur=DOORREL.trottoir;
 function doorImg(k,T){ const N=T.N, ld=(src,f)=>{ const im=new Image(); im.onload=()=>{ const c=document.createElement('canvas'); c.width=c.height=N; const x=c.getContext('2d'); x.drawImage(im,0,0,N,N); f(x.getImageData(0,0,N,N).data); fpsLater(); }; im.src=src; };
   ld(DOORIMG[k],d=>{ T.door=new Uint32Array(d.buffer.slice(0)); }); if(DOORREL[k]) ld(DOORREL[k],d=>{ const r=new Float32Array(N*N); for(let i=0;i<r.length;i++) r[i]=d[i*4]/255*.07; T.drel=r; }); }
 /* plafonds en image */
-const CLIMG={trottoir:{src:'res/themes/ruelle/plafond.webp',cw:4,ch:2.23}}; CLIMG.bitume=CLIMG.ruelle=CLIMG.trottoir;
+const CLIMG={trottoir:{src:'res/themes/ruelle/plafond.webp',cw:4,ch:2.23}}; CLIMG.bitume=CLIMG.ruelle=CLIMG.interieur=CLIMG.trottoir;
 /* murs en image : continus le long du mur (cw cases de large, ch de haut) */
 const WLIMG={crypte:{src:'res/themes/crypte/mur.webp',rel:'res/themes/crypte/mur-relief.png',cw:3.6,ch:1.96,dep:.07}};
 function flLoad(k,T){ const o=(T||FLIMG)[k]; if(o.im) return; o.im=new Image(); o.im.onload=()=>{ const c=document.createElement('canvas'); c.width=o.im.naturalWidth; c.height=o.im.naturalHeight; c.getContext('2d').drawImage(o.im,0,0);
   o.px=new Uint32Array(c.getContext('2d').getImageData(0,0,c.width,c.height).data.buffer.slice(0)); o.w=c.width; o.h=c.height; fpsLater(); drawDgLater(); }; o.im.src=o.src;
   if(o.rel){ const r=new Image(); r.onload=()=>{ const c=document.createElement('canvas'); c.width=r.naturalWidth; c.height=r.naturalHeight; const x=c.getContext('2d'); x.drawImage(r,0,0); const d=x.getImageData(0,0,c.width,c.height).data, R=new Float32Array(c.width*c.height); for(let i=0;i<R.length;i++) R[i]=d[i*4]/255; o.rl=R; o.rw=c.width; o.rh=c.height; fpsLater(); }; r.src=o.rel; } }
-function fpsTextures(k){ k=k||(S.dg&&S.dg.th)||'pierre'; FPS.texs=FPS.texs||{}; if(FPS.tex===null) FPS.texs={}; FPS.tex=1; if(FPS.texs[k]) return FPS.texs[k]; if(CLIMG[k]) flLoad(k,CLIMG); if(FLIMG[k]&&!FPS.inTx){ FPS.inTx=1; const b=fpsTextures(k==='crypte'?'crypte~':'ruelle'); FPS.inTx=0; flLoad(k); if(WLIMG[k]) flLoad(k,WLIMG); const T2=FPS.texs[k]=Object.assign({},b,{img:k}); if(DOORIMG[k]) doorImg(k,T2); return T2; } if(k==='crypte~') k='crypte';
+function fpsTextures(k){ k=k||(S.dg&&S.dg.th)||'pierre'; FPS.texs=FPS.texs||{}; if(FPS.tex===null) FPS.texs={}; FPS.tex=1; if(FPS.texs[k]) return FPS.texs[k]; if(CLIMG[k]) flLoad(k,CLIMG); if(FLIMG[k]&&!FPS.inTx){ FPS.inTx=1; const b=fpsTextures(k==='crypte'?'crypte~':k==='interieur'?'station':'ruelle'); FPS.inTx=0; flLoad(k); if(WLIMG[k]) flLoad(k,WLIMG); const T2=FPS.texs[k]=Object.assign({},b,{img:k}); if(DOORIMG[k]) doorImg(k,T2); return T2; } if(k==='crypte~') k='crypte';
   const N=64, NT=128, buf=c=>{ const o=document.createElement('canvas'); o.width=o.height=NT; const x=o.getContext('2d'); x.imageSmoothingEnabled=false; x.drawImage(c,0,0,NT,NT); return new Uint32Array(x.getImageData(0,0,NT,NT).data.buffer.slice(0)); };
   const mk=draw=>{ const c=document.createElement('canvas'); c.width=c.height=N; const x=c.getContext('2d'); draw(x); return c; };
   let sd=DG_TH[k].seed*9301; const rnd=()=>(sd=(sd*9301+49297)%233280)/233280;
@@ -5083,7 +5084,7 @@ function fpsWallCaps(){ const E=S.dg&&S.dg.ew||{}, key=JSON.stringify(E); if(FPS
 /* style des fenêtres selon le mur : bois, métal ou pierre */
 const WINST={}; function winStyle(t){ if(WINST[t]) return WINST[t]; const c=(r,g,b)=>0xff000000|(b<<16)|(g<<8)|r;
   const wood={frame:c(92,58,30),sill:c(130,88,48),fw:.05,mun:1}, metal={frame:c(48,54,62),sill:c(80,88,98),fw:.035,mun:0}, neon={frame:c(40,20,52),sill:c(255,60,172),fw:.035,mun:0}, stone={frame:c(118,112,100),sill:c(170,162,146),fw:.07,mun:0};
-  return WINST[t]=({planches:wood,rondins:wood,plage:wood,crypte:wood,jungle:wood,prairie:wood,station:metal,hub:metal,ruelle:neon,trottoir:neon,bitume:neon,pierre:stone,ruines:stone,desert:stone})[t]||stone; }
+  return WINST[t]=({planches:wood,rondins:wood,plage:wood,crypte:wood,jungle:wood,prairie:wood,station:metal,hub:metal,ruelle:neon,trottoir:neon,interieur:metal,bitume:neon,pierre:stone,ruines:stone,desert:stone})[t]||stone; }
 /* façade cyberpunk (murs Ruelle) : une image de 3 étages (boutiques au rez-de-chaussée), étages répétés au-delà de 3 m,
    avec un peu de relief : fenêtres en creux, enseignes et climatiseurs en saillie */
 const FAC={ready:false,M:3,W:3*1998/1116};
