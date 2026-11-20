@@ -2840,6 +2840,7 @@ html.incombat #rb-dgn,html.incombat #rb-fond{opacity:.3;pointer-events:none}
 #board.fzone{cursor:crosshair}
 .fps-pad{display:none!important}   /* déplacements au toucher (glisser) et au clavier : plus de croix */
 .fps-hud,.fps-cmp{display:none!important}
+.selist{display:flex;flex-direction:column;gap:6px;margin:8px 0}.selrow{display:flex;align-items:center;gap:10px;padding:6px 8px;border:1px solid var(--rule);border-radius:10px}.selrow img{width:40px;height:40px;object-fit:contain;image-rendering:pixelated}.selrow>i{width:40px;height:40px;display:grid;place-items:center}.selrow>i svg{width:26px;height:26px}.selrow span{flex:1;font-weight:600}
 .vegpick{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:6px}.vegb{height:62px;border:1px solid var(--rule);border-radius:10px;background:var(--paper);display:grid;place-items:center;padding:4px;cursor:pointer}.vegb{overflow:hidden}.vegb img{display:block;width:100%;height:52px;object-fit:contain;image-rendering:pixelated}.vegb.on{border-color:var(--c-sav,#2f8a3a);box-shadow:inset 0 0 0 2px var(--c-sav,#2f8a3a)}
 .ldrawer .subttl.foldh{cursor:pointer;user-select:none;display:flex;align-items:center;gap:6px}
 .ldrawer .subttl.foldh::after{content:"";margin-left:auto;width:7px;height:7px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg) translate(-2px,-2px);opacity:.55;transition:transform .15s}
@@ -4376,6 +4377,7 @@ function drawDg(){ const cv=$('dgn'); if(!cv) return; const r=board.getBoundingC
     x.strokeStyle='#e04b3a'; x.lineWidth=3/V.z+1; x.setLineDash([12/V.z,8/V.z]); x.beginPath(); x.arc(F.x*CELL,F.y*CELL,F.r*CELL,0,7); x.stroke(); x.restore(); }
   if(DG.lasso&&DG.lasso.length>1){ x.save(); x.strokeStyle='#ff6b5a'; x.lineWidth=3/V.z+1; x.lineJoin='round'; x.beginPath(); DG.lasso.forEach((p,k)=>k?x.lineTo(p[0],p[1]):x.moveTo(p[0],p[1])); x.stroke(); x.restore(); }
   if(!isPlayer&&tool==='dgn'&&typeof DG.hover==='string'){ const [ax,ay,bx,by]=dgEdgeSeg(DG.hover); x.strokeStyle=DG.tool==='secret'?'#b88cff':'#ffd34d'; x.lineWidth=5/V.z+4; x.lineCap='round'; x.globalAlpha=.8; x.beginPath(); x.moveTo(ax,ay); x.lineTo(bx,by); x.stroke(); x.globalAlpha=1; }
+  if(!isPlayer&&tool==='dgn'&&DG.tool==='sel'){ const H=Array.isArray(DG.hover)?DG.hover:null; x.save(); x.setLineDash([]); if(H){ x.lineWidth=2/V.z; x.strokeStyle='rgba(120,220,255,.7)'; x.strokeRect(H[0]*CELL,H[1]*CELL,CELL,CELL); } if(DG.sel){ x.lineWidth=4/V.z+1; x.strokeStyle='#47e4ff'; x.fillStyle='rgba(71,228,255,.14)'; x.fillRect(DG.sel[0]*CELL,DG.sel[1]*CELL,CELL,CELL); x.strokeRect(DG.sel[0]*CELL,DG.sel[1]*CELL,CELL,CELL); } x.restore(); }
   if(!isPlayer&&tool==='dgn'&&Array.isArray(DG.hover)&&['carve','fill','paint','sup','sdown','tp'].includes(DG.tool)){ const [a,b]=dgBrush(DG.hover[0],DG.hover[1]); x.setLineDash([8/V.z,6/V.z]); x.lineWidth=2.5/V.z; x.strokeStyle=DG.tool==='carve'?'#ffd34d':DG.tool==='paint'?'#7fd0ff':DG.tool==='tp'?'#47e4ff':DG.tool==='sup'||DG.tool==='sdown'?'#f0d9a8':'#ff6b5a'; const nb=['sup','sdown','tp'].includes(DG.tool)?1:DG.n; x.strokeRect(a*CELL,b*CELL,nb*CELL,nb*CELL); x.setLineDash([]); }
 }
 const dgBrush=(ci,cj)=>['sup','sdown','tp'].includes(DG.tool)?[ci,cj]:[ci-Math.floor((DG.n-1)/2),cj-Math.floor((DG.n-1)/2)];
@@ -4388,7 +4390,7 @@ function dgRelief(ci,cj){ const D=dgEnsure(); D.h=D.h||{}; const [a,b]=dgBrush(c
   return seeds.length; }
 function dgStamp(ci,cj,carve){ if(DG.tool==='up'||DG.tool==='down') return dgRelief(ci,cj); const [a,b]=dgBrush(ci,cj), C=dgEnsure().c, st=dgStyle(); let n=0;
   for(let i=a;i<a+DG.n;i++) for(let j=b;j<b+DG.n;j++){ const k=dgK(i,j); if(DG.tool==='paint'){ if(C[k]&&C[k]!==st){ C[k]=st; n++; } } else if(carve){ if(C[k]!==st){ C[k]=st; n++; } } else if(C[k]){ delete C[k]; n++; if(S.dg.d) [dgEK(i,j,i,j-1),dgEK(i,j,i,j+1),dgEK(i,j,i-1,j),dgEK(i,j,i+1,j)].forEach(e=>delete S.dg.d[e]); if(S.dg.m) delete S.dg.m[k]; if(S.dg.veg) delete S.dg.veg[k]; if(S.dg.lum) delete S.dg.lum[k]; } } return n; }
-function dgPaint(wx,wy,g){ DG._g=g; if(DG.tool==='lum'){ if(!g.last){ g.last=1; lumClick(wx,wy); } return; }
+function dgPaint(wx,wy,g){ DG._g=g; if(DG.tool==='sel'){ if(!g.last){ g.last=1; dgSelClick(wx,wy); } return; } if(DG.tool==='lum'){ if(!g.last){ g.last=1; lumClick(wx,wy); } return; }
   if(DG.tool==='veg'){ if(!g.last){ g.last=1; vegClick(wx,wy); } return; }
   if(['sup','sdown','tp'].includes(DG.tool)){ if(!g.last){ g.last=1; dgMarkClick(wx,wy); } return; }
   if(DG.tool==='door'||DG.tool==='secret'){ if(!g.last){ g.last=1; dgDoorClick(wx,wy); } return; }
@@ -4403,6 +4405,23 @@ function dgDirEl(t){ return dgOn()&&t.type==='player'&&t.dir!=null?`<i class="dg
 
 /* ---------- passages : escaliers et zones TP, reliés par code (destination possible sur une autre scène) ---------- */
 const MK_LBL={up:'Escalier qui monte',down:'Escalier qui descend',tp:'Zone TP'};
+/* ---------- sélection : ce qui est posé sur une case (végétation, lumière, passage, portes) et sa suppression ---------- */
+function dgSelItems(i,j){ const D=S.dg||{}, k=dgK(i,j), L=[];
+  if(D.veg&&D.veg[k]){ const [b,t]=D.veg[k].split('-'); L.push({id:'veg',img:`res/vege/${D.veg[k]}.png`,l:`${VEG_K[t]||'Végétation'} · ${VEG_BIO[b]||''}`,del:()=>delete D.veg[k]}); }
+  if(D.lum&&D.lum[k]) L.push({id:'lum',img:`res/lum/${D.lum[k]}.png`,l:(LUM[D.lum[k]]||{}).l||'Lumière',del:()=>delete D.lum[k]});
+  if(D.m&&D.m[k]){ const m=D.m[k]; L.push({id:'mk',ico:dgI(m.k==='tp'?'tp':m.k==='up'?'sup':'sdown',1.7),l:`${MK_LBL[m.k]} · ${m.code||''}${m.to?' → '+m.to:''}`,edit:()=>dgMarkEdit(k),del:()=>delete D.m[k]}); }
+  [[0,-1,'nord'],[1,0,'est'],[0,1,'sud'],[-1,0,'ouest']].forEach(([di,dj,n])=>{ const e=dgEK(i,j,i+di,j+dj), o=D.d&&D.d[e]; if(o) L.push({id:'d'+n,ico:dgI(o.s?'sdoor':'door',1.7),l:`${o.s?'Porte cachée':'Porte'} · côté ${n}`,del:()=>delete D.d[e]}); });
+  return L; }
+function dgSelClick(wx,wy){ const [i,j]=dgCell(wx,wy), L=dgSelItems(i,j); DG.sel=[i,j]; drawDgLater();
+  if(!L.length){ toast('Rien de posé sur cette case'); return; }
+  const done=()=>{ drawDgLater(); FPS.sprites.clear(); fpsLater(); markDirty(); sync(); };
+  const draw=()=>{ const L=dgSelItems(i,j); if(!L.length){ dlg.close(); return; }
+    openDialog(`<h3>Case ${i} · ${j}</h3><div class="selist">${L.map(x=>`<div class="selrow">${x.img?`<img src="${x.img}" alt="">`:`<i>${x.ico}</i>`}<span>${esc(x.l)}</span>${x.edit?`<button class="ib" type="button" data-sed="${x.id}" title="Modifier">${IB('pen')}</button>`:''}<button class="ib" type="button" data-sdel="${x.id}" title="Supprimer">${IB('bin')}</button></div>`).join('')}</div>
+      <div class="actions">${L.length>1?`<button class="btn danger" type="button" id="sel-all">${IB('bin')}Tout supprimer</button>`:''}<span style="flex:1"></span><button class="btn" type="button" data-close>OK</button></div>`);
+    document.querySelectorAll('[data-sdel]').forEach(b=>b.onclick=()=>{ const x=dgSelItems(i,j).find(x=>x.id===b.dataset.sdel); if(x){ x.del(); done(); draw(); } });
+    document.querySelectorAll('[data-sed]').forEach(b=>b.onclick=()=>{ const x=dgSelItems(i,j).find(x=>x.id===b.dataset.sed); if(x) x.edit(); });
+    if($('sel-all')) $('sel-all').onclick=()=>{ dgSelItems(i,j).forEach(x=>x.del()); done(); dlg.close(); }; };
+  draw(); }
 const dgMk=(i,j)=>S.dg&&S.dg.m?S.dg.m[i+','+j]:null;
 function dgCodes(){ const L=[], add=(dg,si,title)=>{ const M=dg&&dg.m||{}; for(const k in M){ const m=M[k]; if(m.code) L.push({code:m.code,k,si,title,kind:m.k}); } };
   add(S.dg,S.scene,'cette scène'); (S.scenes||[]).forEach((sc,i)=>{ if(i!==S.scene) add(sc.dg,i,sc.title||`Scène ${i+1}`); }); return L; }
@@ -4513,7 +4532,7 @@ function dgTestMove(x,y,dir){ const me=S.tokens.find(t=>t.owner===ME&&t.type==='
 function renderDgPanel(){ const box=$('dg-body'); if(!box) return; const D=S.dg||{}, on=!!D.on, nC=Object.keys(D.c||{}).length;
   const wb=(id,ico,lbl,act)=>`<button type="button" class="wxb${act?' on':''}" id="${id}" title="${lbl}" aria-pressed="${act?'true':'false'}">${ico}<span>${lbl}</span></button>`;
   box.innerHTML=`<div class="subttl">Pinceau</div>
-    <div class="wxrow">${wb('dg-carve',IB('brush'),'Creuser',tool==='dgn'&&DG.tool==='carve')}${wb('dg-paint',dgI('paint',1.7),'Peindre',tool==='dgn'&&DG.tool==='paint')}${wb('dg-fill',IB('eraser'),'Gomme',tool==='dgn'&&DG.tool==='fill')}</div>
+    <div class="wxrow">${wb('dg-sel',IB('hand'),'Sélection',tool==='dgn'&&DG.tool==='sel')}${wb('dg-carve',IB('brush'),'Creuser',tool==='dgn'&&DG.tool==='carve')}${wb('dg-paint',dgI('paint',1.7),'Peindre',tool==='dgn'&&DG.tool==='paint')}${wb('dg-fill',IB('eraser'),'Gomme',tool==='dgn'&&DG.tool==='fill')}</div>
     <div class="crange"><span class="cap">Taille</span><input type="range" min="1" max="15" step="1" value="${DG.n}" id="dg-n" aria-label="Taille du pinceau"><b id="dg-nv">${DG.n} × ${DG.n}</b></div>
     <div class="subttl">Style</div>
     <div class="wxrow dg-th">${Object.entries(DG_TH).filter(([k,t])=>!t.hidden).map(([k,t])=>`<button type="button" class="wxb${dgBrushTh()===k?' on':''}" data-th="${k}" title="${t.lbl}"><i class="gsw" style="background:${t.sw}"></i><span>${t.lbl}</span></button>`).join('')}</div>
@@ -4530,10 +4549,10 @@ function renderDgPanel(){ const box=$('dg-body'); if(!box) return; const D=S.dg|
     <div class="subttl">Vue des joueurs <small>${nC} m²</small></div>
     <div class="wxrow">${wb('dg-prev',IB('eye'),'Aperçu de la vue 3D',false)}</div>
     <button class="btn ghost wide" type="button" id="dg-clear">${IB('bin')}Tout reboucher</button>`;
-  const pick=m=>{ if(!dgOn()){ dgEnsure().on=true; } if(tool==='dgn'&&DG.tool===m) setTool('dgn'); else { DG.tool=m; if(tool!=='dgn') setTool('dgn'); } drawDgLater(); renderDgPanel(); };
+  const pick=m=>{ DG.sel=null; if(!dgOn()){ dgEnsure().on=true; } if(tool==='dgn'&&DG.tool===m) setTool('dgn'); else { DG.tool=m; if(tool!=='dgn') setTool('dgn'); } drawDgLater(); renderDgPanel(); };
   box.querySelectorAll('[data-lum]').forEach(b=>b.onclick=()=>{ if(tool==='dgn'&&DG.tool==='lum'&&DG.lk===b.dataset.lum){ setTool('dgn'); renderDgPanel(); return; } DG.lk=b.dataset.lum; DG.tool='lum'; if(tool!=='dgn') setTool('dgn'); renderDgPanel(); });
   box.querySelectorAll('[data-veg]').forEach(b=>b.onclick=()=>{ if(tool==='dgn'&&DG.tool==='veg'&&DG.vk===b.dataset.veg){ setTool('dgn'); renderDgPanel(); return; } DG.vk=b.dataset.veg; DG.tool='veg'; if(tool!=='dgn') setTool('dgn'); renderDgPanel(); });
-  $('dg-carve').onclick=()=>pick('carve'); $('dg-fill').onclick=()=>pick('fill'); $('dg-paint').onclick=()=>pick('paint'); $('dg-sup').onclick=()=>pick('sup'); $('dg-sdown').onclick=()=>pick('sdown'); $('dg-tp').onclick=()=>pick('tp');
+  $('dg-sel').onclick=()=>pick('sel'); $('dg-carve').onclick=()=>pick('carve'); $('dg-fill').onclick=()=>pick('fill'); $('dg-paint').onclick=()=>pick('paint'); $('dg-sup').onclick=()=>pick('sup'); $('dg-sdown').onclick=()=>pick('sdown'); $('dg-tp').onclick=()=>pick('tp');
   const opt=(k,v)=>{ DG[k]=v; if(tool!=='dgn'||DG.tool==='fill'||DG.tool==='door'||DG.tool==='secret'){ DG.tool=DG.tool==='paint'?'paint':'carve'; if(tool!=='dgn') setTool('dgn'); } renderDgPanel(); };
   $('dg-ceil').onclick=()=>opt('sky',false); $('dg-sky').onclick=()=>opt('sky',true); $('dg-wall').onclick=()=>opt('iw',false); $('dg-iw').onclick=()=>opt('iw',true); $('dg-door').onclick=()=>pick('door'); $('dg-sdoor').onclick=()=>pick('secret');
   $('dg-n').oninput=e=>{ brushSize(+e.target.value); $('dg-nv').textContent=`${DG.n} × ${DG.n}`; drawDgLater(); };
