@@ -4943,10 +4943,10 @@ function fpsWeather(){ const el=FPS.el; if(!el) return; let cv=el.querySelector(
   if(!on){ cancelAnimationFrame(FPS.wxr); FPS.wxr=0; return; } if(FPS.wxr) return;
   const drops=[]; let flash=0, next=performance.now()+3000+Math.random()*5000;
   const tick=now=>{ if(!FPS.el||FPS.el.hidden||cv.hidden){ FPS.wxr=0; return; } const r=cv.getBoundingClientRect(), W=Math.round(r.width/3), H=Math.round(r.height/3); if(cv.width!==W||cv.height!==H){ cv.width=W; cv.height=H; }
-    const x=cv.getContext('2d'); x.clearRect(0,0,W,H); const storm=(S.weather||'')==='storm', n=storm?220:140;
-    while(drops.length<n) drops.push({x:Math.random()*W*1.2,y:Math.random()*H,v:4+Math.random()*4,l:3+Math.random()*5});
+    const x=cv.getContext('2d'); x.clearRect(0,0,W,H); const storm=(S.weather||'')==='storm', XW=W+H*.3, n=Math.round((storm?220:140)*Math.max(1,XW*H/(160*160)));   /* la pluie tombe en biais : on la fait naître aussi à droite de l'écran */
+    if(drops.length>n) drops.length=n; while(drops.length<n) drops.push({x:Math.random()*XW,y:Math.random()*H,v:4+Math.random()*4,l:3+Math.random()*5});
     x.strokeStyle='rgba(200,215,235,.55)'; x.lineWidth=1; x.beginPath();
-    drops.forEach(d=>{ d.y+=d.v; d.x-=d.v*.25; if(d.y>H){ d.y=-d.l; d.x=Math.random()*W*1.2; } x.moveTo(d.x|0,d.y|0); x.lineTo((d.x+d.l*.25)|0,(d.y-d.l)|0); }); x.stroke();
+    drops.forEach(d=>{ d.y+=d.v; d.x-=d.v*.25; if(d.y>H){ d.y=-d.l; d.x=Math.random()*XW; } x.moveTo(d.x|0,d.y|0); x.lineTo((d.x+d.l*.25)|0,(d.y-d.l)|0); }); x.stroke();
     if(storm&&now>next){ flash=1; next=now+4000+Math.random()*8000; }
     if(flash>0){ x.fillStyle=`rgba(235,240,255,${flash*.75})`; x.fillRect(0,0,W,H); flash=Math.max(0,flash-.06); }
     FPS.wxr=requestAnimationFrame(tick); };
