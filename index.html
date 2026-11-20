@@ -4796,7 +4796,9 @@ function winImgLoad(k){ const o=WINIMG[k]; if(o.im) return o.px?o:null; o.im=new
   o.px=new Uint32Array(c.getContext('2d').getImageData(0,0,c.width,c.height).data.buffer.slice(0)); o.w=c.width; o.h=c.height; fpsLater(); }; o.im.src=o.src; return null; }
 /* portes en image : remplacent la texture de porte du set (le battant coulisse comme les autres) */
 const DOORIMG={trottoir:'res/themes/ruelle/porte.webp',bitume:'res/themes/ruelle/porte.webp',ruelle:'res/themes/ruelle/porte.webp'};
-function doorImg(k,T){ const im=new Image(); im.onload=()=>{ const N=T.N, c=document.createElement('canvas'); c.width=c.height=N; const x=c.getContext('2d'); x.imageSmoothingEnabled=false; x.drawImage(im,0,0,N,N); T.door=new Uint32Array(x.getImageData(0,0,N,N).data.buffer.slice(0)); fpsLater(); }; im.src=DOORIMG[k]; }
+const DOORREL={trottoir:'res/themes/ruelle/porte-relief.png'}; DOORREL.bitume=DOORREL.ruelle=DOORREL.trottoir;
+function doorImg(k,T){ const N=T.N, ld=(src,f)=>{ const im=new Image(); im.onload=()=>{ const c=document.createElement('canvas'); c.width=c.height=N; const x=c.getContext('2d'); x.drawImage(im,0,0,N,N); f(x.getImageData(0,0,N,N).data); fpsLater(); }; im.src=src; };
+  ld(DOORIMG[k],d=>{ T.door=new Uint32Array(d.buffer.slice(0)); }); if(DOORREL[k]) ld(DOORREL[k],d=>{ const r=new Float32Array(N*N); for(let i=0;i<r.length;i++) r[i]=d[i*4]/255*.07; T.drel=r; }); }
 /* plafonds en image */
 const CLIMG={trottoir:{src:'res/themes/ruelle/plafond.webp',cw:4,ch:2.23}}; CLIMG.bitume=CLIMG.ruelle=CLIMG.trottoir;
 /* murs en image : continus le long du mur (cw cases de large, ch de haut) */
@@ -5160,6 +5162,15 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
         const j0=at(u0,z), a0=j0<0?0:WO.px[j0]>>>24;
         if(a0>200){ B[i]=sh(B[i],.45); continue; }                         /* ombre du cadre sur le mur */
         if(a0>60&&a0<200&&DZ[i]>=d-.01){ DZ[i]=Infinity; if(!GS[i]){ GD[i]=d; GS[i]=((u0*9+(z-Z0)*5)%1)<.12?2:1; GLASS=true; } } } };   /* vitre : on voit à travers */
+    /* porte en relief réel : cadre et boîtier avancent (jusqu'à 7 cm), leurs flancs se voient de biais */
+    const faceDoor=(z0,d,off,TX)=>{ const N=TX.N, yT=Math.max(0,Math.ceil(h2+(eye-z0-1)*PS/d)), yB=Math.min(H-1,Math.floor(h2+(eye-z0)*PS/d)); if(yB<yT) return;
+      const flip=side===0&&rdx>0||side===1&&rdy<0, nrm=side===0?Math.abs(rdx):Math.abs(rdy), tg=(side===0?rdy:rdx)*(flip?-1:1)/nrm;
+      let w0=side===0?cam.y+d*rdy:cam.x+d*rdx; w0-=Math.floor(w0); if(flip) w0=1-w0; const hx=cam.x+d*rdx, hy=cam.y+d*rdy, f=lit(d)*(side?.82:1)*vis(hx,hy), wa=LON?la(hx,hy):null, DR=TX.drel;
+      const tx=(u,z)=>{ u=1-u; if(off){ u-=off; if(u<0) return -1; } if(u<0||u>=1||z<0||z>=1) return -1; return ((1-z)*N|0)*N+((u*N)|0); };
+      for(let y=yT;y<=yB;y++){ const z=eye-(y+.5-h2)*d/PS-z0, i0=tx(w0,z); let c=-1, ff=f;
+        for(const h of [.07,.056,.042]){ const dz=(z+z0-eye)/d*h/nrm, j=tx(w0-h*tg,z-dz); if(j>=0&&DR[j]>=h-.004){ c=TX.door[j]; ff=f*1.08; break; } }
+        if(c===-1){ if(i0<0) continue; if(DR[i0]>.01){ c=TX.door[i0]; ff=f*.45; } else c=TX.door[i0]; }   /* flanc d'un élément en saillie : dans l'ombre */
+        put(y,shL(c,ff,wa),d); } };
     const faceImg=(z0,z1,d,WI)=>{ const yT=Math.max(0,Math.ceil(h2+(eye-z1)*PS/d)), yB=Math.min(H-1,Math.floor(h2+(eye-z0)*PS/d)); if(yB<yT) return;
       const flip=!(side===0&&rdx>0||side===1&&rdy<0); let uw=side===0?cam.y+d*rdy:cam.x+d*rdx; if(flip) uw=-uw; const tx=((((uw/WI.cw)%1)+1)%1*WI.w)|0, hx=cam.x+d*rdx, hy=cam.y+d*rdy;
       const f=lit(d)*(side?.82:1)*vis(hx,hy), wa=LON?la(hx-(side===0?Math.sign(rdx)*.02:0),hy-(side===1?Math.sign(rdy)*.02:0)):null;
@@ -5204,7 +5215,7 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
       else if(door&&dgShut(door)) wt=TT.wall;
       const WH=CC?+CC.h||1:1;
       if(door&&!dgHid(door)){ const fl=dgFlank(pmx,pmy,mx,my), lt=Math.min(CC?+CC.h||1:99,Math.max(WH,fl.h)), LX=fl.t&&fl.h>=WH?fpsTextures(fl.t):TT; if(lt>fh+1){ const ft=fl.t||cur.th; if((ft==='trottoir'||ft==='bitume'||ft==='ruelle')&&FAC.ready) faceFac(fh+1,lt,d0); else face(fh+1,lt,d0,LX.wall,LX.N); } }   /* linteau : la porte reste 1 × 1 */
-      if(wt){ face(fh,wt===TT.door?fh+1:fh+WH,d0,wt,N,doff); break; }
+      if(wt){ if(wt===TT.door&&TT.drel) faceDoor(fh,d0,doff,TT); else face(fh,wt===TT.door?fh+1:fh+WH,d0,wt,N,doff); break; }
       const nfh=virt?(S.dg.h&&S.dg.h[mx+','+my]!=null?+S.dg.h[mx+','+my]:fh):dgH(mx,my), NT=fpsTextures(nf.th);
       if(nfh>fh) face(fh,nfh,d0,NT.side,NT.N);                                   /* marche qui monte */
       const NC=virt?CC:dgCeil(mx,my,nf);
