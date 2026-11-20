@@ -2844,10 +2844,10 @@ html.incombat #rb-dgn,html.incombat #rb-fond{opacity:.3;pointer-events:none}
 .fighth[aria-pressed="true"]{background:#e04b3a!important;border-color:#e04b3a!important;color:#fff}
 #board.fzone{cursor:crosshair}
 .fps-pad{display:none!important}
-.fps-go{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;width:min(260px,60%);z-index:4}
-.fps-go button{display:flex;align-items:center;justify-content:center;gap:8px;height:50px;border-radius:16px;background:rgba(255,255,255,.72);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border:2.5px solid #8a8f9f;color:#2f3340;font:800 14px var(--f-body,sans-serif);letter-spacing:.06em;text-transform:uppercase;touch-action:none;user-select:none;-webkit-user-select:none;cursor:pointer}
-@media (hover:hover) and (pointer:fine){.fps-go{display:none!important}}   /* ordinateur : ZQSD (+ glisser à la souris) */
-.fps-go button svg{width:24px;height:24px}.fps-go button.on{background:rgba(255,255,255,.95);transform:scale(.97)}   /* déplacements au toucher (glisser) et au clavier : plus de croix */
+.fps-joy{position:absolute;left:50%;bottom:22px;width:96px;height:96px;margin-left:-48px;border-radius:50%;background:rgba(255,255,255,.16);border:2px solid rgba(255,255,255,.45);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);box-shadow:0 2px 12px rgba(0,0,0,.25);z-index:4;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+.fps-joy i{position:absolute;left:50%;top:50%;width:42px;height:42px;margin:-21px 0 0 -21px;border-radius:50%;background:rgba(255,255,255,.55);border:2px solid rgba(255,255,255,.8);box-shadow:0 2px 8px rgba(0,0,0,.3);transition:transform .12s ease-out;pointer-events:none}
+.fps-joy.on{background:rgba(255,255,255,.24)}.fps-joy.on i{transition:none;background:rgba(255,255,255,.75)}
+@media (hover:hover) and (pointer:fine){.fps-joy{display:none!important}}   /* ordinateur : ZQSD (+ glisser à la souris) */
 .fps-hud,.fps-cmp{display:none!important}
 .selist{display:flex;flex-direction:column;gap:6px;margin:8px 0}.selrow{display:flex;align-items:center;gap:10px;padding:6px 8px;border:1px solid var(--rule);border-radius:10px}.selrow img{width:40px;height:40px;object-fit:contain;image-rendering:pixelated}.selrow>i{width:40px;height:40px;display:grid;place-items:center}.selrow>i svg{width:26px;height:26px}.selrow span{flex:1;font-weight:600}
 .vegpick{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:6px}.vegb{height:62px;border:1px solid var(--rule);border-radius:10px;background:var(--paper);display:grid;place-items:center;padding:4px;cursor:pointer}.vegb{overflow:hidden}.vegb img{display:block;width:100%;height:52px;object-fit:contain;image-rendering:pixelated}.vegb.on{border-color:var(--c-sav,#2f8a3a);box-shadow:inset 0 0 0 2px var(--c-sav,#2f8a3a)}
@@ -4568,7 +4568,7 @@ function dgFree(di,dj,toks,self){ const busy=(i,j)=>toks.some(o=>o!==self&&o.id!
   const seen=new Set([di+','+dj]), Q=[[di,dj]]; while(Q.length){ const [i,j]=Q.shift(); if(!busy(i,j)) return [i,j]; if(seen.size>200) break;
     [[1,0],[-1,0],[0,1],[0,-1]].forEach(([u,v])=>{ const k=(i+u)+','+(j+v); if(!seen.has(k)){ seen.add(k); Q.push([i+u,j+v]); } }); } return [di,dj]; }
 /* MJ : un aventurier vient de poser le pied sur un passage */
-function dgArrive(t){ const [i,j]=dgCell(t.x,t.y), m=dgMk(i,j); if(!m||!m.to) return false; const dest=dgCodes().find(c=>c.code===m.to); if(!dest){ toast(`${t.name} : destination ${m.to} introuvable`,true); return false; }
+function dgArrive(t,ci,cj){ const [i,j]=ci!=null?[ci,cj]:dgCell(t.x,t.y), m=dgMk(i,j); if(!m||!m.to) return false; const dest=dgCodes().find(c=>c.code===m.to); if(!dest){ toast(`${t.name} : destination ${m.to} introuvable`,true); return false; }
   const [di,dj]=dest.k.split(',').map(Number);
   if(dest.si===S.scene){ const [fi,fj]=dgFree(di,dj,S.tokens,t); t.x=(fi+.5)*CELL; t.y=(fj+.5)*CELL; dexAnchor(t); setTimeout(sync,0); moveTokenEl(t); tokenEl(t); send({t:'mv',id:t.id,x:t.x,y:t.y,s:t.s,dir:t.dir||0}); fowLater(); markDirty(); return true; }
   const sc=S.scenes[dest.si]; if(!sc) return false; sc.tokens=(sc.tokens||[]).filter(o=>o.id!==t.id);
@@ -5184,7 +5184,7 @@ function fpsAct(k){ if(!FPS.cam) return; if(fpsSpectating()){ toast('Ce n\'est p
 /* point de la carte 2D sous le doigt dans la vue 3D : sol, pied du mur ou personnage visé */
 function fpsWorldAt(cx,cy){ if(!FPS.el||FPS.el.hidden||!FPS.lastCam||!FPS.dz) return null; const cv=FPS.el.querySelector('canvas'), r=cv.getBoundingClientRect();
   if(cx<r.left||cx>r.right||cy<r.top||cy>r.bottom) return null;
-  for(const b of FPS.el.querySelectorAll('.fps-pad,.fps-x,.fps-cmp')){ const q=b.getBoundingClientRect(); if(cx>=q.left&&cx<=q.right&&cy>=q.top&&cy<=q.bottom) return null; }
+  for(const b of FPS.el.querySelectorAll('.fps-pad,.fps-joy,.fps-x,.fps-cmp')){ const q=b.getBoundingClientRect(); if(cx>=q.left&&cx<=q.right&&cy>=q.top&&cy<=q.bottom) return null; }
   const u=(cx-r.left)/r.width, v=(cy-r.top)/r.height, h=(FPS.hits||[]).filter(o=>u>=o.x0&&u<=o.x1&&v>=o.y0&&v<=o.y1).sort((a,b)=>a.r-b.r)[0];
   if(h) return [h.t.x,h.t.y];
   const cam=FPS.lastCam, W=cv.width, H=cv.height, col=Math.max(0,Math.min(W-1,Math.floor(u*W))), row=Math.max(0,Math.min(H-1,Math.floor(v*H))), cX=2*col/W-1, K=FPS.K||.72;
@@ -5224,7 +5224,7 @@ function fpsScreenOf(id){ if(!FPS.el||FPS.el.hidden||!FPS.el.isConnected) return
 /* fin d'un appui sur la vue 3D du joueur : toucher (objet, porte) ou glisser (se déplacer) */
 function fpsRelease(e,s0){ if(!FPS.el||FPS.el.hidden) return; const cv=FPS.el.querySelector('canvas'), r=cv.getBoundingClientRect();
   if(s0.x<r.left||s0.x>r.right||s0.y<r.top||s0.y>r.bottom) return;
-  for(const b of FPS.el.querySelectorAll('.fps-pad,.fps-x')){ const q=b.getBoundingClientRect(); if(s0.x>=q.left&&s0.x<=q.right&&s0.y>=q.top&&s0.y<=q.bottom) return; }
+  for(const b of FPS.el.querySelectorAll('.fps-pad,.fps-joy,.fps-x')){ const q=b.getBoundingClientRect(); if(s0.x>=q.left&&s0.x<=q.right&&s0.y>=q.top&&s0.y<=q.bottom) return; }
   const ddx=e.clientX-s0.x, ddy=e.clientY-s0.y, m=Math.max(Math.abs(ddx),Math.abs(ddy));
   FPS.dragX=null; if(m<8) fpsTap(e,cv); }
 /* ---------- déplacement libre : 1 case = 1 m ; le personnage est un cercle ; on tourne au doigt, on avance / recule avec les deux boutons ---------- */
@@ -5233,30 +5233,39 @@ const FPS_R=.28, FPS_V=2.4, FPS_TURN=2.3;
 function fpsDragTurn(x){ if(!FPS.cam||FPS.dragX==null) return; const dx=x-FPS.dragX; FPS.dragX=x; if(!dx) return; FPS.anim=null; FPS.cam.a+=dx*.0075; FPS.turned=performance.now(); fpsLater(); fpsSendMove(false); }
 function fpsBlocked(ci,cj,ni,nj){ if(!dgPass(ci,cj,ni,nj)) return true;
   const me=FPS.mode==='play'&&S.tokens.find(t=>t.id===FPS.self); if(me&&S.dexLock&&me.dxa&&me.dxm!=null&&!dexReach(me.dxa,me.dxm).has(ni+','+nj)){ if(!FPS.dexMsg||performance.now()-FPS.dexMsg>1500){ FPS.dexMsg=performance.now(); toast('Hors de votre zone de déplacement (DEX)'); } return true; } return false; }
-function fpsMoveBy(dist){ const c=FPS.cam; if(!c||!dist) return; if(fpsSpectating()){ FPS.mv=0; toast('Ce n\'est pas votre tour'); return; }
-  const R=FPS_R, x0=c.x, y0=c.y, ci=Math.floor(x0), cj=Math.floor(y0); let x=x0+Math.sin(c.a)*dist, y=y0-Math.cos(c.a)*dist;
+function fpsMoveBy(dist,side){ const c=FPS.cam; if(!c||(!dist&&!side)) return; side=side||0; if(fpsSpectating()){ FPS.mv=0; toast('Ce n\'est pas votre tour'); return; }
+  const R=FPS_R, x0=c.x, y0=c.y, ci=Math.floor(x0), cj=Math.floor(y0); let x=x0+Math.sin(c.a)*dist+Math.cos(c.a)*side, y=y0-Math.cos(c.a)*dist+Math.sin(c.a)*side;
   if(x-R<ci&&fpsBlocked(ci,cj,ci-1,cj)) x=Math.max(x,ci+R); if(x+R>ci+1&&fpsBlocked(ci,cj,ci+1,cj)) x=Math.min(x,ci+1-R);
   const ci2=Math.floor(x); if(y-R<cj&&fpsBlocked(ci2,cj,ci2,cj-1)) y=Math.max(y,cj+R); if(y+R>cj+1&&fpsBlocked(ci2,cj,ci2,cj+1)) y=Math.min(y,cj+1-R);
   if(Math.floor(y)!==cj&&Math.floor(x)!==ci&&fpsBlocked(ci,Math.floor(y),Math.floor(x),Math.floor(y))){ x=x0; }
   if(FPS.mode==='play'||FPS.sim){ for(const t of S.tokens){ if(t.id===FPS.self||t.inveh||t.hidden||dgDead(t)||!['player','mob','npc'].includes(t.type)) continue; const tx=t.x/CELL, ty=t.y/CELL, dn=Math.hypot(x-tx,y-ty); if(dn<.55&&dn<Math.hypot(x0-tx,y0-ty)){ x=x0; y=y0; break; } } }
   if(Math.abs(x-x0)<1e-4&&Math.abs(y-y0)<1e-4){ if(!FPS.bumped){ FPS.bumped=1; fpsBump(); } return; } FPS.bumped=0;
   const nc=Math.floor(x)!==ci||Math.floor(y)!==cj; c.x=x; c.y=y; c.z=dgH(Math.floor(x),Math.floor(y)); FPS.lastMove=performance.now();
-  FPS.walk=(FPS.walk||0)+Math.abs(dist); if(FPS.walk>.9){ FPS.walk=0; fpsStep(false); }
+  FPS.walk=(FPS.walk||0)+Math.hypot(dist,side); if(FPS.walk>.9){ FPS.walk=0; fpsStep(false); }
   if(FPS.mode!=='play'&&nc) fpsPrevArrive(c); fpsSendMove(nc); }
 function fpsSendMove(force){ if(FPS.mode!=='play'||!FPS.cam) return; const now=performance.now(); if(!force&&FPS.sent&&now-FPS.sent<90){ clearTimeout(FPS.sendT); FPS.sendT=setTimeout(()=>fpsSendMove(true),95); return; } FPS.sent=now;
   const c=FPS.cam, nd=(((Math.round(c.a/(Math.PI/2))%4)+4)%4), m={t:'dmove',x:Math.round(c.x*CELL),y:Math.round(c.y*CELL),dir:nd,ang:+c.a.toFixed(3)};
   up(m); if(window.DGTEST){ const me=S.tokens.find(t=>t.id===FPS.self); if(me){ me.x=m.x; me.y=m.y; me.dir=nd; me.ang=m.ang; dgTestArrive(); } } }
-function fpsTick(dt){ let go=false; if(FPS.rot){ FPS.cam.a+=FPS.rot*FPS_TURN*dt; FPS.turned=performance.now(); fpsSendMove(false); go=true; } if(FPS.mv){ fpsMoveBy(FPS.mv*FPS_V*dt); go=true; } return go; }
+function fpsTick(dt){ let go=false; if(FPS.rot){ FPS.cam.a+=FPS.rot*FPS_TURN*dt; FPS.turned=performance.now(); fpsSendMove(false); go=true; } if(FPS.mv){ fpsMoveBy(FPS.mv*FPS_V*dt); go=true; } if(FPS.joy){ const J=FPS.joy; fpsMoveBy(-J.y*FPS_V*dt,J.x*FPS_V*.7*dt); go=true; } return go; }
 /* mains du personnage selon sa race */
 function fpsHands(){ if(!FPS.el) return; const im=FPS.el.querySelector('.fps-hands'); if(!im) return; const r=FPS.mode==='play'&&typeof VEHME!=='undefined'&&VEHME&&VEHME.race, src=r&&(HANDS[r]||HANDS.humain);
   if(!src){ im.hidden=true; return; } if(im.dataset.r!==r){ im.dataset.r=r; im.src=src; } im.hidden=false; }
 function fpsStep(turn){ const im=FPS.el&&FPS.el.querySelector('.fps-hands'); if(im&&!im.hidden&&im.animate) im.animate(turn?[{transform:'translateX(-50%)'},{transform:'translateX(-50%) translateX(3%) rotate(.6deg)'},{transform:'translateX(-50%)'}]:[{transform:'translateX(-50%)'},{transform:'translateX(-50%) translateY(4%)'},{transform:'translateX(-50%)'}],{duration:turn?190:230,easing:'ease-in-out'}); }
 function fpsBump(){ const el=FPS.el&&FPS.el.querySelector('canvas'); if(el&&el.animate) el.animate([{transform:'translateY(0)'},{transform:'translateY(4px)'},{transform:'translateY(0)'}],{duration:160}); }
 function fpsBuild(host,mode){ let el=host.querySelector('.fps'); if(!el){ el=document.createElement('div'); el.className='fps';
-    el.innerHTML=`<canvas></canvas><img class="fps-hands" alt="" hidden><div class="fps-cmp">Nord</div><div class="fps-go"><button type="button" data-mv="1" aria-label="Avancer">${FPSI_UP}<span>Avancer</span></button><button type="button" data-mv="-1" aria-label="Reculer">${FPSI_DN}<span>Reculer</span></button></div><div class="fps-pad">${['tl','fw','tr','sl','bk','sr'].map(k=>`<button type="button" data-fk="${k}" title="${{tl:'Tourner à gauche (Q)',fw:'Avancer (Z)',tr:'Tourner à droite (D)',sl:'Pas à gauche (A)',bk:'Reculer (S)',sr:'Pas à droite (E)'}[k]}">${dgI(k)}</button>`).join('')}</div>${mode==='prev'?'<button type="button" class="fps-x" title="Fermer l\'aperçu">'+IB('x',2)+'</button><button type="button" class="fps-x fps-sim" title="Vue MJ (tout voir) / vue joueur (perception, collisions)"></button>':''}`;
+    el.innerHTML=`<canvas></canvas><img class="fps-hands" alt="" hidden><div class="fps-cmp">Nord</div><div class="fps-joy" aria-label="Se déplacer"><i></i></div><div class="fps-pad">${['tl','fw','tr','sl','bk','sr'].map(k=>`<button type="button" data-fk="${k}" title="${{tl:'Tourner à gauche (Q)',fw:'Avancer (Z)',tr:'Tourner à droite (D)',sl:'Pas à gauche (A)',bk:'Reculer (S)',sr:'Pas à droite (E)'}[k]}">${dgI(k)}</button>`).join('')}</div>${mode==='prev'?'<button type="button" class="fps-x" title="Fermer l\'aperçu">'+IB('x',2)+'</button><button type="button" class="fps-x fps-sim" title="Vue MJ (tout voir) / vue joueur (perception, collisions)"></button>':''}`;
     host.appendChild(el);
-    el.querySelectorAll('[data-mv]').forEach(b=>{ const go=e=>{ e.preventDefault(); e.stopPropagation(); try{ b.setPointerCapture(e.pointerId); }catch(er){} FPS.mv=+b.dataset.mv; b.classList.add('on'); fpsLater(); }, stop=e=>{ if(e) e.stopPropagation(); if(FPS.mv===+b.dataset.mv) FPS.mv=0; b.classList.remove('on'); };
-      b.addEventListener('pointerdown',go); b.addEventListener('pointerup',stop); b.addEventListener('pointercancel',stop); b.addEventListener('lostpointercapture',()=>stop()); b.addEventListener('contextmenu',e=>e.preventDefault()); });
+    /* joystick : on pousse le petit rond ; haut = avancer, bas = reculer, côtés = pas de côté */
+    { const J=el.querySelector('.fps-joy'), K=J.querySelector('i'); let tid=null, pid=null;
+      const set=(cx,cy)=>{ const r=J.getBoundingClientRect(), R=r.width/2, dx=cx-(r.left+R), dy=cy-(r.top+R), d=Math.hypot(dx,dy), k=d>R?R/d:1, x=dx*k, y=dy*k;
+        K.style.transform=`translate(${x}px,${y}px)`; const m=Math.min(1,d/R); FPS.joy=m<.18?null:{x:x/R,y:y/R}; J.classList.add('on'); fpsLater(); };
+      const end=()=>{ tid=null; pid=null; FPS.joy=null; K.style.transform=''; J.classList.remove('on'); };
+      J.addEventListener('touchstart',e=>{ e.preventDefault(); e.stopPropagation(); const t=e.changedTouches[0]; tid=t.identifier; set(t.clientX,t.clientY); },{passive:false});
+      J.addEventListener('touchmove',e=>{ e.preventDefault(); e.stopPropagation(); for(const t of e.changedTouches) if(t.identifier===tid) set(t.clientX,t.clientY); },{passive:false});
+      const tend=e=>{ for(const t of e.changedTouches) if(t.identifier===tid){ e.preventDefault(); end(); } }; J.addEventListener('touchend',tend,{passive:false}); J.addEventListener('touchcancel',tend,{passive:false});
+      J.addEventListener('pointerdown',e=>{ e.stopPropagation(); if(e.pointerType==='touch') return; e.preventDefault(); pid=e.pointerId; try{ J.setPointerCapture(pid); }catch(er){} set(e.clientX,e.clientY); });
+      J.addEventListener('pointermove',e=>{ if(e.pointerId===pid) set(e.clientX,e.clientY); }); J.addEventListener('pointerup',e=>{ e.stopPropagation(); if(e.pointerId===pid) end(); }); J.addEventListener('pointercancel',e=>{ if(e.pointerId===pid) end(); });
+      J.addEventListener('contextmenu',e=>e.preventDefault()); }
     el.querySelectorAll('[data-fk]').forEach(b=>b.addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); fpsAct(b.dataset.fk); }));
     const cv=el.querySelector('canvas'); let sw=null;
     if(mode==='prev') cv.addEventListener('pointerdown',e=>{ sw={x:e.clientX,y:e.clientY}; FPS.dragX=e.clientX; try{ cv.setPointerCapture(e.pointerId); }catch(er){} });
@@ -8779,7 +8788,7 @@ function netIn(c,d){ if(!d||typeof d!=='object') return;
       if(!okStep||!dgOpen(i,j)||busy){ back(); return; }
       if(S.dexLock){ if(!t.dxa) t.dxa=[i0,j0]; if(!dexReach(t.dxa,dexMax(t)).has(i+','+j)){ back(); return; } } }
     t.x=Math.round(+d.x); t.y=Math.round(+d.y); t.dir=dir; if(d.ang!=null&&isFinite(+d.ang)) t.ang=+(+d.ang).toFixed(3); moveTokenEl(t); tokenEl(t); send({t:'mv',id:t.id,x:t.x,y:t.y,s:t.s,dir,ang:t.ang}); fowLater(); if(FPS.el&&FPS.mode==='prev') fpsLater(); markDirty();
-    if(moved) setTimeout(()=>{ if(tok(t.id)&&dgCell(t.x,t.y)[0]===i&&dgCell(t.x,t.y)[1]===j) dgArrive(t); },260); }
+    if(moved&&dgMk(i,j)) setTimeout(()=>{ if(tok(t.id)) dgArrive(t,i,j); },120); }   /* passage : il suffit d'y entrer, même en le traversant */
   else if(d.t==='veh'&&c.pid){ const P=PL.get(c.pid), v=P&&P.sheet&&P.sheet.full&&P.sheet.full.vehicle, cur=S.tokens.find(x=>x.kind==='vehicle'&&x.owner===c.pid);
     if(cur){ removeToken(cur.id); toast(`${c.name} renvoie son véhicule`); return; }
     if(!v){ return; } const me=S.tokens.find(x=>x.owner===c.pid&&x.type==='player'), t=vehToken(v,c.pid);
@@ -9023,7 +9032,7 @@ if(isPlayer){
       const oa=$('openask'); if(oa&&!oa.hidden&&!e.target.closest('#openask')) oa.hidden=true;
       if(e.target.closest('#openask')) return;
       /* un appui sur un bouton (croix de déplacement, véhicule, parler…) n'est jamais un pointage */
-      if(e.target.closest('button,input,textarea,select,.fps-pad,.fps-go,.fps-x,.chatpop')) return;
+      if(e.target.closest('button,input,textarea,select,.fps-pad,.fps-joy,.fps-x,.chatpop')) return;
       pd=true; pdAt={x:e.clientX,y:e.clientY}; try{ board.setPointerCapture(e.pointerId); }catch(err){} if(document.documentElement.classList.contains('fpsmode')){ FPS.dragX=e.clientX; return; } ptr(e); });
     board.addEventListener('pointermove',e=>{ if(touches.has(e.pointerId)) touches.set(e.pointerId,{x:e.clientX,y:e.clientY});
       if(pinch&&touches.size>=2){ V.z=clamp(pinch.z*pdist()/pinch.d,PZ[0],PZ[1]); followMe(); return; } if(pd){ if(document.documentElement.classList.contains('fpsmode')){ fpsDragTurn(e.clientX); return; } ptr(e); } });
