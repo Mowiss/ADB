@@ -2931,6 +2931,7 @@ html.fpsmode .chatpop{bottom:16px}
 #tokens{position:absolute;left:0;top:0;width:0;height:0;overflow:visible;z-index:3;pointer-events:none}
 #wx{position:absolute;inset:0;width:100%;height:100%;z-index:3;pointer-events:none}
 #wx.rain{background:rgba(28,38,58,.14)}#wx.storm{background:rgba(14,18,32,.3)}
+#mapwx{position:absolute;left:10px;top:10px;z-index:4;display:flex;gap:6px;pointer-events:none}#mapwx:empty{display:none}#mapwx span{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:rgba(20,22,30,.72);color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.3)}#mapwx svg{width:20px;height:20px}#mapwx .wacid{color:#7dff4a}#mapwx .wdemo{color:#c79bff}#mapwx .wcomet{color:#7fd0ff}#mapwx .walign{color:#ffd166}#mapwx .whot{color:#ff9a5c}#mapwx .wcold{color:#a9d4ff}#mapwx .wnight{color:#ffe7a3}
 #flash{position:absolute;inset:0;z-index:3;pointer-events:none;background:#eef3ff;opacity:0}
 #fow{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none;opacity:.62}
 .player #fow{opacity:1}
@@ -3753,7 +3754,7 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
       <svg id="over"></svg>
     </div>
     <canvas id="fow" hidden></canvas>
-    <canvas id="wx" hidden></canvas><div id="flash"></div>
+    <canvas id="wx" hidden></canvas><div id="flash"></div><div id="mapwx" aria-hidden="true"></div>
     <div id="bin" title="Lâcher ici pour retirer du plateau"></div>
     <div id="mlabel" class="mlabel" hidden></div>
     <div id="geo-attr" hidden>Orthophotos © IGN — hors France © Esri, Maxar</div>
@@ -4218,7 +4219,7 @@ function renderBoard(){
   renderGeo(); renderGround(); renderWeather(); fondRefresh();
   bg.style.width=gr.style.width=(S.bg?S.bgW:0)+'px'; bg.style.height=gr.style.height=(S.bg?S.bgH:0)+'px'; gr.hidden=!S.bg; board.classList.toggle('inf',!S.bg&&!S.geo); board.classList.toggle('geo',!!S.geo); board.classList.toggle('img',!!S.bg);
   document.body.classList.toggle('nogrid',S.grid===false);
-  $('fow').hidden=S.light; renderFoW();
+  $('fow').hidden=true; renderFoW(); mapWxPaint();
 }
 /* Brouillard : les joueurs et les lumières découpent l'obscurité */
 let fowBeam=0;
@@ -4239,7 +4240,8 @@ function fogDiscover(){ if(isPlayer||S.light||S.fogAuto===false) return; const s
   if(n){ markDirty(); syncLater(); } }
 function fogPaint(wx,wy){ const n=seenEdit(wx,wy,FOG.r*PX_M,FOG.mode==='rev'); if(n){ renderFoW(); } }
 function fogAll(rev){ S.seen=rev?{'*':1}:{}; FOG.ver++; FOG.sig=''; renderFoW(); markDirty(); sync(); }
-function renderFoW(){
+function renderFoW(){ board.classList.remove('night'); $('fow').hidden=true; mapWxPaint(); if(isPlayer) document.querySelectorAll('#tokens .tk.unseen').forEach(el=>el.classList.remove('unseen')); return; }   /* vue en plan : jamais assombrie par la nuit */
+function renderFoWNuit(){
   board.classList.toggle('night',!S.light); const cv=$('fow');
   if(isPlayer) document.querySelectorAll('#tokens .tk').forEach(el=>{ const t=tok(el.dataset.id), hid=!S.light&&t&&(t.type==='mob'||t.type==='npc'||(t.type==='prop'&&t.kind!=='deco'))&&!inLight(t); el.classList.toggle('unseen',!!hid); });
   if(S.light) return; fogDiscover(); const r=board.getBoundingClientRect(), k=.5, W=Math.max(2,Math.round(r.width*k)), H=Math.max(2,Math.round(r.height*k));
@@ -8810,8 +8812,11 @@ function wxApply(){ const F=WXFX[S.weather||''], now=Date.now(); let ch=false; S
 setInterval(()=>{ try{ if(S&&S.tokens) wxApply(); }catch(e){} },15000);
 /* Météo : pluie et orage dessinés par-dessus le plateau (aussi chez les joueurs) */
 const WX={raf:0,drops:[],kind:'',w:0,h:0,next:0};
-function renderWeather(){ const cv=$('wx'); if(!cv) return; const k=S.weather||''; if(typeof fpsLater==='function') fpsLater();
-  const vis=['rain','storm','acid','demo','cold'].includes(k); cv.hidden=!vis; cv.className=k; if(!vis){ cancelAnimationFrame(WX.raf); WX.raf=0; WX.kind=''; return; }
+/* vue en plan : ni pluie ni nuit dessinées, juste des pictos en haut à gauche */
+function mapWxPaint(){ const b=$('mapwx'); if(!b) return; const k=S.weather||'', w=WXS.find(x=>x[0]===k), night=S.light===false;
+  b.innerHTML=(night?`<span class="wnight" title="Nuit">${IB('moon')}</span>`:'')+(k&&w?`<span class="w${k}" title="${w[2]}">${IB(w[1])}</span>`:''); }
+function renderWeather(){ const cv=$('wx'); if(!cv) return; const k=S.weather||''; if(typeof fpsLater==='function') fpsLater(); mapWxPaint();
+  const vis=false; cv.hidden=!vis; cv.className=k; if(!vis){ cancelAnimationFrame(WX.raf); WX.raf=0; WX.kind=''; return; }
   if(WX.kind!==k){ WX.kind=k; WX.drops=[]; WX.next=performance.now()+2500+Math.random()*4000; }
   if(!WX.raf) WX.raf=requestAnimationFrame(wxTick); }
 function wxTick(t){ WX.raf=0; const cv=$('wx'); if(!WX.kind||!cv||cv.hidden) return;
@@ -8849,7 +8854,7 @@ function renderFond(){ const box=$('fond-body'); if(!box) return;
     ${wxPanelHTML(wb,W)}`+only2(`
     <div class="subttl">Fond</div>
     <div class="wxrow gnd">${Object.entries(GROUNDS).map(([k,l])=>`<button type="button" class="wxb${S.ground&&S.ground.k===k?' on':''}" data-gnd="${k}" title="${l}${S.ground&&S.ground.k===k?' — cliquer pour revenir au fond normal':''}"><i class="gsw" style="${k==='color'?`background:${esc(S.ground&&S.ground.c||'#2a2e36')}`:`background-image:url('${groundTile(k)}');background-size:120px`}"></i><span>${l}</span></button>`).join('')}</div>
-    <div class="subttl">Brouillard <small>${S.light?'visible la nuit':''}</small></div>
+    <div class="subttl">Brouillard</div>
     <div class="wxrow">${wb('fog-rev','eraser','Révéler',tool==='fog'&&FOG.mode==='rev')}${wb('fog-hide','brush','Masquer',tool==='fog'&&FOG.mode==='hide')}${wb('fog-all','sun','Tout révéler',false)}${wb('fog-none','moon','Tout masquer',false)}</div>
     <div class="crange fogr"><span class="cap">Taille</span><input type="range" min="1" max="15" step="1" value="${DG.n}" id="fog-r" aria-label="Taille du pinceau"><b id="fog-rv">${DG.n} m</b></div>
     <label class="switch"><input type="checkbox" id="fog-auto" ${S.fogAuto!==false?'checked':''}>Les joueurs découvrent en avançant</label>`)+`
