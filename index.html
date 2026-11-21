@@ -4867,8 +4867,8 @@ const WINIMG={cyber:{src:'res/themes/ruelle/fenetre.png'},crypte:{src:'res/theme
 function winImgLoad(k){ const o=WINIMG[k]; if(o.im) return o.px?o:null; o.im=new Image(); o.im.onload=()=>{ const c=document.createElement('canvas'); c.width=o.im.naturalWidth; c.height=o.im.naturalHeight; c.getContext('2d').drawImage(o.im,0,0);
   o.px=new Uint32Array(c.getContext('2d').getImageData(0,0,c.width,c.height).data.buffer.slice(0)); o.w=c.width; o.h=c.height; fpsLater(); }; o.im.src=o.src; return null; }
 /* portes en image : remplacent la texture de porte du set (le battant coulisse comme les autres) */
-const DOORIMG={crypte:'res/themes/crypte/porte.png',trottoir:'res/themes/ruelle/porte.webp',bitume:'res/themes/ruelle/porte.webp',interieur:'res/themes/ruelle/porte.webp',ruelle:'res/themes/ruelle/porte.webp'};
-const DOORREL={trottoir:'res/themes/ruelle/porte-relief.png'}; DOORREL.bitume=DOORREL.ruelle=DOORREL.interieur=DOORREL.trottoir; DOORREL.crypte='res/themes/crypte/porte-relief.png';
+const DOORIMG={flamingo:'res/themes/flamingo/porte.webp',crypte:'res/themes/crypte/porte.png',trottoir:'res/themes/ruelle/porte.webp',bitume:'res/themes/ruelle/porte.webp',interieur:'res/themes/ruelle/porte.webp',ruelle:'res/themes/ruelle/porte.webp'};
+const DOORREL={trottoir:'res/themes/ruelle/porte-relief.png'}; DOORREL.bitume=DOORREL.ruelle=DOORREL.interieur=DOORREL.trottoir; DOORREL.crypte='res/themes/crypte/porte-relief.png'; DOORREL.flamingo='res/themes/flamingo/porte-relief.png';
 const DOORG={crypte:{src:'res/themes/crypte/grille.png',rel:'res/themes/crypte/grille-relief.png'}};   /* porte à grille (évidée) */
 function doorImg(k,T){ const N=T.N, ld=(src,f)=>{ const im=new Image(); im.onload=()=>{ const c=document.createElement('canvas'); c.width=c.height=N; const x=c.getContext('2d'); x.drawImage(im,0,0,N,N); f(x.getImageData(0,0,N,N).data); fpsLater(); }; im.src=src; };
   const rl=d=>{ const r=new Float32Array(N*N); for(let i=0;i<r.length;i++) r[i]=d[i*4]/255*.07; return r; };
