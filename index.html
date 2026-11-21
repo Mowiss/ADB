@@ -4363,7 +4363,7 @@ function dgEdgeAt(wx,wy){ const fx=wx/CELL, fy=wy/CELL, dh=Math.abs(fy-Math.roun
   if(dh<dv){ const i=Math.floor(fx), j=Math.round(fy); return {k:`${i},${j},h`,a:[i,j-1],b:[i,j]}; }
   const i=Math.round(fx), j=Math.floor(fy); return {k:`${i},${j},v`,a:[i-1,j],b:[i,j]}; }
 const dgEdgeSeg=k=>{ const [i,j,o]=k.split(','), X=+i*CELL, Y=+j*CELL; return o==='h'?[X,Y,X+CELL,Y]:[X,Y,X,Y+CELL]; };
-function dgPub(){ if(!S.dg) return null; const d={}; for(const k in (S.dg.d||{})){ const o=S.dg.d[k]; d[k]=dgHid(o)?{w:1}:{open:!!o.open,lk:o.lk?1:0}; } return {on:!!S.dg.on,hub:!!S.dg.hub,th:S.dg.th,c:S.dg.c,m:S.dg.m||null,veg:S.dg.veg||null,lum:S.dg.lum||null,ob:S.dg.ob||null,w:S.dg.w||null,ew:S.dg.ew||null,v2:!!S.dg.v2,cl:S.dg.cl||null,d}; }
+function dgPub(){ if(!S.dg) return null; const d={}; for(const k in (S.dg.d||{})){ const o=S.dg.d[k]; d[k]=dgHid(o)?{w:1}:{open:!!o.open,lk:o.lk?1:0,gr:o.gr?1:0}; } return {on:!!S.dg.on,hub:!!S.dg.hub,th:S.dg.th,c:S.dg.c,m:S.dg.m||null,veg:S.dg.veg||null,lum:S.dg.lum||null,ob:S.dg.ob||null,w:S.dg.w||null,ew:S.dg.ew||null,v2:!!S.dg.v2,cl:S.dg.cl||null,d}; }
 function dgDoorClick(wx,wy){ const e=dgEdgeAt(wx,wy); if(!dgOpen(...e.a)||!dgOpen(...e.b)){ toast('Une porte se place entre deux cases creusées',true); return; }
   const D=dgEnsure(); D.d=D.d||{}; const o=D.d[e.k];
   if(DG.tool==='door'){ if(!o) D.d[e.k]={open:false}; else if(o.s){ delete o.s; delete o.f; } else { dgDoorEdit(e.k); return; } }
@@ -4375,7 +4375,9 @@ function dgHover(wx,wy){ if(['door','secret','wall','unwall','win','iwall'].incl
 function dgDoorEdit(k){ const o=S.dg&&S.dg.d&&S.dg.d[k]; if(!o) return; const st=o.lk?'lk':o.open?'open':'shut';
   const opt=(v,ico,l)=>`<button type="button" class="wxb${st===v?' on':''}" data-dp="${v}">${ico}<span>${l}</span></button>`;
   openDialog(`<div class="dphead"><h3>Porte</h3><button class="ib" type="button" id="dp-del" title="Supprimer la porte">${IB('bin')}</button></div>
-    <div class="wxrow dpseg">${opt('open',dgI('iwall',1.7),'Ouverte')}${opt('shut',dgI('door',1.7),'Fermée')}${opt('lk','<i class="dplk">🔒</i>','Verrouillée')}</div>`);
+    <div class="wxrow dpseg">${opt('open',dgI('iwall',1.7),'Ouverte')}${opt('shut',dgI('door',1.7),'Fermée')}${opt('lk','<i class="dplk">🔒</i>','Verrouillée')}</div>
+    <div class="wxrow dpseg" style="margin-top:8px"><button type="button" class="wxb${!o.gr?' on':''}" data-dg="0"><span>Pleine</span></button><button type="button" class="wxb${o.gr?' on':''}" data-dg="1"><span>À grille</span></button></div>`);
+  document.querySelectorAll('[data-dg]').forEach(b=>b.onclick=()=>{ if(b.dataset.dg==='1') o.gr=1; else delete o.gr; dlg.close(); drawDgLater(); fpsLater(); markDirty(); sync(); });
   document.querySelectorAll('[data-dp]').forEach(b=>b.onclick=()=>{ const v=b.dataset.dp; o.open=v==='open'; o.lk=v==='lk'; if(!o.lk) delete o.lk; dlg.close(); drawDgLater(); fpsLater(); markDirty(); sync(); });
   $('dp-del').onclick=()=>{ delete S.dg.d[k]; dlg.close(); drawDgLater(); fpsLater(); markDirty(); sync(); }; }
 /* une porte ouverte au clic se referme seule au bout de 3 s (pas si quelqu'un est dans l'encadrement) */
@@ -4839,14 +4841,17 @@ function leafCeil(x,N,rnd,h0,h1,l0,l1){ for(let i=0;i<55;i++){ const cx=rnd()*N,
 /* sols en image (trottoir, route cyberpunk) : grandes dalles qui couvrent plusieurs cases, sans répétition à chaque mètre */
 const FLIMG={trottoir:{src:'res/themes/ruelle/trottoir.webp',cw:3,ch:2.234},bitume:{src:'res/themes/ruelle/route.webp',cw:4,ch:4},crypte:{src:'res/themes/crypte/sol.webp',cw:4,ch:2.23},interieur:{src:'res/themes/ruelle/sol-interieur.webp',cw:4,ch:3}};
 /* fenêtre en image (cyberpunk) : cadre en relief, vitre transparente (alpha 128 dans l'image) */
-const WINIMG={cyber:{src:'res/themes/ruelle/fenetre.png'}}, WIN_OF={trottoir:'cyber',bitume:'cyber',ruelle:'cyber',interieur:'cyber'};
+const WINIMG={cyber:{src:'res/themes/ruelle/fenetre.png'},crypte:{src:'res/themes/crypte/fenetre.png'}}, WIN_OF={crypte:'crypte',trottoir:'cyber',bitume:'cyber',ruelle:'cyber',interieur:'cyber'};
 function winImgLoad(k){ const o=WINIMG[k]; if(o.im) return o.px?o:null; o.im=new Image(); o.im.onload=()=>{ const c=document.createElement('canvas'); c.width=o.im.naturalWidth; c.height=o.im.naturalHeight; c.getContext('2d').drawImage(o.im,0,0);
   o.px=new Uint32Array(c.getContext('2d').getImageData(0,0,c.width,c.height).data.buffer.slice(0)); o.w=c.width; o.h=c.height; fpsLater(); }; o.im.src=o.src; return null; }
 /* portes en image : remplacent la texture de porte du set (le battant coulisse comme les autres) */
-const DOORIMG={trottoir:'res/themes/ruelle/porte.webp',bitume:'res/themes/ruelle/porte.webp',interieur:'res/themes/ruelle/porte.webp',ruelle:'res/themes/ruelle/porte.webp'};
-const DOORREL={trottoir:'res/themes/ruelle/porte-relief.png'}; DOORREL.bitume=DOORREL.ruelle=DOORREL.interieur=DOORREL.trottoir;
+const DOORIMG={crypte:'res/themes/crypte/porte.png',trottoir:'res/themes/ruelle/porte.webp',bitume:'res/themes/ruelle/porte.webp',interieur:'res/themes/ruelle/porte.webp',ruelle:'res/themes/ruelle/porte.webp'};
+const DOORREL={trottoir:'res/themes/ruelle/porte-relief.png'}; DOORREL.bitume=DOORREL.ruelle=DOORREL.interieur=DOORREL.trottoir; DOORREL.crypte='res/themes/crypte/porte-relief.png';
+const DOORG={crypte:{src:'res/themes/crypte/grille.png',rel:'res/themes/crypte/grille-relief.png'}};   /* porte à grille (évidée) */
 function doorImg(k,T){ const N=T.N, ld=(src,f)=>{ const im=new Image(); im.onload=()=>{ const c=document.createElement('canvas'); c.width=c.height=N; const x=c.getContext('2d'); x.drawImage(im,0,0,N,N); f(x.getImageData(0,0,N,N).data); fpsLater(); }; im.src=src; };
-  ld(DOORIMG[k],d=>{ T.door=new Uint32Array(d.buffer.slice(0)); }); if(DOORREL[k]) ld(DOORREL[k],d=>{ const r=new Float32Array(N*N); for(let i=0;i<r.length;i++) r[i]=d[i*4]/255*.07; T.drel=r; }); }
+  const rl=d=>{ const r=new Float32Array(N*N); for(let i=0;i<r.length;i++) r[i]=d[i*4]/255*.07; return r; };
+  ld(DOORIMG[k],d=>{ T.door=new Uint32Array(d.buffer.slice(0)); }); if(DOORREL[k]) ld(DOORREL[k],d=>{ T.drel=rl(d); });
+  if(DOORG[k]){ T.grille={N}; ld(DOORG[k].src,d=>{ T.grille.door=new Uint32Array(d.buffer.slice(0)); }); ld(DOORG[k].rel,d=>{ T.grille.drel=rl(d); }); } }
 /* plafonds en image */
 const CLIMG={trottoir:{src:'res/themes/ruelle/plafond.webp',cw:4,ch:2.23},crypte:{src:'res/themes/crypte/plafond.webp',cw:4,ch:2.23}}; CLIMG.bitume=CLIMG.ruelle=CLIMG.interieur=CLIMG.trottoir;
 /* murs en image : continus le long du mur (cw cases de large, ch de haut) */
@@ -5224,6 +5229,7 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
         if(af>200){ const c=WO.px[jf], l=Math.max(c&255,(c>>8)&255,(c>>16)&255); B[i]=shL(c,l>150?Math.max(f,.9*vis(hx,hy)):f*1.05,wa); DZ[i]=d-P/nrm*.5; continue; }
         const j0=at(u0,z), a0=j0<0?0:WO.px[j0]>>>24;
         if(a0>200){ B[i]=sh(B[i],.45); continue; }                         /* ombre du cadre sur le mur */
+        if(a0>0&&a0<=60&&DZ[i]>=d-.01){ DZ[i]=Infinity; continue; }   /* barreaux : vide entre les barreaux, sans vitre */
         if(a0>60&&a0<200&&DZ[i]>=d-.01){ DZ[i]=Infinity; if(!GS[i]){ GD[i]=d; GS[i]=((u0*9+(z-Z0)*5)%1)<.12?2:1; GLASS=true; } } } };   /* vitre : on voit à travers */
     /* porte en relief réel : cadre et boîtier avancent (jusqu'à 7 cm), leurs flancs se voient de biais */
     /* porte en relief réel : le cadre (fixe) et le boîtier / la poignée (sur le battant qui coulisse) avancent ; flancs dans l'ombre */
@@ -5233,10 +5239,10 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
       const tn=(u,z)=>{ u=1-u; if(u<0||u>=1||z<0||z>=1) return -1; return ((1-z)*N|0)*N+((u*N)|0); };
       const to=(u,z)=>{ u=1-u+off; if(u<0||u>=1||z<0||z>=1) return -1; return ((1-z)*N|0)*N+((u*N)|0); };   /* battant décalé de l'ouverture */
       for(let y=yT;y<=yB;y++){ const z=eye-(y+.5-h2)*d/PS-z0, k=(z+z0-eye)/d/nrm; let c=-1, ff=f;
-        { const h=.055, j=tn(w0-h*tg,z-k*h); if(j>=0&&DR[j]>=FR){ c=TX.door[j]; ff=f*1.08; } }
-        if(c===-1&&off<1) for(const h of [.044,.033]){ const j=to(w0-h*tg,z-k*h), jn=tn(w0-h*tg,z-k*h); if(j>=0&&DR[j]<FR&&DR[j]>=h-.004&&!(jn>=0&&DR[jn]>=FR)){ c=TX.door[j]; ff=f*1.06; break; } }
+        { const h=.055, j=tn(w0-h*tg,z-k*h); if(j>=0&&DR[j]>=FR&&(TX.door[j]>>>24)>127){ c=TX.door[j]; ff=f*1.08; } }
+        if(c===-1&&off<1) for(const h of [.044,.033]){ const j=to(w0-h*tg,z-k*h), jn=tn(w0-h*tg,z-k*h); if(j>=0&&DR[j]<FR&&DR[j]>=h-.004&&!(jn>=0&&DR[jn]>=FR)&&(TX.door[j]>>>24)>127){ c=TX.door[j]; ff=f*1.06; break; } }
         if(c===-1){ const i0=tn(w0,z); if(i0<0) continue; if(DR[i0]>=FR){ c=TX.door[i0]; ff=f*.42; }
-          else { if(off>=1) continue; const i1=to(w0,z); if(i1<0||DR[i1]>=FR) continue; c=TX.door[i1]; if(DR[i1]>.01) ff=f*.45; } }
+          else { if(off>=1) continue; const i1=to(w0,z); if(i1<0||DR[i1]>=FR||(TX.door[i1]>>>24)<128) continue; c=TX.door[i1]; if(DR[i1]>.01) ff=f*.45; } }
         put(y,shL(c,ff,wa),d); } };
     const faceImg=(z0,z1,d,WI)=>{ const yT=Math.max(0,Math.ceil(h2+(eye-z1)*PS/d)), yB=Math.min(H-1,Math.floor(h2+(eye-z0)*PS/d)); if(yB<yT) return;
       const flip=!(side===0&&rdx>0||side===1&&rdy<0); let uw=side===0?cam.y+d*rdy:cam.x+d*rdx; if(flip) uw=-uw; const tx=((((uw/WI.cw)%1)+1)%1*WI.w)|0, hx=cam.x+d*rdx, hy=cam.y+d*rdy;
@@ -5279,10 +5285,10 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
       if(!nf&&cur.blk) break;
       if(!nf){ if(V2||cur.iw||virt||dgWNo(mx,my)){ nf=cur; virt=true; } else wt=TT.wall; } else virt=false;
       let doff=0;
-      if(door&&!dgHid(door)){ const p=doorP(dgEK(pmx,pmy,mx,my),door); if(TT.drel&&TT.door){ faceDoor(fh,d0,p,TT); } else if(p<1){ let u=side===0?cam.y+d0*rdy:cam.x+d0*rdx; u-=Math.floor(u); if(u>=p){ wt=TT.door; doff=p; } } }
+      if(door&&!dgHid(door)){ const p=doorP(dgEK(pmx,pmy,mx,my),door); if(TT.drel&&TT.door){ const GX=door.gr&&TT.grille&&TT.grille.door&&TT.grille.drel?TT.grille:TT; faceDoor(fh,d0,p,GX); } else if(p<1){ let u=side===0?cam.y+d0*rdy:cam.x+d0*rdx; u-=Math.floor(u); if(u>=p){ wt=TT.door; doff=p; } } }
       else if(door&&dgShut(door)) wt=TT.wall;
       const WH=CC?+CC.h||1:1;
-      if(door&&!dgHid(door)){ const fl=dgFlank(pmx,pmy,mx,my), lt=Math.min(CC?+CC.h||1:99,Math.max(WH,fl.h)), LX=fl.t&&fl.h>=WH?fpsTextures(fl.t):TT; if(lt>fh+1){ const ft=fl.t||cur.th; if((ft==='trottoir'||ft==='bitume'||ft==='ruelle')&&FAC.ready) faceFac(fh+1,lt,d0); else face(fh+1,lt,d0,LX.wall,LX.N); } }   /* linteau : la porte reste 1 × 1 */
+      if(door&&!dgHid(door)){ const fl=dgFlank(pmx,pmy,mx,my), lt=Math.min(CC?+CC.h||1:99,Math.max(WH,fl.h)), LX=fl.t&&fl.h>=WH?fpsTextures(fl.t):TT; if(lt>fh+1){ const ft=fl.t||cur.th; const LI=WLIMG[ft]; if(LI&&LI.px) faceImg(fh+1,lt,d0,LI); else if((ft==='trottoir'||ft==='bitume'||ft==='ruelle')&&FAC.ready) faceFac(fh+1,lt,d0); else face(fh+1,lt,d0,LX.wall,LX.N); } }   /* linteau : la porte reste 1 × 1 */
       if(wt){ if(wt===TT.door&&TT.drel) faceDoor(fh,d0,doff,TT); else face(fh,wt===TT.door?fh+1:fh+WH,d0,wt,N,doff); break; }
       const nfh=virt?(S.dg.h&&S.dg.h[mx+','+my]!=null?+S.dg.h[mx+','+my]:fh):dgH(mx,my), NT=fpsTextures(nf.th);
       if(nfh>fh) face(fh,nfh,d0,NT.side,NT.N);                                   /* marche qui monte */
