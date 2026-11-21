@@ -5305,7 +5305,7 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
       for(let xx=0;xx<W;xx++){ const cX=2*xx/W-1, rdx=dx+px*cX, rdy=dy+py*cX, den=rdx*ey-rdy*ex; if(Math.abs(den)<1e-6) continue;
         const t=((ax-cam.x)*ey-(ay-cam.y)*ex)/den, u=((ax-cam.x)*rdy-(ay-cam.y)*rdx)/den; if(t<=.05||u<0||u>1) continue;
         const top=h2+(eye-hgt)*PS/t, bot=h2+eye*PS/t, yA=Math.max(0,Math.ceil(top)), yB=Math.min(H-1,Math.floor(bot)), f=lit(t)*.7*vis(cam.x+t*rdx,cam.y+t*rdy), tx=((u*.12+q.o)*N|0)&(N-1);
-        for(let y=yA;y<=yB;y++){ const i2=y*W+xx; if(DZ[i2]<=t) continue; const z=eye-(y+.5-h2)*t/PS, ty=((1-(z-Math.floor(z)))*N|0)&(N-1); B[i2]=sh(TX.wall[ty*N+tx],f); DZ[i2]=t; } } } }
+        for(let y=yA;y<=yB;y++){ const i2=y*W+xx; if(DZ[i2]<=t) continue; const z=eye-(y+.5-h2)*t/PS, ty=((1-(z-Math.floor(z)))*N|0)&(N-1); const CI=WLIMG[q.t]; B[i2]=sh(CI&&CI.px?CI.px[((((1-(z/CI.ch)%1)*CI.h)|0)%CI.h)*CI.w+(((u*.12+q.o)*CI.w|0)%CI.w)]:TX.wall[ty*N+tx],f); DZ[i2]=t; } } } }
   /* végétation en X : deux plans croisés par case, testés colonne par colonne */
   { const VV=S.dg&&S.dg.veg; if(VV){ const L2=[]; for(const k in VV){ const p=k.indexOf(','), i=+k.slice(0,p), j=+k.slice(p+1), cx=i+.5-cam.x, cy=j+.5-cam.y, dd=cx*cx+cy*cy; if(dd>900) continue; const o=vegImg(VV[k]); if(!o.px) continue; if(vis(i+.5,j+.5)<.05&&!(LON&&la(i+.5,j+.5))) continue; L2.push({i,j,o,key:VV[k],dd}); }
     for(const g of L2){ const kind=g.key.split('-')[1], hg=VEG_H[kind]*(g.key==='desert-arbre'?.95:1), wd=Math.min(1.45,hg*g.o.w/g.o.h), hw=wd/2/Math.SQRT2, cx=g.i+.5, cy=g.j+.5, sv=vis(cx,cy);
