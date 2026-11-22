@@ -3939,6 +3939,7 @@ const IC={o_melee:'<g transform="translate(1.90 1.85) scale(0.848)" stroke-width
   daynight:'<circle cx="12" cy="12" r="4.2"/><path d="M12 7.8a4.2 4.2 0 0 1 0 8.4z" fill="currentColor"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/>',
   fine:'<circle cx="12" cy="12" r="4.6" fill="currentColor" fill-opacity=".25"/><path d="M12 1.8v3.2M12 19v3.2M1.8 12H5M19 12h3.2M4.8 4.8l2.2 2.2M17 17l2.2 2.2M4.8 19.2L7 17M17 7l2.2-2.2"/>',
   rain:'<path d="M7 15.5a4 4 0 0 1-.6-7.96 5.5 5.5 0 0 1 10.6 1.46 3.25 3.25 0 0 1 .5 6.5z"/><path d="M8.5 18l-1 2.5M12.5 18l-1 2.5M16.5 18l-1 2.5"/>',
+  envir:'<path d="M8.5 7.5a4 4 0 0 1 7.6-1"/><path d="M12 1.8v1.4M5.7 4.3l1 1M18.3 4.3l-1 1M4 9.5h1.3"/><path d="M7 20a4 4 0 0 1-.6-7.96 5.5 5.5 0 0 1 10.6 1.46 3.25 3.25 0 0 1 .5 6.5z"/>',
   acid:'<path d="M7 14a4 4 0 0 1-.6-7.96 5.5 5.5 0 0 1 10.6 1.46 3.25 3.25 0 0 1 .5 6.5z"/><path d="M8.5 17.5v.5M12.5 18.5v.5M16.5 17.5v.5M10.5 21v.01M14.5 21v.01"/><circle cx="12" cy="10.2" r="1.2"/>',
   demo:'<path d="M7 14.5a4 4 0 0 1-.6-7.96 5.5 5.5 0 0 1 10.6 1.46 3.25 3.25 0 0 1 .5 6.5"/><path d="M12.8 12.5l-2.6 4.3h3.4l-2.4 4.7"/><path d="M18.5 17.5l.5 1.3 1.3.5-1.3.5-.5 1.3-.5-1.3-1.3-.5 1.3-.5zM5.5 17.5v.01"/>',
   comet:'<circle cx="16.5" cy="7.5" r="3"/><path d="M14.3 9.7L4 20M15.5 10.4L8 18M13.6 8.5L6 16M17 4.5l.5-1.5M19.5 7.5H21"/>',
@@ -8710,7 +8711,7 @@ function wire(){ wireTouch(); $('b-undo').innerHTML=IB('undo'); $('b-redo').inne
   // icônes de l'interface
   $('sc-ico').innerHTML=IB('film'); $('sc-prev').innerHTML=IB('left',2); $('sc-next').innerHTML=IB('right',2); $('sc-up').innerHTML=IB('up',2); $('sc-down').innerHTML=IB('down',2);
   $('b-player').innerHTML=IB('screen'); $('b-player').classList.add('icon'); $('b-net').insertAdjacentHTML('afterbegin',IB('table')); $('b-full').innerHTML=IB('full'); $('b-settings').insertAdjacentHTML('afterbegin',IB('gear'));
-  $('rb-draw').innerHTML=IB('pen'); $('rb-jet').innerHTML=IB('skull'); $('rb-item').innerHTML=IB('box'); $('rb-fond').innerHTML=IB('planet'); $('rb-dgn').innerHTML=dgI('dgn',1.7);
+  $('rb-draw').innerHTML=IB('pen'); $('rb-jet').innerHTML=IB('skull'); $('rb-item').innerHTML=IB('box'); $('rb-fond').innerHTML=IB('envir'); $('rb-dgn').innerHTML=dgI('dgn',1.7);
   $('rb-notes').innerHTML=IB('note'); $('rb-roll').innerHTML=D10ICO; $('rb-loot').innerHTML=IB('coins'); $('rb-map').innerHTML=IB('map'); $('rb-regles').innerHTML=IB('book'); $('scn-ico').innerHTML=IB('scroll',1.5);
   document.querySelectorAll('[data-left]').forEach(b=>b.onclick=()=>openLeft(b.dataset.left));
   $('b-shuffle').innerHTML=IB('shuffle'); $('b-next').innerHTML=IB('next'); $('b-timer').innerHTML=IB('hourglass');
