@@ -4267,8 +4267,8 @@ function renderFoW(){ board.classList.remove('night'); mapWxPaint(); const cv=$(
   P.forEach(p=>{ const pts=sightPoly(p), cx=X(p.x/CELL), cy=Y(p.y/CELL), rr=perR(p)*V.z*k, g=x.createRadialGradient(cx,cy,rr*.82,cx,cy,rr); g.addColorStop(0,'#000'); g.addColorStop(1,'rgba(0,0,0,0)'); x.fillStyle=g;
     x.beginPath(); pts.forEach(([a,b],i)=>i?x.lineTo(X(a),Y(b)):x.moveTo(X(a),Y(b))); x.closePath(); x.fill();  x.fillStyle='#000'; x.beginPath(); x.arc(cx,cy,(p.s||1)*CELL*.55*V.z*k,0,7); x.fill(); });   /* le jeton lui-même reste visible */   /* champ de vision : coupé par les murs, angles morts compris */
   x.globalCompositeOperation='source-over'; }
-function castFit(){ const P=S.tokens.filter(t=>t.type==='player'&&!t.hidden&&t.kind!=='vehicle'&&!t.inveh); if(!P.length) return; let a=Infinity,b=Infinity,c=-Infinity,d=-Infinity; P.forEach(t=>{ const R=perR(t); a=Math.min(a,t.x-R); b=Math.min(b,t.y-R); c=Math.max(c,t.x+R); d=Math.max(d,t.y+R); });
-  const r=board.getBoundingClientRect(); V.z=clamp(Math.min(r.width/(c-a),r.height/(d-b))*.92,.1,4); V.x=r.width/2-(a+c)/2*V.z; V.y=r.height/2-(b+d)/2*V.z; applyView(); }
+function castFit(){ const me=NETVIEW&&ME?S.tokens.find(t=>t.owner===ME&&t.type==='player'&&t.kind!=='vehicle'):null, P=me?[me]:S.tokens.filter(t=>t.type==='player'&&!t.hidden&&t.kind!=='vehicle'&&!t.inveh); if(!P.length) return;   /* chez un joueur : centré sur son personnage */ let a=Infinity,b=Infinity,c=-Infinity,d=-Infinity; P.forEach(t=>{ const R=perR(t); a=Math.min(a,t.x-R); b=Math.min(b,t.y-R); c=Math.max(c,t.x+R); d=Math.max(d,t.y+R); });
+  const r=board.getBoundingClientRect(); V.z=clamp(Math.min(r.width/(c-a),r.height/(d-b))*(me?.8:.92),.1,4); V.x=r.width/2-(a+c)/2*V.z; V.y=r.height/2-(b+d)/2*V.z; applyView(); }
 function renderFoWNuit(){
   board.classList.toggle('night',!S.light); const cv=$('fow');
   if(isPlayer) document.querySelectorAll('#tokens .tk').forEach(el=>{ const t=tok(el.dataset.id), hid=!S.light&&t&&(t.type==='mob'||t.type==='npc'||(t.type==='prop'&&t.kind!=='deco'))&&!inLight(t); el.classList.toggle('unseen',!!hid); });
