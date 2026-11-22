@@ -3281,6 +3281,21 @@ input.hue{-webkit-appearance:none;appearance:none;height:12px;border-radius:6px;
 .vtab:hover{color:var(--ink-strong);background:var(--wash)}
 .vtab.on{border-left-color:var(--tc);color:var(--tc)}
 .drawer{position:fixed;top:var(--bar);right:var(--tabs);bottom:0;width:min(440px,100vw - 40px);background:var(--paper);border-left:1px solid var(--rule);z-index:40;transform:translateX(calc(100% + 42px));transition:transform .3s ease;display:flex;flex-direction:column;padding:16px 18px 16px 18px}
+.ldrawer#taro{width:min(780px,calc(100vw - var(--rail) - 8px))}
+.taro-top{display:flex;gap:18px;align-items:flex-start;margin-bottom:16px}
+.taro-deck{position:relative;width:104px;flex:none;padding:0;border:0;background:none;cursor:pointer;transition:transform .12s}.taro-deck:hover{transform:translateY(-2px)}
+.taro-deck svg{position:relative;display:block;width:100%;height:auto;filter:drop-shadow(0 3px 6px rgba(0,0,0,.18))}
+.taro-deck i{position:absolute;inset:0;border-radius:8px;background:#fff;border:1px solid var(--rule)}.taro-deck i:nth-child(1){transform:translate(6px,6px)}.taro-deck i:nth-child(2){transform:translate(3px,3px)}
+.taro-deck.empty svg{filter:grayscale(1);opacity:.45}
+.taro-acts{display:flex;flex-direction:column;gap:8px;min-width:0;flex:1}.taro-acts .btn{justify-content:flex-start}
+.taro-jal{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}.taro-j{display:inline-flex;align-items:center;border:1px solid var(--rule);border-radius:999px;background:var(--paper);overflow:hidden}
+.taro-j button{border:0;background:none;padding:5px 10px;font:700 12px var(--f-body);color:var(--ink);cursor:pointer}.taro-j button:hover{color:var(--tc)}.taro-j .x{padding:5px 8px 5px 2px;display:grid;place-items:center}.taro-j .x svg{width:12px;height:12px}
+.taro-row{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.taro-card{cursor:grab;transition:transform .15s}.taro-card svg{display:block;width:100%;height:auto;filter:drop-shadow(0 3px 8px rgba(0,0,0,.14))}.taro-card:hover{transform:translateY(-3px)}
+.taro-card.drag{opacity:.35}.taro-card.over{transform:translateX(6px)}.taro-card.flip{animation:taroflip .55s ease-out}
+@keyframes taroflip{0%{transform:perspective(600px) rotateY(90deg)}100%{transform:perspective(600px) rotateY(0)}}
+.taro-or{display:flex;flex-direction:column;gap:8px}.taro-o{border-left:3px solid var(--ink-strong);padding:6px 10px;background:color-mix(in srgb,var(--paper) 92%,var(--ink) 8%);border-radius:0 8px 8px 0}
+.taro-o.inv{border-left-color:#d4483f}.taro-o b{font-family:var(--f-title);font-weight:600;letter-spacing:.06em;font-size:14px}.taro-o b small{font:700 11px var(--f-body);color:var(--ink-soft);margin-left:6px}.taro-o.inv b small{color:#d4483f}.taro-o p{margin:4px 0 0;font-size:13px;line-height:1.45}
 .ldrawer{left:var(--rail);right:auto;width:min(400px,calc(100vw - var(--rail) - 8px));border-left:0;border-right:1px solid var(--rule);transform:translateX(calc(-100% - var(--rail) - 6px));z-index:39}
 /* les volets de gauche passent derrière le bandeau du bas (sabliers + initiative) */
 .ldrawer{z-index:9;padding-bottom:calc(var(--bot) + var(--tim) + 10px)}.ldrawer .dscroll{padding-bottom:16px}
@@ -3741,6 +3756,7 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
     <button class="rb" type="button" data-left="notes" id="rb-notes" title="Notes du MJ" aria-pressed="false"></button>
     <button class="rb" type="button" data-left="roller" id="rb-roll" title="Jet libre" aria-pressed="false"></button>
     <button class="rb" type="button" data-left="loot" id="rb-loot" title="Butin" aria-pressed="false"></button>
+    <button class="rb" type="button" data-left="taro" id="rb-taro" title="Tarot" aria-pressed="false"></button>
     <button class="rb" type="button" data-left="mapdrw" id="rb-map" title="Carte du monde" aria-pressed="false"></button>
     <button class="rb" type="button" data-left="regles" id="rb-regles" title="Règles d'Aldebaran" aria-pressed="false"></button>
   </nav>
@@ -3821,6 +3837,7 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
     <div class="hist" id="rl-hist"></div>
   </div>
 </aside>
+<aside class="drawer ldrawer" id="taro" style="--tc:var(--c-per)" aria-label="Tarot"><header><h3>Tarot</h3></header><div class="dscroll" id="taro-body"></div></aside>
 <aside class="drawer ldrawer" id="loot" style="--tc:var(--c-for)" aria-label="Butin">
   <header><h3>Butin</h3></header>
   <div class="dscroll">
@@ -4436,7 +4453,7 @@ function dgEdgeAt(wx,wy){ const fx=wx/CELL, fy=wy/CELL, dh=Math.abs(fy-Math.roun
   const i=Math.round(fx), j=Math.floor(fy); return {k:`${i},${j},v`,a:[i-1,j],b:[i,j]}; }
 const dgEdgeSeg=k=>{ const [i,j,o]=k.split(','), X=+i*CELL, Y=+j*CELL; return o==='h'?[X,Y,X+CELL,Y]:[X,Y,X,Y+CELL]; };
 function dgPub(){ if(!S.dg) return null; const d={}; for(const k in (S.dg.d||{})){ const o=S.dg.d[k]; d[k]=dgHid(o)?{w:1}:o.tp?{tp:1,to:o.to||''}:{open:!!o.open,lk:o.lk?1:0,gr:o.gr?1:0}; } return {on:!!S.dg.on,hub:!!S.dg.hub,th:S.dg.th,c:S.dg.c,m:S.dg.m||null,veg:S.dg.veg||null,lum:S.dg.lum||null,ob:S.dg.ob||null,w:S.dg.w||null,ew:S.dg.ew||null,v2:!!S.dg.v2,cl:S.dg.cl||null,d}; }
-function dgDoorClick(wx,wy){ const e=dgEdgeAt(wx,wy); if(!dgOpen(...e.a)||!dgOpen(...e.b)){ toast('Une porte se place entre deux cases creusées',true); return; }
+function dgDoorClick(wx,wy){ const e=dgEdgeAt(wx,wy); if(!dgOpen(...e.a)&&!dgOpen(...e.b)){ toast('Une porte se place au bord d\'une case de sol',true); return; }   /* contre un mur, même sans rien derrière : elle ne s'ouvrira pas */
   const D=dgEnsure(); D.d=D.d||{}; const o=D.d[e.k];
   if(DG.tool==='tpdoor'){ if(!o) D.d[e.k]={tp:1,to:''}; else if(!o.tp){ D.d[e.k]={tp:1,to:''}; } dgDoorEdit(e.k); drawDgLater(); fpsLater(); markDirty(); sync(); return; }
   if(DG.tool==='door'){ if(!o||o.tp) D.d[e.k]={open:false}; else if(o.s){ delete o.s; delete o.f; } else { dgDoorEdit(e.k); return; } }
@@ -4465,7 +4482,8 @@ function dgAutoClose(k){ clearTimeout((FPS.dct=FPS.dct||{})[k]); FPS.dct[k]=setT
     const busy=S.tokens.some(t=>['player','mob','npc'].includes(t.type)&&!t.inveh&&near(t.x/CELL,t.y/CELL))||(FPS.cam&&FPS.mode==='play'&&near(FPS.cam.x,FPS.cam.y));
     if(busy){ FPS.dct[k]=setTimeout(tick,800); return; }
     o.open=false; drawDgLater(); fpsLater(); if(!isPlayer){ markDirty(); sync(); } },3000); }
-function dgToggleDoor(k){ const o=S.dg&&S.dg.d&&S.dg.d[k]; if(!o||dgHid(o)||o.lk||o.tp) return false; o.open=!o.open; if(o.open) dgAutoClose(k); drawDgLater(); fpsLater(); markDirty(); sync(); return true; }
+const dgDoorBlind=k=>{ const [i,j,o]=k.split(','), a=+i, b=+j; return o==='h'?!(dgOpen(a,b-1)&&dgOpen(a,b)):!(dgOpen(a-1,b)&&dgOpen(a,b)); };   /* porte plaquée contre un mur : rien derrière */
+function dgToggleDoor(k){ const o=S.dg&&S.dg.d&&S.dg.d[k]; if(!o||dgHid(o)||o.lk||o.tp) return false; if(dgDoorBlind(k)){ if(!o.open){ toast('La porte ne s\'ouvre pas'); return false; } } o.open=!o.open; if(o.open) dgAutoClose(k); drawDgLater(); fpsLater(); markDirty(); sync(); return true; }
 /* murs tracés tout autour d'une zone (carte de test) : texture et hauteur du style de chaque case */
 function dgAutoWalls(D){ const E=D.ew=D.ew||{}; for(const k in D.c){ const f=dgInfo(D.c[k]); if(f.iw) continue; const [i,j]=k.split(',').map(Number);
   [[0,-1],[1,0],[0,1],[-1,0]].forEach(([u,v])=>{ if(D.c[(i+u)+','+(j+v)]) return; const e=dgEK(i,j,i+u,j+v); if(!E[e]) E[e]={t:f.th,h:f.sky?(DG_TH[f.th].wh||1):1}; }); }
@@ -4513,6 +4531,8 @@ function dgPlanPat(th,x){ const o=DGPAT[th]; if(o) return o.ctx===x?o.pat:(o.pat
   else { const TX=fpsTextures(th); if(!TX||!TX.floor) return null; const N=TX.N, a=document.createElement('canvas'); a.width=a.height=N; const id=a.getContext('2d').createImageData(N,N); new Uint32Array(id.data.buffer).set(TX.floor.subarray(0,N*N)); a.getContext('2d').putImageData(id,0,0); cv=document.createElement('canvas'); cv.width=cv.height=R; const g=cv.getContext('2d'); g.imageSmoothingEnabled=true; g.drawImage(a,0,0,R,R); }
   const g=cv.getContext('2d'); g.globalAlpha=.35; g.fillStyle=T.floor2d; g.fillRect(0,0,cv.width,cv.height); g.globalAlpha=1;
   const pat=x.createPattern(cv,'repeat'); pat.setTransform(new DOMMatrix().scale(k)); DGPAT[th]={cv,pat,ctx:x,k}; return pat; }
+/* chiffres de hauteur : seulement en édition, volet Donjon ouvert */
+const DGED=()=>!isPlayer&&!!$('dgdrw')&&$('dgdrw').classList.contains('open');
 function drawDgLater(){ if(!DG.raf) DG.raf=requestAnimationFrame(()=>{ DG.raf=0; drawDg(); }); }
 function drawDg(){ const cv=$('dgn'); if(!cv) return; const r=board.getBoundingClientRect();
   if(!dgOn()||!r.width){ cv.hidden=true; return; } cv.hidden=false;
@@ -4536,7 +4556,7 @@ function drawDg(){ const cv=$('dgn'); if(!cv) return; const r=board.getBoundingC
   x.strokeStyle='#c0612e'; x.lineWidth=Math.max(3,2.5/V.z); x.lineCap='round'; x.beginPath();
   cells.forEach(([i,j])=>{ const h=dgH(i,j); if(dgOpen(i+1,j)&&Math.abs(dgH(i+1,j)-h)>.5001){ x.moveTo((i+1)*CELL,j*CELL+4); x.lineTo((i+1)*CELL,(j+1)*CELL-4); } if(dgOpen(i,j+1)&&Math.abs(dgH(i,j+1)-h)>.5001){ x.moveTo(i*CELL+4,(j+1)*CELL); x.lineTo((i+1)*CELL-4,(j+1)*CELL); } });
   x.stroke();
-  if(V.z*CELL>=34&&hk.length){ x.font='700 13px Quicksand,sans-serif'; x.textAlign='center'; x.textBaseline='middle'; hk.forEach(([i,j,v])=>{ x.fillStyle=dgOpen(i,j)?'rgba(20,20,30,.62)':'rgba(255,255,255,.5)'; x.fillText((v>0?'+':'')+String(v).replace('.',','),(i+.5)*CELL,(j+.5)*CELL); }); }
+  if(DGED()&&V.z*CELL>=34&&hk.length){ x.font='700 13px Quicksand,sans-serif'; x.textAlign='center'; x.textBaseline='middle'; hk.forEach(([i,j,v])=>{ x.fillStyle=dgOpen(i,j)?'rgba(20,20,30,.62)':'rgba(255,255,255,.5)'; x.fillText((v>0?'+':'')+String(v).replace('.',','),(i+.5)*CELL,(j+.5)*CELL); }); }
   if(S.grid!==false){ x.strokeStyle='rgba(0,0,0,.13)'; x.lineWidth=1.2/V.z; x.beginPath(); cells.forEach(([i,j])=>{ x.rect(i*CELL,j*CELL,CELL,CELL); }); x.stroke(); }
   x.lineCap='square';
   [false,true].forEach(inv=>{ x.strokeStyle=inv?'rgba(255,255,255,.55)':T.wall2d; x.lineWidth=inv?2/V.z+1:Math.max(5,3/V.z); x.setLineDash(inv?[7,6]:[]); x.beginPath();
@@ -4550,13 +4570,13 @@ function drawDg(){ const cv=$('dgn'); if(!cv) return; const r=board.getBoundingC
       if(o.inv){ if(pass){ x.setLineDash([6/V.z+3,5/V.z+3]); x.strokeStyle='rgba(255,255,255,.9)'; x.lineWidth=Math.max(3,2/V.z)+1; x.beginPath(); x.moveTo(ax,ay); x.lineTo(bx,by); x.stroke(); x.setLineDash([]); } continue; } if(Math.max(ax,bx)<i0*CELL||Math.min(ax,bx)>(i1+1)*CELL||Math.max(ay,by)<j0*CELL||Math.min(ay,by)>(j1+1)*CELL) continue; const th=DG_TH[o.t]||DG_TH.pierre;
       x.strokeStyle=pass?th.sw:'rgba(0,0,0,.7)'; x.lineWidth=pass?Math.max(5,3/V.z)+2:Math.max(5,3/V.z)+6; x.beginPath(); x.moveTo(ax,ay); x.lineTo(bx,by); x.stroke();
       if(pass&&o.win){ const mx=(ax+bx)/2, my=(ay+by)/2, hx=(bx-ax)*.3, hy=(by-ay)*.3; x.strokeStyle='#bfe8ff'; x.lineWidth=Math.max(2,1.5/V.z)+1; x.beginPath(); x.moveTo(mx-hx,my-hy); x.lineTo(mx+hx,my+hy); x.stroke(); } }
-    if(V.z*CELL>=80){ x.font='800 11px Quicksand,sans-serif'; x.textAlign='center'; x.textBaseline='middle'; for(const k in EE){ if(EE[k].inv) continue; const [ax,ay,bx,by]=dgEdgeSeg(k); x.fillStyle='rgba(20,20,30,.8)'; x.fillText(String(EE[k].h).replace('.',','),(ax+bx)/2+(ax===bx?9:0),(ay+by)/2+(ay===by?-9:0)); } }
+    if(DGED()&&V.z*CELL>=80){ x.font='800 11px Quicksand,sans-serif'; x.textAlign='center'; x.textBaseline='middle'; for(const k in EE){ if(EE[k].inv) continue; const [ax,ay,bx,by]=dgEdgeSeg(k); x.fillStyle='rgba(20,20,30,.8)'; x.fillText(String(EE[k].h).replace('.',','),(ax+bx)/2+(ax===bx?9:0),(ay+by)/2+(ay===by?-9:0)); } }
     x.restore(); }
   /* blocs de MUR : pleins, couleur de leur texture, hauteur */
   { const WW=S.dg.w||{}; x.font='800 13px Quicksand,sans-serif'; x.textAlign='center'; x.textBaseline='middle';
     for(const k in WW){ const o=WW[k]; if(o.no) continue; const p=k.indexOf(','), i=+k.slice(0,p), j=+k.slice(p+1); if(i<i0||i>i1||j<j0||j>j1) continue; const th=DG_TH[o.t]||DG_TH.pierre;
       x.fillStyle=th.sw; x.fillRect(i*CELL-.5,j*CELL-.5,CELL+1,CELL+1); x.fillStyle='rgba(0,0,0,.28)'; x.fillRect(i*CELL+4,j*CELL+4,CELL-8,CELL-8);
-      if(V.z*CELL>=30){ x.fillStyle='rgba(255,255,255,.85)'; x.fillText(String(o.h).replace('.',','),(i+.5)*CELL,(j+.5)*CELL); } } }
+      if(DGED()&&V.z*CELL>=30){ x.fillStyle='rgba(255,255,255,.85)'; x.fillText(String(o.h).replace('.',','),(i+.5)*CELL,(j+.5)*CELL); } } }
   /* végétation */
   const VV=S.dg.veg||{}; for(const k in VV){ const p=k.indexOf(','), i=+k.slice(0,p), j=+k.slice(p+1); if(i<i0||i>i1||j<j0||j>j1) continue; const o=vegImg(VV[k]); if(!o.px) continue;
     const big=VV[k].endsWith('-arbre'), sz=CELL*(big?1.25:.85), r=o.w/o.h, w=r>1?sz:sz*r, h=r>1?sz/r:sz; x.save(); x.imageSmoothingEnabled=false; x.globalAlpha=.95; x.drawImage(o.im,(i+.5)*CELL-w/2,(j+.5)*CELL+CELL*.42-h,w,h); x.restore(); }
@@ -4640,7 +4660,7 @@ function dgPaintEnd(g){ if(g&&g.from&&(DG.tool==='sel'||g.fs)){ const [a,b]=g.fr
     FPS.sprites.clear(); FPS.capK=null; drawDgLater(); fpsLater(); markDirty(); sync(); return; }
   if(g&&g.rc){ const r=g.rc; DG.rect=null; const pS=DG.pS==null?'blanc':DG.pS, pM=DG.pM==null?'blanc':DG.pM, P={sol:pS,cl:DG.pC,mur:pM,ch:DG.pch||DG.wh||2}, a0=Math.min(r.a[0],r.b[0]), a1=Math.max(r.a[0],r.b[0]), b0=Math.min(r.a[1],r.b[1]), b1=Math.max(r.a[1],r.b[1]);
     for(let i=a0;i<=a1;i++) for(let j=b0;j<=b1;j++) dgPaintCell(i,j,P);
-    if(P.mur){ const D=dgEnsure(), E=D.ew=D.ew||{}, put=(i,j,ni,nj)=>{ const k=dgEK(i,j,ni,nj), w=E[k]; if(w&&!w.inv){ w.t=P.mur; delete w.ta; delete w.tb; } else E[k]={t:P.mur,h:DG.wh||2}; };   /* une pièce : murs tout autour du rectangle */
+    if(P.mur){ const D=dgEnsure(), E=D.ew=D.ew||{}, put=(i,j,ni,nj)=>{ const k=dgEK(i,j,ni,nj), w=E[k]; if(w&&!w.inv){ if(i<ni||j<nj) w.ta=P.mur; else w.tb=P.mur; w.h=Math.max(+w.h||1,DG.wh||2); } else E[k]={t:P.mur,h:DG.wh||2}; };   /* mur déjà là (pièce voisine) : on ne repeint que la face intérieure */   /* une pièce : murs tout autour du rectangle */
       for(let i=a0;i<=a1;i++){ put(i,b0,i,b0-1); put(i,b1,i,b1+1); } for(let j=b0;j<=b1;j++){ put(a0,j,a0-1,j); put(a1,j,a1+1,j); } }
     FPS.sprites.clear(); FPS.capK=null; drawDgLater(); fpsLater(); markDirty(); sync(); return; } const L=g&&g.wl; if(!L) return; DG.wline=null; const D=dgEnsure(), E=D.ew=D.ew||{}, add=DG.tool==='wall', ks=[];
   if(L.a[0]===L.b[0]&&L.a[1]===L.b[1]) ks.push(dgEdgeAt(L.x,L.y).k);
@@ -5785,6 +5805,166 @@ function thRender(force){ const on=!!S.combat; let el=board.querySelector('.thea
       <i class="spot"></i><i class="shd"></i>${t.id===cur&&C.phase==='lit'?'<i class="finger">👇</i>':''}<div class="fig">${body}</div><div class="nm">${esc(t.name||'')}</div>${C.phase==='lit'?`<div class="hpb"><i style="width:${hp*100}%"></i></div>`:''}</div>`; }).join('');
   el.querySelector('.th-ctl').innerHTML=isPlayer?'':C.phase==='intro'?`<button type="button" class="btn" data-th="light">💡 Allumer la scène</button>`:`<button type="button" class="btn" data-th="dark">Éteindre</button>`; }
 setInterval(()=>{ if(S.combat||board.querySelector('.theatre')) thRender(); },250);
+
+/* =========================================================
+   Tarot du MJ : tirage de 5 cartes (endroit / inversée), oracles, tirages sauvegardés
+   Cartes blanches, dessins simplifiés ; dos au logo Aldebaran sur les bandes pastel
+   ========================================================= */
+const TARO_D = [
+  {n:"N°0 Le Mat",s:"🎭",t:"M",o:"Rencontre d'un mystérieux et loufoque inconnu qui peut aider le groupe dans leur prochaine tâche.",oi:"Rencontre d'un mystérieux et loufoque inconnu qui compte tromper le groupe pour son intérêt (vol, cannibalisme, s'amuser...)."},
+  {n:"N°1 Le Bateleur",s:"🪄",t:"M",o:"Rencontre d'un marchand ambulant proposant des objets magiques plus ou moins rares et à des prix raisonnables.",oi:"Rencontre d'un marchand ambulant proposant des objets \"magiques\". Attention car aucun de ses objets ne fonctionne vraiment, voir provoque de graves malédictions."},
+  {n:"N°2 La Papesse",s:"📿",t:"M",o:"Découverte imprévue de l'entrée d'une grotte ou d'un temple ancien en ruine. Il semble inhabité. L'endroit parfait pour se reposer ou chercher quelques objets.",oi:"Découverte imprévue de l'entrée d'une grotte ou d'un temple ancien en ruine. Bien qu'en ruine, il semblerait que ça grouille de squatteurs là-dedans."},
+  {n:"N°3 L'Impératrice",s:"👸🏼",t:"M",o:"Un émissaire arrive avec un héritage ou une invitation prestigieuse. Son arrivée valide le statut du groupe et leur donne accès à une ressource protégée.",oi:"Un messager apporte un ultimatum ou un ordre de mission trompeur afin de manipuler les attentes du groupe et les pousser à entrer en conflit avec une puissance."},
+  {n:"N°4 L'Empereur",s:"🤴🏻",t:"M",o:"Vous entendez une rumeur à propos d'un coup d'État. Aider, passer son chemin ou frapper un grand coup ? Le choix appartient au groupe.",oi:"Vous entendez une rumeur à propos d'un coup d'État. À moins que ce ne soit simplement que des rumeurs sans aucun fondement."},
+  {n:"N°5 Le Pape",s:"⛪",t:"M",o:"Rencontre avec une ou des personnes prônant pour leur religion : un mouvement bienveillant avec sa communauté.",oi:"Rencontre avec une ou des personnes prônant pour leur religion : une secte malfaisante qui agit en arrière-plan et tente de convertir grâce à la supercherie."},
+  {n:"N°6 L'Amoureux",s:"❤️",t:"M",o:"Le groupe croise une personne ou une créature qui pourrait devenir leur ami ou animal de compagnie, s'ils l'aident dans sa tâche.",oi:"Le groupe croise une personne ou une créature qui pourrait devenir leur ami ou animal de compagnie, mais il les trahira sûrement à la moindre occasion."},
+  {n:"N°7 Le Chariot",s:"🛒",t:"M",o:"Trouvaille d'un véhicule, une monture ou un vaisseau en plus ou moins bon état de marche.",oi:"Trouvaille d'un véhicule ou monture. En vérifiant mieux l'état général, le groupe comprend qu'il n'est bon que pour récupérer quelques pièces. Et encore..."},
+  {n:"N°8 La Justice",s:"⚖️",t:"M",o:"Le groupe croise une milice ou chasseur(s) de prime à la recherche d'un individu.",oi:"Le groupe croise une milice ou chasseur(s) de prime à la recherche du groupe !"},
+  {n:"N°9 L'Hermite",s:"🐚",t:"M",o:"Rencontre avec un autochtone qui sait lire dans l'avenir et propose au groupe de le lire pour l'un d'eux. Peut-être que sa prédiction est vraie ?",oi:"Rencontre avec un autochtone qui sait lire dans l'avenir. Mais celui-là est un charlatan. Il vous manipulera pour vous extorquer ou vous conduire à votre perte."},
+  {n:"N°10 La Roue de la Fortune",s:"🛞",t:"M",o:"Le groupe est chanceux ! Ils tombent exactement sur ce qu'ils cherchaient. Et s'ils ne cherchaient rien en particulier, l'un d'eux trébuche sur un objet enseveli.",oi:"Le groupe a perdu un objet de leur paquetage. Ils s'en apercevront plus tard. Sûrement quand ils en auront besoin."},
+  {n:"N°11 La Force",s:"💪🏻",t:"M",o:"Vous allez être confronté à une épreuve de FORCE, et pour ce faire vous disposerez d'un avantage.",oi:"Vous allez être confronté à une épreuve de FORCE, et pour ce faire vous disposerez d'un handicap."},
+  {n:"N°12 Le Pendu",s:"➰",t:"M",o:"Le groupe tombe sur une ou des personnes prisonnières, ils sont innocents !",oi:"Le groupe tombe sur une ou des personnes prisonnières, ce sont en réalité de vils manants qui profiteront de votre crédulité pour vous attaquer !"},
+  {n:"N°13 La Mort",s:"💀",t:"M",o:"Découverte d'un ou plusieurs cadavres, avec les loots qui vont avec. Mais une piste mène sûrement aux coupables.",oi:"Vous arrivez dans une zone où il est possible de croiser un mob légendaire."},
+  {n:"N°14 La Tempérance",s:"🫗",t:"M",o:"Des indices arrivent à vos oreilles et vous aideront à résoudre vos problèmes de la meilleure des façons. Si vous n'avez pas de problèmes, ils peuvent vous mener à la richesse.",oi:"Des indices arrivent à vos oreilles mais risquent de vous pousser aux mauvais choix. Si vous n'avez pas de problèmes, ils peuvent vous mener à votre perte."},
+  {n:"N°15 Le Diable",s:"😈",t:"M",o:"Vos dernières actions ont en réalité porté préjudice à un grand nombre de personnes. Ceux-ci chercheront à se venger.",oi:"Vos dernières actions ont finalement été bénéfiques pour les communautés avoisinantes. Si vous croisez leurs routes ils seront reconnaissants."},
+  {n:"N°16 La Maison Dieu",s:"🗼",t:"M",o:"Découverte d'une entrée vers ce qui pourrait être un donjon, ou un lieu inexploré d'une difficulté peu élevée.",oi:"Découverte d'une entrée vers ce qui pourrait être un donjon, ou un lieu inexploré d'une grande difficulté."},
+  {n:"N°17 L'Étoile",s:"⭐",t:"M",o:"Une bonne étoile veille sur le groupe. La prochaine bonne nuit de repos dans un vrai lit régénérera totalement l'ensemble du groupe.",oi:"Vous levez la tête et voyez la comète millénaire zébrer le ciel nocturne."},
+  {n:"N°18 La Lune",s:"🌒",t:"M",o:"La prochaine nuit va être étrange. Interrompue par des rêves ou des événements étranges qui apporteront des bonus ou des révélations.",oi:"La prochaine nuit va être étrange. Le rêve se transforme en cauchemar commun. Le groupe sera tourmenté."},
+  {n:"N°19 Le Soleil",s:"☀️",t:"M",o:"Il fait une superbe météo. Votre PERCEPTION et/ou votre CHARISME seront améliorés tant que vous êtes en extérieur.",oi:"Il fait une superbe météo. Mais le soleil est de plomb ! Votre FORCE et/ou votre RÉSISTANCE seront pénalisés quand vous êtes en extérieur."},
+  {n:"N°20 Le Jugement",s:"👨🏻‍⚖️",t:"M",o:"On vous rappelle à un concours que vous aviez oublié. Un message vous invite à récupérer votre lot... et cette fois, c'est pour de vrai.",oi:"Vous avez participé à un concours. Mais vous ne vous en souvenez plus. Vous recevez un message vous priant de venir récupérer votre lot... Mais c'est un piège."},
+  {n:"N°21 Le Monde",s:"🌍",t:"M",o:"L'atmosphère se calme. La météo va changer pour devenir peu à peu clémente et agréable pour voyager.",oi:"Les éléments se déchaînent. La météo va brutalement évoluer vers un chaos absolu. Trouvez un abri au plus vite."},
+  {n:"🌿As",v:"As",b:"🪵",t:"N",o:"Une plaine luxuriante, pas de créature ni d'objet mais vous vous y sentez bien.",oi:"La steppe aride. Il n'y a rien ici. Ni créature ni objet et en plus y rester vous met mal à l'aise."},
+  {n:"🌿2",v:"2",b:"🪵",t:"N",o:"Vous approchez d'un lieu habité par un ou des créatures faibles.",oi:"Vous approchez d'un lieu habité par une communauté rurale et plutôt pauvre."},
+  {n:"🌿3",v:"3",b:"🪵",t:"N",o:"Vous approchez d'un lieu habité par un ou des créatures faibles.",oi:"Vous approchez d'un lieu habité par une communauté rurale et plutôt pauvre."},
+  {n:"🌿4",v:"4",b:"🪵",t:"N",o:"Vous approchez d'un lieu habité par un ou des créatures de force moyenne.",oi:"Vous approchez d'un lieu habité par une communauté urbaine et prolétaire."},
+  {n:"🌿5",v:"5",b:"🪵",t:"N",o:"Vous approchez d'un lieu habité par un ou des créatures de force moyenne.",oi:"Vous approchez d'un lieu habité par une communauté urbaine et prolétaire."},
+  {n:"🌿6",v:"6",b:"🪵",t:"N",o:"Vous approchez d'un lieu habité par un ou des créatures costaudes.",oi:"Vous approchez d'un lieu habité par une communauté urbaine et bourgeoise."},
+  {n:"🌿7",v:"7",b:"🪵",t:"N",o:"Vous approchez d'un lieu habité par un ou des créatures puissantes.",oi:"Vous approchez d'un lieu habité par une communauté bourgeoise de noble lignée."},
+  {n:"🌿8",v:"8",b:"🪵",t:"N",o:"Vous approchez d'un lieu extérieur, jardin, clairière, cimetière dans un parfait état d'entretien.",oi:"Vous approchez d'un lieu extérieur, jardin, clairière, cimetière en décrépitude, voire un poil lugubre."},
+  {n:"🌿9",v:"9",b:"🪵",t:"N",o:"Vous approchez d'une petite bâtisse habitée.",oi:"Vous approchez d'une petite bâtisse à l'abandon."},
+  {n:"🌿10",v:"10",b:"🪵",t:"N",o:"Vous approchez d'une grande bâtisse habitée.",oi:"Vous approchez d'une grande bâtisse à l'abandon."},
+  {n:"🌿Valet",v:"Valet",b:"🪵",t:"F",o:"Vous approchez d'un bâtiment public fréquenté.",oi:"Vous approchez d'un bâtiment public à l'abandon."},
+  {n:"🌿Cavalier",v:"Cavalier",b:"🪵",t:"F",o:"Vous approchez d'un bâtiment public fréquenté.",oi:"Vous approchez d'un bâtiment public à l'abandon."},
+  {n:"🌿Dame",v:"Dame",b:"🪵",t:"F",o:"Vous approchez d'un bâtiment religieux fréquenté.",oi:"Vous approchez d'un bâtiment religieux à l'abandon."},
+  {n:"🌿Roi",v:"Roi",b:"🪵",t:"F",o:"Vous approchez d'un bâtiment militaire exploité.",oi:"Vous approchez d'un bâtiment militaire à l'abandon."},
+  {n:"🏆As",v:"As",b:"🍷",t:"N",o:"Découverte d'un message, information, rumeur, secret, détail intriguant... à connotation positive.",oi:"Découverte d'un message, information, rumeur, secret, détail intriguant... terrible et déroutant."},
+  {n:"🏆2",v:"2",b:"🍷",t:"N",o:"Vous rencontrez une créature faible loin de son lieu de vie habituel.",oi:"Vous rencontrez une créature passive loin de son lieu de vie habituel."},
+  {n:"🏆3",v:"3",b:"🍷",t:"N",o:"Vous rencontrez une créature faible loin de son lieu de vie habituel.",oi:"Vous rencontrez une créature passive loin de son lieu de vie habituel."},
+  {n:"🏆4",v:"4",b:"🍷",t:"N",o:"Vous rencontrez une créature de force moyenne qui arbore un détail intrigant.",oi:"Vous rencontrez une créature de force moyenne qui dévore une personne encore vivante."},
+  {n:"🏆5",v:"5",b:"🍷",t:"N",o:"Vous rencontrez une créature de force moyenne qui arbore un détail intrigant.",oi:"Vous rencontrez une créature de force moyenne qui dévore une personne encore vivante."},
+  {n:"🏆6",v:"6",b:"🍷",t:"N",o:"Vous rencontrez une créature costaude étrangement calme malgré votre approche.",oi:"Vous rencontrez une créature costaude bien plus agressive qu'à l'habitude, elle vous remarque et dispose de l'initiative."},
+  {n:"🏆7",v:"7",b:"🍷",t:"N",o:"Vous découvrez le cadavre d'une créature puissante fraîchement occise. Une piste part d'ici.",oi:"Vous découvrez le cadavre d'une créature puissante fraîchement occise, son prédateur rôde et vous observe. Il est légendaire."},
+  {n:"🏆8",v:"8",b:"🍷",t:"N",o:"Il se met soudainement à faire beau.",oi:"Il se met soudainement à pleuvoir."},
+  {n:"🏆9",v:"9",b:"🍷",t:"N",o:"Découverte de l'entrée d'une grotte.",oi:"Découverte de l'entrée d'une grotte. C'est en réalité une tanière."},
+  {n:"🏆10",v:"10",b:"🍷",t:"N",o:"Vous voyez un prospectus ou pancarte publicitaire annonçant un événement.",oi:"Vous voyez un avis de recherche avec... Votre visage dessus ?!"},
+  {n:"🏆Valet",v:"Valet",b:"🍷",t:"F",o:"Rencontre d'un ou plusieurs bardes qui chantent les nouvelles de la contrée, et elles sont plutôt bonnes.",oi:"Rencontre d'un ou plusieurs bardes qui chantent les nouvelles de la contrée, et c'est pas la joie."},
+  {n:"🏆Cavalier",v:"Cavalier",b:"🍷",t:"F",o:"Rencontre d'un ou plusieurs bardes qui chantent les nouvelles de la contrée, et elles sont plutôt bonnes.",oi:"Rencontre d'un ou plusieurs bardes qui chantent les nouvelles de la contrée, et c'est pas la joie."},
+  {n:"🏆Dame",v:"Dame",b:"🍷",t:"F",o:"Vous rencontrez un ou des personnages issu(s) d'une guilde / secte. Ils tentent de recruter des gens dans la rue.",oi:"Vous rencontrez un ou des personnages issu(s) d'une guilde / secte. Ils veulent vous convertir par la force."},
+  {n:"🏆Roi",v:"Roi",b:"🍷",t:"F",o:"Vous entendez parler d'un complot.",oi:"Vous êtes au cœur d'un complot."},
+  {n:"⚔️As",v:"As",b:"⚔️",t:"N",o:"Le calme plat.",oi:"Le calme plat."},
+  {n:"⚔️2",v:"2",b:"⚔️",t:"N",o:"Vous approchez d'un lieu habité par un ou des créatures faibles, elles n'ont pas l'air en forme.",oi:"Vous approchez d'un lieu habité par un ou des créatures faibles, elles ont l'air survolté."},
+  {n:"⚔️3",v:"3",b:"⚔️",t:"N",o:"Vous approchez d'un lieu habité par un ou des créatures faibles, elles n'ont pas l'air en forme.",oi:"Vous approchez d'un lieu habité par un ou des créatures faibles, elles ont l'air survolté."},
+  {n:"⚔️4",v:"4",b:"⚔️",t:"N",o:"Vous approchez d'un lieu habité par un ou des créatures de force moyenne, elles n'ont pas l'air en forme.",oi:"Vous approchez d'un lieu habité par un ou des créatures de force moyenne, elles ont l'air survolté."},
+  {n:"⚔️5",v:"5",b:"⚔️",t:"N",o:"Vous approchez d'un lieu habité par un ou des créatures de force moyenne, elles n'ont pas l'air en forme.",oi:"Vous approchez d'un lieu habité par un ou des créatures de force moyenne, elles ont l'air survolté."},
+  {n:"⚔️6",v:"6",b:"⚔️",t:"N",o:"Vous approchez d'un lieu habité par un ou des créatures costaudes, elles n'ont pas l'air en forme.",oi:"Vous approchez d'un lieu habité par un ou des créatures costaudes, elles ont l'air survolté."},
+  {n:"⚔️7",v:"7",b:"⚔️",t:"N",o:"Vous approchez d'un lieu habité par un ou des créatures costaudes, mais elles font la sieste.",oi:"Vous approchez d'un lieu habité par un ou des créatures costaudes, elles sont en chasse."},
+  {n:"⚔️8",v:"8",b:"⚔️",t:"N",o:"La flore locale est impressionnante mais ralentit votre progression.",oi:"La flore locale est impressionnante et risque de vous empoisonner."},
+  {n:"⚔️9",v:"9",b:"⚔️",t:"N",o:"La flore locale est impressionnante mais ralentit votre progression.",oi:"La flore locale est impressionnante et risque de vous empoisonner."},
+  {n:"⚔️10",v:"10",b:"⚔️",t:"N",o:"Vous vous sentez en pleine forme.",oi:"La soif, la faim ou le manque de sommeil vous tiraillent de plus en plus."},
+  {n:"⚔️Valet",v:"Valet",b:"⚔️",t:"F",o:"Vous passez devant un relais routier où on offre le café.",oi:"Guet-apens de bandits de grand chemin, brigands, gangs... Bref de mauvais gars pas commodes vous attaquent !"},
+  {n:"⚔️Cavalier",v:"Cavalier",b:"⚔️",t:"F",o:"Vous passez devant un relais routier où on offre le café.",oi:"Guet-apens de bandits de grand chemin, brigands, gangs... Bref de mauvais gars pas commodes vous attaquent !"},
+  {n:"⚔️Dame",v:"Dame",b:"⚔️",t:"F",o:"Alerte ! Damoiselle/damoiseau en détresse ! Elle est riche et vous récompensera.",oi:"Alerte ! Damoiselle/damoiseau en détresse ! Mais c'est un piège."},
+  {n:"⚔️Roi",v:"Roi",b:"⚔️",t:"F",o:"Vous rencontrez un voyageur solitaire et suréquipé... Qu'il ne vaut mieux pas taquiner.",oi:"Vous rencontrez un voyageur solitaire et suréquipé... Qui vous provoque."},
+  {n:"💰As",v:"As",b:"🪙",t:"N",o:"Vous trouvez un objet peu précieux posé là, sans surveillance.",oi:"Vous trouvez un objet très précieux posé là, sans surveillance."},
+  {n:"💰2",v:"2",b:"🪙",t:"N",o:"Vous rencontrez une ou des créatures faibles en possession d'objets ou trésors.",oi:"Vous approchez d'un lieu habité par un ou des créatures faibles."},
+  {n:"💰3",v:"3",b:"🪙",t:"N",o:"Vous rencontrez une ou des créatures faibles en possession d'objets ou trésors.",oi:"Vous approchez d'un lieu habité par un ou des créatures faibles."},
+  {n:"💰4",v:"4",b:"🪙",t:"N",o:"Vous rencontrez une ou des créatures de force moyenne en possession d'objets ou trésors.",oi:"Vous approchez d'un lieu habité par un ou des créatures de force moyenne."},
+  {n:"💰5",v:"5",b:"🪙",t:"N",o:"Vous rencontrez une ou des créatures de force moyenne en possession d'objets ou trésors.",oi:"Vous approchez d'un lieu habité par un ou des créatures de force moyenne."},
+  {n:"💰6",v:"6",b:"🪙",t:"N",o:"Vous rencontrez un ou des créatures costaudes en possession d'objets ou trésors.",oi:"Vous approchez d'un lieu habité par un ou des créatures costaudes."},
+  {n:"💰7",v:"7",b:"🪙",t:"N",o:"Vous rencontrez un ou des créatures costaudes en possession d'objets ou trésors.",oi:"Vous approchez d'un lieu habité par un ou des créatures costaudes."},
+  {n:"💰8",v:"8",b:"🪙",t:"N",o:"Vous croisez la route d'un marchand ambulant.",oi:"Vous croisez la route d'un marchand ambulant, mais il a déjà tout vendu et se promène avec une forte somme d'argent."},
+  {n:"💰9",v:"9",b:"🪙",t:"N",o:"Vous croisez une petite auberge, pension, motel fréquenté.",oi:"Vous croisez une petite auberge, pension, motel à l'abandon."},
+  {n:"💰10",v:"10",b:"🪙",t:"N",o:"Vous croisez une grande auberge, pension, motel fréquenté.",oi:"Vous croisez une grande auberge, pension, motel à l'abandon."},
+  {n:"💰Valet",v:"Valet",b:"🪙",t:"F",o:"Vous croisez un petit convoi gardé. Ils ont l'air amicaux.",oi:"Vous croisez un petit convoi gardé. Ils ont l'air agressifs."},
+  {n:"💰Cavalier",v:"Cavalier",b:"🪙",t:"F",o:"Vous croisez un grand convoi gardé. Ils ont l'air amicaux.",oi:"Vous croisez un grand convoi gardé. Ils ont l'air agressifs."},
+  {n:"💰Dame",v:"Dame",b:"🪙",t:"F",o:"Vous rencontrez un ou des personnages richement habillé(s) et équipé(s).",oi:"Vous rencontrez un ou des personnages pauvres, maigres et faibles."},
+  {n:"💰Roi",v:"Roi",b:"🪙",t:"F",o:"Vous rencontrez un bourgeois et son ou ses garde(s) du corps.",oi:"Vous rencontrez un brigand et son ou ses acolytes."}
+];
+
+const TARO_ICO='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="10" height="15" rx="1.6" transform="rotate(-10 8.5 12.5)"/><rect x="10" y="3.5" width="10" height="15" rx="1.6" fill="var(--paper,#fff)"/><path d="M15 7.6l.9 1.9 2 .3-1.5 1.4.4 2-1.8-1-1.8 1 .4-2-1.5-1.4 2-.3z"/></svg>';
+const TARO_INK='#2b2d3a', TARO_INV='#d4483f', TARO_BANDS=['#f6d65a','#8ec3ec','#9fd59a','#f49a92','#f3a2cf','#b5a1e1'];
+const TARO_SUIT={'🌿':{n:'Bâtons',k:'baton',c:'#9fd59a'},'🏆':{n:'Coupes',k:'coupe',c:'#8ec3ec'},'⚔️':{n:'Épées',k:'epee',c:'#b5a1e1'},'💰':{n:'Deniers',k:'denier',c:'#f6d65a'}};
+/* dessins des arcanes majeurs (boîte 100 × 100) : [tracé principal rempli de couleur, détails au trait] */
+const TARO_MAJ=[
+  ['M20 70Q30 32 50 26Q70 32 80 70Z','M20 70L11 40M50 26V9M80 70L89 40M18 70H82V80H18Z<circle cx="11" cy="37" r="4"/><circle cx="50" cy="6" r="4"/><circle cx="89" cy="37" r="4"/>'],
+  ['M72 22l3 6 6 1-4.5 4 1 6-5.5-3-5.5 3 1-6L63 29l6-1z','M28 78L66 36M18 86H82M26 86V96M74 86V96'],
+  ['M50 36Q35 29 18 33V79Q35 75 50 81Q65 75 82 79V33Q65 29 50 36Z','M50 36V81M26 44H42M26 52H42M58 44H74M58 52H74M45 8A11 11 0 1 0 57 22A9 9 0 1 1 45 8Z'],
+  ['M20 72L24 36L39 55L50 26L61 55L76 36L80 72Z','M18 80H82<circle cx="24" cy="33" r="3.5"/><circle cx="50" cy="22" r="3.5"/><circle cx="76" cy="33" r="3.5"/><circle cx="50" cy="60" r="5"/>'],
+  ['M28 62A22 22 0 1 0 72 62A22 22 0 1 0 28 62Z','M50 40V18M41 26H59M28 62H72M50 62V84'],
+  ['M24 24A8 8 0 1 0 24.1 24Z','M30 30L74 74M62 62L70 54M68 68L76 60M70 30L26 74M38 62L30 54M32 68L24 60<circle cx="76" cy="24" r="8"/>'],
+  ['M38 60C22 46 28 30 38 40C48 30 54 46 38 60Z','M62 76C46 62 52 46 62 56C72 46 78 62 62 76Z'],
+  ['M20 46H80L74 70H26Z','M26 46Q50 20 74 46<circle cx="32" cy="79" r="9"/><circle cx="68" cy="79" r="9"/><circle cx="32" cy="79" r="2"/><circle cx="68" cy="79" r="2"/>'],
+  ['M9 56Q20 68 31 56ZM69 56Q80 68 91 56Z','M50 14V86M32 86H68M18 30H82M20 30L9 56M20 30L31 56M80 30L69 56M80 30L91 56<circle cx="50" cy="12" r="3"/>'],
+  ['M50 53Q43 45 50 36Q57 45 50 53Z','M50 10V20M37 28L50 20L63 28ZM38 28H62V64H38ZM35 64H65V71H35Z'],
+  ['M50 18A32 32 0 1 0 50.1 18Z','<circle cx="50" cy="50" r="9"/>M50 18V41M50 59V82M18 50H41M59 50H82M27 27L44 44M56 56L73 73M73 27L56 44M44 56L27 73'],
+  ['M50 50C40 34 18 34 18 50C18 66 40 66 50 50C60 34 82 34 82 50C82 66 60 66 50 50Z','M30 84Q50 70 70 84'],
+  ['M50 66A8 8 0 1 0 50.1 66Z','M16 14H84M28 14V24M72 14V24M50 14V30M50 30V58M50 38L60 44L50 49M50 58L40 66M50 58L60 66'],
+  ['M30 50Q30 22 50 22Q70 22 70 50Q70 60 62 63V74H38V63Q30 60 30 50Z','M44 66V74M50 66V74M56 66V74<circle cx="41" cy="48" r="5" fill="currentColor"/><circle cx="59" cy="48" r="5" fill="currentColor"/>M48 58L50 54L52 58'],
+  ['M16 28H38L34 46H20ZM62 62H84L80 80H66Z','M36 31Q56 38 68 62M27 46V52M73 80V86'],
+  ['M50 36A22 22 0 1 0 50.1 36Z','M34 44Q22 30 28 15Q36 29 41 37M66 44Q78 30 72 15Q64 29 59 37M40 55L47 58M60 55L53 58M41 68Q50 75 59 68'],
+  ['M36 86V36H64V86Z','M36 36V28H42V36M47 36V28H53V36M58 36V28H64V36M45 52H55V66H45ZM74 6L62 28H70L58 48'],
+  ['M50 14L56 40L82 34L60 50L82 66L56 60L50 86L44 60L18 66L40 50L18 34L44 40Z','<circle cx="50" cy="50" r="4"/>'],
+  ['M62 14A36 36 0 1 0 62 86A28 28 0 1 1 62 14Z','M70 30l1.5 3 3 .5-2.2 2 .5 3-2.8-1.5-2.8 1.5.5-3-2.2-2 3-.5zM78 58l1 2 2 .3-1.5 1.4.4 2-1.9-1-1.9 1 .4-2-1.5-1.4 2-.3z'],
+  ['M50 32A18 18 0 1 0 50.1 32Z','M50 8V22M50 78V92M8 50H22M78 50H92M20 20L30 30M70 70L80 80M80 20L70 30M30 70L20 80'],
+  ['M16 54H46L74 36V76L46 60H16Z','M10 50V64M80 44Q88 56 80 68M86 38Q98 56 86 74'],
+  ['M50 14A26 36 0 1 0 50.1 14Z','M30 24l-6 2M24 40l-6 1M22 60l-6-1M28 76l-5 4M70 24l6 2M76 40l6 1M78 60l6-1M72 76l5 4M50 40l3 7 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z']];
+/* enseignes (boîte -10..10) */
+const TARO_PIP={baton:'M-2.2 9L-1.3-9H1.3L2.2 9ZM1.3-3Q7-6 5.5 0Q3.5-1.5 1.3-.5',coupe:'M-7-8H7Q7 2 0 3Q-7 2-7-8ZM0 3V7M-4.5 8H4.5',epee:'M0-10L2.2 4H-2.2ZM-5.5 4H5.5M0 4V9',denier:'M0-8A8 8 0 1 0 .1-8ZM0-3.5L1.1-1.1 3.5-.8 1.7.9 2.2 3.3 0 2.1-2.2 3.3-1.7.9-3.5-.8-1.1-1.1Z'};
+const TARO_POS={1:[[100,140]],2:[[100,90],[100,190]],3:[[100,70],[100,140],[100,210]],4:[[70,90],[130,90],[70,190],[130,190]],5:[[70,85],[130,85],[100,140],[70,195],[130,195]],6:[[70,75],[130,75],[70,140],[130,140],[70,205],[130,205]],
+  7:[[70,70],[130,70],[100,105],[70,140],[130,140],[70,210],[130,210]],8:[[70,70],[130,70],[100,105],[70,140],[130,140],[100,175],[70,210],[130,210]],9:[[70,65],[130,65],[70,115],[130,115],[100,140],[70,165],[130,165],[70,215],[130,215]],10:[[70,65],[130,65],[100,90],[70,115],[130,115],[70,165],[130,165],[100,190],[70,215],[130,215]]};
+const taroPath=(d,fill,sw)=>d.split(/(<[^>]+>)/).filter(Boolean).map(p=>p[0]==='<'?p.replace(/<(\w+)/,`<$1 fill="${/fill=/.test(p)?'':'none'}"`).replace('fill=""',''):`<path d="${p}" fill="${fill||'none'}"/>`).join('');
+const taroFrame=(acc,body,label,top)=>`<svg viewBox="0 0 200 320" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="1" width="198" height="318" rx="12" fill="#fff" stroke="${TARO_INK}" stroke-opacity=".25" stroke-width="2"/>
+  <rect x="9" y="9" width="182" height="302" rx="8" fill="none" stroke="${acc}" stroke-width="1.6"/>${top?`<text x="100" y="32" text-anchor="middle" font-family="Quicksand,sans-serif" font-weight="800" font-size="13" letter-spacing="2" fill="${acc}">${top}</text>`:''}
+  ${body}<line x1="34" y1="266" x2="166" y2="266" stroke="${acc}" stroke-opacity=".5"/><text x="100" y="288" text-anchor="middle" font-family="Josefin Sans,Quicksand,sans-serif" font-weight="600" font-size="12" letter-spacing="2.4" fill="${TARO_INK}">${label}</text></svg>`;
+function taroSuitOf(c){ for(const k in TARO_SUIT) if(c.n.indexOf(k)===0) return TARO_SUIT[k]; return TARO_SUIT['💰']; }
+function taroName(c){ if(c.t==='M') return c.n.replace(/^N°\d+\s/,''); const s=taroSuitOf(c); return `${c.v} ${c.v==='As'?'d\'':'de '}${s.n}`; }
+function taroSvg(i,inv){ const c=TARO_D[i], acc=inv?TARO_INV:TARO_INK, rot=inv?' transform="rotate(180 100 145)"':'';
+  if(c.t==='M'){ const n=+((c.n.match(/^N°(\d+)/)||[])[1]||0), A=TARO_MAJ[n]||TARO_MAJ[0], col=TARO_BANDS[n%6];
+    return taroFrame(acc,`<g${rot}><circle cx="100" cy="145" r="74" fill="${col}" fill-opacity=".22"/><g transform="translate(32 77) scale(1.36)" stroke="${TARO_INK}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none">${taroPath(A[0],col)}${taroPath(A[1])}</g></g>`,taroName(c).toUpperCase(),['0','I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII','XIII','XIV','XV','XVI','XVII','XVIII','XIX','XX','XXI'][n]); }
+  const s=taroSuitOf(c), pip=(x,y,k)=>`<g transform="translate(${x} ${y}) scale(${k})" stroke="${TARO_INK}" stroke-width="${2/k*1.2}" stroke-linecap="round" stroke-linejoin="round"><path d="${TARO_PIP[s.k]}" fill="${s.c}"/></g>`;
+  if(c.t==='F'){ const crown={Valet:'M80 96Q100 78 120 96Z',Cavalier:'M80 108Q82 88 100 86Q118 88 120 108ZM100 86Q104 70 118 64M106 80Q112 72 122 72',Dame:'M82 98L88 84L100 92L112 84L118 98M100 78V86',Roi:'M80 100L83 78L92 90L100 74L108 90L117 78L120 100Z'}[c.v]||'';
+    const body=`<path d="M62 210Q64 162 100 158Q136 162 138 210Z" fill="${s.c}" fill-opacity=".55"/>`;
+    return taroFrame(acc,`<g${rot}><circle cx="100" cy="145" r="74" fill="${s.c}" fill-opacity=".16"/><g stroke="${TARO_INK}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none">${body}<circle cx="100" cy="124" r="22" fill="#fff"/><path d="${crown}" fill="${s.c}"/></g>${pip(100,236,1.6)}</g>`,taroName(c).toUpperCase(),c.v.toUpperCase()); }
+  const n=c.v==='As'?1:+c.v, P=TARO_POS[n]||TARO_POS[1], k=n===1?3.6:n<=4?2.5:n<=6?2.1:1.75;
+  return taroFrame(acc,`<g${rot}>${P.map(([x,y])=>pip(x,y,k)).join('')}</g>`,taroName(c).toUpperCase(),c.v==='As'?'AS':c.v); }
+function taroBack(n){ const id='tb'+Math.random().toString(36).slice(2,7);
+  return `<svg viewBox="0 0 200 320" xmlns="http://www.w3.org/2000/svg"><defs><clipPath id="${id}"><rect x="1" y="1" width="198" height="318" rx="12"/></clipPath></defs><rect x="1" y="1" width="198" height="318" rx="12" fill="#fff"/>
+  <g clip-path="url(#${id})"><g transform="translate(100 176) rotate(-14)">${TARO_BANDS.map((c,i)=>`<rect x="-200" y="${-112+i*38}" width="400" height="30" fill="${c}" opacity=".62"/>`).join('')}</g></g>
+  <rect x="1" y="1" width="198" height="318" rx="12" fill="none" stroke="${TARO_INK}" stroke-opacity=".25" stroke-width="2"/><rect x="9" y="9" width="182" height="302" rx="8" fill="none" stroke="${TARO_INK}" stroke-opacity=".35"/>
+  <g transform="translate(100 150)"><circle r="48" fill="#fff"/><circle r="34" fill="none" stroke="${TARO_INK}" stroke-width="3"/><circle cx="-4" cy="8" r="6.5" fill="#e03a3a"/>
+    <path d="M30-30L52-52M25-34L44-55M34-25L55-46" stroke="${TARO_INK}" stroke-width="2.4" stroke-linecap="round"/><circle cx="24" cy="-24" r="9" fill="#fff" stroke="${TARO_INK}" stroke-width="2.6"/><circle cx="-34" cy="-26" r="2.4" fill="${TARO_INK}"/><circle cx="-14" cy="36" r="1.8" fill="${TARO_INK}"/></g>
+  <text x="100" y="230" text-anchor="middle" font-family="Josefin Sans,Quicksand,sans-serif" font-size="14" letter-spacing="5" fill="${TARO_INK}">ALDEBARAN</text>${n!=null?`<text x="100" y="292" text-anchor="middle" font-family="Quicksand,sans-serif" font-weight="800" font-size="12" fill="${TARO_INK}" opacity=".55">${n}</text>`:''}</svg>`; }
+/* état (sauvé avec la partie) */
+const taroSt=()=>S.taro||(S.taro={pioche:[],tirage:[],jalons:[]});
+let TARO_NEW=-1, TARO_DRAG=null;
+function taroNew(){ const T=taroSt(), idx=[]; while(idx.length<5){ const r=Math.floor(Math.random()*TARO_D.length); if(!idx.includes(r)) idx.push(r); } T.pioche=idx.map(i=>({i,inv:Math.random()>.5})); T.tirage=[]; markDirty(); renderTaro(); }
+function taroDraw(){ const T=taroSt(); if(!T.pioche.length){ taroNew(); return; } T.tirage.push(T.pioche.shift()); TARO_NEW=T.tirage.length-1; markDirty(); renderTaro(); }
+function taroSave(){ const T=taroSt(); if(!T.tirage.length) return; const num=(T.jalons.reduce((m,j)=>Math.max(m,j.num),0))+1; T.jalons.push({num,cartes:T.tirage.map(t=>({i:t.i,inv:t.inv}))}); markDirty(); renderTaro(); toast(`Tirage ${num} sauvegardé`); }
+function renderTaro(){ const box=$('taro-body'); if(!box) return; const T=taroSt();
+  box.innerHTML=`<div class="taro-top">
+      <button type="button" class="taro-deck${T.pioche.length?'':' empty'}" id="taro-deck" title="${T.pioche.length?`Tirer une carte (${T.pioche.length} restante${T.pioche.length>1?'s':''})`:'Nouveau tirage'}">${T.pioche.length?'<i></i><i></i>':''}${taroBack(T.pioche.length||null)}</button>
+      <div class="taro-acts"><button class="btn" type="button" id="taro-new">${IB('dice')}Nouveau tirage</button><button class="btn ghost" type="button" id="taro-save" ${T.tirage.length?'':'disabled'}>${IB('save')}Sauvegarder</button>
+        ${T.jalons.length?`<div class="taro-jal">${T.jalons.slice().reverse().map(j=>`<span class="taro-j"><button type="button" data-tj="${j.num}">✦ Tirage ${j.num}</button><button type="button" class="x" data-tjd="${j.num}" title="Supprimer" aria-label="Supprimer">${IB('x')}</button></span>`).join('')}</div>`:''}</div></div>
+    <div class="taro-row" id="taro-row">${T.tirage.map((t,i)=>`<div class="taro-card${t.inv?' inv':''}${i===TARO_NEW?' flip':''}" draggable="true" data-ti="${i}">${taroSvg(t.i,t.inv)}</div>`).join('')}</div>
+    <div class="taro-or">${T.tirage.map(t=>{ const c=TARO_D[t.i]; return `<div class="taro-o${t.inv?' inv':''}"><b>${esc(taroName(c))} <small>${t.inv?'↕ Inversée':'↑ Endroit'}</small></b><p>${esc(t.inv&&c.oi?c.oi:c.o)}</p></div>`; }).join('')}</div>`;
+  TARO_NEW=-1;
+  $('taro-deck').onclick=taroDraw; $('taro-new').onclick=taroNew; $('taro-save').onclick=taroSave;
+  box.querySelectorAll('[data-tj]').forEach(b=>b.onclick=()=>{ const j=T.jalons.find(x=>x.num===+b.dataset.tj); if(!j) return; T.tirage=j.cartes.map(c=>({i:c.i,inv:c.inv})); T.pioche=[]; markDirty(); renderTaro(); });
+  box.querySelectorAll('[data-tjd]').forEach(b=>b.onclick=()=>{ T.jalons=T.jalons.filter(x=>x.num!==+b.dataset.tjd); markDirty(); renderTaro(); });
+  /* réordonner les cartes en les glissant */
+  box.querySelectorAll('.taro-card').forEach(el=>{ el.ondragstart=e=>{ TARO_DRAG=+el.dataset.ti; e.dataTransfer.effectAllowed='move'; el.classList.add('drag'); }; el.ondragend=()=>{ el.classList.remove('drag'); TARO_DRAG=null; };
+    el.ondragover=e=>{ e.preventDefault(); el.classList.add('over'); }; el.ondragleave=()=>el.classList.remove('over');
+    el.ondrop=e=>{ e.preventDefault(); el.classList.remove('over'); const to=+el.dataset.ti; if(TARO_DRAG==null||TARO_DRAG===to) return; const it=T.tirage.splice(TARO_DRAG,1)[0]; T.tirage.splice(to,0,it); markDirty(); renderTaro(); }; }); }
 
 let gesture=null;
 function boardDown(e){
@@ -7934,10 +8114,10 @@ function renderDrawPanel(){ const box=$('ldraw-body'); if(!box) return; const on
 /* =========================================================
    Volets de gauche : Dessin, Bestiaire
    ========================================================= */
-function closeLeft(){ if(typeof jetStamp==='function') jetStamp(false); document.querySelectorAll('.ldrawer.open').forEach(d=>{ d.classList.remove('open'); if(d.id==='ldraw'&&(tool==='map'||tool==='measure')) setTool(tool); if(d.id==='dgdrw'&&tool==='dgn') setTool('dgn'); }); document.querySelectorAll('[data-left]').forEach(b=>b.setAttribute('aria-pressed','false')); }
-function openLeft(id,force){ const was=$(id).classList.contains('open'); if(was&&force) return; closeLeft(); if(was) return;
+function closeLeft(){ if(typeof drawDgLater==='function') setTimeout(drawDgLater,0); if(typeof jetStamp==='function') jetStamp(false); document.querySelectorAll('.ldrawer.open').forEach(d=>{ d.classList.remove('open'); if(d.id==='ldraw'&&(tool==='map'||tool==='measure')) setTool(tool); if(d.id==='dgdrw'&&tool==='dgn') setTool('dgn'); }); document.querySelectorAll('[data-left]').forEach(b=>b.setAttribute('aria-pressed','false')); }
+function openLeft(id,force){ const was=$(id).classList.contains('open'); if(was&&force) return; closeLeft(); if(typeof drawDgLater==='function') setTimeout(drawDgLater,0); if(was) return;
   $(id).classList.add('open'); document.querySelectorAll(`[data-left="${id}"]`).forEach(b=>b.setAttribute('aria-pressed','true')); drawerOpened(id);
-  if(id==='ldraw'){ if(tool!=='map') setTool('map'); renderDrawPanel(); } else if(id==='lbest') renderBestPanel(); else if(id==='ljet'){ renderJetPanel(); } else if(id==='litem'){ renderItemPanel(); } else if(id==='fond') renderFond(); else if(id==='dgdrw'){ if(tool!=='dgn'&&!(S.dg&&S.dg.hub)) setTool('dgn'); renderDgPanel(); } }
+  if(id==='ldraw'){ if(tool!=='map') setTool('map'); renderDrawPanel(); } else if(id==='lbest') renderBestPanel(); else if(id==='ljet'){ renderJetPanel(); } else if(id==='litem'){ renderItemPanel(); } else if(id==='fond') renderFond(); else if(id==='taro') renderTaro(); else if(id==='dgdrw'){ if(tool!=='dgn'&&!(S.dg&&S.dg.hub)) setTool('dgn'); renderDgPanel(); } }
 function bestRows(q){ q=normTxt(q); const L=S.bestiary.map((m,i)=>({m,i})).filter(x=>!q||normTxt(x.m.name).includes(q));
   const row=x=>{ const m=x.m; return `<div class="brow" data-i="${x.i}" title="Glisser sur le plateau · cliquer pour ouvrir"><span class="bface">${faceHTML({...m,type:'mob'},'sm')}</span><b>${esc(m.name)}</b><span class="bv">${m.hpMax}</span><span class="bv">${m.pp||0}</span><span class="bss">${STATS.map(s=>`<i style="--sc:${STAT_INFO[s].col}" title="${s}">${m.stats&&m.stats[s]!=null?m.stats[s]:0}</i>`).join('')}</span>${m.cat?'<span class="nodel"></span>':`<button class="ib del" type="button" data-del="${x.i}" title="Retirer du bestiaire">${IB('bin')}</button>`}</div>`; };
   const cats=[...BEST_CATS,...new Set(L.map(x=>x.m.cat).filter(c=>c&&!BEST_CATS.includes(c)))], mine=L.filter(x=>!x.m.cat);
@@ -8751,7 +8931,7 @@ function wire(){ wireTouch(); $('b-undo').innerHTML=IB('undo'); $('b-redo').inne
   $('sc-ico').innerHTML=IB('film'); $('sc-prev').innerHTML=IB('left',2); $('sc-next').innerHTML=IB('right',2); $('sc-up').innerHTML=IB('up',2); $('sc-down').innerHTML=IB('down',2);
   $('b-player').innerHTML=IB('screen'); $('b-player').classList.add('icon'); $('b-net').insertAdjacentHTML('afterbegin',IB('table')); $('b-full').innerHTML=IB('full'); $('b-settings').insertAdjacentHTML('afterbegin',IB('gear'));
   $('rb-draw').innerHTML=IB('pen'); $('rb-jet').innerHTML=IB('skull'); $('rb-item').innerHTML=IB('box'); $('rb-fond').innerHTML=IB('envir'); $('rb-dgn').innerHTML=dgI('dgn',1.7);
-  $('rb-notes').innerHTML=IB('note'); $('rb-roll').innerHTML=D10ICO; $('rb-loot').innerHTML=IB('coins'); $('rb-map').innerHTML=IB('map'); $('rb-regles').innerHTML=IB('book'); $('scn-ico').innerHTML=IB('scroll',1.5);
+  $('rb-notes').innerHTML=IB('note'); $('rb-roll').innerHTML=D10ICO; $('rb-loot').innerHTML=IB('coins'); $('rb-taro').innerHTML=TARO_ICO; $('rb-map').innerHTML=IB('map'); $('rb-regles').innerHTML=IB('book'); $('scn-ico').innerHTML=IB('scroll',1.5);
   document.querySelectorAll('[data-left]').forEach(b=>b.onclick=()=>openLeft(b.dataset.left));
   $('b-shuffle').innerHTML=IB('shuffle'); $('b-next').innerHTML=IB('next'); $('b-timer').innerHTML=IB('hourglass');
   $('bin').innerHTML=IB('bin'); $('sc-pdf').innerHTML=IB('print'); $('sc-new').innerHTML=IB('plus'); $('sc-clean').innerHTML=IB('eraser'); $('sc-wipe').innerHTML=IB('bin'); $('sc-save').innerHTML=IB('save');
