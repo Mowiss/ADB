@@ -4249,15 +4249,24 @@ function fogAll(rev){ S.seen=rev?{'*':1}:{}; FOG.ver++; FOG.sig=''; renderFoW();
 /* 2e écran (vue joueur castée par le MJ, ou 🗺️ sur l'écran de table d'un joueur) : jetons des personnages et leur perception ; MOB, PNJ et butin seulement s'ils sont perçus */
 let CASTV=false; const CASTON=()=>isPlayer&&(!NETVIEW||CASTV);
 const perR=t=>Math.max(2,(t&&t.stats&&t.stats.PER!=null?+t.stats.PER:3)*2)*CELL;   /* même portée que la vue 3D (2 m par point de Perception) */
+/* ligne de vue sur le plan : murs tracés (sauf invisibles et fenêtres), blocs de mur et portes fermées arrêtent le regard */
+function sightBlock(i,j,ni,nj){ const D=S.dg; if(!D) return false; const k=dgEK(i,j,ni,nj), e=D.ew&&D.ew[k], d=D.d&&D.d[k];
+  if(d&&!d.open) return true; if(e&&!e.inv&&!e.win&&!d) return true; const w=D.w&&D.w[ni+','+nj]; return !!(w&&!w.no); }
+function sightRay(x,y,dx,dy,R){ let i=Math.floor(x), j=Math.floor(y); const sx=dx>0?1:-1, sy=dy>0?1:-1, tdx=Math.abs(1/(dx||1e-9)), tdy=Math.abs(1/(dy||1e-9)); let tx=(dx>0?i+1-x:x-i)*tdx, ty=(dy>0?j+1-y:y-j)*tdy;
+  for(let n=0;n<200;n++){ if(tx<ty){ if(tx>R) return R; if(sightBlock(i,j,i+sx,j)) return tx; i+=sx; tx+=tdx; } else { if(ty>R) return R; if(sightBlock(i,j,i,j+sy)) return ty; j+=sy; ty+=tdy; } } return R; }
+function sightPoly(p){ const x=p.x/CELL, y=p.y/CELL, R=perR(p)/CELL, N=360, pts=[]; for(let a=0;a<N;a++){ const t=a/N*Math.PI*2, dx=Math.cos(t), dy=Math.sin(t); pts.push([x+dx*sightRay(x,y,dx,dy,R),y+dy*sightRay(x,y,dx,dy,R)]); } return pts; }
+const sees=(p,t)=>{ const x=p.x/CELL, y=p.y/CELL, dx=t.x/CELL-x, dy=t.y/CELL-y, L=Math.hypot(dx,dy); if(L*CELL>perR(p)) return false; if(L<.01||!S.dg) return true; return sightRay(x,y,dx/L,dy/L,L)>=L-.02; };
 function renderFoW(){ board.classList.remove('night'); mapWxPaint(); const cv=$('fow');
   if(!CASTON()){ cv.hidden=true; if(isPlayer) document.querySelectorAll('#tokens .tk.unseen').forEach(el=>el.classList.remove('unseen')); return; }
   const P=S.tokens.filter(t=>t.type==='player'&&!t.hidden&&t.kind!=='vehicle'&&!t.inveh);
-  document.querySelectorAll('#tokens .tk').forEach(el=>{ const t=tok(el.dataset.id), hid=t&&(t.type==='mob'||t.type==='npc'||(t.type==='prop'&&t.kind!=='deco'))&&!P.some(p=>Math.hypot(p.x-t.x,p.y-t.y)<=perR(p)); el.classList.toggle('unseen',!!hid); });
+  document.querySelectorAll('#tokens .tk').forEach(el=>{ const t=tok(el.dataset.id), hid=t&&(t.type==='mob'||t.type==='npc'||(t.type==='prop'&&t.kind!=='deco'))&&!P.some(p=>sees(p,t)); el.classList.toggle('unseen',!!hid); });
   cv.hidden=false; const r=board.getBoundingClientRect(), k=.5, W=Math.max(2,Math.round(r.width*k)), H=Math.max(2,Math.round(r.height*k)); if(cv.width!==W||cv.height!==H){ cv.width=W; cv.height=H; }
-  const x=cv.getContext('2d'); x.globalCompositeOperation='source-over'; x.clearRect(0,0,W,H); x.fillStyle='rgba(8,10,16,.6)'; x.fillRect(0,0,W,H);
-  const C=P.map(p=>[(V.x+p.x*V.z)*k,(V.y+p.y*V.z)*k,perR(p)*V.z*k]);
-  x.globalCompositeOperation='destination-out'; C.forEach(([cx,cy,rr])=>{ const g=x.createRadialGradient(cx,cy,rr*.8,cx,cy,rr); g.addColorStop(0,'#000'); g.addColorStop(1,'rgba(0,0,0,0)'); x.fillStyle=g; x.beginPath(); x.arc(cx,cy,rr,0,7); x.fill(); });
-  x.globalCompositeOperation='source-over'; x.lineWidth=1.5; x.setLineDash([5,5]); C.forEach(([cx,cy,rr])=>{ x.strokeStyle='rgba(255,255,255,.35)'; x.beginPath(); x.arc(cx,cy,rr*.98,0,7); x.stroke(); }); x.setLineDash([]); }
+  const x=cv.getContext('2d'); x.globalCompositeOperation='source-over'; x.clearRect(0,0,W,H); x.fillStyle='#000'; x.fillRect(0,0,W,H);   /* hors perception : noir complet */
+  const X=wx=>(V.x+wx*CELL*V.z)*k, Y=wy=>(V.y+wy*CELL*V.z)*k;
+  x.globalCompositeOperation='destination-out'; x.fillStyle='#000';
+  P.forEach(p=>{ const pts=sightPoly(p), cx=X(p.x/CELL), cy=Y(p.y/CELL), rr=perR(p)*V.z*k, g=x.createRadialGradient(cx,cy,rr*.82,cx,cy,rr); g.addColorStop(0,'#000'); g.addColorStop(1,'rgba(0,0,0,0)'); x.fillStyle=g;
+    x.beginPath(); pts.forEach(([a,b],i)=>i?x.lineTo(X(a),Y(b)):x.moveTo(X(a),Y(b))); x.closePath(); x.fill();  x.fillStyle='#000'; x.beginPath(); x.arc(cx,cy,(p.s||1)*CELL*.55*V.z*k,0,7); x.fill(); });   /* le jeton lui-même reste visible */   /* champ de vision : coupé par les murs, angles morts compris */
+  x.globalCompositeOperation='source-over'; }
 function castFit(){ const P=S.tokens.filter(t=>t.type==='player'&&!t.hidden&&t.kind!=='vehicle'&&!t.inveh); if(!P.length) return; let a=Infinity,b=Infinity,c=-Infinity,d=-Infinity; P.forEach(t=>{ const R=perR(t); a=Math.min(a,t.x-R); b=Math.min(b,t.y-R); c=Math.max(c,t.x+R); d=Math.max(d,t.y+R); });
   const r=board.getBoundingClientRect(); V.z=clamp(Math.min(r.width/(c-a),r.height/(d-b))*.92,.1,4); V.x=r.width/2-(a+c)/2*V.z; V.y=r.height/2-(b+d)/2*V.z; applyView(); }
 function renderFoWNuit(){
