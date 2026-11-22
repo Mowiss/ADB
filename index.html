@@ -4381,7 +4381,9 @@ const dgTheme=()=>DG_TH[(S.dg&&S.dg.th)||'pierre']||DG_TH.pierre;
 const dgEK=(i,j,ni,nj)=>ni===i?`${i},${Math.max(j,nj)},h`:`${Math.max(i,ni)},${j},v`;
 const dgDoor=(i,j,ni,nj)=>S.dg&&S.dg.d?S.dg.d[dgEK(i,j,ni,nj)]:null;
 const dgHid=o=>!!o&&(o.w||(o.s&&!o.f));                    /* porte cachée pas encore trouvée : un mur comme les autres */
-const dgShut=o=>!!o&&(o.w||!o.open);
+const dgShut=o=>!!o&&!o.tp&&(o.w||!o.open);   /* la porte TP se franchit toujours */
+/* passage déclenché en allant de (pi,pj) à (i,j) : porte TP franchie, sinon le passage posé sur la case d'arrivée */
+function dgPassAt(pi,pj,i,j){ if(pi!=null&&Math.abs(pi-i)+Math.abs(pj-j)===1){ const d=S.dg&&S.dg.d&&S.dg.d[dgEK(pi,pj,i,j)]; if(d&&d.tp) return {k:'tp',to:d.to||'',code:'',door:1}; } return dgMk(i,j); }
 /* ---------- végétation : sprites croisés en X (deux plans à 45°, façon N64), un par case ---------- */
 const VEG_BIO={foret:'Forêt',marais:'Marais',alien:'Alien',desert:'Désert',glace:'Glace',plage:'Plage'}, VEG_K={arbre:'Arbre',buisson:'Buisson',herbe:'Herbes'};
 const VEG_H={arbre:2.6,buisson:.95,herbe:.6};
@@ -4411,16 +4413,23 @@ function dgEdgeAt(wx,wy){ const fx=wx/CELL, fy=wy/CELL, dh=Math.abs(fy-Math.roun
   if(dh<dv){ const i=Math.floor(fx), j=Math.round(fy); return {k:`${i},${j},h`,a:[i,j-1],b:[i,j]}; }
   const i=Math.round(fx), j=Math.floor(fy); return {k:`${i},${j},v`,a:[i-1,j],b:[i,j]}; }
 const dgEdgeSeg=k=>{ const [i,j,o]=k.split(','), X=+i*CELL, Y=+j*CELL; return o==='h'?[X,Y,X+CELL,Y]:[X,Y,X,Y+CELL]; };
-function dgPub(){ if(!S.dg) return null; const d={}; for(const k in (S.dg.d||{})){ const o=S.dg.d[k]; d[k]=dgHid(o)?{w:1}:{open:!!o.open,lk:o.lk?1:0,gr:o.gr?1:0}; } return {on:!!S.dg.on,hub:!!S.dg.hub,th:S.dg.th,c:S.dg.c,m:S.dg.m||null,veg:S.dg.veg||null,lum:S.dg.lum||null,ob:S.dg.ob||null,w:S.dg.w||null,ew:S.dg.ew||null,v2:!!S.dg.v2,cl:S.dg.cl||null,d}; }
+function dgPub(){ if(!S.dg) return null; const d={}; for(const k in (S.dg.d||{})){ const o=S.dg.d[k]; d[k]=dgHid(o)?{w:1}:o.tp?{tp:1,to:o.to||''}:{open:!!o.open,lk:o.lk?1:0,gr:o.gr?1:0}; } return {on:!!S.dg.on,hub:!!S.dg.hub,th:S.dg.th,c:S.dg.c,m:S.dg.m||null,veg:S.dg.veg||null,lum:S.dg.lum||null,ob:S.dg.ob||null,w:S.dg.w||null,ew:S.dg.ew||null,v2:!!S.dg.v2,cl:S.dg.cl||null,d}; }
 function dgDoorClick(wx,wy){ const e=dgEdgeAt(wx,wy); if(!dgOpen(...e.a)||!dgOpen(...e.b)){ toast('Une porte se place entre deux cases creusées',true); return; }
   const D=dgEnsure(); D.d=D.d||{}; const o=D.d[e.k];
-  if(DG.tool==='door'){ if(!o) D.d[e.k]={open:false}; else if(o.s){ delete o.s; delete o.f; } else { dgDoorEdit(e.k); return; } }
+  if(DG.tool==='tpdoor'){ if(!o) D.d[e.k]={tp:1,to:''}; else if(!o.tp){ D.d[e.k]={tp:1,to:''}; } dgDoorEdit(e.k); drawDgLater(); fpsLater(); markDirty(); sync(); return; }
+  if(DG.tool==='door'){ if(!o||o.tp) D.d[e.k]={open:false}; else if(o.s){ delete o.s; delete o.f; } else { dgDoorEdit(e.k); return; } }
   else { if(!o) D.d[e.k]={s:1,open:false}; else if(!o.s){ o.s=1; o.f=0; o.open=false; } else if(!o.f){ o.f=1; toast('Porte cachée découverte'); } else delete D.d[e.k]; }
   drawDgLater(); fpsLater(); markDirty(); sync(); }
-function dgHover(wx,wy){ if(['door','secret','wall','unwall','win','iwall'].includes(DG.tool)){ const e=dgEdgeAt(wx,wy); if(DG.hover!==e.k){ DG.hover=e.k; drawDgLater(); } return; }
+function dgHover(wx,wy){ if(['door','secret','tpdoor','wall','unwall','win','iwall'].includes(DG.tool)){ const e=dgEdgeAt(wx,wy); if(DG.hover!==e.k){ DG.hover=e.k; drawDgLater(); } return; }
   const c=dgCell(wx,wy); if(!Array.isArray(DG.hover)||DG.hover[0]!==c[0]||DG.hover[1]!==c[1]){ DG.hover=c; drawDgLater(); } }
 /* réglages d'une porte : ouverte / fermée, verrouillée ou non */
-function dgDoorEdit(k){ const o=S.dg&&S.dg.d&&S.dg.d[k]; if(!o) return; const st=o.lk?'lk':o.open?'open':'shut';
+function dgDoorEdit(k){ const o=S.dg&&S.dg.d&&S.dg.d[k]; if(!o) return;
+  if(o.tp){ const codes=dgCodes();   /* porte TP : fond noir, on la franchit et on part vers « Mène à » */
+    openDialog(`<div class="dphead"><h3>Porte TP</h3><button class="ib" type="button" id="dp-del" title="Supprimer la porte">${IB('bin')}</button></div>
+      <div class="field"><label class="cap" for="dp-to">Mène à</label><select class="line-in" id="dp-to"><option value="">— nulle part —</option>${codes.map(c=>`<option value="${esc(c.code)}" ${c.code===o.to?'selected':''}>${esc(c.code)} · ${esc(MK_LBL[c.kind]||'')} · ${esc(c.title)}</option>`).join('')}</select></div>
+      <div class="actions"><span style="flex:1"></span><button class="btn" type="button" id="dp-ok">OK</button></div>`);
+    $('dp-ok').onclick=()=>{ o.to=$('dp-to').value; dlg.close(); drawDgLater(); fpsLater(); markDirty(); sync(); };
+    $('dp-del').onclick=()=>{ delete S.dg.d[k]; dlg.close(); drawDgLater(); fpsLater(); markDirty(); sync(); }; return; } const st=o.lk?'lk':o.open?'open':'shut';
   const opt=(v,ico,l)=>`<button type="button" class="wxb${st===v?' on':''}" data-dp="${v}">${ico}<span>${l}</span></button>`;
   openDialog(`<div class="dphead"><h3>Porte</h3><button class="ib" type="button" id="dp-del" title="Supprimer la porte">${IB('bin')}</button></div>
     <div class="wxrow dpseg">${opt('open',dgI('iwall',1.7),'Ouverte')}${opt('shut',dgI('door',1.7),'Fermée')}${opt('lk','<i class="dplk">🔒</i>','Verrouillée')}</div>
@@ -4434,7 +4443,7 @@ function dgAutoClose(k){ clearTimeout((FPS.dct=FPS.dct||{})[k]); FPS.dct[k]=setT
     const busy=S.tokens.some(t=>['player','mob','npc'].includes(t.type)&&!t.inveh&&near(t.x/CELL,t.y/CELL))||(FPS.cam&&FPS.mode==='play'&&near(FPS.cam.x,FPS.cam.y));
     if(busy){ FPS.dct[k]=setTimeout(tick,800); return; }
     o.open=false; drawDgLater(); fpsLater(); if(!isPlayer){ markDirty(); sync(); } },3000); }
-function dgToggleDoor(k){ const o=S.dg&&S.dg.d&&S.dg.d[k]; if(!o||dgHid(o)||o.lk) return false; o.open=!o.open; if(o.open) dgAutoClose(k); drawDgLater(); fpsLater(); markDirty(); sync(); return true; }
+function dgToggleDoor(k){ const o=S.dg&&S.dg.d&&S.dg.d[k]; if(!o||dgHid(o)||o.lk||o.tp) return false; o.open=!o.open; if(o.open) dgAutoClose(k); drawDgLater(); fpsLater(); markDirty(); sync(); return true; }
 /* murs tracés tout autour d'une zone (carte de test) : texture et hauteur du style de chaque case */
 function dgAutoWalls(D){ const E=D.ew=D.ew||{}; for(const k in D.c){ const f=dgInfo(D.c[k]); if(f.iw) continue; const [i,j]=k.split(',').map(Number);
   [[0,-1],[1,0],[0,1],[-1,0]].forEach(([u,v])=>{ if(D.c[(i+u)+','+(j+v)]) return; const e=dgEK(i,j,i+u,j+v); if(!E[e]) E[e]={t:f.th,h:f.sky?(DG_TH[f.th].wh||1):1}; }); }
@@ -4542,6 +4551,9 @@ function drawDg(){ const cv=$('dgn'); if(!cv) return; const r=board.getBoundingC
   const DD=S.dg.d||{}; for(const k in DD){ const o=DD[k], [ax,ay,bx,by]=dgEdgeSeg(k); if(Math.max(ax,bx)<i0*CELL||Math.min(ax,bx)>i1*CELL||Math.max(ay,by)<j0*CELL||Math.min(ay,by)>j1*CELL) continue;
     const hz=ay===by, L=CELL*.78, m=(CELL-L)/2, sec=o.s, hid=sec&&!o.f, ink=sec?'#8e5bd6':'#2b1a0e';
     x.lineCap='butt';
+    if(o.tp){ x.fillStyle=T.wall2d; if(hz){ x.fillRect(ax,ay-5,m,10); x.fillRect(bx-m,by-5,m,10); } else { x.fillRect(ax-5,ay,10,m); x.fillRect(bx-5,by-m,10,m); }   /* porte TP : vide noir cerné de violet */
+      x.fillStyle='#000'; x.strokeStyle='#a46bff'; x.lineWidth=2; if(hz){ x.fillRect(ax+m,ay-5,L,10); x.strokeRect(ax+m,ay-5,L,10); } else { x.fillRect(ax-5,ay+m,10,L); x.strokeRect(ax-5,ay+m,10,L); }
+      x.fillStyle='#7a3fe0'; x.font='800 10px Quicksand,sans-serif'; x.textAlign='center'; x.textBaseline='middle'; x.fillText(o.to?'TP → '+o.to:'TP',(ax+bx)/2+(hz?0:16),(ay+by)/2+(hz?-13:0)); continue; }
     if(hid){ x.strokeStyle=T.wall2d; x.lineWidth=Math.max(5,3/V.z); x.beginPath(); x.moveTo(ax,ay); x.lineTo(bx,by); x.stroke();
       x.setLineDash([6,5]); x.strokeStyle=ink; x.lineWidth=3; x.beginPath(); x.moveTo(ax+(hz?m:0),ay+(hz?0:m)); x.lineTo(bx-(hz?m:0),by-(hz?0:m)); x.stroke(); x.setLineDash([]);
       x.fillStyle=ink; x.font='700 15px sans-serif'; x.textAlign='center'; x.textBaseline='middle'; x.fillText('S',(ax+bx)/2+(hz?0:13),(ay+by)/2+(hz?-13:0)); continue; }
@@ -4590,7 +4602,7 @@ function dgPaintEnd(g){ if(g&&g.rc&&g.rc.all){ const r=g.rc, D=dgEnsure(); DG.re
     for(let i=a0;i<=a1;i++) for(let j=b0;j<=b1;j++){ const k=dgK(i,j); ['c','cl','w','veg','lum','ob','m'].forEach(z=>{ if(D[z]) delete D[z][k]; }); }
     [['ew'],['d']].forEach(([z])=>{ const E=D[z]; if(!E) return; for(const k in E){ const [x,y,o]=k.split(','), i=+x, j=+y; const inA=(ii,jj)=>ii>=a0&&ii<=a1&&jj>=b0&&jj<=b1; if(o==='h'?(inA(i,j)||inA(i,j-1)):(inA(i,j)||inA(i-1,j))) delete E[k]; } });   /* arêtes touchant la zone */
     FPS.sprites.clear(); FPS.capK=null; drawDgLater(); fpsLater(); markDirty(); sync(); return; }
-  if(g&&g.rc){ const r=g.rc; DG.rect=null; const P={sol:DG.pS,cl:DG.pC,mur:DG.pM,ch:DG.pM?Math.max(DG.ch||2,DG.wh||2):0}, a0=Math.min(r.a[0],r.b[0]), a1=Math.max(r.a[0],r.b[0]), b0=Math.min(r.a[1],r.b[1]), b1=Math.max(r.a[1],r.b[1]);
+  if(g&&g.rc){ const r=g.rc; DG.rect=null; const pS=DG.pS==null?'blanc':DG.pS, pM=DG.pM==null?'blanc':DG.pM, P={sol:pS,cl:DG.pC,mur:pM,ch:DG.wh||2}, a0=Math.min(r.a[0],r.b[0]), a1=Math.max(r.a[0],r.b[0]), b0=Math.min(r.a[1],r.b[1]), b1=Math.max(r.a[1],r.b[1]);
     for(let i=a0;i<=a1;i++) for(let j=b0;j<=b1;j++) dgPaintCell(i,j,P);
     if(P.mur){ const D=dgEnsure(), E=D.ew=D.ew||{}, put=(i,j,ni,nj)=>{ const k=dgEK(i,j,ni,nj), w=E[k]; if(w&&!w.inv){ w.t=P.mur; delete w.ta; delete w.tb; } else E[k]={t:P.mur,h:DG.wh||2}; };   /* une pièce : murs tout autour du rectangle */
       for(let i=a0;i<=a1;i++){ put(i,b0,i,b0-1); put(i,b1,i,b1+1); } for(let j=b0;j<=b1;j++){ put(a0,j,a0-1,j); put(a1,j,a1+1,j); } }
@@ -4599,20 +4611,18 @@ function dgPaintEnd(g){ if(g&&g.rc&&g.rc.all){ const r=g.rc, D=dgEnsure(); DG.re
   else if(L.a[1]===L.b[1]){ for(let i=Math.min(L.a[0],L.b[0]);i<Math.max(L.a[0],L.b[0]);i++) ks.push(`${i},${L.a[1]},h`); }
   else for(let j=Math.min(L.a[1],L.b[1]);j<Math.max(L.a[1],L.b[1]);j++) ks.push(`${L.a[0]},${j},v`);
   const win=DG.tool==='win', one=ks.length===1&&L.a[0]===L.b[0]&&L.a[1]===L.b[1];
-  ks.forEach(k=>{ if(DG.tool==='iwall'){ E[k]={inv:1}; return; } if(win){ if(one&&E[k]&&E[k].win) delete E[k].win; else E[k]=Object.assign(E[k]||{t:'blanc',h:DG.wh||2},{win:1}); } else if(add) E[k]={t:'blanc',h:DG.wh||2}; else delete E[k]; });
+  ks.forEach(k=>{ if(DG.tool==='iwall'){ E[k]={inv:1}; return; } if(win){ if(one&&E[k]&&E[k].win) delete E[k].win; else E[k]=Object.assign(E[k]&&!E[k].inv?E[k]:{t:DG.wt||'blanc',h:DG.wh||2},{win:1}); } else if(add) E[k]={t:DG.wt||'blanc',h:DG.wh||2}; else delete E[k]; });
   FPS.sprites.clear(); drawDgLater(); fpsLater(); markDirty(); sync(); }
 function dgPaint(wx,wy,g){ DG._g=g;
   if(DG.tool==='erase'){ const c=dgCell(wx,wy);
-    if(g.all||DG.eAll){ if(!g.rc) g.rc={a:c,b:c,all:1}; else g.rc.b=c; DG.rect=g.rc; DG.hover=null; drawDgLater(); return; }
-    if(!g.last){ g.last=1; } const D=dgEnsure(), k=dgK(...c); let n=0; ['veg','lum','ob'].forEach(z=>{ if(D[z]&&D[z][k]){ delete D[z][k]; n++; } });   /* clic gauche : seulement le mobilier, en glissant */
-    if(n){ FPS.sprites.clear(); drawDgLater(); fpsLater(); markDirty(); syncLater(); } return; }
+    if(!g.rc) g.rc={a:c,b:c,all:1}; else g.rc.b=c; DG.rect=g.rc; DG.hover=null; drawDgLater(); return; }   /* Effacer : clic, étirer, lâcher → tout ce qui est dans le rectangle disparaît */
   if(DG.tool==='rect'){ const c=dgCell(wx,wy); if(!g.rc) g.rc={a:c,b:c}; else g.rc.b=c; DG.rect=g.rc; DG.hover=null; drawDgLater(); return; }
-  if(DG.tool==='brush'){ const [ci,cj]=dgCell(wx,wy), P=DG.bT==='mur'?{mur:DG.bX||'blanc'}:DG.bT==='plafond'?{cl:DG.bX||'blanc'}:{sol:DG.bX||'blanc'}, st=(i,j)=>{ const [a,b]=dgBrush(i,j); for(let x=a;x<a+DG.n;x++) for(let y=b;y<b+DG.n;y++) dgPaintCell(x,y,P); };
+  if(DG.tool==='brush'||DG.tool==='carve'){ const [ci,cj]=dgCell(wx,wy), P=DG.tool==='carve'?{sol:DG.sX||'blanc'}:DG.bT==='mur'?{mur:DG.bX||'blanc'}:DG.bT==='plafond'?{cl:DG.bX||'blanc'}:{sol:DG.bX||'blanc'}, st=(i,j)=>{ const [a,b]=dgBrush(i,j); for(let x=a;x<a+DG.n;x++) for(let y=b;y<b+DG.n;y++) dgPaintCell(x,y,P); };
     if(g.last){ let [x0,y0]=g.last; const dx=Math.abs(ci-x0), dy=Math.abs(cj-y0), sx=x0<ci?1:-1, sy=y0<cj?1:-1; let er=dx-dy; while(x0!==ci||y0!==cj){ const e2=2*er; if(e2>-dy){ er-=dy; x0+=sx; } if(e2<dx){ er+=dx; y0+=sy; } st(x0,y0); } } else st(ci,cj);
     g.last=[ci,cj]; DG.hover=[ci,cj]; FPS.sprites.clear(); drawDgLater(); fpsLater(); syncLater(); markDirty(); return; } if(DG.tool==='sel'){ if(!g.last){ g.last=1; dgSelClick(wx,wy); } return; } if(DG.tool==='lum'){ if(!g.last){ g.last=1; lumClick(wx,wy); } return; } if(DG.tool==='ob'){ if(!g.last){ g.last=1; obClick(wx,wy); } return; }
   if(DG.tool==='veg'){ if(!g.last){ g.last=1; vegClick(wx,wy); } return; }
   if(['sup','sdown','tp','sign'].includes(DG.tool)){ if(!g.last){ g.last=1; dgMarkClick(wx,wy); } return; }
-  if(DG.tool==='door'||DG.tool==='secret'){ if(!g.last){ g.last=1; dgDoorClick(wx,wy); } return; }
+  if(DG.tool==='door'||DG.tool==='secret'||DG.tool==='tpdoor'){ if(!g.last){ g.last=1; dgDoorClick(wx,wy); } return; }
   if(['wall','unwall','win','iwall'].includes(DG.tool)){ const v=[Math.round(wx/CELL),Math.round(wy/CELL)];   /* clic maintenu → relâché : mur en ligne droite */
     if(!g.wl) g.wl={a:v,b:v,x:wx,y:wy}; else { const A=g.wl.a; g.wl.b=Math.abs(v[0]-A[0])>=Math.abs(v[1]-A[1])?[v[0],A[1]]:[A[0],v[1]]; }
     DG.wline=g.wl; DG.hover=null; drawDgLater(); return; }
@@ -4636,9 +4646,10 @@ function dgSelItems(i,j){ const D=S.dg||{}, k=dgK(i,j), L=[];
   if(D.m&&D.m[k]){ const m=D.m[k]; L.push({id:'mk',ico:mkIco(m.k),l:`${MK_LBL[m.k]} · ${m.code||''}${m.to?' → '+m.to:''}`,edit:()=>dgMarkEdit(k),del:()=>delete D.m[k]}); }
   [[0,-1,'nord'],[1,0,'est'],[0,1,'sud'],[-1,0,'ouest']].forEach(([di,dj,n])=>{ const e=dgEK(i,j,i+di,j+dj), w=D.ew&&D.ew[e]; if(w) L.push({id:'w'+n,ico:dgI('wall',1.7),l:w.inv?`Mur invisible · côté ${n}`:`${w.win?'Fenêtre':'Mur'} ${(DG_TH[w.t]||{}).lbl||''} · ${String(w.h).replace('.',',')} · côté ${n}`,del:()=>delete D.ew[e]}); });
   if(D.cl&&D.cl[k]&&!D.cl[k].no) L.push({id:'cl',ico:dgI('ceil',1.7),l:`Plafond ${(DG_TH[D.cl[k].t]||{}).lbl||''} · ${String(D.cl[k].h).replace('.',',')}`,del:()=>delete D.cl[k]});
-  [[0,-1,'nord'],[1,0,'est'],[0,1,'sud'],[-1,0,'ouest']].forEach(([di,dj,n])=>{ const e=dgEK(i,j,i+di,j+dj), o=D.d&&D.d[e]; if(o) L.push({id:'d'+n,ico:dgI(o.s?'sdoor':'door',1.7),l:`${o.s?'Porte cachée':'Porte'}${o.lk?' 🔒':''} · côté ${n}`,edit:o.s?null:()=>dgDoorEdit(e),del:()=>delete D.d[e]}); });
+  [[0,-1,'nord'],[1,0,'est'],[0,1,'sud'],[-1,0,'ouest']].forEach(([di,dj,n])=>{ const e=dgEK(i,j,i+di,j+dj), o=D.d&&D.d[e]; if(o) L.push({id:'d'+n,ico:dgI(o.s?'sdoor':'door',1.7),l:`${o.tp?'Porte TP'+(o.to?' → '+o.to:''):o.s?'Porte cachée':'Porte'}${o.lk?' 🔒':''} · côté ${n}`,edit:o.s?null:()=>dgDoorEdit(e),del:()=>delete D.d[e]}); });
   return L; }
-function dgSelClick(wx,wy){ const [i,j]=dgCell(wx,wy), L=dgSelItems(i,j); DG.sel=[i,j]; drawDgLater();
+function dgSelClick(wx,wy){ { const e=dgEdgeAt(wx,wy), D=S.dg||{}; const fx=wx/CELL, fy=wy/CELL, ed=Math.min(Math.abs(fy-Math.round(fy)),Math.abs(fx-Math.round(fx))); if(e&&e.k&&D.d&&D.d[e.k]&&!D.d[e.k].s&&ed<.22){ dgDoorEdit(e.k); return; } const [ci,cj]=dgCell(wx,wy), m=D.m&&D.m[dgK(ci,cj)]; if(m&&!(D.veg&&D.veg[dgK(ci,cj)])&&!(D.lum&&D.lum[dgK(ci,cj)])&&!(D.ob&&D.ob[dgK(ci,cj)])){ dgMarkEdit(dgK(ci,cj)); return; } }   /* une porte ou un passage : son réglage directement */
+  const [i,j]=dgCell(wx,wy), L=dgSelItems(i,j); DG.sel=[i,j]; drawDgLater();
   if(!L.length){ toast('Rien de posé sur cette case'); return; }
   const done=()=>{ drawDgLater(); FPS.sprites.clear(); fpsLater(); markDirty(); sync(); };
   const draw=()=>{ const L=dgSelItems(i,j); if(!L.length){ dlg.close(); return; }
@@ -4672,7 +4683,7 @@ function dgFree(di,dj,toks,self){ const busy=(i,j)=>toks.some(o=>o!==self&&o.id!
   const seen=new Set([di+','+dj]), Q=[[di,dj]]; while(Q.length){ const [i,j]=Q.shift(); if(!busy(i,j)) return [i,j]; if(seen.size>200) break;
     [[1,0],[-1,0],[0,1],[0,-1]].forEach(([u,v])=>{ const k=(i+u)+','+(j+v); if(!seen.has(k)){ seen.add(k); Q.push([i+u,j+v]); } }); } return [di,dj]; }
 /* MJ : un aventurier vient de poser le pied sur un passage */
-function dgArrive(t,ci,cj){ const [i,j]=ci!=null?[ci,cj]:dgCell(t.x,t.y), m=dgMk(i,j); if(!m||!m.to) return false; const dest=dgCodes().find(c=>c.code===m.to); if(!dest){ toast(`${t.name} : destination ${m.to} introuvable`,true); return false; }
+function dgArrive(t,ci,cj,pi,pj){ const [i,j]=ci!=null?[ci,cj]:dgCell(t.x,t.y), m=dgPassAt(pi,pj,i,j); if(!m||!m.to) return false; const dest=dgCodes().find(c=>c.code===m.to); if(!dest){ toast(`${t.name} : destination ${m.to} introuvable`,true); return false; }
   const [di,dj]=dest.k.split(',').map(Number), dm=((dest.si===S.scene?S.dg:(S.scenes[dest.si]||{}).dg)||{}).m||{}, da=dm[dest.k]&&dm[dest.k].a;
   if(da!=null){ t.ang=da*Math.PI/4; t.dir=((Math.round(da/2)%4)+4)%4; }
   if(dest.si===S.scene){ const [fi,fj]=dgFree(di,dj,S.tokens,t); t.x=(fi+.5)*CELL; t.y=(fj+.5)*CELL; dexAnchor(t); setTimeout(sync,0); moveTokenEl(t); tokenEl(t); send({t:'mv',id:t.id,x:t.x,y:t.y,s:t.s,dir:t.dir||0,ang:t.ang}); fowLater(); markDirty(); return true; }
@@ -4737,8 +4748,8 @@ function dgTestScene(si,cell){ const sc=DGT.sc&&DGT.sc[si]; if(!sc) return; DGT.
   S.tokens=[{id:'me',type:'player',name:'Vous',owner:ME,race,sexe:'h',hp:10,hpMax:10,x:(fi+.5)*CELL,y:(fj+.5)*CELL,dir:0,s:1},...L];
   DGT.cell=fi+','+fj; S.order=[]; S.turn=-1; FPS.cam=null; FPS.dp=null; FPS.sprites&&FPS.sprites.clear(); renderTokens(); followMe(); if(si) toast(`🔷 ${sc.title||'Scène '+(si+1)}`); }
 /* mode test : en entrant sur un passage (escalier, TP, panneau), on part vers sa destination, même dans une autre scène */
-function dgTestArrive(){ if(!DGT.sc) return; const me=S.tokens.find(t=>t.id==='me'); if(!me) return; const i=Math.floor(me.x/CELL), j=Math.floor(me.y/CELL), k=i+','+j; if(k===DGT.cell) return; DGT.cell=k;
-  const m=dgMk(i,j); if(!m||!m.to) return; let dest=null; DGT.sc.forEach((sc,si)=>{ for(const kk in ((sc.dg&&sc.dg.m)||{})) if(sc.dg.m[kk].code===m.to&&!dest) dest={si,c:kk.split(',').map(Number)}; });
+function dgTestArrive(){ if(!DGT.sc) return; const me=S.tokens.find(t=>t.id==='me'); if(!me) return; const i=Math.floor(me.x/CELL), j=Math.floor(me.y/CELL), k=i+','+j; if(k===DGT.cell) return; const pc=String(DGT.cell||'').split(',').map(Number); DGT.cell=k;
+  const m=dgPassAt(pc.length===2?pc[0]:null,pc[1],i,j); if(!m||!m.to) return; let dest=null; DGT.sc.forEach((sc,si)=>{ for(const kk in ((sc.dg&&sc.dg.m)||{})) if(sc.dg.m[kk].code===m.to&&!dest) dest={si,c:kk.split(',').map(Number)}; });
   if(!dest){ toast(`Destination ${m.to} introuvable`,true); return; }
   const dmk=DGT.sc[dest.si].dg.m[dest.c.join(',')], da=dmk&&dmk.a!=null?dmk.a*Math.PI/4:null;
   fpsFade(m.k); setTimeout(()=>{ FPS.mv=0; const keep=FPS.cam?FPS.cam.a:0; if(dest.si!==DGT.si) dgTestScene(dest.si,dest.c); else { me.x=(dest.c[0]+.5)*CELL; me.y=(dest.c[1]+.5)*CELL; DGT.cell=dest.c.join(','); FPS.cam=null; followMe(); }
@@ -4787,27 +4798,25 @@ function renderDgPanel(){ const box=$('dg-body'); if(!box) return; const D=S.dg|
   const pal=(part,cur,extra)=>`<div class="dg-pal">${(extra||[]).map(([v,l,ic])=>`<button type="button" class="dg-x${cur===v?' on':''}" data-pv="${v}" title="${l}" aria-label="${l}">${ic}</button>`).join('')}${TH.filter(([k])=>part==='floor'||(k!=='bitume'&&k!=='mer'&&!(part==='ceil'&&(k==='interieur'||t.noCeil)))).map(([k,t])=>`<button type="button" class="${cur===k?'on':''}" data-pv="${k}" title="${t.lbl}" aria-label="${t.lbl}"><img src="${dgThumb(k,part)}" alt=""></button>`).join('')}</div>`;
   const seg=(attr,L,cur)=>`<div class="wxrow dg-seg">${L.map(([v,l])=>`<button type="button" class="wxb${cur===v?' on':''}" data-${attr}="${v}"><span>${l}</span></button>`).join('')}</div>`;
   const size=`<div class="crange"><span class="cap">Taille</span><input type="range" min="1" max="15" step="1" value="${DG.n}" id="dg-n" aria-label="Taille du pinceau"><b id="dg-nv">${DG.n} × ${DG.n}</b></div>`;
-  const solT=T==='carve'||T==='fill', murT=['wall','unwall','win'].includes(T), invT=T==='iwall'||(T==='unwall'&&DG.mInv);
-  const NONE=['','Inchangé','<i>—</i>'], SKY=['-','Ciel ouvert',dgI('sky',1.6)];
+  const NONE=['','Aucun','<i>—</i>'], SKY=['-','Ciel ouvert',dgI('sky',1.6)];
+  const murT=['wall','win','iwall','unwall'].includes(T), TOOLS=['sel','rect','carve','wall','win','iwall','unwall','erase'];
   let sub='';
-  if(solT) sub=seg('sm',[['carve','Ajouter'],['fill','Retirer']],T)+size;
-  else if(T==='iwall'||(T==='unwall'&&DG.mInv)) sub=seg('im',[['iwall','Ajouter'],['unwall','Retirer']],T);
-  else if(murT) sub=seg('mm',[['wall','Ajouter'],['unwall','Retirer'],['win','Fenêtre']],T)+(T!=='unwall'?hr('dg-h',DG.wh||2,'Hauteur'):'');
-  else if(T==='erase') sub=seg('em',[['0','Mobilier'],['1','Tout (rectangle)']],DG.eAll?'1':'0')+`<div class="dg-tip">Ordinateur : clic gauche = mobilier, clic droit maintenu = tout en rectangle</div>`;
-  else if(T==='brush'){ const bt=DG.bT||'sol'; sub=seg('bt',[['sol','Sol'],['mur','Murs'],['plafond','Plafond']],bt)+size+(bt==='plafond'?hr('dg-ch',DG.ch||2,'Hauteur'):'')+pal(bt==='mur'?'wall':bt==='plafond'?'ceil':'floor',DG.bX||'blanc',bt==='plafond'?[SKY]:null); }
-  else if(T==='rect'){ const sl=DG.pSlot||'sol', cur={sol:DG.pS||'',mur:DG.pM||'',plafond:DG.pC||''}, th=v=>v==='-'?dgI('sky',1.4):v?`<img src="${dgThumb(v,'floor')}" alt="">`:'<i>—</i>';
-    sub=`<div class="dg-slots">${[['sol','Sol'],['mur','Murs'],['plafond','Plafond']].map(([k,l])=>`<button type="button" class="${sl===k?'on':''}" data-ps="${k}"><span>${l}</span><b>${k==='mur'&&cur[k]?`<img src="${dgThumb(cur[k],'wall')}" alt="">`:k==='plafond'&&cur[k]&&cur[k]!=='-'?`<img src="${dgThumb(cur[k],'ceil')}" alt="">`:th(cur[k])}</b></button>`).join('')}</div>`
-      +(sl==='plafond'?hr('dg-ch',DG.ch||2,'Hauteur'):'')+pal(sl==='mur'?'wall':sl==='plafond'?'ceil':'floor',cur[sl],sl==='plafond'?[NONE,SKY]:[NONE]); }
+  if(T==='carve') sub=size+pal('floor',DG.sX||'blanc');
+  else if(murT) sub=seg('mm',[['wall','Visible'],['iwall','Invisible'],['win','Fenêtre']],T==='unwall'?'wall':T)+(T!=='iwall'?hr('dg-h',DG.wh||2,'Hauteur')+pal('wall',DG.wt||'blanc'):'');
+  else if(T==='erase') sub='';
+  else if(T==='rect'){ const sl=DG.pSlot||'sol', cur={sol:DG.pS==null?'blanc':DG.pS,mur:DG.pM==null?'blanc':DG.pM,plafond:DG.pC||''}, th=(v,part)=>v==='-'?dgI('sky',1.4):v?`<img src="${dgThumb(v,part)}" alt="">`:'<i>—</i>';
+    sub=`<div class="dg-slots">${[['sol','Sol','floor'],['mur','Murs','wall'],['plafond','Plafond','ceil']].map(([k,l,part])=>`<button type="button" class="${sl===k?'on':''}" data-ps="${k}"><span>${l}</span><b>${th(cur[k],part)}</b></button>`).join('')}</div>`
+      +hr('dg-h',DG.wh||2,'Hauteur des murs')+pal(sl==='mur'?'wall':sl==='plafond'?'ceil':'floor',cur[sl],sl==='plafond'?[NONE,SKY]:[NONE]); }
   box.innerHTML=`<div class="subttl">Construction</div>
-    <div class="wxrow dg-tools">${wb('dg-sel',IB('hand'),'Sélection',on_('sel')||!['carve','fill','wall','unwall','win','iwall','brush','rect','erase'].includes(T)&&!['veg','lum','ob','door','secret','sup','sdown','tp','sign'].includes(T))}${wb('dg-carve',IB('brush'),'Sol',solT)}${wb('dg-wall',dgI('wall',1.7),'Mur',murT&&!invT)}${wb('dg-iwall',dgI('iwall',1.7),'Mur invisible',invT)}${wb('dg-brush',dgI('paint',1.7),'Pinceau',T==='brush')}${wb('dg-rect',dgI('fit',1.7),'Peinture',T==='rect')}${wb('dg-erase',IB('eraser'),'Effacer',T==='erase')}</div>
-    <div class="dg-tname">${{sel:'Sélection',carve:'Sol',fill:'Sol',wall:'Mur',unwall:invT?'Mur invisible':'Mur',win:'Mur',iwall:'Mur invisible',brush:'Pinceau',rect:'Peinture — tracer un rectangle',erase:'Effacer'}[T]||'Sélection'}</div>
+    <div class="wxrow dg-tools">${wb('dg-sel',IB('hand'),'Sélection',!TOOLS.includes(T)&&!['veg','lum','ob','door','secret','tpdoor','sup','sdown','tp','sign'].includes(T)||T==='sel')}${wb('dg-rect',dgI('fit',1.7),'Pièce',T==='rect')}${wb('dg-carve',IB('brush'),'Sol',T==='carve')}${wb('dg-wall',dgI('wall',1.7),'Mur',murT)}${wb('dg-erase',IB('eraser'),'Effacer',T==='erase')}</div>
+    <div class="dg-tname">${{sel:'Sélection',rect:'Pièce',carve:'Sol',wall:'Mur',win:'Mur',iwall:'Mur',unwall:'Mur',erase:'Effacer'}[T]||'Sélection'}</div>
     ${sub}
     <div class="subttl">Végétation</div>
     <div class="vegpick">${Object.keys(VEG_BIO).map(b=>Object.keys(VEG_K).map(k=>{ const key=b+'-'+k; return `<button type="button" class="vegb${tool==='dgn'&&DG.tool==='veg'&&DG.vk===key?' on':''}" data-veg="${key}" title="${VEG_K[k]} · ${VEG_BIO[b]}"><img src="res/vege/${key}.png" alt=""></button>`; }).join('')).join('')}</div>
     <div class="subttl">Mobilier</div>
     <div class="vegpick">${Object.entries(LUM).map(([k,d])=>`<button type="button" class="vegb${tool==='dgn'&&DG.tool==='lum'&&DG.lk===k?' on':''}" data-lum="${k}" title="${d.l}"><img src="res/lum/${k}.png" alt=""></button>`).join('')}${Object.entries(OBJ).map(([k,d])=>`<button type="button" class="vegb${tool==='dgn'&&DG.tool==='ob'&&DG.ok===k?' on':''}" data-ob="${k}" title="${d.l}"><img src="res/sprites/${k}.png" alt=""></button>`).join('')}</div>
     <div class="subttl">Portes</div>
-    <div class="wxrow">${wb('dg-door',dgI('door',1.7),'Porte',tool==='dgn'&&DG.tool==='door')}${wb('dg-sdoor',dgI('sdoor',1.7),'Porte cachée',tool==='dgn'&&DG.tool==='secret')}</div>
+    <div class="wxrow">${wb('dg-door',dgI('door',1.7),'Porte',tool==='dgn'&&DG.tool==='door')}${wb('dg-sdoor',dgI('sdoor',1.7),'Porte cachée',tool==='dgn'&&DG.tool==='secret')}${wb('dg-tdoor',dgI('tp',1.7),'Porte TP',tool==='dgn'&&DG.tool==='tpdoor')}</div>
     <div class="subttl">Passages</div>
     <div class="wxrow">${wb('dg-sup',dgI('sup',1.7),'Escalier ↑',tool==='dgn'&&DG.tool==='sup')}${wb('dg-sdown',dgI('sdown',1.7),'Escalier ↓',tool==='dgn'&&DG.tool==='sdown')}${wb('dg-sign',dgI('sign',1.7),'Panneau',tool==='dgn'&&DG.tool==='sign')}${wb('dg-tp',dgI('tp',1.7),'Zone TP',tool==='dgn'&&DG.tool==='tp')}</div>
     <button class="btn ghost wide" type="button" id="dg-clear">${IB('bin')}Tout reboucher</button>`;
@@ -4815,15 +4824,15 @@ function renderDgPanel(){ const box=$('dg-body'); if(!box) return; const D=S.dg|
   box.querySelectorAll('[data-ob]').forEach(b=>b.onclick=()=>{ if(tool==='dgn'&&DG.tool==='ob'&&DG.ok===b.dataset.ob){ DG.tool='sel'; renderDgPanel(); return; } DG.ok=b.dataset.ob; DG.tool='ob'; if(tool!=='dgn') setTool('dgn'); renderDgPanel(); });
   box.querySelectorAll('[data-lum]').forEach(b=>b.onclick=()=>{ if(tool==='dgn'&&DG.tool==='lum'&&DG.lk===b.dataset.lum){ DG.tool='sel'; renderDgPanel(); return; } DG.lk=b.dataset.lum; DG.tool='lum'; if(tool!=='dgn') setTool('dgn'); renderDgPanel(); });
   box.querySelectorAll('[data-veg]').forEach(b=>b.onclick=()=>{ if(tool==='dgn'&&DG.tool==='veg'&&DG.vk===b.dataset.veg){ DG.tool='sel'; renderDgPanel(); return; } DG.vk=b.dataset.veg; DG.tool='veg'; if(tool!=='dgn') setTool('dgn'); renderDgPanel(); });
-  $('dg-sel').onclick=()=>pick('sel'); $('dg-carve').onclick=()=>pick('carve'); $('dg-wall').onclick=()=>{ DG.mInv=0; pick('wall'); }; $('dg-iwall').onclick=()=>{ DG.mInv=1; pick('iwall'); }; $('dg-brush').onclick=()=>pick('brush'); $('dg-rect').onclick=()=>pick('rect'); $('dg-erase').onclick=()=>pick('erase'); box.querySelectorAll('[data-em]').forEach(b=>b.onclick=()=>{ DG.eAll=b.dataset.em==='1'; renderDgPanel(); });
-  box.querySelectorAll('[data-sm],[data-mm],[data-im]').forEach(b=>b.onclick=()=>{ DG.tool=b.dataset.sm||b.dataset.mm||b.dataset.im; if(tool!=='dgn') setTool('dgn'); renderDgPanel(); });
+  $('dg-sel').onclick=()=>pick('sel'); $('dg-carve').onclick=()=>pick('carve'); $('dg-wall').onclick=()=>pick(murT?T:(DG.wm||'wall')); $('dg-rect').onclick=()=>pick('rect'); $('dg-erase').onclick=()=>pick('erase');
+  box.querySelectorAll('[data-mm]').forEach(b=>b.onclick=()=>{ DG.tool=DG.wm=b.dataset.mm; if(tool!=='dgn') setTool('dgn'); renderDgPanel(); });
   box.querySelectorAll('[data-bt]').forEach(b=>b.onclick=()=>{ DG.bT=b.dataset.bt; if(DG.bT!=='plafond'&&DG.bX==='-') DG.bX='blanc'; renderDgPanel(); });
   box.querySelectorAll('[data-ps]').forEach(b=>b.onclick=()=>{ DG.pSlot=b.dataset.ps; renderDgPanel(); });
-  box.querySelectorAll('[data-pv]').forEach(b=>b.onclick=()=>{ const v=b.dataset.pv; if(T==='brush') DG.bX=v; else if(T==='rect'){ const sl=DG.pSlot||'sol'; DG[sl==='sol'?'pS':sl==='mur'?'pM':'pC']=v; } renderDgPanel(); });
+  box.querySelectorAll('[data-pv]').forEach(b=>b.onclick=()=>{ const v=b.dataset.pv; if(T==='carve') DG.sX=v; else if(murT) DG.wt=v; else if(T==='rect'){ const sl=DG.pSlot||'sol'; DG[sl==='sol'?'pS':sl==='mur'?'pM':'pC']=v; } renderDgPanel(); });
   if($('dg-h')) $('dg-h').oninput=e=>{ DG.wh=+e.target.value; $('dg-hv').textContent=String(DG.wh).replace('.',','); };
   if($('dg-ch')) $('dg-ch').oninput=e=>{ DG.ch=+e.target.value; $('dg-chv').textContent=String(DG.ch).replace('.',','); };
   $('dg-sup').onclick=()=>pick('sup'); $('dg-sdown').onclick=()=>pick('sdown'); $('dg-tp').onclick=()=>pick('tp'); $('dg-sign').onclick=()=>pick('sign');
-  $('dg-door').onclick=()=>pick('door'); $('dg-sdoor').onclick=()=>pick('secret');
+  $('dg-door').onclick=()=>pick('door'); $('dg-sdoor').onclick=()=>pick('secret'); $('dg-tdoor').onclick=()=>pick('tpdoor');
   if($('dg-n')) $('dg-n').oninput=e=>{ brushSize(+e.target.value); $('dg-nv').textContent=`${DG.n} × ${DG.n}`; drawDgLater(); };
   $('dg-clear').onclick=()=>confirmDialog('Tout reboucher','Toute la zone creusée de cette scène redevient de la roche.','Tout reboucher',()=>{ const D=dgEnsure(); D.c={}; D.w={}; D.cl={}; D.ew={}; drawDgLater(); renderDgPanel(); markDirty(); sync(); }); }
 
@@ -5414,7 +5423,9 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
       if(!nf&&cur.blk) break;
       if(!nf){ if(V2||cur.iw||virt||dgWNo(mx,my)){ nf=cur; virt=true; } else wt=TT.wall; } else virt=false;
       let doff=0;
-      if(door&&!dgHid(door)){ const p=doorP(dgEK(pmx,pmy,mx,my),door); if(TT.pd&&TT.pd.door&&TT.pd.drel) faceDoorP(fh,d0,p,TT.pd); else if(TT.drel&&TT.door){ const GX=door.gr&&TT.grille&&TT.grille.door&&TT.grille.drel?TT.grille:TT; faceDoor(fh,d0,p,GX); } else if(p<1){ let u=side===0?cam.y+d0*rdy:cam.x+d0*rdx; u-=Math.floor(u); if(u>=p){ wt=TT.door; doff=p; } } }
+      if(door&&door.tp){ const yT=Math.max(0,Math.ceil(h2+(eye-fh-1)*PS/d0)), yB=Math.min(H-1,Math.floor(h2+(eye-fh)*PS/d0)); let u=side===0?cam.y+d0*rdy:cam.x+d0*rdx; u-=Math.floor(u); const ed=Math.min(u,1-u), tw=now*1.3;   /* porte TP : fond noir, lisière violette qui ondule */
+        for(let y=yT;y<=yB;y++){ const z=eye-(y+.5-h2)*d0/PS-fh, e=Math.min(ed,z,1-z), g=Math.max(0,1-e/.09)*(.75+.25*Math.sin(tw*4+z*14+u*9)); put(y,0xff000000|((40+180*g|0)<<16)|((8+60*g|0)<<8)|(6+120*g|0),d0); } }
+      else if(door&&!dgHid(door)){ const p=doorP(dgEK(pmx,pmy,mx,my),door); if(TT.pd&&TT.pd.door&&TT.pd.drel) faceDoorP(fh,d0,p,TT.pd); else if(TT.drel&&TT.door){ const GX=door.gr&&TT.grille&&TT.grille.door&&TT.grille.drel?TT.grille:TT; faceDoor(fh,d0,p,GX); } else if(p<1){ let u=side===0?cam.y+d0*rdy:cam.x+d0*rdx; u-=Math.floor(u); if(u>=p){ wt=TT.door; doff=p; } } }
       else if(door&&dgShut(door)) wt=TT.wall;
       const WH=CC?+CC.h||1:1;
       if(door&&!dgHid(door)){ const fl=dgFlank(pmx,pmy,mx,my), lt=Math.min(CC?+CC.h||1:99,Math.max(WH,fl.h)), LX=fl.t&&fl.h>=WH?fpsTextures(fl.t):TT; if(lt>fh+1){ const ft=fl.t||cur.th; const LI=WLIMG[ft]; if(LI&&LI.px) faceImg(fh+1,lt,d0,LI,fh); else if((ft==='trottoir'||ft==='bitume'||ft==='ruelle')&&FAC.ready) faceFac(fh+1,lt,d0); else face(fh+1,lt,d0,LX.wall,LX.N); } }   /* linteau : la porte reste 1 × 1 */
@@ -5580,8 +5591,8 @@ function fpsMoveBy(dist,side){ const c=FPS.cam; if(!c||(!dist&&!side)) return; s
   if(Math.abs(x-x0)<1e-4&&Math.abs(y-y0)<1e-4){ if(!FPS.bumped){ FPS.bumped=1; fpsBump(); } return; } FPS.bumped=0;
   const nc=Math.floor(x)!==ci||Math.floor(y)!==cj; c.x=x; c.y=y; c.z=dgH(Math.floor(x),Math.floor(y)); FPS.lastMove=performance.now();
   FPS.walk=(FPS.walk||0)+Math.hypot(dist,side); if(FPS.walk>.9){ FPS.walk=0; fpsStep(false); }
-  if(FPS.mode!=='play'&&nc) fpsPrevArrive(c);
-  if(FPS.mode==='play'&&nc&&!window.DGTEST){ const m=dgMk(Math.floor(x),Math.floor(y)); if(m&&m.to) fpsFade(m.k); }
+  if(FPS.mode!=='play'&&nc) fpsPrevArrive(c,ci,cj);
+  if(FPS.mode==='play'&&nc&&!window.DGTEST){ const m=dgPassAt(ci,cj,Math.floor(x),Math.floor(y)); if(m&&m.to) fpsFade(m.k); }
   fpsSendMove(nc); }
 /* passage : fondu blanc (zone TP, escalier qui monte), fondu noir (escalier qui descend, panneau) */
 function fpsFade(k){ if(!FPS.el) return; let f=FPS.el.querySelector('.fps-fade'); if(!f){ f=document.createElement('div'); f.className='fps-fade'; FPS.el.appendChild(f); }
@@ -5638,7 +5649,7 @@ function fpsSync(){ if(!isPlayer||!NETVIEW) return; const me=ME&&S.tokens.find(t
   fpsLater(); }
 /* MJ : aperçu depuis le jeton ouvert, un aventurier, ou le centre du donjon */
 /* aperçu du MJ : escaliers, zones TP et panneaux emmènent aussi la caméra (vers une autre scène si besoin) */
-function fpsPrevArrive(to){ const i=Math.floor(to.x), j=Math.floor(to.y), m=dgMk(i,j); if(!m) return;
+function fpsPrevArrive(to,pi,pj){ const i=Math.floor(to.x), j=Math.floor(to.y), m=dgPassAt(pi,pj,i,j); if(!m) return;
   if(!m.to){ toast(`${MK_LBL[m.k]} ${m.code||''} : aucune destination (« Mène à »)`); return; }
   const dest=dgCodes().find(c=>c.code===m.to); if(!dest){ toast(`Destination ${m.to} introuvable`,true); return; }
   const [di,dj]=dest.k.split(',').map(Number), dmk=(((dest.si===S.scene?S.dg:(S.scenes[dest.si]||{}).dg)||{}).m||{})[dest.k], a=dmk&&dmk.a!=null?dmk.a*Math.PI/4:(FPS.cam?FPS.cam.a:0); fpsFade(m.k); setTimeout(()=>{
@@ -9169,7 +9180,7 @@ function netIn(c,d){ if(!d||typeof d!=='object') return;
       if(!okStep||!dgOpen(i,j)||busy){ back(); return; }
       if(S.dexLock){ if(!t.dxa) t.dxa=[i0,j0]; if(!dexReach(t.dxa,dexMax(t)).has(i+','+j)){ back(); return; } } }
     t.x=Math.round(+d.x); t.y=Math.round(+d.y); t.dir=dir; if(d.ang!=null&&isFinite(+d.ang)) t.ang=+(+d.ang).toFixed(3); moveTokenEl(t); tokenEl(t); send({t:'mv',id:t.id,x:t.x,y:t.y,s:t.s,dir,ang:t.ang}); fowLater(); if(FPS.el&&FPS.mode==='prev') fpsLater(); markDirty();
-    if(moved&&dgMk(i,j)) setTimeout(()=>{ if(tok(t.id)) dgArrive(t,i,j); },120); }   /* passage : il suffit d'y entrer, même en le traversant */
+    if(moved&&dgPassAt(i0,j0,i,j)) setTimeout(()=>{ if(tok(t.id)) dgArrive(t,i,j,i0,j0); },120); }   /* passage : il suffit d'y entrer, même en le traversant */
   else if(d.t==='veh'&&c.pid){ const P=PL.get(c.pid), v=P&&P.sheet&&P.sheet.full&&P.sheet.full.vehicle, cur=S.tokens.find(x=>x.kind==='vehicle'&&x.owner===c.pid);
     if(cur){ removeToken(cur.id); toast(`${c.name} renvoie son véhicule`); return; }
     if(!v){ return; } const me=S.tokens.find(x=>x.owner===c.pid&&x.type==='player'), t=vehToken(v,c.pid);
