@@ -4257,7 +4257,7 @@ function sightRay(x,y,dx,dy,R){ let i=Math.floor(x), j=Math.floor(y); const sx=d
 function sightPoly(p){ const x=p.x/CELL, y=p.y/CELL, R=perR(p)/CELL, N=360, pts=[]; for(let a=0;a<N;a++){ const t=a/N*Math.PI*2, dx=Math.cos(t), dy=Math.sin(t); pts.push([x+dx*sightRay(x,y,dx,dy,R),y+dy*sightRay(x,y,dx,dy,R)]); } return pts; }
 const sees=(p,t)=>{ const x=p.x/CELL, y=p.y/CELL, dx=t.x/CELL-x, dy=t.y/CELL-y, L=Math.hypot(dx,dy); if(L*CELL>perR(p)) return false; if(L<.01||!S.dg) return true; return sightRay(x,y,dx/L,dy/L,L)>=L-.02; };
 function renderFoW(){ board.classList.remove('night'); mapWxPaint(); const cv=$('fow');
-  if(!CASTON()){ cv.hidden=true; if(isPlayer) document.querySelectorAll('#tokens .tk.unseen').forEach(el=>el.classList.remove('unseen')); return; }
+  if(!CASTON()||!S.tokens.some(t=>t.type==='player'&&!t.hidden&&t.kind!=='vehicle'&&!t.inveh)){ cv.hidden=true; if(isPlayer) document.querySelectorAll('#tokens .tk.unseen').forEach(el=>el.classList.remove('unseen')); return; }
   const P=S.tokens.filter(t=>t.type==='player'&&!t.hidden&&t.kind!=='vehicle'&&!t.inveh);
   document.querySelectorAll('#tokens .tk').forEach(el=>{ const t=tok(el.dataset.id), hid=t&&(t.type==='mob'||t.type==='npc'||(t.type==='prop'&&t.kind!=='deco'))&&!P.some(p=>sees(p,t)); el.classList.toggle('unseen',!!hid); });
   cv.hidden=false; const r=board.getBoundingClientRect(), k=.5, W=Math.max(2,Math.round(r.width*k)), H=Math.max(2,Math.round(r.height*k)); if(cv.width!==W||cv.height!==H){ cv.width=W; cv.height=H; }
@@ -4524,7 +4524,10 @@ function drawDg(){ const cv=$('dgn'); if(!cv) return; const r=board.getBoundingC
   /* lumières : halo coloré + icône */
   const LL=S.dg.lum||{}; for(const k in LL){ const p=k.indexOf(','), i=+k.slice(0,p), j=+k.slice(p+1); const Ld=LUM[LL[k]]; if(!Ld) continue; if(i<i0-6||i>i1+6||j<j0-6||j>j1+6) continue;
     const cx=(i+.5)*CELL, cy=(j+.5)*CELL, rr=Ld.R*CELL, g=x.createRadialGradient(cx,cy,0,cx,cy,rr), cc=Ld.c.map(v=>Math.round(v*255)).join(',');
-    g.addColorStop(0,`rgba(${cc},.35)`); g.addColorStop(1,`rgba(${cc},0)`); x.fillStyle=g; x.fillRect(cx-rr,cy-rr,rr*2,rr*2);
+    { const nu=S.light===false, A=nu?.85:.6; g.addColorStop(0,`rgba(${cc},${A})`); g.addColorStop(.18,`rgba(${cc},${A*.75})`); g.addColorStop(.55,`rgba(${cc},${A*.3})`); g.addColorStop(1,`rgba(${cc},0)`);
+      x.save(); x.globalCompositeOperation='screen'; x.fillStyle=g;
+      if(typeof sightRay==='function'){ const lx=i+.5, ly=j+.5; x.beginPath(); for(let n=0;n<180;n++){ const t=n/180*Math.PI*2, dx=Math.cos(t), dy=Math.sin(t), d=sightRay(lx,ly,dx,dy,Ld.R)+.06; n?x.lineTo((lx+dx*d)*CELL,(ly+dy*d)*CELL):x.moveTo((lx+dx*d)*CELL,(ly+dy*d)*CELL); } x.closePath(); x.fill(); }   /* la lumière s'arrête aux murs */
+      else x.fillRect(cx-rr,cy-rr,rr*2,rr*2); x.restore(); }   /* halo bien visible sur le plan (plus fort la nuit) */
     const o=lumImg(LL[k]); if(o.cv){ const h=CELL*1.15, w=h*o.cv.width/o.cv.height; x.save(); x.imageSmoothingEnabled=false; x.drawImage(o.cv,cx-w/2,cy+CELL*.42-h,w,h); x.restore(); } }
   /* passages */
   const MM=S.dg.m||{}; for(const k in MM){ const m=MM[k], p=k.indexOf(','), i=+k.slice(0,p), j=+k.slice(p+1); if(i<i0||i>i1||j<j0||j>j1) continue; const X=i*CELL, Y=j*CELL, c=m.k==='tp'?'#18b8d8':'#7a5a2c';
