@@ -1042,14 +1042,16 @@ function normalize(ch){
 function serialize(){ return JSON.stringify({format:'aldebaran-adb',kind:'joueur',version:2,savedAt:new Date().toISOString(),character:C},null,2); }
 function fileBase(){ return (C.name||'personnage').trim().replace(/[^\p{L}\p{N}_-]+/gu,'_')||'personnage'; }
 const Store={ // point d'entrée unique : Firebase prendra le relais ici
-  saveLocal(){ return ls.set(LS_SHEET,serialize()); },
+  last:'', /* fiche : localStorage + copie IndexedDB (photos, pièces jointes) ; au démarrage la plus récente gagne */
+  saveLocal(force){ const body=JSON.stringify(C); if(!force&&body===this.last) return true; this.last=body; const txt=serialize();
+    if(!ls.set(LS_SHEET,txt)){ try{ localStorage.removeItem(LS_SHEET); }catch(e){} } if(typeof idb!=='undefined') idb.set('sheet',txt); return true; },
   loadLocal(){ try{const d=JSON.parse(ls.get(LS_SHEET)||'null'); return d?normalize(d.character||d):null;}catch(e){return null;} },
   saveCat(){ return ls.set(LS_CAT,catSerialize()); },
   loadCat(){ try{ const d=JSON.parse(ls.get(LS_CAT)||'null'); return d&&Array.isArray(d.items)?d.items:[]; }catch(e){ return []; } }
 };
 if(window.__ADB_SHEET_VIEW){ document.documentElement.classList.add('sheetview'); ['keydown','beforeinput','paste','drop','dragstart','contextmenu'].forEach(t=>document.addEventListener(t,e=>{ if(t==='keydown'&&e.key==='Escape') return; e.preventDefault(); e.stopPropagation(); },true)); document.addEventListener('focusin',e=>{ if(e.target.matches&&e.target.matches('input,textarea,select')) e.target.blur(); },true); Store.saveLocal=()=>true; Store.saveCat=()=>true; Store.loadLocal=()=>{ try{ return window.__ADB_SHEET_DATA&&window.__ADB_SHEET_DATA.stats?normalize(JSON.parse(JSON.stringify(window.__ADB_SHEET_DATA))):null; }catch(e){ return null; } };
   window.addEventListener('message',e=>{ if(e.source!==parent||!e.data||!e.data.__adbSheet) return; try{ const d=e.data.__adbSheet; if(d&&d.stats){ C=normalize(JSON.parse(JSON.stringify(d))); renderAll(); } }catch(err){} }); }
-function markDirty(){ dirty=true; syncCat(); updateSaveState(); }
+let lsaveT=null; function markDirty(){ dirty=true; syncCat(); updateSaveState(); clearTimeout(lsaveT); lsaveT=setTimeout(()=>Store.saveLocal(),1500); }
 function updateSaveState(){
   $('sdot').classList.toggle('dirty',dirty); $('sdot').title=dirty?'Modifications non enregistrées':'À jour';
   const el=$('savestate'); if(!el) return; el.classList.toggle('dirty',dirty);
@@ -1164,7 +1166,10 @@ function setupAutosave(){
     dirty=false; lastSaved=new Date(); updateSaveState();
   },prefs.autosave*1000);
 }
-window.addEventListener('beforeunload',()=>{ if(dirty) Store.saveLocal(); Store.saveCat(); });
+const flushSheet=()=>{ Store.saveLocal(); Store.saveCat(); };
+window.addEventListener('beforeunload',flushSheet); window.addEventListener('pagehide',flushSheet); document.addEventListener('visibilitychange',()=>{ if(document.hidden) flushSheet(); });
+/* filet de sécurité : toute modification de la fiche (même reçue du MJ) est sauvegardée en local dans les 5 s */
+setInterval(()=>{ const b=Store.last; Store.saveLocal(); if(b&&Store.last!==b&&!dirty){ dirty=true; updateSaveState(); } },5000);
 
 /* =========================================================
    RENDU
@@ -2266,7 +2271,9 @@ function placeRibbon(){ const f=$('figure'), l=$('layout'); if(!f||!l) return; c
 window.addEventListener('resize',placeRibbon); if(window.ResizeObserver) new ResizeObserver(placeRibbon).observe($('layout'));
 /* Démarrage : on arrive directement sur la fiche */
 buildStatic();
-const restored=Store.loadLocal(); if(restored) C=restored;
+let lsAt=''; try{ lsAt=(JSON.parse(ls.get(LS_SHEET)||'null')||{}).savedAt||''; }catch(e){}
+const restored=Store.loadLocal(); if(restored) C=restored; Store.last=JSON.stringify(C);
+idb.get('sheet').then(t=>{ if(!t) return; try{ const d=JSON.parse(t); if(d&&(d.savedAt||'')>lsAt&&d.character){ C=normalize(d.character); Store.last=JSON.stringify(C); renderAll(); updateSaveState(); } }catch(e){} });
 CAT=Store.loadCat(); fileName=ls.get(LS_FILE)||null; syncCat();
 if(!window.__ADB_SHEET_VIEW) idb.get('dir').then(h=>{ if(h&&h.kind==='directory'){ dirHandle=h; updateSaveState(); } });
 renderAll(); updateSaveState(); if(!window.__ADB_SHEET_VIEW) setupAutosave(); placeRibbon();
@@ -9235,8 +9242,17 @@ window.addEventListener('storage',e=>{ if(!NETVIEW&&e.key===LS_SYNC&&e.newValue)
    Sauvegarde : fichier .adb (table MJ), sauvegarde auto réglable
    ========================================================= */
 function serialize(){ snapshot(); S.view={...V}; return JSON.stringify({format:'aldebaran-adb',kind:'mj',version:1,savedAt:new Date().toISOString(),table:S}); }
+/* sauvegarde locale : localStorage (rapide, ~5 Mo) + copie IndexedDB (sans limite pratique : fonds, photos, pièces jointes). Au démarrage, la plus récente gagne. */
+let lastBody='';
+function saveLocal(quiet,force){ if(isPlayer) return true; snapshot(); S.view={...V}; const body=JSON.stringify(S); if(!force&&body===lastBody) return true;
+  const at=new Date().toISOString(), txt='{"format":"aldebaran-adb","kind":"mj","version":1,"savedAt":"'+at+'","table":'+body+'}'; lastBody=body;
+  const ok=ls.set(LS_TABLE,txt); if(!ok){ try{ localStorage.removeItem(LS_TABLE); }catch(e){} } kv.set('table',txt);
+  if(!ok&&!quiet&&!saveLocal.warned){ saveLocal.warned=1; toast('Table volumineuse : sauvegardée dans la base du navigateur. Pensez aussi au fichier.'); } return true; }
+/* toute modification est rattrapée, même sans markDirty : on compare l'état toutes les 8 s */
+setInterval(()=>{ if(isPlayer||document.hidden) return; const b=lastBody; saveLocal(true); if(lastBody!==b&&b){ dirty=true; updateSaveState(); } },8000);
+const flushLocal=()=>{ if(!isPlayer) saveLocal(true); };
+window.addEventListener('pagehide',flushLocal); document.addEventListener('visibilitychange',()=>{ if(document.hidden) flushLocal(); });
 function fileBase(){ const sc=S.scenes[0]; return 'table_mj'+(sc&&sc.title?'_'+sc.title.trim().replace(/[^\p{L}\p{N}_-]+/gu,'_'):''); }
-function saveLocal(quiet){ const ok=ls.set(LS_TABLE,serialize()); if(!ok&&!quiet) toast('Mémoire du navigateur pleine : enregistrez la table dans un fichier',true); return ok; }
 function savePrefs(){ ls.set(LS_PREF,JSON.stringify(prefs)); }
 /* Dossier partagé avec les fiches Aventurier : la campagne (campagne.adb) va à côté des personnages */
 const CAMP='campagne.adb', LS_FILE='aldebaran.mj.fichier';
@@ -9325,7 +9341,6 @@ function setupAutosave(){ clearInterval(autoTimer); if(isPlayer||!+prefs.autosav
 function updateSaveState(){ const d=$('sdot'); if(d) d.classList.toggle('dirty',dirty);
   const s=$('savestate'); if(s){ s.classList.toggle('dirty',dirty); s.querySelector('span').textContent=dirty?'Modifications non enregistrées':lastSaved?`Enregistré à ${lastSaved.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}`:'Rien à enregistrer'; }
   const f=$('filestate'); if(f) f.textContent=(dirHandle?`Dossier « ${dirHandle.name} »`:canDir()?'Pas encore de dossier':'Téléchargement (ce navigateur ne gère pas les dossiers)')+(fileName?` · ${fileName}`:''); }
-setInterval(()=>{ if(!isPlayer&&dirty) saveLocal(true); },15000);
 window.addEventListener('beforeunload',()=>{ if(!isPlayer) saveLocal(true); });
 
 /* Paramètres, guide, installation */
@@ -10375,8 +10390,9 @@ if(isPlayer){
   else { try{ const m=JSON.parse(ls.get(LS_SYNC)||'null'); if(m&&m.t==='state') receive(m); }catch(e){}
     const hello={t:'hello',from:'player'}; if(bc) bc.postMessage(hello); try{ localStorage.setItem(LS_SYNC+'.hello',Date.now()+''); }catch(e){} }
 } else {
-  try{ const o=JSON.parse(ls.get(LS_TABLE)||'null'); if(o&&o.table) S=Object.assign(blankTable(),o.table); }catch(e){}
-  renderAll(); if(S.view){ V={...S.view}; applyView(); } else fitBoard(); setTimeout(histInit,0);
+  let lsAt=''; try{ const o=JSON.parse(ls.get(LS_TABLE)||'null'); if(o&&o.table){ S=Object.assign(blankTable(),o.table); lsAt=o.savedAt||''; } }catch(e){}
+  renderAll(); if(S.view){ V={...S.view}; applyView(); } else fitBoard(); setTimeout(histInit,0); lastBody=JSON.stringify(S);
+  kv.get('table').then(t=>{ if(!t) return; try{ const o=JSON.parse(t); if(o&&o.table&&(o.savedAt||'')>lsAt){ S=Object.assign(blankTable(),o.table); lastBody=JSON.stringify(S); renderAll(); if(S.view){ V={...S.view}; applyView(); } setTimeout(histInit,0); sync(); } }catch(e){} });
   setupAutosave(); updateSaveState(); fileName=ls.get(LS_FILE)||null;
   kv.get('dir').then(h=>{ if(h&&h.kind==='directory'){ dirHandle=h; updateSaveState(); } });
   if(S.netOpen){ S.netOpen=false; setTimeout(openTable,1200); }   // la table se rouvre avec le même code
