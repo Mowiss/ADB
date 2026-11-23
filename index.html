@@ -1039,6 +1039,12 @@ function normalize(ch){
   c.inventory.forEach(it=>{ if(!isWeapon(it)&&it.zone!=='Combi') it.zone=ZFIX(it.zone||''); if(it.itemType==='armor'&&it.zone&&!ARM_Z.includes(it.zone)) it.zone=armZoneOf(armOf(it.zone)); });
   return c;
 }
+/* Partager la sauvegarde : menu de partage du téléphone (« Enregistrer dans Fichiers », Drive, mail…), sinon téléchargement */
+async function shareSave(txt,name,done){ const mk=t=>new File([txt],name,{type:t}); let f=mk('application/json');
+  if(navigator.canShare&&!navigator.canShare({files:[f]})) f=mk('text/plain');
+  if(navigator.share&&navigator.canShare&&navigator.canShare({files:[f]})){ try{ await navigator.share({files:[f],title:name}); done&&done(); }catch(e){ if(e.name!=='AbortError') toast('Partage impossible',true); } return; }
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([txt],{type:'application/json'})); a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),4000); done&&done(); }
+const SHARE_I='<path d="M12 3v12"/><path d="M8 7l4-4 4 4"/><path d="M5 12v8h14v-8"/>';
 function serialize(){ return JSON.stringify({format:'aldebaran-adb',kind:'joueur',version:2,savedAt:new Date().toISOString(),character:C},null,2); }
 function fileBase(){ return (C.name||'personnage').trim().replace(/[^\p{L}\p{N}_-]+/gu,'_')||'personnage'; }
 const Store={ // point d'entrée unique : Firebase prendra le relais ici
@@ -2158,6 +2164,7 @@ $('b-settings').onclick=()=>{
       <button type="button" class="sv" id="b-new">${IB('<path d="M14 3H6v18h12V7z"/><path d="M14 3v4h4M12 11v6M9 14h6"/>')}<span>Nouvelle fiche</span></button>
       <button type="button" class="sv" id="b-open">${IB('<path d="M3 7V5h6l2 2h8v3"/><path d="M3 7v12h15l3-9H6l-3 9"/>')}<span>Ouvrir un dossier…</span></button>
       <button type="button" class="sv" id="b-save">${IB('<path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3M8 21v-7h8v7"/>')}<span>Enregistrer <kbd>Ctrl+S</kbd></span></button>
+      <button type="button" class="sv" id="b-share">${IB(SHARE_I)}<span>Partager / Enregistrer dans Fichiers</span></button>
       <button type="button" class="sv" id="b-saveas">${IB('<path d="M13 21H5V3h11l3 3v5"/><path d="M8 3v5h7V3"/><path d="M15 20l5-5 2 2-5 5h-2z"/>')}<span>Enregistrer dans un dossier…</span></button>
     </div>
     <div class="mstate" id="savestate"><i></i><span></span></div><div class="mstate sub" id="dirstate"></div><div class="mstate sub" id="autostate"></div>
@@ -2170,6 +2177,7 @@ $('b-settings').onclick=()=>{
     <div class="actions" style="justify-content:space-between;align-items:center"><span class="meta" style="margin:0">Version ${APP_VER}</span><span style="display:flex;gap:8px"><button class="btn ghost" type="button" id="p-home" title="Revenir au choix Aventurier / Maître du destin">${IB('<path d="M3 11l9-7 9 7"/><path d="M5.5 9.5V20h13V9.5M10 20v-5.5h4V20"/>')}Accueil</button><button class="btn ghost" type="button" id="p-guide">${IB('<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 0 1 5 0c0 1.8-2.5 2-2.5 4M12 17h.01"/>')}Guide</button><button class="btn ghost" type="button" data-close>Fermer</button></span></div>`);
   $('p-install').onclick=doInstall;
   $('b-new').onclick=newDialog; $('b-open').onclick=()=>{ dlg.close(); openFile(); }; $('b-save').onclick=()=>{ dlg.close(); save(); }; $('b-saveas').onclick=()=>{ dlg.close(); saveAs(); };
+  $('b-share').onclick=()=>{ dlg.close(); shareSave(serialize(),fileBase()+'.adb',()=>{ Store.saveLocal(); dirty=false; lastSaved=new Date(); updateSaveState(); }); };
   $('p-guide').onclick=showGuide; wakeBind(); $('p-home').onclick=()=>{ Store.saveLocal(); location.href=location.pathname; }; $('p-print').onclick=()=>{ dlg.close(); setTimeout(printSheet,150); }; updateSaveState();
   $('p-auto').onchange=e=>{ prefs.autosave=+e.target.value; ls.set(LS_PREF,JSON.stringify(prefs)); setupAutosave(); updateSaveState(); };
 };
@@ -9241,6 +9249,13 @@ window.addEventListener('storage',e=>{ if(!NETVIEW&&e.key===LS_SYNC&&e.newValue)
 /* =========================================================
    Sauvegarde : fichier .adb (table MJ), sauvegarde auto réglable
    ========================================================= */
+/* Partager la sauvegarde : menu de partage du téléphone (« Enregistrer dans Fichiers », Drive, mail…), sinon téléchargement */
+async function shareSave(txt,name,done){ const mk=t=>new File([txt],name,{type:t}); let f=mk('application/json');
+  if(navigator.canShare&&!navigator.canShare({files:[f]})) f=mk('text/plain');
+  if(navigator.share&&navigator.canShare&&navigator.canShare({files:[f]})){ try{ await navigator.share({files:[f],title:name}); done&&done(); }catch(e){ if(e.name!=='AbortError') toast('Partage impossible',true); } return; }
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([txt],{type:'application/json'})); a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),4000); done&&done(); }
+const SHARE_I='<path d="M12 3v12"/><path d="M8 7l4-4 4 4"/><path d="M5 12v8h14v-8"/>';
+if(typeof IC==='object'&&IC) IC.share=SHARE_I;
 function serialize(){ snapshot(); S.view={...V}; return JSON.stringify({format:'aldebaran-adb',kind:'mj',version:1,savedAt:new Date().toISOString(),table:S}); }
 /* sauvegarde locale : localStorage (rapide, ~5 Mo) + copie IndexedDB (sans limite pratique : fonds, photos, pièces jointes). Au démarrage, la plus récente gagne. */
 let lastBody='';
@@ -9350,6 +9365,7 @@ function settings(){
     <div class="savegrid">
       <button type="button" class="sv" id="p-open">${IB('open')}<span>Ouvrir une campagne…</span></button>
       <button type="button" class="sv" id="p-save">${IB('save')}<span>Enregistrer <kbd>Ctrl+S</kbd></span></button>
+      <button type="button" class="sv" id="p-share">${IB('share')}<span>Partager / Enregistrer dans Fichiers</span></button>
       <button type="button" class="sv" id="p-saveas">${IB('saveas')}<span>Enregistrer dans un dossier… <kbd>Ctrl+Maj+S</kbd></span></button>
     </div>
     <div class="mstate" id="savestate"><i></i><span></span></div><div class="mstate" id="filestate" style="padding-left:14px"></div>
@@ -9361,6 +9377,7 @@ function settings(){
     <div class="inst"><div><b>Application</b><span id="inst-msg">${installMsg()}</span></div><button class="btn" type="button" id="p-install" ${isStandalone()?'disabled':''}>${isStandalone()?'Installée':'Installer'}</button></div>
     <div class="actions" style="justify-content:space-between"><span class="meta">Aldebaran MJ · version ${APP_VER}</span><span style="display:flex;gap:8px">${window.__ADB?`<button class="btn ghost" type="button" id="p-home" title="Revenir au choix Aventurier / Maître du destin">${IB('home')}Accueil</button>`:''}<button class="btn ghost" type="button" id="p-guide">${IB('help')}Guide</button><button class="btn ghost" type="button" data-close>Fermer</button></span></div>`);
   $('p-open').onclick=()=>{ dlg.close(); openFile(); }; $('p-save').onclick=()=>{ dlg.close(); save(); }; $('p-saveas').onclick=()=>{ dlg.close(); saveAs(); };
+  $('p-share').onclick=()=>{ dlg.close(); shareSave(serialize(),fileName||CAMP,()=>{ saveLocal(true); dirty=false; lastSaved=new Date(); updateSaveState(); }); };
   $('p-auto').onchange=e=>{ prefs.autosave=+e.target.value; savePrefs(); setupAutosave(); }; wakeBind();
   $('p-srv').onclick=srvDownload; locMsg(); $('p-install').onclick=doInstall; $('p-guide').onclick=showGuide; if($('p-home')) $('p-home').onclick=()=>{ saveLocal(true); location.href=location.pathname; }; updateSaveState();
 }
