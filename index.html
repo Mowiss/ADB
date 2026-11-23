@@ -5722,7 +5722,8 @@ function fpsRelease(e,s0){ if(!FPS.el||FPS.el.hidden) return; const cv=FPS.el.qu
 const FPSI_UP='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>', FPSI_DN='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
 const FPS_R=.28, FPS_V=2.4, FPS_TURN=2.3;
 function fpsDragTurn(x){ if(!FPS.cam||FPS.dragX==null) return; const dx=x-FPS.dragX; FPS.dragX=x; if(!dx) return; FPS.anim=null; FPS.cam.a+=dx*.0075; FPS.turned=performance.now(); fpsLater(); fpsSendMove(false); }
-function fpsBlocked(ci,cj,ni,nj){ if(!dgPass(ci,cj,ni,nj)) return true;
+function fpsBlocked(ci,cj,ni,nj){ if(FPS.mode==='prev'&&(FPS.lvl||0)>0) return false;   /* caméra aérienne : passe les murs et sort des limites */
+  if(!dgPass(ci,cj,ni,nj)) return true;
   const me=FPS.mode==='play'&&S.tokens.find(t=>t.id===FPS.self); if(me&&S.dexLock&&me.dxa&&me.dxm!=null&&!dexReach(me.dxa,me.dxm).has(ni+','+nj)){ if(!FPS.dexMsg||performance.now()-FPS.dexMsg>1500){ FPS.dexMsg=performance.now(); toast('Hors de votre zone de déplacement (DEX)'); } return true; } return false; }
 function fpsMoveBy(dist,side){ const c=FPS.cam; if(!c||(!dist&&!side)) return; side=side||0; if(fpsSpectating()){ FPS.mv=0; toast('Ce n\'est pas votre tour'); return; }
   const R=FPS_R+WALL_HW, x0=c.x, y0=c.y, ci=Math.floor(x0), cj=Math.floor(y0); let x=x0+Math.sin(c.a)*dist+Math.cos(c.a)*side, y=y0-Math.cos(c.a)*dist+Math.sin(c.a)*side;
@@ -5731,9 +5732,9 @@ function fpsMoveBy(dist,side){ const c=FPS.cam; if(!c||(!dist&&!side)) return; s
   if(Math.floor(y)!==cj&&Math.floor(x)!==ci&&fpsBlocked(ci,Math.floor(y),Math.floor(x),Math.floor(y))){ x=x0; }
   if(FPS.mode==='play'||FPS.sim){ for(const t of S.tokens){ if(t.id===FPS.self||t.inveh||t.hidden||dgDead(t)||dgDown(t)||!['player','mob','npc'].includes(t.type)) continue; const tx=t.x/CELL, ty=t.y/CELL, dn=Math.hypot(x-tx,y-ty); if(dn<.55&&dn<Math.hypot(x0-tx,y0-ty)){ x=x0; y=y0; break; } } }
   if(Math.abs(x-x0)<1e-4&&Math.abs(y-y0)<1e-4){ if(!FPS.bumped){ FPS.bumped=1; fpsBump(); } return; } FPS.bumped=0;
-  const nc=Math.floor(x)!==ci||Math.floor(y)!==cj; c.x=x; c.y=y; c.z=dgH(Math.floor(x),Math.floor(y)); FPS.lastMove=performance.now();
+  const nc=Math.floor(x)!==ci||Math.floor(y)!==cj; c.x=x; c.y=y; c.z=dgAt(Math.floor(x),Math.floor(y))?dgH(Math.floor(x),Math.floor(y)):(c.z||0); FPS.lastMove=performance.now();
   FPS.walk=(FPS.walk||0)+Math.hypot(dist,side); if(FPS.walk>.9){ FPS.walk=0; fpsStep(false); }
-  if(FPS.mode!=='play'&&nc) fpsPrevArrive(c,ci,cj);
+  if(FPS.mode!=='play'&&nc&&!(FPS.lvl>0)) fpsPrevArrive(c,ci,cj);
   if(FPS.mode==='play'&&nc&&!window.DGTEST){ const m=dgPassAt(ci,cj,Math.floor(x),Math.floor(y)); if(m&&m.to) fpsFade(m.k); }
   fpsSendMove(nc); }
 /* passage : fondu blanc (zone TP, escalier qui monte), fondu noir (escalier qui descend, panneau) */
