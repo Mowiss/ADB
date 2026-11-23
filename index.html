@@ -5486,7 +5486,7 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
       const WB=dgWB(mx,my);
       if(WB){ const WT=fpsTextures(WB.t), cap=CC?+CC.h||1:MAXW, top=Math.min(+WB.h||1,cap); if(top>fh) face(fh,top,d0,WT.wall,WT.N); if(top>=cap) break;   /* bloc de MUR */
         cur={th:WB.t,sky:true,blk:1}; fh=+WB.h||1; TT=WT; virt=false; if(d0>60) break; continue; }
-      let nf=dgAt(mx,my), wt=null; const door=nf&&!virt?dgDoor(pmx,pmy,mx,my):null;
+      let nf=dgAt(mx,my), wt=null; const door=!virt?dgDoor(pmx,pmy,mx,my):null;   /* aussi une porte plaquée contre un mur (rien derrière) */
       if(!nf&&cur.blk) break;
       if(!nf){ if(V2||cur.iw||virt||dgWNo(mx,my)){ nf=cur; virt=true; } else wt=TT.wall; } else virt=false;
       let doff=0;
