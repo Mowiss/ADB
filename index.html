@@ -4852,7 +4852,7 @@ function renderDgPanel(){ const box=$('dg-body'); if(!box) return; const D=S.dg|
   const on_=m=>tool==='dgn'&&DG.tool===m;
   const DGTN={iwall:'Mur invisible',win:'Fenêtre',sel:'Sélection',carve:'Sol',fill:'Sans sol',paint:'Repeindre',wall:'Mur',unwall:'Sans mur',ceil:'Plafond',unceil:'Ciel ouvert'};
   const T=DG.tool, TH=Object.entries(DG_TH).filter(([k,t])=>!t.hidden);
-  const pal=(part,cur,extra)=>`<div class="dg-pal">${(extra||[]).map(([v,l,ic])=>`<button type="button" class="dg-x${cur===v?' on':''}" data-pv="${v}" title="${l}" aria-label="${l}">${ic}</button>`).join('')}${TH.filter(([k,t])=>part==='floor'||(k!=='bitume'&&k!=='mer'&&!(part==='ceil'&&(k==='interieur'||t.noCeil)))).map(([k,t])=>`<button type="button" class="${cur===k?'on':''}" data-pv="${k}" title="${t.lbl}" aria-label="${t.lbl}"><img src="${dgThumb(k,part)}" alt=""></button>`).join('')}</div>`;
+  const pal=(part,cur,extra)=>`<div class="dg-pal">${(extra||[]).map(([v,l,ic])=>`<button type="button" class="dg-x${cur===v?' on':''}" data-pv="${v}" title="${l}" aria-label="${l}">${ic}</button>`).join('')}${TH.filter(([k,t])=>dgImgSet(k,part)&&(part==='floor'||(k!=='bitume'&&k!=='mer'&&!(part==='ceil'&&(k==='interieur'||t.noCeil))))).map(([k,t])=>`<button type="button" class="${cur===k?'on':''}" data-pv="${k}" title="${t.lbl}" aria-label="${t.lbl}"><img src="${dgThumb(k,part)}" alt=""></button>`).join('')}</div>`;
   const seg=(attr,L,cur)=>`<div class="wxrow dg-seg">${L.map(([v,l])=>`<button type="button" class="wxb${cur===v?' on':''}" data-${attr}="${v}"><span>${l}</span></button>`).join('')}</div>`;
   const size=`<div class="crange"><span class="cap">Taille</span><input type="range" min="1" max="15" step="1" value="${DG.n}" id="dg-n" aria-label="Taille du pinceau"><b id="dg-nv">${DG.n} × ${DG.n}</b></div>`;
   const NONE=['','Aucun','<i>—</i>'], SKY=['-','Ciel ouvert',dgI('sky',1.6)];
@@ -4960,8 +4960,10 @@ function thImg(k,f){ const key=k+'/'+f; if(!(key in THIM)){ const im=new Image()
 /* vignette d'une texture (sol, mur ou plafond) pour la palette */
 const DGTHUMB={};
 /* styles de portes et de fenêtres proposés au dessin ('' = selon le décor) */
-function dgDoorStyles(){ const seen=new Set(), L=[]; Object.entries(DG_TH).forEach(([k,t])=>{ if(['mer','bitume','ruelle','hub'].includes(k)) return; const src=DOORIMG[k]||''; if(src&&seen.has(src)) return; if(src) seen.add(src); L.push([k,DOORIMG[k]?({flamingo:'Flamingo',crypte:'Crypte',trottoir:'Sas cyber',interieur:'Sas cyber'}[k]||t.lbl):t.lbl]); }); return L; }
-function dgWinStyles(){ const L=[['flamingo','Flamingo'],['cyber','Néon cyber'],['crypte','Crypte']]; Object.entries(DG_TH).forEach(([k,t])=>{ if(['mer','bitume','ruelle','hub','trottoir','interieur','crypte','flamingo'].includes(k)) return; L.push([k,t.lbl]); }); return L; }
+/* seules les textures dessinées (images) sont proposées ; « blanc » (le construct) et la mer restent */
+function dgImgSet(k,part){ if(k==='blanc') return true; if(part==='floor') return !!FLIMG[k]||k==='mer'; if(part==='wall') return !!WLIMG[k]||k==='trottoir'; if(part==='ceil') return !!CLIMG[k]; return true; }
+function dgDoorStyles(){ const seen=new Set(), L=[]; Object.entries(DG_TH).forEach(([k,t])=>{ if(['mer','bitume','ruelle','hub'].includes(k)||!DOORIMG[k]) return; const src=DOORIMG[k]||''; if(src&&seen.has(src)) return; if(src) seen.add(src); L.push([k,DOORIMG[k]?({flamingo:'Flamingo',crypte:'Crypte',trottoir:'Sas cyber',interieur:'Sas cyber'}[k]||t.lbl):t.lbl]); }); return L; }
+function dgWinStyles(){ return [['flamingo','Flamingo'],['cyber','Néon cyber'],['crypte','Crypte']]; }
 const winThumb=k=>WINPOM[k]?WINPOM[k].src:WINIMG[k]?WINIMG[k].src:dgThumb(k,'wall');
 function dgThumb(k,part){ const id=k+'|'+part; if(DGTHUMB[id]) return DGTHUMB[id]; if(part==='floor'&&FLIMG[k]) return FLIMG[k].src; if(part==='door'&&DOORIMG[k]) return DOORIMG[k]; if(part==='wall'&&(k==='trottoir'||k==='bitume'||k==='ruelle')) return 'res/themes/ruelle/facade.webp'; if(part==='ceil'&&CLIMG[k]) return CLIMG[k].src; if(part==='wall'&&WLIMG[k]) return WLIMG[k].src; const T=fpsTextures(k), N=T.N, a=T[part]||T.floor, c=document.createElement('canvas'); c.width=c.height=N;
   const im=c.getContext('2d').createImageData(N,N); new Uint32Array(im.data.buffer).set(a.subarray(0,N*N)); c.getContext('2d').putImageData(im,0,0);
