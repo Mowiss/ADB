@@ -2896,6 +2896,9 @@ input,textarea,select,[contenteditable],[contenteditable] *,.rg-txt,.rg-txt *,.n
 .dg-slots{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:6px 0}.dg-slots button{display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 4px;border:1px solid var(--rule);border-radius:10px;background:var(--paper);cursor:pointer;font:700 11px var(--f-body);color:var(--ink)}.dg-slots button.on{border-color:var(--danger);box-shadow:0 0 0 2px rgba(224,75,58,.18)}.dg-slots b{width:36px;height:36px;border-radius:7px;overflow:hidden;display:grid;place-items:center;background:#eee}.dg-slots b img{width:100%;height:100%;image-rendering:pixelated}.dg-slots b svg{width:20px;height:20px}
 .dg-pal .dg-x{display:grid;place-items:center;background:var(--paper);border:1px dashed var(--rule)}.dg-pal .dg-x i{font-style:normal;font-weight:800;color:#999}.dg-pal .dg-x svg{width:20px;height:20px}
 .wxrow.dg-tools{flex-wrap:nowrap;gap:4px}.dg-tools .wxb{flex:1 1 0;min-width:0;padding:8px 0;min-height:0}.dg-tools .wxb span{display:none}.dg-tools .wxb svg{width:22px;height:22px}
+.dg-tgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}.dg-tgrid .wxb{min-width:0;padding:7px 0 5px;min-height:0;display:flex;flex-direction:column;align-items:center;gap:2px}.dg-tgrid .wxb svg{width:21px;height:21px}.dg-tgrid .wxb span{font-size:9.5px;letter-spacing:.02em}
+.dg-cfg:empty,#dg-cardslot:empty{display:none}.dg-cfg{margin:8px 0;padding:10px;border:1.5px solid #47e4ff;border-radius:12px}.dg-cfgin h3{margin:0 0 8px;font-size:15px}.dg-cfgin .actions{margin-top:10px}.dg-cfgin .dphead{margin-bottom:6px}
+#card.docked{position:relative;left:auto!important;top:auto!important;width:auto;margin:8px 0;box-shadow:none;border:1.5px solid #47e4ff}
 .dg-sub{margin:8px 0 4px;padding:8px;border:1px solid var(--rule);border-radius:12px;background:color-mix(in srgb,var(--paper) 92%,var(--ink) 3%)}.dg-sub>.dg-seg:first-child{margin-top:0}.dg-seg .wxb{display:flex;align-items:center;justify-content:center;gap:5px}.dg-seg .wxb svg{width:16px;height:16px;flex:none}.dg-seg .wxb span{font-size:11px}
 .dg-acts{gap:4px}.dg-acts .wxb{flex:1 1 0;min-width:0;padding:6px 2px;display:flex;flex-direction:column;align-items:center;gap:3px}.dg-acts .wxb svg{width:18px;height:18px}.dg-acts .wxb span{font-size:10px}
 .dg-tpl{gap:5px}.dg-tpl .wxb{flex:1 1 30%;padding:8px 4px;min-height:0}.dg-tpl .wxb span{font-size:11px}
@@ -4630,12 +4633,12 @@ function dgDoorEdit(k){ const o=S.dg&&S.dg.d&&S.dg.d[k]; if(!o) return;
   const opt=(v,ico,l)=>`<button type="button" class="wxb${st===v?' on':''}" data-dp="${v}">${ico}<span>${l}</span></button>`;
   openDialog(`<div class="dphead"><h3>Porte</h3><button class="ib" type="button" id="dp-del" title="Supprimer la porte">${IB('bin')}</button></div>
     <div class="wxrow dpseg">${opt('open',dgI('iwall',1.7),'Ouverte')}${opt('shut',dgI('door',1.7),'Fermée')}${opt('lk','<i class="dplk">🔒</i>','Verrouillée')}</div>
-    <div class="field" style="margin-top:10px"><label class="cap" for="dp-st">Style</label><select class="line-in" id="dp-st"><option value="">Selon le décor</option>${dgDoorStyles().map(([k2,l])=>`<option value="${k2}" ${o.st===k2?'selected':''}>${esc(l)}</option>`).join('')}</select></div>
+    ${o.gr?'':`<span class="cap" style="display:block;margin-top:10px">Style</span><div class="vegpick dg-styl"><button type="button" class="vegb auto${!o.st?' on':''}" data-dst=""><b>Auto</b><small>selon le décor</small></button>${dgDoorStyles().map(([k2,l])=>`<button type="button" class="vegb${o.st===k2?' on':''}" data-dst="${k2}" title="${esc(l)}"><img src="${dgThumb(k2,'door')}" alt=""><small>${esc(l)}</small></button>`).join('')}</div>`}
     <span class="cap" style="display:block;margin-top:12px">En la franchissant</span>
     <div class="wxrow dpseg"><button type="button" class="wxb${o.tpTo==null?' on':''}" data-dtp="0"><span>On passe</span></button><button type="button" class="wxb${o.tpTo!=null?' on':''}" data-dtp="1"><span>Téléportation</span></button></div>
     ${o.tpTo!=null?`<div class="field" style="margin-top:8px"><label class="cap" for="dp-to">Mène à</label><select class="line-in" id="dp-to"><option value="">— nulle part —</option>${dgCodes().map(c=>`<option value="${esc(c.code)}" ${c.code===o.tpTo?'selected':''}>${esc(c.code)} · ${esc(MK_LBL[c.kind]||'')} · ${esc(c.title)}</option>`).join('')}</select></div>`:''}`);
   document.querySelectorAll('[data-dtp]').forEach(b=>b.onclick=()=>{ if(b.dataset.dtp==='1'){ if(o.tpTo==null) o.tpTo=''; } else delete o.tpTo; drawDgLater(); fpsLater(); markDirty(); sync(); dgDoorEdit(k); });
-  $('dp-st').onchange=e=>{ if(e.target.value) o.st=e.target.value; else delete o.st; FPS.sprites.clear(); drawDgLater(); fpsLater(); markDirty(); sync(); };
+  document.querySelectorAll('[data-dst]').forEach(b=>b.onclick=()=>{ if(b.dataset.dst) o.st=b.dataset.dst; else delete o.st; FPS.sprites.clear(); drawDgLater(); fpsLater(); markDirty(); sync(); document.querySelectorAll('[data-dst]').forEach(x=>x.classList.toggle('on',x===b)); });
   if($('dp-to')) $('dp-to').onchange=e=>{ o.tpTo=e.target.value; drawDgLater(); markDirty(); sync(); };
   document.querySelectorAll('[data-dp]').forEach(b=>b.onclick=()=>{ const v=b.dataset.dp; o.open=v==='open'; o.lk=v==='lk'; if(!o.lk) delete o.lk; dlg.close(); drawDgLater(); fpsLater(); markDirty(); sync(); });
   $('dp-del').onclick=()=>{ delete S.dg.d[k]; dlg.close(); drawDgLater(); fpsLater(); markDirty(); sync(); }; }
@@ -4945,11 +4948,11 @@ function dgPolyEnd(){ const P=DG.poly; DG.poly=null; if(P&&P.length>=3) dgShapeA
 function dgPaintEnd(g){ if(g&&g.path){ if(g.path.p.length<2){ const D=dgEnsure(); D.paths=D.paths.filter(x=>x!==g.path); } FPS.pm=null; drawDgLater(); fpsLater(); markDirty(); sync(); } if(g&&DG.tool==='sel'&&!g.fs&&(g.zm||g.zs)){ const [a,b]=g.from, [c,d]=g.to||g.from;
     if(g.zm){ const off=DG.zoff; DG.zoff=null; if(off&&(off[0]||off[1])) dgZoneMove(off[0],off[1]); else drawDgLater(); return; }
     DG.zdrag=0; if(a===c&&b===d){ DG.zone=null; const e=dgEdgeAt(g.wx,g.wy), fx=g.wx/CELL, fy=g.wy/CELL, near=Math.min(Math.abs(fy-Math.round(fy)),Math.abs(fx-Math.round(fx)))<.2, D=S.dg||{};
-      if(near&&D.d&&D.d[e.k]){ DG.edgeSel=null; dgDoorEdit(e.k); drawDgLater(); renderDgPanel(); return; }
-      DG.edgeSel=near&&D.ew&&D.ew[e.k]?e.k:null; drawDgLater(); renderDgPanel(); return; }
+      if(near&&D.d&&D.d[e.k]){ DG.edgeSel=null; dgDock(()=>dgDoorEdit(e.k)); drawDgLater(); return; }
+      DG.cfgFn=null; DG.edgeSel=near&&D.ew&&D.ew[e.k]?e.k:null; drawDgLater(); renderDgPanel(); return; }
     drawDgLater(); renderDgPanel(); return; }
   if(g&&g.from&&(DG.tool==='sel'||g.fs)){ const [a,b]=g.from, [c,d]=g.to||g.from; DG.hover=null;
-    if(a===c&&b===d){ dgSelClick((a+.5)*CELL,(b+.5)*CELL); return; }
+    if(a===c&&b===d){ dgDock(()=>dgSelClick((a+.5)*CELL,(b+.5)*CELL)); return; }
     const D=dgEnsure(), f=dgK(a,b), t=dgK(c,d); let n=0; ['veg','ob','lum'].forEach(z=>{ if(D[z]&&D[z][f]&&!D[z][t]){ D[z][t]=D[z][f]; delete D[z][f]; n++; } });
     if(n){ DG.sel=[c,d]; FPS.sprites.clear(); drawDgLater(); fpsLater(); markDirty(); sync(); } else drawDgLater(); return; } if(g&&g.rc){ const r=g.rc; DG.rect=null; DG.prev=null; dgShapeApply(dgShapeCells(r.all?'rect':(r.sh||'rect'),r.a,r.b),!!(r.all||r.sub)); return; } const L=g&&g.wl; if(!L) return; DG.wline=null; const D=dgEnsure(), E=D.ew=D.ew||{}, add=DG.tool==='wall', ks=[];
   if(L.a[0]===L.b[0]&&L.a[1]===L.b[1]) ks.push(dgEdgeAt(L.x,L.y).k);
@@ -4960,7 +4963,7 @@ function dgPaintEnd(g){ if(g&&g.path){ if(g.path.p.length<2){ const D=dgEnsure()
   ks.forEach(k=>{ if(DG.tool==='iwall'){ E[k]={inv:1}; return; } if(win){ if(one&&E[k]&&E[k].win) delete E[k].win; else E[k]=Object.assign(E[k]&&!E[k].inv?E[k]:{t:DG.wt||dgPM()||'blanc',h:DG.wh||2},{win:1},DG.ws?{ws:DG.ws}:{}); return; }
     if(rem){ delete E[k]; return; } if(one&&E[k]&&!E[k].inv&&!E[k].win){ delete E[k]; return; } const [ca,cb]=eCells(k); if(!dgHasC(ca)&&!dgHasC(cb)) return; E[k]={t:DG.wt||dgPM()||'blanc',h:DG.wh||2}; });
   FPS.sprites.clear(); drawDgLater(); fpsLater(); markDirty(); sync(); }
-function dgPaint(wx,wy,g){ DG._g=g;
+function dgPaint(wx,wy,g){ DG._g=g; if(DG.tool==='deco'||DG.tool==='x') return;
   if(g.fs){ const c=dgCell(wx,wy); if(!g.last){ g.last=1; g.from=c; g.to=c; DG.sel=c; drawDgLater(); return; } g.to=c; DG.hover=c; drawDgLater(); return; }
   if(DG.tool==='erase'){ const c=dgCell(wx,wy);
     if(!g.rc) g.rc={a:c,b:c,all:1}; else g.rc.b=c; DG.rect=g.rc; DG.hover=null; drawDgLater(); return; }   /* Effacer : clic, étirer, lâcher → tout ce qui est dans le rectangle disparaît */
@@ -4970,7 +4973,7 @@ function dgPaint(wx,wy,g){ DG._g=g;
   if(DG.tool==='rect'){ const c=dgCell(wx,wy); if(!g.rc) g.rc={a:c,b:c}; else g.rc.b=c; g.rc.sh=DG.shape||'rect'; g.rc.sub=dgSubMode(); DG.prev=g.rc.sh==='circ'?dgShapeCells('circ',g.rc.a,g.rc.b):null; DG.rect=g.rc; DG.hover=null; drawDgLater(); return; }
   if(DG.tool==='sel'&&!g.fs){ const c=dgCell(wx,wy);
     if(!g.last){ g.last=1; g.from=c; g.to=c; const z=DG.zone, inZ=z&&c[0]>=z.a0&&c[0]<=z.a1&&c[1]>=z.b0&&c[1]<=z.b1;
-      if(inZ) g.zm=1; else if(dgDecoAt(wx,wy)){ DG.sel=c; DG.zone=null; DG.edgeSel=null; } else { g.zs=1; g.wx=wx; g.wy=wy; DG.zone=null; DG.edgeSel=null; DG.sel=null; } drawDgLater(); return; }
+      if(inZ) g.zm=1; else if(dgDecoAt(wx,wy)){ DG.sel=c; DG.zone=null; DG.edgeSel=null; } else { g.zs=1; g.wx=wx; g.wy=wy; DG.zone=null; DG.edgeSel=null; DG.sel=null; DG.cfgFn=null; if(typeof closeCard==='function') closeCard(); } drawDgLater(); return; }
     g.to=c; DG.hover=c; if(g.zm) DG.zoff=[c[0]-g.from[0],c[1]-g.from[1]]; else if(g.zs){ DG.zone=dgZN({a:g.from,b:c}); DG.zdrag=1; } drawDgLater(); return; }
   if(DG.tool==='path'){ const D=dgEnsure(), P=[wx/CELL,wy/CELL]; D.paths=D.paths||[];
     if(!g.last){ g.last=1; g.path={w:DG.pw||1.4,p:[P]}; D.paths.push(g.path); }
@@ -5006,7 +5009,7 @@ function dgSelItems(i,j){ const D=S.dg||{}, k=dgK(i,j), L=[];
   return L; }
 function dgSelClick(wx,wy){
   const [i,j]=dgCell(wx,wy), L=dgSelItems(i,j); DG.sel=[i,j]; drawDgLater();
-  if(!L.length){ toast('Aucun décor sur cette case'); return; }
+  if(!L.length){ if(!DG.cfgRe) toast('Aucun décor sur cette case'); return; }
   if(L.length===1&&L[0].edit){ L[0].edit(); return; }   /* un luminaire seul : ses réglages directement */
   const done=()=>{ drawDgLater(); FPS.sprites.clear(); fpsLater(); markDirty(); sync(); };
   const draw=()=>{ const L=dgSelItems(i,j); if(!L.length){ dlg.close(); return; }
@@ -5144,67 +5147,89 @@ function dgTestMove(x,y,dir){ const me=S.tokens.find(t=>t.owner===ME&&t.type==='
   const [i,j]=dgCell(x,y), mk=dgMk(i,j); if(mk&&mk.to){ const k=Object.keys(S.dg.m).find(k=>S.dg.m[k].code===mk.to); if(k){ const [a,b]=k.split(',').map(Number); setTimeout(()=>{ me.x=(a+.5)*CELL; me.y=(b+.5)*CELL; fpsSync(); },260); } } }
 
 /* ---------- volet du MJ ---------- */
+/* ---------- sélection dans le volet : ce qui a des réglages s'y configure (porte, fenêtre, mur, décor, lumière, jeton) ---------- */
+function dgDocked(){ const d=$('dgdrw'); return !!(d&&d.classList.contains('open')&&tool==='dgn'&&DG.tool==='sel'); }
+function dgDock(fn){ if(!dgDocked()){ fn(); return; } DG.cfgFn=fn; DG.zone=null; DG.edgeSel=null; if(typeof closeCard==='function') closeCard(); renderDgPanel(); }
+function dgRunCfg(){ const slot=$('dg-cfg'); if(!slot||!DG.cfgFn) return; let used=false; const od=window.openDialog;
+  window.openDialog=h=>{ used=true; slot.innerHTML=`<div class="dg-cfgin">${h}</div>`; slot.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>{ DG.cfgFn=null; DG.sel=null; renderDgPanel(); drawDgLater(); }); };
+  DG.cfgRe=1; try{ DG.cfgFn(); }catch(e){ console.warn(e); } finally{ window.openDialog=od; DG.cfgRe=0; }
+  if(!used){ DG.cfgFn=null; slot.innerHTML=''; }
+  slot.onclick=e=>{ if(e.target.closest('select,input,textarea,label')||!e.target.closest('button')) return; setTimeout(()=>{ if(DG.cfgFn) dgRunCfg(); else renderDgPanel(); drawDgLater(); },0); }; }
+/* jeton (joueur, PNJ, mob) : sa fiche se range dans le volet tant que la construction est ouverte */
+function dgDockCard(){ const c=$('card'), slot=$('dg-cardslot'); if(!c) return; if(slot&&cardId&&dgDocked()){ if(c.parentNode!==slot) slot.appendChild(c); c.classList.add('docked'); DG.cfgFn=null; DG.zone=null; DG.edgeSel=null; const s2=$('dg-cfg'); if(s2) s2.innerHTML=''; }
+  else if(c.parentNode!==document.body){ document.body.appendChild(c); c.classList.remove('docked'); } }
 function renderDgPanel(){ const box=$('dg-body'); if(!box) return;
-  try{ if(typeof FOLD!=='undefined'&&!localStorage.getItem('adb-fold-dg2')){ ['Végétation','Mobilier','Passages','Modèles','Plus'].forEach(t=>FOLD.add('dgdrw|'+t)); localStorage.setItem('adb-fold',JSON.stringify([...FOLD])); localStorage.setItem('adb-fold-dg2','1'); } }catch(e){}
+  { const c=$('card'); if(c&&box.contains(c)){ document.body.appendChild(c); c.classList.remove('docked'); } }
+  try{ if(typeof FOLD!=='undefined'&&!localStorage.getItem('adb-fold-dg3')){ ['Passages','Plus'].forEach(t=>FOLD.add('dgdrw|'+t)); ['Végétation','Mobilier','Modèles','Peindre'].forEach(t=>FOLD.delete('dgdrw|'+t)); localStorage.setItem('adb-fold',JSON.stringify([...FOLD])); localStorage.setItem('adb-fold-dg3','1'); } }catch(e){}
   const wb=(id,ico,lbl,act)=>`<button type="button" class="wxb${act?' on':''}" id="${id}" title="${lbl}" aria-pressed="${act?'true':'false'}">${ico}<span>${lbl}</span></button>`;
   const T=tool==='dgn'?DG.tool:'', TH=Object.entries(DG_TH).filter(([k,t])=>!t.hidden);
   const hr=(id,v,lbl)=>`<div class="crange"><span class="cap">${lbl}</span><input type="range" min="1" max="8" step=".5" value="${v}" id="${id}" aria-label="${lbl}"><b id="${id}v">${String(v).replace('.',',')}</b></div>`;
-  const pal=(part,cur,extra)=>`<div class="dg-pal">${(extra||[]).map(([v,l,ic])=>`<button type="button" class="dg-x${cur===v?' on':''}" data-pv="${v}" title="${l}" aria-label="${l}">${ic}</button>`).join('')}${TH.filter(([k,t])=>dgImgSet(k,part)&&(part==='floor'||(k!=='bitume'&&!DG_TH[k].water&&!(part==='ceil'&&(k==='interieur'||t.noCeil))))).map(([k,t])=>`<button type="button" class="${cur===k?'on':''}" data-pv="${k}" title="${t.lbl}" aria-label="${t.lbl}"><img src="${dgThumb(k,part)}" alt=""></button>`).join('')}</div>`;
+  const pal=(part,cur,extra,attr)=>`<div class="dg-pal">${(extra||[]).map(([v,l,ic])=>`<button type="button" class="dg-x${cur===v?' on':''}" data-${attr||'pv'}="${v}" title="${l}" aria-label="${l}">${ic}</button>`).join('')}${TH.filter(([k,t])=>dgImgSet(k,part)&&(part==='floor'||(k!=='bitume'&&!DG_TH[k].water&&!(part==='ceil'&&(k==='interieur'||t.noCeil))))).map(([k,t])=>`<button type="button" class="${cur===k?'on':''}" data-${attr||'pv'}="${k}" title="${t.lbl}" aria-label="${t.lbl}"><img src="${dgThumb(k,part)}" alt=""></button>`).join('')}</div>`;
   const seg=(attr,L,cur)=>`<div class="wxrow dg-seg">${L.map(([v,l,ic])=>`<button type="button" class="wxb${cur===v?' on':''}" data-${attr}="${v}">${ic||''}<span>${l}</span></button>`).join('')}</div>`;
   const size=`<div class="crange"><span class="cap">Taille</span><input type="range" min="1" max="15" step="1" value="${DG.n}" id="dg-n" aria-label="Taille du pinceau"><b id="dg-nv">${DG.n} × ${DG.n}</b></div>`;
   const NONE=['','Aucun','<i>—</i>'], SKY=['-','Ciel ouvert',dgI('sky',1.6)];
   const SV=d=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
-  const murT=['wall','iwall','unwall'].includes(T), doorT=T==='door'||T==='secret';
-  let sub='';
-  if(T==='sel'){ const acts=[]; if(DG.zone){ acts.push(['dz-copy','Copier','<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>'],['dz-cut','Couper','<circle cx="6" cy="18" r="3"/><circle cx="18" cy="18" r="3"/><path d="M8 16L19 4M16 16L5 4"/>'],['dz-rot','Tourner','<path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/>'],['dz-del','Supprimer','<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>']); }
-      if(DG.clip) acts.splice(DG.zone?2:0,0,['dz-paste','Coller','<path d="M9 4h6v3H9z"/><path d="M9 5H6v15h12V5h-3"/>']); if(DG.edgeSel) acts.push(['dz-wdel','Retirer le mur','<path d="M3 5h18v14H3z" opacity=".35"/><path d="M8 8l8 8M16 8l-8 8"/>']);
-      sub=acts.length?`<div class="wxrow dg-acts">${acts.map(([id,l,d])=>`<button type="button" class="wxb" id="${id}">${SV(d)}<span>${l}</span></button>`).join('')}</div>`:''; }
+  const doorStyles=(cur,attr)=>`<div class="vegpick dg-styl"><button type="button" class="vegb auto${!cur?' on':''}" data-${attr}="" title="Selon le décor"><b>Auto</b><small>selon le décor</small></button>${dgDoorStyles().map(([k,l])=>`<button type="button" class="vegb${cur===k?' on':''}" data-${attr}="${k}" title="${esc(l)}"><img src="${dgThumb(k,'door')}" alt=""><small>${esc(l)}</small></button>`).join('')}</div>`;
+  const winStyles=(cur,attr)=>`<div class="vegpick dg-styl"><button type="button" class="vegb auto${!cur?' on':''}" data-${attr}="" title="Selon le mur"><b>Auto</b><small>selon le mur</small></button>${dgWinStyles().map(([k,l])=>`<button type="button" class="vegb${cur===k?' on':''}" data-${attr}="${k}" title="${esc(l)}"><img src="${winThumb(k)}" alt=""><small>${esc(l)}</small></button>`).join('')}</div>`;
+  const bT=DG.bT||'sol', isB=T==='brush', murT=['wall','iwall','unwall'].includes(T)||(isB&&bT==='mur'), solT=isB&&bT==='sol', plaT=isB&&bT==='plafond', doorT=T==='door'||T==='secret', decoT=['veg','lum','ob','deco'].includes(T);
+  let sub='', ttl='';
+  if(T==='sel'){ const E=(S.dg&&S.dg.ew)||{}, w=DG.edgeSel&&E[DG.edgeSel];
+    if(DG.zone){ ttl='Zone'; const acts=[['dz-copy','Copier','<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>'],['dz-cut','Couper','<circle cx="6" cy="18" r="3"/><circle cx="18" cy="18" r="3"/><path d="M8 16L19 4M16 16L5 4"/>']].concat(DG.clip?[['dz-paste','Coller','<path d="M9 4h6v3H9z"/><path d="M9 5H6v15h12V5h-3"/>']]:[],[['dz-rot','Tourner','<path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/>'],['dz-del','Supprimer','<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>']]);
+      sub=`<div class="wxrow dg-acts">${acts.map(([id,l,d])=>`<button type="button" class="wxb" id="${id}">${SV(d)}<span>${l}</span></button>`).join('')}</div>`; }
+    else if(w&&!w.inv){ ttl=w.win?'Fenêtre':'Mur';
+      sub=(w.win?`<span class="cap">Style de la fenêtre</span>${winStyles(w.ws||'','ews')}<button class="btn ghost wide" type="button" id="ew-nowin">Reboucher la fenêtre</button>`:'')
+        +(()=>{ const hz=DG.edgeSel.endsWith(',h'), F=DG.ewFace||'both', cur=F==='a'?(w.ta||w.t):F==='b'?(w.tb||w.t):w.t, th=v=>`<img src="${dgThumb(v,'wall')}" alt="">`;
+          return `<span class="cap">Texture du mur</span><div class="dg-slots">${[['both','Les deux',w.t],['a',hz?'Côté haut':'Côté gauche',w.ta||w.t],['b',hz?'Côté bas':'Côté droit',w.tb||w.t]].map(([k,l,v])=>`<button type="button" class="${F===k?'on':''}" data-ewf="${k}"><span>${l}</span><b>${th(v)}</b></button>`).join('')}</div>${pal('wall',cur,[],'ewt')}`; })()+`${hr('ew-h',+w.h||2,'Hauteur')}<button class="btn ghost wide danger" type="button" id="dz-wdel">${IB('bin')}Supprimer le mur</button>`; }
+    else if(w&&w.inv){ ttl='Mur invisible'; sub=`<button class="btn ghost wide danger" type="button" id="dz-wdel">${IB('bin')}Supprimer</button>`; }
+    else if(DG.clip) sub=`<div class="wxrow dg-acts"><button type="button" class="wxb" id="dz-paste">${SV('<path d="M9 4h6v3H9z"/><path d="M9 5H6v15h12V5h-3"/>')}<span>Coller</span></button></div>`; }
   else if(T==='rect'){ const sl=DG.pSlot||'sol', cur={sol:dgPS(),mur:dgPM(),plafond:dgPC()||''}, th=(v,part)=>v==='-'?dgI('sky',1.4):v?`<img src="${dgThumb(v,part)}" alt="">`:'<i>—</i>';
-    sub=''+seg('pmo',[['add','Construire',SV('<path d="M12 5v14M5 12h14"/>')],['sub','Creuser',SV('<path d="M5 12h14"/>')]],DG.pmode||'add')
+    sub=seg('pmo',[['add','Construire',SV('<path d="M12 5v14M5 12h14"/>')],['sub','Creuser',SV('<path d="M5 12h14"/>')]],DG.pmode||'add')
       +`<div class="dg-slots">${[['sol','Sol','floor'],['mur','Murs','wall'],['plafond','Plafond','ceil']].map(([k,l,part])=>`<button type="button" class="${sl===k?'on':''}" data-ps="${k}"><span>${l}</span><b>${th(cur[k],part)}</b></button>`).join('')}</div>`
-      +hr('dg-h',DG.wh||2,'Hauteur des murs')+(sl==='plafond'&&cur.plafond&&cur.plafond!=='-'?hr('dg-pch',DG.pch||DG.wh||2,'Hauteur du plafond'):'')+pal(sl==='mur'?'wall':sl==='plafond'?'ceil':'floor',cur[sl],sl==='plafond'?[NONE,SKY]:[NONE]); }
-  else if(murT) sub=seg('mm',[['wall','Visible',dgI('wall',1.6)],['iwall','Invisible',dgI('iwall',1.6)],['unwall','Retirer',dgI('nowall',1.6)]],T)+(T==='wall'?hr('dg-h',DG.wh||2,'Hauteur')+pal('wall',DG.wt||dgPM()):'');
-  else if(doorT) sub=seg('dk',[['door','Porte',dgI('door',1.6)],['grl','Grille',dgI('grille',1.6)],['secret','Cachée',dgI('sdoor',1.6)]],T==='secret'?'secret':DG.grl?'grl':'door')
-      +(T==='door'&&!DG.grl?`<div class="vegpick dg-styl"><button type="button" class="vegb auto${!DG.ds?' on':''}" data-dsv="" title="Selon le décor"><b>Auto</b><small>selon le décor</small></button>${dgDoorStyles().map(([k,l])=>`<button type="button" class="vegb${DG.ds===k?' on':''}" data-dsv="${k}" title="${esc(l)}"><img src="${dgThumb(k,'door')}" alt=""><small>${esc(l)}</small></button>`).join('')}</div>`:'');
-  else if(T==='win') sub=`<div class="vegpick dg-styl"><button type="button" class="vegb auto${!DG.ws?' on':''}" data-wsv="" title="Selon le mur"><b>Auto</b><small>selon le mur</small></button>${dgWinStyles().map(([k,l])=>`<button type="button" class="vegb${DG.ws===k?' on':''}" data-wsv="${k}" title="${esc(l)}"><img src="${winThumb(k)}" alt=""><small>${esc(l)}</small></button>`).join('')}</div>`;
+      +hr('dg-h',DG.wh||2,'Hauteur des murs')+(sl==='plafond'&&cur.plafond&&cur.plafond!=='-'?hr('dg-pch',DG.pch||DG.wh||2,'Hauteur du plafond'):'')+pal(sl==='mur'?'wall':sl==='plafond'?'ceil':'floor',cur[sl],sl==='plafond'?[NONE,SKY]:[NONE])
+      +`<span class="cap">Modèles</span><div class="wxrow dg-tpl">${DG_TPL.map(([k,l])=>`<button type="button" class="wxb" data-tpl="${k}"><span>${l}</span></button>`).join('')}</div>`; }
+  else if(T==='tpl') sub=`<div class="wxrow dg-tpl">${DG_TPL.map(([k,l])=>`<button type="button" class="wxb${DG.tk===k?' on':''}" data-tpl="${k}"><span>${l}</span></button>`).join('')}</div>`;
+  else if(solT){ const bX=DG.bX||dgDefTex('floor'); sub=size+pal('floor',bX); }
+  else if(plaT){ const bX=DG.bX||dgDefTex('ceil'); sub=size+(bX!=='-'?hr('dg-ch',DG.ch||2,'Hauteur du plafond'):'')+pal('ceil',bX,[SKY]); }
+  else if(murT){ const m=isB?'paint':T; sub=seg('mm',[['wall','Tracer',dgI('wall',1.6)],['iwall','Invisible',dgI('iwall',1.6)],['unwall','Retirer',dgI('nowall',1.6)],['paint','Peindre',dgI('paint',1.6)]],m)
+      +(m==='paint'?size+pal('wall',DG.bX||dgDefTex('wall')):m==='wall'?hr('dg-h',DG.wh||2,'Hauteur')+pal('wall',DG.wt||dgPM()):''); }
+  else if(doorT) sub=seg('dk',[['door','Porte',dgI('door',1.6)],['grl','Grille',dgI('grille',1.6)],['secret','Cachée',dgI('sdoor',1.6)]],T==='secret'?'secret':DG.grl?'grl':'door')+(T==='door'&&!DG.grl?doorStyles(DG.ds||'','dsv'):'');
+  else if(T==='win') sub=winStyles(DG.ws||'','wsv');
+  else if(decoT){ const cat=DG.dcat||'veg';
+    sub=seg('dcat',[['veg','Végétation'],['mob','Mobilier']],cat)+(cat==='veg'?`<div class="vegpick">${Object.keys(VEG_BIO).map(b=>Object.keys(VEG_K).map(k=>{ const key=b+'-'+k; return `<button type="button" class="vegb${T==='veg'&&DG.vk===key?' on':''}" data-veg="${key}" title="${VEG_K[k]} · ${VEG_BIO[b]}"><img src="res/vege/${key}.png" alt=""></button>`; }).join('')).join('')}</div>`
+      :`<div class="vegpick">${Object.entries(LUM).map(([k,d])=>`<button type="button" class="vegb${T==='lum'&&DG.lk===k?' on':''}" data-lum="${k}" title="${d.l}"><img src="res/lum/${k}.png" alt=""></button>`).join('')}${Object.entries(OBJ).map(([k,d])=>`<button type="button" class="vegb${T==='ob'&&DG.ok===k?' on':''}" data-ob="${k}" title="${d.l}"><img src="res/sprites/${k}.png" alt=""></button>`).join('')}</div>`); }
   else if(T==='path') sub=hr('dg-pw',DG.pw||1.4,'Largeur du sentier');
-  const bT=DG.bT||'sol', bpart=bT==='mur'?'wall':bT==='plafond'?'ceil':'floor', bX=DG.bX||dgDefTex(bpart);
-  const paint=T==='brush'?size+(bT==='plafond'&&bX!=='-'?hr('dg-ch',DG.ch||2,'Hauteur du plafond'):'')+pal(bpart,bX,bT==='plafond'?[SKY]:[]):'';
+  const TN={sel:'Sélection',rect:'Pièce',tpl:'Modèles',wall:'Murs',iwall:'Murs',unwall:'Murs',door:'Porte',secret:'Porte',win:'Fenêtre',path:'Sentier',erase:'Effacer',veg:'Déco',lum:'Déco',ob:'Déco',deco:'Déco',sup:'Passages',sdown:'Passages',sign:'Passages',tp:'Passages'};
+  const tname=ttl?`Sélection · ${ttl}`:solT?'Sol':plaT?'Plafond':murT?'Murs':TN[T]||'Sélection';
   box.innerHTML=`<div class="subttl">Construire</div>
-    <div class="wxrow dg-tools">${wb('dg-sel',IB('hand'),'Sélection',T==='sel'||!T)}${wb('dg-rect',dgI('fit',1.7),'Pièce',T==='rect')}${wb('dg-wall',dgI('wall',1.7),'Mur',murT)}${wb('dg-door',dgI('door',1.7),'Porte',doorT)}${wb('dg-wwin',dgI('winw',1.7),'Fenêtre',T==='win')}${wb('dg-path',dgI('pathw',1.7),'Sentier',T==='path')}${wb('dg-erase',IB('eraser'),'Effacer',T==='erase')}</div>
+    <div class="dg-tgrid">${wb('dg-sel',IB('hand'),'Sélection',T==='sel'||!T)}${wb('dg-rect',dgI('fit',1.7),'Pièce',T==='rect'||T==='tpl')}${wb('dg-bsol',dgI('floor',1.7),'Sol',solT)}${wb('dg-wall',dgI('wall',1.7),'Murs',murT)}${wb('dg-bpla',dgI('ceilt',1.7),'Plafond',plaT)}${wb('dg-door',dgI('door',1.7),'Porte',doorT)}${wb('dg-wwin',dgI('winw',1.7),'Fenêtre',T==='win')}${wb('dg-deco',SV('<path d="M12 3c-3 4-6 6-6 10a6 6 0 0 0 12 0c0-4-3-6-6-10z"/><path d="M12 21v-6"/>'),'Déco',decoT)}${wb('dg-path',dgI('pathw',1.7),'Sentier',T==='path')}${wb('dg-erase',IB('eraser'),'Effacer',T==='erase')}</div>
+    <div class="dg-tname">${tname}</div>
     ${sub?`<div class="dg-sub">${sub}</div>`:''}
+    ${T==='sel'?`<div id="dg-cfg" class="dg-cfg"></div><div id="dg-cardslot"></div>`:''}
     <button class="btn ghost wide dg-3d" type="button" id="dg-3d">${IB('eye')}Aperçu 3D</button>
-    <div class="subttl">Peindre</div>
-    <div class="wxrow">${wb('dg-bsol',dgI('floor',1.7),'Sol',T==='brush'&&bT==='sol')}${wb('dg-bmur',dgI('wall',1.7),'Murs',T==='brush'&&bT==='mur')}${wb('dg-bpla',dgI('ceilt',1.7),'Plafond',T==='brush'&&bT==='plafond')}</div>
-    ${paint?`<div class="dg-sub">${paint}</div>`:''}
-    <div class="subttl">Modèles</div>
-    <div class="wxrow dg-tpl">${DG_TPL.map(([k,l])=>`<button type="button" class="wxb${T==='tpl'&&DG.tk===k?' on':''}" data-tpl="${k}"><span>${l}</span></button>`).join('')}</div>
-    <div class="subttl">Végétation</div>
-    <div class="vegpick">${Object.keys(VEG_BIO).map(b=>Object.keys(VEG_K).map(k=>{ const key=b+'-'+k; return `<button type="button" class="vegb${T==='veg'&&DG.vk===key?' on':''}" data-veg="${key}" title="${VEG_K[k]} · ${VEG_BIO[b]}"><img src="res/vege/${key}.png" alt=""></button>`; }).join('')).join('')}</div>
-    <div class="subttl">Mobilier</div>
-    <div class="vegpick">${Object.entries(LUM).map(([k,d])=>`<button type="button" class="vegb${T==='lum'&&DG.lk===k?' on':''}" data-lum="${k}" title="${d.l}"><img src="res/lum/${k}.png" alt=""></button>`).join('')}${Object.entries(OBJ).map(([k,d])=>`<button type="button" class="vegb${T==='ob'&&DG.ok===k?' on':''}" data-ob="${k}" title="${d.l}"><img src="res/sprites/${k}.png" alt=""></button>`).join('')}</div>
     <div class="subttl">Passages</div>
     <div class="wxrow">${wb('dg-sup',dgI('sup',1.7),'Escalier ↑',T==='sup')}${wb('dg-sdown',dgI('sdown',1.7),'Escalier ↓',T==='sdown')}${wb('dg-sign',dgI('sign',1.7),'Panneau',T==='sign')}${wb('dg-tp',dgI('tp',1.7),'Zone TP',T==='tp')}</div>
     <div class="subttl">Plus</div>
     <button class="btn ghost wide danger" type="button" id="dg-clear">${IB('bin')}Tout reboucher</button>`;
-  const pick=m=>{ DG.sel=null; DG.rect=null; DG.poly=null; if(m!=='sel'){ DG.zone=null; DG.edgeSel=null; } if(!dgOn()){ dgEnsure().on=true; } DG.tool=(DG.tool===m&&m!=='sel'&&tool==='dgn')?'sel':m; if(tool!=='dgn') setTool('dgn'); drawDgLater(); renderDgPanel(); };
+  const clearSel=()=>{ DG.sel=null; DG.zone=null; DG.edgeSel=null; DG.cfgFn=null; };
+  const pick=m=>{ DG.rect=null; DG.poly=null; if(m!=='sel') clearSel(); if(!dgOn()){ dgEnsure().on=true; } DG.tool=(DG.tool===m&&m!=='sel'&&tool==='dgn')?'sel':m; if(tool!=='dgn') setTool('dgn'); drawDgLater(); renderDgPanel(); };
   const on=(id,f)=>{ const b=$(id); if(b) b.onclick=f; };
-  box.querySelectorAll('[data-ob]').forEach(b=>b.onclick=()=>{ if(T==='ob'&&DG.ok===b.dataset.ob){ pick('sel'); return; } DG.ok=b.dataset.ob; pick('ob'); });
-  box.querySelectorAll('[data-lum]').forEach(b=>b.onclick=()=>{ if(T==='lum'&&DG.lk===b.dataset.lum){ pick('sel'); return; } DG.lk=b.dataset.lum; pick('lum'); });
-  box.querySelectorAll('[data-veg]').forEach(b=>b.onclick=()=>{ if(T==='veg'&&DG.vk===b.dataset.veg){ pick('sel'); return; } DG.vk=b.dataset.veg; pick('veg'); });
-  box.querySelectorAll('[data-tpl]').forEach(b=>b.onclick=()=>{ if(T==='tpl'&&DG.tk===b.dataset.tpl){ pick('sel'); return; } DG.tk=b.dataset.tpl; pick('tpl'); });
-  on('dg-sel',()=>pick('sel')); on('dg-rect',()=>pick('rect')); on('dg-wall',()=>pick(murT?T:(DG.wm&&DG.wm!=='win'?DG.wm:'wall'))); on('dg-door',()=>pick(doorT?T:(DG.dk==='secret'?'secret':'door'))); on('dg-wwin',()=>pick('win')); on('dg-path',()=>pick('path')); on('dg-erase',()=>pick('erase'));
+  const fx=()=>{ FPS.sprites.clear(); FPS.capK=null; drawDgLater(); fpsLater(); markDirty(); sync(); };
+  box.querySelectorAll('[data-ob]').forEach(b=>b.onclick=()=>{ DG.ok=b.dataset.ob; DG.tool='ob'; renderDgPanel(); });
+  box.querySelectorAll('[data-lum]').forEach(b=>b.onclick=()=>{ DG.lk=b.dataset.lum; DG.tool='lum'; renderDgPanel(); });
+  box.querySelectorAll('[data-veg]').forEach(b=>b.onclick=()=>{ DG.vk=b.dataset.veg; DG.tool='veg'; renderDgPanel(); });
+  box.querySelectorAll('[data-dcat]').forEach(b=>b.onclick=()=>{ DG.dcat=b.dataset.dcat; renderDgPanel(); });
+  box.querySelectorAll('[data-tpl]').forEach(b=>b.onclick=()=>{ if(T==='tpl'&&DG.tk===b.dataset.tpl){ pick('rect'); return; } DG.tk=b.dataset.tpl; DG.tool='tpl'; renderDgPanel(); });
+  on('dg-sel',()=>pick('sel')); on('dg-rect',()=>pick('rect')); on('dg-wall',()=>pick(murT?T:'wall')); on('dg-door',()=>pick(doorT?T:'door')); on('dg-wwin',()=>pick('win')); on('dg-path',()=>pick('path')); on('dg-erase',()=>pick('erase'));
+  on('dg-deco',()=>pick(decoT?T:'deco'));
   on('dg-3d',()=>{ const b=$('b-prev'); if(b) b.click(); });
-  const brush=t=>{ if(T==='brush'&&DG.bT===t){ pick('sel'); return; } DG.bXs=DG.bXs||{}; if(DG.bT&&DG.bX) DG.bXs[DG.bT]=DG.bX; DG.bT=t; DG.bX=DG.bXs[t]||dgDefTex(t==='mur'?'wall':t==='plafond'?'ceil':'floor'); DG.tool='x'; pick('brush'); };
-  on('dg-bsol',()=>brush('sol')); on('dg-bmur',()=>brush('mur')); on('dg-bpla',()=>brush('plafond'));
-  box.querySelectorAll('[data-mm]').forEach(b=>b.onclick=()=>{ DG.tool=DG.wm=b.dataset.mm; renderDgPanel(); drawDgLater(); });
-  box.querySelectorAll('[data-dk]').forEach(b=>b.onclick=()=>{ const v=b.dataset.dk; DG.dk=v; DG.grl=v==='grl'?1:0; DG.tool=v==='secret'?'secret':'door'; renderDgPanel(); });
-  box.querySelectorAll('[data-psh]').forEach(b=>b.onclick=()=>{ DG.shape=b.dataset.psh; DG.poly=null; renderDgPanel(); drawDgLater(); });
+  const brush=t=>{ if(isB&&DG.bT===t){ pick('sel'); return; } DG.bXs=DG.bXs||{}; if(DG.bT&&DG.bX) DG.bXs[DG.bT]=DG.bX; DG.bT=t; DG.bX=DG.bXs[t]||dgDefTex(t==='mur'?'wall':t==='plafond'?'ceil':'floor'); DG.tool='x'; pick('brush'); };
+  on('dg-bsol',()=>brush('sol')); on('dg-bpla',()=>brush('plafond'));
+  box.querySelectorAll('[data-mm]').forEach(b=>b.onclick=()=>{ const v=b.dataset.mm; if(v==='paint'){ DG.bXs=DG.bXs||{}; if(DG.bT&&DG.bX) DG.bXs[DG.bT]=DG.bX; DG.bT='mur'; DG.bX=DG.bXs.mur||dgDefTex('wall'); DG.tool='brush'; } else DG.tool=DG.wm=v; renderDgPanel(); drawDgLater(); });
+  box.querySelectorAll('[data-dk]').forEach(b=>b.onclick=()=>{ const v=b.dataset.dk; DG.grl=v==='grl'?1:0; DG.tool=v==='secret'?'secret':'door'; renderDgPanel(); });
   box.querySelectorAll('[data-pmo]').forEach(b=>b.onclick=()=>{ DG.pmode=b.dataset.pmo; renderDgPanel(); drawDgLater(); });
-  on('dg-pend',dgPolyEnd);
   box.querySelectorAll('[data-ps]').forEach(b=>b.onclick=()=>{ DG.pSlot=b.dataset.ps; renderDgPanel(); });
   box.querySelectorAll('[data-pv]').forEach(b=>b.onclick=()=>{ const v=b.dataset.pv; for(const k in DG_TPLC) delete DG_TPLC[k];
-    if(T==='brush') DG.bX=v; else if(murT) DG.wt=v; else if(T==='rect'){ const sl=DG.pSlot||'sol'; DG[sl==='sol'?'pS':sl==='mur'?'pM':'pC']=v; } renderDgPanel(); });
+    if(isB) DG.bX=v; else if(murT) DG.wt=v; else if(T==='rect'){ const sl=DG.pSlot||'sol'; DG[sl==='sol'?'pS':sl==='mur'?'pM':'pC']=v; } renderDgPanel(); });
   if($('dg-h')) $('dg-h').oninput=e=>{ DG.wh=+e.target.value; $('dg-hv').textContent=String(DG.wh).replace('.',','); for(const k in DG_TPLC) delete DG_TPLC[k]; };
   if($('dg-pw')) $('dg-pw').oninput=e=>{ DG.pw=+e.target.value; $('dg-pwv').textContent=String(DG.pw).replace('.',','); };
   if($('dg-pch')) $('dg-pch').oninput=e=>{ DG.pch=+e.target.value; $('dg-pchv').textContent=String(DG.pch).replace('.',','); };
@@ -5213,9 +5238,17 @@ function renderDgPanel(){ const box=$('dg-body'); if(!box) return;
   box.querySelectorAll('[data-dsv]').forEach(b=>b.onclick=()=>{ DG.ds=b.dataset.dsv||''; DG.grl=0; DG.tool='door'; renderDgPanel(); });
   box.querySelectorAll('[data-wsv]').forEach(b=>b.onclick=()=>{ DG.ws=b.dataset.wsv||''; DG.tool='win'; renderDgPanel(); });
   on('dz-copy',()=>dgZoneCopy()); on('dz-cut',()=>dgZoneCopy(true)); on('dz-paste',()=>dgZonePaste()); on('dz-rot',dgZoneRotate); on('dz-del',dgZoneDel);
-  on('dz-wdel',()=>{ if(S.dg.ew) delete S.dg.ew[DG.edgeSel]; if(S.dg.d) delete S.dg.d[DG.edgeSel]; DG.edgeSel=null; dgChanged(); renderDgPanel(); });
+  /* mur ou fenêtre sélectionnés */
+  const ew=DG.edgeSel&&S.dg&&S.dg.ew&&S.dg.ew[DG.edgeSel];
+  on('dz-wdel',()=>{ if(S.dg.ew) delete S.dg.ew[DG.edgeSel]; if(S.dg.d) delete S.dg.d[DG.edgeSel]; DG.edgeSel=null; fx(); renderDgPanel(); });
+  if(ew){ box.querySelectorAll('[data-ewf]').forEach(b=>b.onclick=()=>{ DG.ewFace=b.dataset.ewf; renderDgPanel(); });
+    box.querySelectorAll('[data-ewt]').forEach(b=>b.onclick=()=>{ const v=b.dataset.ewt, F=DG.ewFace||'both'; if(F==='a') ew.ta=v; else if(F==='b') ew.tb=v; else { ew.t=v; delete ew.ta; delete ew.tb; } fx(); renderDgPanel(); });
+    box.querySelectorAll('[data-ews]').forEach(b=>b.onclick=()=>{ if(b.dataset.ews) ew.ws=b.dataset.ews; else delete ew.ws; fx(); renderDgPanel(); });
+    on('ew-nowin',()=>{ delete ew.win; delete ew.ws; fx(); renderDgPanel(); });
+    if($('ew-h')) $('ew-h').oninput=e=>{ ew.h=+e.target.value; $('ew-hv').textContent=String(ew.h).replace('.',','); fx(); }; }
   if($('dg-n')) $('dg-n').oninput=e=>{ brushSize(+e.target.value); $('dg-nv').textContent=`${DG.n} × ${DG.n}`; drawDgLater(); };
-  on('dg-clear',()=>confirmDialog('Tout reboucher','Toute la zone creusée de cette scène redevient de la roche.','Tout reboucher',()=>{ const D=dgEnsure(); D.c={}; D.w={}; D.cl={}; D.ew={}; D.d={}; D.veg={}; D.lum={}; D.ob={}; D.m={}; D.paths=[]; DG.zone=null; dgChanged(); renderDgPanel(); })); }
+  on('dg-clear',()=>confirmDialog('Tout reboucher','Toute la zone creusée de cette scène redevient de la roche.','Tout reboucher',()=>{ const D=dgEnsure(); D.c={}; D.w={}; D.cl={}; D.ew={}; D.d={}; D.veg={}; D.lum={}; D.ob={}; D.m={}; D.paths=[]; clearSel(); dgChanged(); renderDgPanel(); }));
+  if(T==='sel'){ if(DG.cfgFn) dgRunCfg(); if(typeof cardId!=='undefined'&&cardId) dgDockCard(); } }
 
 /* ---------- outils communs : type de scène, heure, taille de pinceau ---------- */
 /* taille unique : pinceau du donjon (n × n cases) et gomme du brouillard (n m) */
@@ -6985,7 +7018,7 @@ let cardAt=0;
 function openCard(id){
   const t=tok(id); if(!t) return; closeCard(); cardId=id; cardAt=performance.now();
   const el=document.querySelector(`.tk[data-id="${id}"]`); if(el) el.classList.add('open');
-  renderCard(); $('card').hidden=false; placeCard();
+  renderCard(); $('card').hidden=false; if(typeof dgDockCard==='function') dgDockCard(); placeCard();
 }
 const boxChk=(t,id)=>`<label class="boxchk${t.inbox?' on':''}" title="Dans un contenant (caisse, coffre…) : invisible des joueurs"><input type="checkbox" ${id?`id="${id}"`:'data-box'} ${t.inbox?'checked':''}>${IB('chest',1.7)}<span>Dans un contenant</span></label>`;
 function setInbox(t,v){ t.inbox=!!v; tokenEl(t); renderTracker(); renderFoW(); if(cardId===t.id) renderCard(); jetRefresh(); markDirty(); sync(); }
@@ -7054,7 +7087,7 @@ function renderCard(){
   const rr=$('c-r'); if(rr) rr.oninput=()=>{ t.r=+rr.value; $('c-rv').textContent=(t.r/CELL*CELL_M).toFixed(1).replace('.',',')+' m'; const h=document.querySelector(`.tk[data-id="${t.id}"] .halo`); if(h){ h.style.width=h.style.height=(t.r*2)+'px'; } fowLater(); markDirty(); syncLater(); };
 }
 function placeCard(){
-  if(!cardId) return; const t=tok(cardId), c=$('card'); if(!t){ closeCard(); return; }
+  if(!cardId||$('card').classList.contains('docked')) return; const t=tok(cardId), c=$('card'); if(!t){ closeCard(); return; }
   const [sx,sy]=toScreen(t.x,t.y), rad=40*(t.s||1)*V.z, W=c.offsetWidth||290, H=c.offsetHeight||200, br=board.getBoundingClientRect();
   let x=sx+rad+14; if(x+W>br.right-8) x=sx-rad-14-W; x=clamp(x,br.left+8,br.right-W-8);
   const y=clamp(sy-H/2,br.top+8,br.bottom-H-8); c.style.left=x+'px'; c.style.top=y+'px';
