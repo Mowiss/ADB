@@ -242,6 +242,7 @@ body{-webkit-user-select:none;user-select:none}input,textarea,select,[contentedi
 .fame-pe{position:absolute;right:9%;top:calc(100% - 14px);display:flex;flex-direction:column;align-items:center;transform:rotate(calc(-1*var(--rot) - 9deg + var(--sw,0deg)));transform-origin:50% 0;will-change:transform}
 .fame-pe i{width:1px;height:18px;background:#e9dfc6;box-shadow:1px 0 1px rgba(0,0,0,.4)}
 .fame-pe b{margin-top:-2px;padding:5px 8px 4px;min-width:42px;text-align:center;font:800 11px var(--f-body,sans-serif);color:#3a2a10;background:radial-gradient(circle at 50% 6px,#2a2d33 2px,#7a6a48 2.6px,transparent 3.2px),linear-gradient(#f7eed3,#e0cc9a);padding-top:12px;clip-path:polygon(22% 0,78% 0,100% 22%,100% 100%,0 100%,0 22%);filter:drop-shadow(0 2px 2px rgba(0,0,0,.4));white-space:nowrap}
+.fp-list{display:flex;flex-direction:column;gap:4px;max-height:46vh;overflow:auto}.fp-it{display:flex;gap:10px;align-items:center;padding:7px 8px;border:1px solid var(--rule);border-radius:10px;cursor:pointer}.fp-it span{display:flex;flex-direction:column}.fp-it small{color:var(--ink-soft);font-size:12px}.fp-it input{width:18px;height:18px}
 .fame-empty{margin:0;color:#fff;background:rgba(0,0,0,.45);padding:10px 14px;border-radius:10px;font-size:14px;line-height:1.5}
 .fame-tot{font:700 11px var(--f-body,inherit);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft);margin:4px 0 10px}.fame-it{display:flex;gap:12px;padding:10px 12px;border:1px solid var(--faint);border-radius:12px;margin-bottom:8px;background:var(--paper)}.fame-ico{color:#d9a21b;flex:none}.fame-ico svg{width:26px;height:26px}.fame-it b{font-weight:700;color:var(--ink-strong)}.fame-it em{font-style:normal;font-weight:800;font-size:11px;color:var(--c-dex);margin-left:8px}.fame-it p{margin:3px 0;font-size:13px;line-height:1.45}.fame-it small{color:var(--ink-soft);font-size:11px}.home-soon{color:var(--ink-soft);font-size:14px;line-height:1.5;padding:8px 2px}
 .vtabs{position:fixed;right:0;top:calc(var(--bar) + env(safe-area-inset-top,0px));bottom:0;width:40px;z-index:41;display:flex;flex-direction:column;gap:4px;padding:14px 0 calc(14px + env(safe-area-inset-bottom,0px));background:var(--paper);border-left:1px solid var(--rule);overflow-y:auto}
@@ -919,7 +920,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}input[type=num
 <div id="printsheet" aria-hidden="true"></div>
 <dialog id="dlg"><div class="dlg" id="dlg-body"></div></dialog>
 <div class="toast" id="toast"></div>
-<input type="file" id="file-open" accept=".adb,.adbc,.json" multiple hidden>
+<input type="file" id="file-open" accept=".adb,.adbc,.json,.txt" multiple hidden>
 <input type="file" id="file-photo" accept="image/*,.gif" hidden>
 
 <script>
@@ -1043,9 +1044,10 @@ function normalize(ch){
   return c;
 }
 /* Partager la sauvegarde : menu de partage du téléphone (« Enregistrer dans Fichiers », Drive, mail…), sinon téléchargement */
-async function shareSave(txt,name,done){ const mk=t=>new File([txt],name,{type:t}); let f=mk('application/json');
-  if(navigator.canShare&&!navigator.canShare({files:[f]})) f=mk('text/plain');
-  if(navigator.share&&navigator.canShare&&navigator.canShare({files:[f]})){ try{ await navigator.share({files:[f],title:name}); done&&done(); }catch(e){ if(e.name!=='AbortError') toast('Partage impossible',true); } return; }
+async function shareSave(txt,name,done){
+  /* Chrome Android refuse de partager les extensions inconnues (.adb) : on y partage « nom.adb.txt » (texte), que l'appli rouvre normalement */
+  const andro=/Android/i.test(navigator.userAgent), f=andro?new File([txt],name+'.txt',{type:'text/plain'}):new File([txt],name,{type:'application/json'});
+  if(navigator.share&&navigator.canShare&&navigator.canShare({files:[f]})){ try{ await navigator.share({files:[f],title:name}); done&&done(); return; }catch(e){ if(e.name==='AbortError') return; } }
   const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([txt],{type:'application/json'})); a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),4000); done&&done(); }
 const SHARE_I='<path d="M12 3v12"/><path d="M8 7l4-4 4 4"/><path d="M5 12v8h14v-8"/>';
 function serialize(){ return JSON.stringify({format:'aldebaran-adb',kind:'joueur',version:2,savedAt:new Date().toISOString(),character:C},null,2); }
@@ -1120,7 +1122,7 @@ async function openFile(){
   $('file-open').click();
 }
 async function folderDialog(){
-  const L=[]; try{ for await (const [n,h] of dirHandle.entries()){ if(h.kind==='file'&&n.toLowerCase().endsWith('.adb')){ try{ const d=JSON.parse(await (await h.getFile()).text()); if(d&&d.kind==='mj') continue; const c=d.character||d; L.push({n,name:c.name||n,race:RACE_LABEL[c.race]||'',lvl:c.level}); }catch(e){} } } }catch(e){}
+  const L=[]; try{ for await (const [n,h] of dirHandle.entries()){ if(h.kind==='file'&&/\.adb(\.txt)?$/i.test(n)){ try{ const d=JSON.parse(await (await h.getFile()).text()); if(d&&d.kind==='mj') continue; const c=d.character||d; L.push({n,name:c.name||n,race:RACE_LABEL[c.race]||'',lvl:c.level}); }catch(e){} } } }catch(e){}
   L.sort((a,b)=>a.name.localeCompare(b.name,'fr'));
   const nCat=CAT.filter(x=>!x.del).length;
   openDialog(`<h3>${esc(dirHandle.name)}</h3><p class="meta" style="text-align:left;margin:0">${L.length} fiche${L.length>1?'s':''} · catalogue de ${nCat} objet${nCat>1?'s':''}</p>
@@ -2187,19 +2189,34 @@ $('b-settings').onclick=()=>{
     <label for="p-auto">Sauvegarde automatique</label><select class="line-in" id="p-auto">${[[0,'Désactivée'],[30,'Toutes les 30 s'],[60,'Toutes les minutes'],[120,'Toutes les 2 min'],[300,'Toutes les 5 min']].map(([v,l])=>`<option value="${v}" ${+prefs.autosave===v?'selected':''}>${l}</option>`).join('')}</select>
     <label for="p-wake">Empêcher la mise en veille de l'écran</label><input type="checkbox" id="p-wake" style="width:18px;height:18px;accent-color:var(--ink-strong);justify-self:end">
     </div><p class="meta" style="text-align:left">La sauvegarde automatique garde la fiche dans ce navigateur, et réécrit aussi la fiche et le catalogue dans le dossier choisi quand le navigateur le permet.</p>
-    ${(C.fame||[]).length?`<div class="inst"><div><b>Succès</b><span>${C.fame.length} succès au mur Fame. Les effacer les retire de la fiche ; le maître du destin ne pourra pas les renvoyer.</span></div><button class="btn ghost" type="button" id="p-fameclr">Effacer</button></div>`:''}
+    ${(C.fame||[]).length?`<div class="inst"><div><b>Succès</b><span>${C.fame.length} tableau${C.fame.length>1?'x':''} au mur Fame. Les points gagnés restent acquis.</span></div><button class="btn ghost" type="button" id="p-fameclr">Purger les succès</button></div>`:''}
     <div class="inst"><div><b>Fiche imprimable</b><span>Une page A4 avec le personnage, la silhouette, l'inventaire et les améliorations. Choisissez « Enregistrer au format PDF » dans la fenêtre d'impression.</span></div><button class="btn" type="button" id="p-print">${IB('<path d="M7 8V3h10v5M7 17H4v-7h16v7h-3"/><path d="M7 14h10v7H7z"/>')}Imprimer / PDF</button></div>
     <div class="inst"><div><b>Application</b><span id="inst-msg">${installMsg()}</span></div><button class="btn" type="button" id="p-install" ${isStandalone()?'disabled':''}>${isStandalone()?'Installée':'Installer'}</button></div>
     <div class="actions" style="justify-content:space-between;align-items:center"><span class="meta" style="margin:0">Version ${APP_VER}</span><span style="display:flex;gap:8px"><button class="btn ghost" type="button" id="p-home" title="Revenir au choix Aventurier / Maître du destin">${IB('<path d="M3 11l9-7 9 7"/><path d="M5.5 9.5V20h13V9.5M10 20v-5.5h4V20"/>')}Accueil</button><button class="btn ghost" type="button" id="p-guide">${IB('<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 0 1 5 0c0 1.8-2.5 2-2.5 4M12 17h.01"/>')}Guide</button><button class="btn ghost" type="button" data-close>Fermer</button></span></div>`);
   $('p-install').onclick=doInstall;
-  if($('p-fameclr')) $('p-fameclr').onclick=()=>{ const n=C.fame.length, pe=C.fame.reduce((a,f)=>a+(+f.pe||0),0);
-    openDialog(`<h3>Effacer mes succès</h3><p class="meta" style="text-align:left">Les ${n} succès du mur Fame seront retirés de la fiche. Il n'y aura pas de retour en arrière.</p>${pe?`<label style="display:flex;gap:8px;align-items:center;margin:8px 0"><input type="checkbox" id="fc-pe"> Retirer aussi les ${pe} PE gagnés avec</label>`:''}<div class="actions"><button class="btn ghost" type="button" data-close>Annuler</button><button class="btn" type="button" id="fc-ok">Effacer</button></div>`);
-    $('fc-ok').onclick=()=>{ if($('fc-pe')&&$('fc-pe').checked) C.pe=Math.max(0,(+C.pe||0)-pe); C.fameGone=[...new Set([...(C.fameGone||[]),...C.fame.map(f=>f.id)])].slice(-500); C.fame=[]; dlg.close(); renderAll(); markDirty(); toast('Succès effacés'); }; };
+  if($('p-fameclr')) $('p-fameclr').onclick=famePurgeDlg;
   $('b-new').onclick=newDialog; $('b-open').onclick=()=>{ dlg.close(); openFile(); }; $('b-save').onclick=()=>{ dlg.close(); save(); }; $('b-saveas').onclick=()=>{ dlg.close(); saveAs(); };
   $('b-share').onclick=()=>{ dlg.close(); shareSave(serialize(),fileBase()+'.adb',()=>{ Store.saveLocal(); dirty=false; lastSaved=new Date(); updateSaveState(); }); };
   $('p-guide').onclick=showGuide; wakeBind(); $('p-home').onclick=()=>{ Store.saveLocal(); location.href=location.pathname; }; $('p-print').onclick=()=>{ dlg.close(); setTimeout(printSheet,150); }; updateSaveState();
   $('p-auto').onchange=e=>{ prefs.autosave=+e.target.value; ls.set(LS_PREF,JSON.stringify(prefs)); setupAutosave(); updateSaveState(); };
 };
+/* purger des succès : choix des tableaux, puis trois confirmations. Les PE gagnés restent ; un succès purgé ne revient pas au renvoi du MJ */
+function famePurgeDlg(){ const L=(C.fame||[]).slice().sort((a,b)=>b.at-a.at); if(!L.length) return; const SEL=new Set();
+  const pick=()=>{ openDialog(`<h3>Purger les succès</h3><p class="meta" style="text-align:left;margin:0 0 8px">Choisissez les tableaux à retirer du mur.</p>
+    <div class="fp-list">${L.map(f=>`<label class="fp-it"><input type="checkbox" data-fpi="${f.id}"${SEL.has(f.id)?' checked':''}><span><b>${esc(f.title)}</b><small>${new Date(f.at).toLocaleDateString('fr-FR')}${f.pe?` · PE🧠 ${f.pe}`:''}</small></span></label>`).join('')}</div>
+    <div class="actions"><button class="btn ghost" type="button" id="fp-all">Tout cocher</button><span style="flex:1"></span><button class="btn ghost" type="button" data-close>Annuler</button><button class="btn" type="button" id="fp-go" disabled>Purger</button></div>`);
+    const upd=()=>{ $('fp-go').disabled=!SEL.size; $('fp-go').textContent=SEL.size?`Purger (${SEL.size})`:'Purger'; };
+    $('dlg-body').querySelectorAll('[data-fpi]').forEach(c=>c.onchange=()=>{ const id=+c.dataset.fpi; c.checked?SEL.add(id):SEL.delete(id); upd(); });
+    $('fp-all').onclick=()=>{ const all=SEL.size<L.length; L.forEach(f=>all?SEL.add(f.id):SEL.delete(f.id)); $('dlg-body').querySelectorAll('[data-fpi]').forEach(c=>c.checked=all); upd(); }; upd();
+    $('fp-go').onclick=()=>step1(); };
+  const n=()=>`${SEL.size} succès`;
+  const step1=()=>{ openDialog(`<h3>Purger les succès</h3><p>Êtes-vous sûr ? ${n()} ser${SEL.size>1?'ont':'a'} retiré${SEL.size>1?'s':''} du mur.</p><div class="actions"><button class="btn ghost" type="button" id="fp-back">Annuler</button><button class="btn" type="button" id="fp-1">Oui</button></div>`); $('fp-back').onclick=pick; $('fp-1').onclick=step2; };
+  const step2=()=>{ openDialog(`<h3>Purger les succès</h3><p>Êtes-vous vraiment sûr ? Il n'y aura pas de retour en arrière.</p><div class="actions"><button class="btn ghost" type="button" id="fp-back">Annuler</button><button class="btn" type="button" id="fp-2">Oui, vraiment</button></div>`); $('fp-back').onclick=pick; $('fp-2').onclick=step3; };
+  const step3=()=>{ openDialog(`<h3>Purger les succès</h3><p>Tapez <b>JE SUIS SUR !</b> pour confirmer.</p><input class="line-in" id="fp-in" autocomplete="off" style="width:100%;font-weight:700;font-size:16px"><div class="actions"><button class="btn ghost" type="button" id="fp-back">Annuler</button><button class="btn" type="button" id="fp-3" disabled>Purger ${n()}</button></div>`);
+    const ok=v=>v.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ').trim().toUpperCase()==='JE SUIS SUR !';
+    $('fp-in').oninput=e=>{ $('fp-3').disabled=!ok(e.target.value); }; $('fp-in').focus(); $('fp-back').onclick=pick;
+    $('fp-3').onclick=()=>{ if(!ok($('fp-in').value)) return; C.fameGone=[...new Set([...(C.fameGone||[]),...SEL])].slice(-500); C.fame=(C.fame||[]).filter(f=>!SEL.has(f.id)); dlg.close(); renderAll(); markDirty(); toast(`${SEL.size} succès purgé${SEL.size>1?'s':''}`); }; };
+  pick(); }
 function showGuide(){ const u=location.protocol.startsWith('http')?new URL('guide.html',location.href).href:'https://mowiss.github.io/ADB/guide.html';
   const w=window.open(u+'#aventurier','_blank'); if(w) w.opener=null; else location.href=u+'#aventurier'; }
 
@@ -4007,7 +4024,7 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 <div id="stitle"><span class="cap">Scène</span><svg class="ttl" viewBox="0 0 1600 70" preserveAspectRatio="xMidYMid meet"><text x="800" y="56" text-anchor="middle"></text></svg></div>
 <dialog id="dlg"><div class="dlg" id="dlg-body"></div></dialog>
 <div class="toast" id="toast"></div>
-<input type="file" id="file-open" accept=".adb,.json" hidden>
+<input type="file" id="file-open" accept=".adb,.json,.txt" hidden>
 <input type="file" id="file-img" accept="image/*" hidden>
 <div id="printsheet"></div>
 
@@ -9275,9 +9292,10 @@ window.addEventListener('storage',e=>{ if(!NETVIEW&&e.key===LS_SYNC&&e.newValue)
    Sauvegarde : fichier .adb (table MJ), sauvegarde auto réglable
    ========================================================= */
 /* Partager la sauvegarde : menu de partage du téléphone (« Enregistrer dans Fichiers », Drive, mail…), sinon téléchargement */
-async function shareSave(txt,name,done){ const mk=t=>new File([txt],name,{type:t}); let f=mk('application/json');
-  if(navigator.canShare&&!navigator.canShare({files:[f]})) f=mk('text/plain');
-  if(navigator.share&&navigator.canShare&&navigator.canShare({files:[f]})){ try{ await navigator.share({files:[f],title:name}); done&&done(); }catch(e){ if(e.name!=='AbortError') toast('Partage impossible',true); } return; }
+async function shareSave(txt,name,done){
+  /* Chrome Android refuse de partager les extensions inconnues (.adb) : on y partage « nom.adb.txt » (texte), que l'appli rouvre normalement */
+  const andro=/Android/i.test(navigator.userAgent), f=andro?new File([txt],name+'.txt',{type:'text/plain'}):new File([txt],name,{type:'application/json'});
+  if(navigator.share&&navigator.canShare&&navigator.canShare({files:[f]})){ try{ await navigator.share({files:[f],title:name}); done&&done(); return; }catch(e){ if(e.name==='AbortError') return; } }
   const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([txt],{type:'application/json'})); a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),4000); done&&done(); }
 const SHARE_I='<path d="M12 3v12"/><path d="M8 7l4-4 4 4"/><path d="M5 12v8h14v-8"/>';
 if(typeof IC==='object'&&IC) IC.share=SHARE_I;
@@ -9330,7 +9348,7 @@ async function openFile(){
   return openPicker();
 }
 async function campDialog(){
-  const L=[]; try{ for await (const [n,h] of dirHandle.entries()){ if(h.kind!=='file'||!/\.adb$/i.test(n)) continue;
+  const L=[]; try{ for await (const [n,h] of dirHandle.entries()){ if(h.kind!=='file'||!/\.adb(\.txt)?$/i.test(n)) continue;
     try{ const d=JSON.parse(await (await h.getFile()).text()); if(d&&d.kind==='mj'&&d.table) L.push({n,h,at:d.savedAt,sc:(d.table.scenes||[]).length}); }catch(e){} } }catch(e){}
   L.sort((a,b)=>(b.at||'').localeCompare(a.at||''));
   openDialog(`<h3>Ouvrir une campagne</h3><p class="meta" style="text-align:left">Dossier : <b>${esc(dirHandle.name)}</b></p>
@@ -9341,7 +9359,7 @@ async function campDialog(){
   $('cp-file').onclick=()=>{ dlg.close(); openPicker(); };
 }
 async function openPicker(){
-  if(window.showOpenFilePicker){ try{ const [h]=await showOpenFilePicker({types:[{description:'Aldebaran',accept:{'application/json':['.adb','.json']}}]}); const f=await h.getFile(); loadText(await f.text(),null,h.name); }catch(e){ if(e.name!=='AbortError') toast('Ouverture impossible',true); } return; }
+  if(window.showOpenFilePicker){ try{ const [h]=await showOpenFilePicker({types:[{description:'Aldebaran',accept:{'application/json':['.adb','.json'],'text/plain':['.txt']}}]}); const f=await h.getFile(); loadText(await f.text(),null,h.name); }catch(e){ if(e.name!=='AbortError') toast('Ouverture impossible',true); } return; }
   $('file-open').click();
 }
 $('file-open').onchange=async e=>{ const f=e.target.files[0]; e.target.value=''; if(f) loadText(await f.text(),null,f.name); };
