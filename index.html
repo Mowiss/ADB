@@ -222,7 +222,7 @@ body{-webkit-user-select:none;user-select:none}input,textarea,select,[contentedi
 .eg-foot{display:flex;justify-content:space-between;gap:10px}
 .eg-cat{max-height:none}
 /* Onglets verticaux collés au bord droit ; ils suivent le volet ouvert */
-.vtab-home{margin-top:auto}.home-soon{color:var(--ink-soft);font-size:14px;line-height:1.5;padding:8px 2px}
+.vtab-home{margin-top:auto}.fame-tot{font:700 11px var(--f-body,inherit);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft);margin:4px 0 10px}.fame-it{display:flex;gap:12px;padding:10px 12px;border:1px solid var(--faint);border-radius:12px;margin-bottom:8px;background:var(--paper)}.fame-ico{color:#d9a21b;flex:none}.fame-ico svg{width:26px;height:26px}.fame-it b{font-weight:700;color:var(--ink-strong)}.fame-it em{font-style:normal;font-weight:800;font-size:11px;color:var(--c-dex);margin-left:8px}.fame-it p{margin:3px 0;font-size:13px;line-height:1.45}.fame-it small{color:var(--ink-soft);font-size:11px}.home-soon{color:var(--ink-soft);font-size:14px;line-height:1.5;padding:8px 2px}
 .vtabs{position:fixed;right:0;top:calc(var(--bar) + env(safe-area-inset-top,0px));bottom:0;width:40px;z-index:41;display:flex;flex-direction:column;gap:4px;padding:14px 0 calc(14px + env(safe-area-inset-bottom,0px));background:var(--paper);border-left:1px solid var(--rule);overflow-y:auto}
 .vtab{display:flex;flex-direction:column;align-items:center;gap:7px;width:40px;padding:10px 0;border:0;border-left:3px solid transparent;border-radius:0;flex:none;background:var(--paper);color:var(--ink);cursor:pointer}
 .vtab svg{width:20px;height:20px;flex:none}
@@ -856,7 +856,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}input[type=num
 
 <aside class="drawer" id="homedrw" style="--tc:var(--c-dex)" aria-label="Fame">
   <header><h3>Fame</h3><span class="spacer"></span></header>
-  <div class="home-body" id="home-body"><p class="home-soon">Le hall of fame de votre aventurier. En construction.</p></div>
+  <div class="dscroll home-body" id="home-body"></div>
 </aside>
 <aside class="drawer map-drawer" id="tabledrw" style="--tc:var(--c-dex)" aria-label="Table en ligne">
   <header class="tb-head"><h3>Table</h3><span class="tb-st" id="tb-st"></span><button class="tb-x" type="button" id="tb-leave" title="Quitter la table" aria-label="Quitter la table" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></header>
@@ -953,7 +953,7 @@ const ZFIX=z=>({'Torse':'Corps','Main G':'Bras G','Main D':'Bras D','Général':
 
 function blankCharacter(){
   return {name:'',race:'humain',stats:{FOR:0,RES:0,CHA:0,SAV:0,DEX:0,PER:0},pv:5,pt:0,pe:0,bastos:1000,
-    inventory:[],cybernetics:[],spells:[],effects:[],fractures:[],notes:[],tagPos:{},bankInventory:[],bankBastos:0,vehicle:null,photo:null,id:Date.now()};
+    inventory:[],cybernetics:[],spells:[],effects:[],fractures:[],notes:[],fame:[],tagPos:{},bankInventory:[],bankBastos:0,vehicle:null,photo:null,id:Date.now()};
 }
 const isWeapon=it=>it.itemType==='weapon';
 const hasFx=(c,k)=>(c.effects||[]).some(e=>e.key===k);
@@ -1581,11 +1581,14 @@ function attRead(f){ return new Promise((ok,ko)=>{ if(!f) return ko(); const rd=
   if(f.size>3e6){ toast('Pièce jointe trop lourde (3 Mo max)',true); return ko(); } rd.onload=()=>ok({name:f.name,type:f.type||'application/octet-stream',data:rd.result}); rd.readAsDataURL(f); }); }
 const attHTML=a=>!a?'':`<div class="att">${/^image\//.test(a.type)?`<a href="${a.data}" target="_blank" class="att-img" data-a="attview"><img src="${a.data}" alt=""></a>`:''}<a class="att-f" href="${a.data}" download="${esc(a.name||'piece-jointe')}">${MN_CLIP}<span>${esc(a.name||'Pièce jointe')}</span></a><button class="ib" type="button" data-a="attdel" title="Retirer la pièce jointe">${svgI('x')}</button></div>`;
 function attView(a){ if(!a) return; openDialog(`<h3>${esc(a.name||'Pièce jointe')}</h3><img src="${a.data}" alt="" style="display:block;max-width:100%;max-height:70vh;margin:0 auto;border-radius:8px"><div class="actions"><a class="btn ghost" href="${a.data}" download="${esc(a.name||'image')}">Télécharger</a><span style="flex:1"></span><button class="btn" type="button" data-close>OK</button></div>`); }
+function renderFameP(){ const B=$('home-body'); if(!B) return; const L=(C.fame||[]).slice().sort((a,b)=>b.at-a.at), CUP='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4.5v1.5A3.5 3.5 0 0 0 8 11M17 6h2.5v1.5A3.5 3.5 0 0 1 16 11"/><path d="M12 14v3.5M8.5 20.5h7l-1-3h-5z"/></svg>';
+  B.innerHTML=L.length?`<div class="fame-tot">${L.length} succès · ${L.reduce((n,f)=>n+(f.pe||0),0)} PE gagnés</div>`+L.map(f=>`<div class="fame-it"><span class="fame-ico">${CUP}</span><div><b>${esc(f.title)}</b>${f.pe?`<em>+${f.pe} PE</em>`:''}${f.desc?`<p>${esc(f.desc)}</p>`:''}<small>${new Date(f.at).toLocaleDateString('fr-FR')}</small></div></div>`).join('')
+    :'<p class="home-soon">Aucun succès pour l\'instant. Le maître du destin vous en attribuera au fil de vos exploits.</p>'; }
 function renderNotes(){
   $('notes').innerHTML=C.notes.length?C.notes.map(n=>n.mjId?`<div class="note mj" data-id="${n.id}"><div class="top"><span class="mjt">${esc(n.title||'')}<small>Maître du destin</small></span></div><div class="mjc">${esc(n.content||'')}</div>${attHTML(n.att).replace(/<button[^>]*data-a="attdel"[\s\S]*?<\/button>/,'')}</div>`:`<div class="note" data-id="${n.id}"><div class="top"><input class="line-in" data-nf="title" value="${esc(n.title)}" aria-label="Titre"><button class="ib" type="button" data-a="noteatt" title="Joindre un fichier">${MN_CLIP}</button><button class="ib" type="button" data-a="delnote" title="Supprimer l'entrée">${svgI('x')}</button></div><textarea data-nf="content" aria-label="Contenu">${esc(n.content)}</textarea>${attHTML(n.att)}</div>`).join('')
    :`<p class="empty-note">Le journal est vide. Ajoutez une entrée pour noter un indice, un contact ou une dette.</p>`;
 }
-function renderAll(){ renderIdentity(); renderCards(); renderDerived(); renderNotes(); }
+function renderAll(){ renderFameP(); renderIdentity(); renderCards(); renderDerived(); renderNotes(); }
 
 /* =========================================================
    INTERACTIONS
@@ -1913,12 +1916,12 @@ $('b-bastos').onclick=()=>{
     C.bastos=(+C.bastos||0)-v; C.bankBastos=(+C.bankBastos||0)+v; renderDerived(); markDirty(); dlg.close(); toast(`${v.toLocaleString('fr-FR')} ₿ épargnés`); }; setTimeout(()=>$('bastos-amt').focus(),30);
 };
 /* Volets latéraux : un seul ouvert à la fois */
-const DRAWERS=['invpanel','roller','journal','engin','bank','mapdrw','tabledrw'];
+const DRAWERS=['invpanel','roller','journal','engin','bank','mapdrw','tabledrw','homedrw'];
 function openDrawer(id){ const was=id&&$(id).classList.contains('open');
   DRAWERS.forEach(d=>$(d).classList.toggle('open',d===id&&!was));
   const cur=DRAWERS.find(d=>$(d).classList.contains('open'));
   if(cur==='mapdrw'&&!$('mapwrap').firstChild) $('mapwrap').innerHTML=`<iframe title="Carte d'Aldebaran" allowfullscreen allow="geolocation" loading="lazy" src="https://framacarte.org/fr/map/aldebaran_185113?scaleControl=false&miniMap=false&scrollWheelZoom=true&zoomControl=true&editMode=disabled&moreControl=true&searchControl=null&tilelayersControl=null&embedControl=null&datalayersControl=true&onLoadPanel=none&captionBar=false&captionMenus=true"></iframe>`;
-  if(cur==='bank') renderBank(); if(cur==='engin') renderEngin();
+  if(cur==='bank') renderBank(); if(cur==='engin') renderEngin(); if(cur==='homedrw') renderFameP();
   document.querySelectorAll('.vtab').forEach(t=>{ t.classList.toggle('on',t.dataset.drawer===cur); t.setAttribute('aria-expanded',t.dataset.drawer===cur); }); }
 document.querySelectorAll('.vtab').forEach(t=>t.onclick=()=>openDrawer(t.dataset.drawer));
 document.addEventListener('click',e=>{ if(e.target.closest('[data-closedrawer]')) openDrawer(null); });
@@ -2393,6 +2396,8 @@ function tbIn(d){ if(!d||typeof d!=='object') return;
     else if(d.item){ const it=Object.assign(JSON.parse(JSON.stringify(d.item)),{id:Date.now()}); if(d.g==='cyb'){ it.bodyPart=''; C.cybernetics.unshift(it); } else { it.zone=''; it.equipped=false; C.inventory.unshift(it); } toast(`${it.name||'Objet'} acheté : ${p.toLocaleString('fr-FR')} ₿`); }
     renderAll(); markDirty(); return; }
   if(d.t==='vboom'){ if(C.vehicle&&(!d.vid||C.vehicle.id===d.vid)){ const n=C.vehicle.name||'Votre véhicule'; C.lastBoom=C.vehicle.id; C.vehicle=null; if($('engin').classList.contains('open')) renderEngin(); markDirty(); toast(`💥 ${n} a explosé : la soute est perdue`); } return; }
+  if(d.t==='fame'&&d.id){ C.fame=C.fame||[]; if(C.fame.some(f=>f.id===d.id)) return; const pe=Math.max(0,Math.min(99,Math.round(+d.pe||0)));   /* succès attribué par le MJ (les PE ne comptent qu'une fois) */
+    C.fame.push({id:d.id,title:String(d.title||''),desc:String(d.desc||''),pe,at:+d.at||Date.now()}); if(pe) C.pe=(+C.pe||0)+pe; toast(`🏆 Succès : ${d.title}${pe?` · +${pe} PE`:''}`); renderAll(); markDirty(); return; }
   if(d.t==='note'&&d.id){ const n=(C.notes||[]).find(x=>x.mjId===d.id); const att=d.att&&typeof d.att.data==='string'&&/^data:/.test(d.att.data)?{name:String(d.att.name||''),type:String(d.att.type||''),data:d.att.data}:null;
     if(n){ n.title=String(d.title||''); n.content=String(d.content||''); if(att) n.att=att; else delete n.att; } else { C.notes.unshift(Object.assign({id:Date.now(),mjId:d.id,title:String(d.title||''),content:String(d.content||'')},att?{att}:{})); toast('Note reçue du maître du destin'); }
     renderNotes(); markDirty(); return; }
@@ -3420,6 +3425,10 @@ a{text-decoration:none}
 .mnote .ib.on{color:var(--tc);background:color-mix(in srgb,var(--tc) 14%,transparent)}
 .mnote textarea{border:1px solid var(--faint);border-radius:8px;padding:8px;min-height:96px;resize:vertical;background:repeating-linear-gradient(transparent 0 23px,var(--faint) 23px 24px);line-height:24px;outline:none;font:inherit;color:var(--ink)}
 .att{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 8px;border:1px dashed var(--rule);border-radius:8px}.att-img img{display:block;max-height:90px;max-width:160px;border-radius:6px}.att-f{display:inline-flex;align-items:center;gap:6px;flex:1;min-width:0;color:var(--ink);text-decoration:none;font:600 12px var(--f-body)}.att-f span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.att-f svg{width:15px;height:15px;flex:none}.att .ib{margin-left:auto}
+.fm-new{display:flex;flex-direction:column;gap:10px;padding-bottom:14px;border-bottom:1px solid var(--faint);margin-bottom:12px}.fm-new textarea{width:100%;border:1px solid var(--faint);border-radius:8px;padding:6px 8px;font:inherit;color:var(--ink);resize:vertical}
+.fm-row{display:flex;gap:14px;align-items:flex-start}.fm-pe{width:70px}.fm-new .btn svg{width:17px;height:17px}
+.fm-list{display:flex;flex-direction:column;gap:8px}.fm-it{display:flex;gap:10px;padding:8px 10px;border:1px solid var(--faint);border-radius:10px}.fm-ico{color:#d9a21b;flex:none}.fm-ico svg{width:22px;height:22px}
+.fm-it b{font-weight:700;color:var(--ink-strong)}.fm-it em{font-style:normal;font:800 11px var(--f-body);color:var(--c-dex);margin-left:8px}.fm-it p{margin:2px 0;font-size:13px}.fm-it small{color:var(--ink-soft);font-size:11px}
 .mn-empty{color:var(--ink-soft);font-size:13px;line-height:1.5}
 .mn-bub{position:absolute;right:0;top:calc(100% + 6px);z-index:5;background:var(--paper);border:1px solid var(--rule);border-radius:12px;box-shadow:0 10px 26px rgba(0,0,0,.2);padding:10px;display:flex;flex-direction:column;gap:8px;min-width:170px}
 .mn-bub::before{content:'';position:absolute;right:44px;top:-6px;width:10px;height:10px;background:var(--paper);border-left:1px solid var(--rule);border-top:1px solid var(--rule);transform:rotate(45deg)}
@@ -3808,6 +3817,7 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
     <button class="rb" type="button" data-left="roller" id="rb-roll" title="Jet libre" aria-pressed="false"></button>
     <button class="rb" type="button" data-left="loot" id="rb-loot" title="Butin" aria-pressed="false"></button>
     <button class="rb" type="button" data-left="taro" id="rb-taro" title="Tarot" aria-pressed="false"></button>
+    <button class="rb" type="button" data-left="famed" id="rb-fame" title="Fame : attribuer des succès" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4.5v1.5A3.5 3.5 0 0 0 8 11M17 6h2.5v1.5A3.5 3.5 0 0 1 16 11"/><path d="M12 14v3.5M8.5 20.5h7l-1-3h-5z"/></svg></button>
     <button class="rb" type="button" data-left="nara" id="rb-nara" title="Nahrrap's — traducteur de Narakéen" aria-pressed="false"></button>
     <button class="rb" type="button" data-left="mapdrw" id="rb-map" title="Carte du monde" aria-pressed="false"></button>
     <button class="rb" type="button" data-left="regles" id="rb-regles" title="Règles d'Aldebaran" aria-pressed="false"></button>
@@ -3889,6 +3899,7 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
     <div class="hist" id="rl-hist"></div>
   </div>
 </aside>
+<aside class="drawer ldrawer" id="famed" style="--tc:var(--c-dex)" aria-label="Fame"><header><h3>Fame</h3></header><div class="dscroll" id="fame-body"></div></aside>
 <aside class="drawer ldrawer" id="nara" style="--tc:var(--c-per)" aria-label="Nahrrap's"><header><h3>Nahrrap's</h3><span class="spacer"></span><button class="btn" type="button" id="nara-send">Envoyer aux joueurs</button></header><div class="nara-body" id="nara-body"></div></aside>
 <aside class="drawer ldrawer" id="taro" style="--tc:var(--c-per)" aria-label="Tarot"><header><h3>Tarot</h3></header><div class="dscroll" id="taro-body"></div></aside>
 <aside class="drawer ldrawer" id="loot" style="--tc:var(--c-for)" aria-label="Butin">
@@ -6498,6 +6509,23 @@ function nkInline(t,U=22){ nkInit(); const sw=1.8, re=/([A-Za-zÀ-ÖØ-öø-ÿŒ
     return `<svg class="nkw" viewBox="-3 ${(a-3).toFixed(1)} ${(W+6).toFixed(1)} ${(b-a+6).toFixed(1)}" width="${(W+6).toFixed(1)}" height="${(b-a+6).toFixed(1)}"><title>${esc(L.map(i=>i.s).join(' '))}</title>${inner}</svg>`; }).join('');
 }
 function nkHTML(text){ return String(text).split(/(\[nk\][\s\S]*?\[\/nk\])/i).map(p=>{ const m=p.match(/^\[nk\]([\s\S]*?)\[\/nk\]$/i); return m?nkInline(m[1]):esc(p); }).join(''); }
+/* Fame : le MJ attribue des succès (avec des PE s'il le souhaite) ; ils rejoignent l'onglet FAME des joueurs */
+const FAME_CUP='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4.5v1.5A3.5 3.5 0 0 0 8 11M17 6h2.5v1.5A3.5 3.5 0 0 1 16 11"/><path d="M12 14v3.5M8.5 20.5h7l-1-3h-5z"/></svg>';
+let FAMESEL=[];
+function renderFame(){ const B=$('fame-body'); if(!B) return; const ps=mnPlayers(); S.fame=S.fame||[];
+  B.innerHTML=`<div class="fm-new"><div class="field"><label class="cap" for="fm-t">Succès</label><input class="line-in" id="fm-t" placeholder="Pourfendeur de gobelins" maxlength="80"></div>
+    <div class="field"><label class="cap" for="fm-d">Description</label><textarea id="fm-d" rows="2" placeholder="A terrassé 10 cyber-gobelins sans tomber" maxlength="300"></textarea></div>
+    <div class="fm-row"><div class="field fm-pe"><label class="cap" for="fm-pe">PE 🧠</label><input class="line-in" id="fm-pe" type="number" min="0" max="99" value="0"></div>
+      <div class="field" style="flex:1"><span class="cap">Pour</span><div class="mn-ps">${ps.length?ps.map(P=>{ const t=S.tokens.find(x=>x.owner===P.pid&&x.kind!=='vehicle'); return `<button type="button" class="mn-p${FAMESEL.includes(P.pid)?' on':''}${P.online?'':' off'}" data-fp="${esc(P.pid)}" title="${esc(P.name||'Aventurier')}" style="--pc:${pcol(P.pid)}"><span class="bface">${t?faceHTML(t,'sm'):esc((P.name||'?')[0])}</span><i>✓</i></button>`; }).join('')+`<button type="button" class="mn-all" data-fp="*">Tous</button>`:'<span class="mn-none">Aucun joueur à la table</span>'}</div></div></div>
+    <button class="btn" type="button" id="fm-go">${FAME_CUP}Attribuer</button></div>
+    ${S.fame.length?`<div class="subttl">Succès attribués</div><div class="fm-list">${S.fame.slice().reverse().map(f=>`<div class="fm-it"><span class="fm-ico">${FAME_CUP}</span><div><b>${esc(f.title)}</b>${f.pe?`<em>+${f.pe} PE</em>`:''}${f.desc?`<p>${esc(f.desc)}</p>`:''}<small>${(f.to||[]).map(pid=>esc((PL.get(pid)||{}).name||(S.tokens.find(x=>x.owner===pid)||{}).name||'?')).join(', ')}</small></div></div>`).join('')}</div>`:''}`;
+  B.querySelectorAll('[data-fp]').forEach(b=>b.onclick=()=>{ const id=b.dataset.fp; if(id==='*') FAMESEL=FAMESEL.length===ps.length?[]:ps.map(P=>P.pid); else FAMESEL=FAMESEL.includes(id)?FAMESEL.filter(x=>x!==id):[...FAMESEL,id];
+    const keep={t:$('fm-t').value,d:$('fm-d').value,pe:$('fm-pe').value}; renderFame(); $('fm-t').value=keep.t; $('fm-d').value=keep.d; $('fm-pe').value=keep.pe; });
+  $('fm-go').onclick=()=>{ const title=$('fm-t').value.trim(), desc=$('fm-d').value.trim(), pe=Math.max(0,Math.min(99,Math.round(+$('fm-pe').value||0)));
+    if(!title){ toast('Donnez un nom au succès',true); $('fm-t').focus(); return; } if(!FAMESEL.length){ toast('Choisissez au moins un joueur',true); return; }
+    const f={id:Date.now(),title,desc,pe,to:FAMESEL.slice(),at:Date.now()}; S.fame.push(f); f.to.forEach(pid=>netTo(pid,{t:'fame',id:f.id,title,desc,pe,at:f.at}));
+    toast(`🏆 ${title} attribué${pe?` (+${pe} PE)`:''}`); FAMESEL=[]; markDirty(); renderFame(); }; }
+function fameResend(pid){ (S.fame||[]).forEach(f=>{ if((f.to||[]).includes(pid)) netTo(pid,{t:'fame',id:f.id,title:f.title,desc:f.desc,pe:f.pe,at:f.at,re:1}); }); }
 function naraSend(){ const f=$('nara-body').querySelector('iframe'), fr=f&&f.contentDocument&&f.contentDocument.getElementById('fr'), v=fr?fr.value.trim():''; if(!v){ toast('Rien à envoyer',true); return; }
   const i=$('mb-in'); i.value=`[nk]${v.replace(/\s*\n\s*/g,' ')}[/nk]`; closeLeft(); if(document.documentElement.classList.contains('tui')&&$('bb-msg')) $('bb-msg').click(); i.focus(); i.setSelectionRange(0,0); toast('Message prêt : ajoute @nom au début pour un seul joueur, puis Entrée'); }
 function naraOpen(){ if($('nara-send')) $('nara-send').onclick=naraSend; const b=$('nara-body'); if(!b||b.firstChild) return; const f=document.createElement('iframe'); f.title="Nahrrap's"; f.srcdoc=new TextDecoder().decode(Uint8Array.from(atob(NARA_B64),c=>c.charCodeAt(0))); b.appendChild(f); }
@@ -8654,7 +8682,7 @@ function renderDrawPanel(){ const box=$('ldraw-body'); if(!box) return; const on
 function closeLeft(){ if(typeof drawDgLater==='function') setTimeout(drawDgLater,0); if(typeof jetStamp==='function') jetStamp(false); document.querySelectorAll('.ldrawer.open').forEach(d=>{ d.classList.remove('open'); if(d.id==='ldraw'&&(tool==='map'||tool==='measure')) setTool(tool); if(d.id==='dgdrw'&&tool==='dgn') setTool('dgn'); }); document.querySelectorAll('[data-left]').forEach(b=>b.setAttribute('aria-pressed','false')); }
 function openLeft(id,force){ const was=$(id).classList.contains('open'); if(was&&force) return; closeLeft(); if(typeof drawDgLater==='function') setTimeout(drawDgLater,0); if(was) return;
   $(id).classList.add('open'); document.querySelectorAll(`[data-left="${id}"]`).forEach(b=>b.setAttribute('aria-pressed','true')); drawerOpened(id);
-  if(id==='ldraw'){ if(tool!=='map') setTool('map'); renderDrawPanel(); } else if(id==='lbest') renderBestPanel(); else if(id==='ljet'){ renderJetPanel(); } else if(id==='litem'){ renderItemPanel(); } else if(id==='fond') renderFond(); else if(id==='taro') renderTaro(); else if(id==='nara') naraOpen(); else if(id==='dgdrw'){ if(tool!=='dgn'&&!(S.dg&&S.dg.hub)) setTool('dgn'); renderDgPanel(); } }
+  if(id==='ldraw'){ if(tool!=='map') setTool('map'); renderDrawPanel(); } else if(id==='lbest') renderBestPanel(); else if(id==='ljet'){ renderJetPanel(); } else if(id==='litem'){ renderItemPanel(); } else if(id==='fond') renderFond(); else if(id==='taro') renderTaro(); else if(id==='nara') naraOpen(); else if(id==='famed') renderFame(); else if(id==='dgdrw'){ if(tool!=='dgn'&&!(S.dg&&S.dg.hub)) setTool('dgn'); renderDgPanel(); } }
 function bestRows(q){ q=normTxt(q); const L=S.bestiary.map((m,i)=>({m,i})).filter(x=>!q||normTxt(x.m.name).includes(q));
   const row=x=>{ const m=x.m; return `<div class="brow" data-i="${x.i}" title="Glisser sur le plateau · cliquer pour ouvrir"><span class="bface">${faceHTML({...m,type:'mob'},'sm')}</span><b>${esc(m.name)}</b><span class="bv">${m.hpMax}</span><span class="bv">${m.pp||0}</span><span class="bss">${STATS.map(s=>`<i style="--sc:${STAT_INFO[s].col}" title="${s}">${m.stats&&m.stats[s]!=null?m.stats[s]:0}</i>`).join('')}</span>${m.cat?'<span class="nodel"></span>':`<button class="ib del" type="button" data-del="${x.i}" title="Retirer du bestiaire">${IB('bin')}</button>`}</div>`; };
   const cats=[...BEST_CATS,...new Set(L.map(x=>x.m.cat).filter(c=>c&&!BEST_CATS.includes(c)))], mine=L.filter(x=>!x.m.cat);
@@ -10013,7 +10041,7 @@ function netIn(c,d){ if(!d||typeof d!=='object') return;
     if(t) claimToken(c.pid,sh,t); vehFromSheet(c.pid,sh);
     if(first&&d.t==='join') toast(`${P.name} rejoint la table : glissez son jeton depuis son onglet`);
     renderPtabs(); if(sheetPid===c.pid) sheetRefresh(); netStatus(NET.status);
-    if(d.t==='join') setTimeout(()=>mnResend(c.pid),800);
+    if(d.t==='join') setTimeout(()=>{ mnResend(c.pid); fameResend(c.pid); },800);
     if(d.t==='join'){ c.bgId=null; const st=publicState(); st.n=Date.now()*100+(seq++%100); st.from='mj'; netSendTo(c,st); } }
   else if(d.t==='ptr'&&c.pid){ const m={t:'ptr',pid:c.pid,name:c.name,color:pcol(c.pid),x:Math.round(+d.x||0),y:Math.round(+d.y||0),end:d.end?1:0}; showPtr(m); send(m); }
   else if(d.t==='open'&&c.pid){ const t=tok(String(d.id)); if(!t||!t.inbox) return; t.inbox=false; tokenEl(t); renderTracker(); renderFoW(); if(cardId===t.id) renderCard(); jetRefresh(); markDirty();
