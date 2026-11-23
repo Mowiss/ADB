@@ -4374,6 +4374,8 @@ const DG_TH={
   interieur:{lbl:'Intérieur cyber',sw:'#3c5260',rock:'#0b0710',floor2d:'#3f5560',wall2d:'#1a2430',seed:16},
   flamingo:{lbl:'Flamingo',sw:'#d9a07a',rock:'#1a1410',floor2d:'#c9a27a',wall2d:'#7a9a6a',seed:17,sky:1,noCeil:1},
   mer:{lbl:'Mer',sw:'#2f8fc9',rock:'#06202e',floor2d:'#3a95c8',wall2d:'#1c5a80',seed:11,sky:1,wh:1,water:1},
+  herbe:{lbl:'Herbe',sw:'#3f8f2a',rock:'#0d2208',floor2d:'#4a9a32',wall2d:'#2a5a1c',seed:21,sky:1,noCeil:1},
+  herbnoc:{lbl:'Herbe noctile',sw:'#7a2fc0',rock:'#14062a',floor2d:'#7d34c8',wall2d:'#3e1670',seed:22,sky:1,noCeil:1},
   mermut:{lbl:'Mer mutante',sw:'#3fae2a',rock:'#0a2206',floor2d:'#4cae36',wall2d:'#1f5a14',seed:11,sky:1,wh:1,water:1,mer:1},
   mermag:{lbl:'Mer magique',sw:'#8a3fd0',rock:'#1a0830',floor2d:'#8f4fd6',wall2d:'#45207a',seed:11,sky:1,wh:1,water:1,mer:1}};
 /* style d'une case : « thème » + « |s » (ciel au lieu du plafond) + « |i » (murs invisibles) ; 1 = ancien format */
@@ -4978,7 +4980,7 @@ function leafCeil(x,N,rnd,h0,h1,l0,l1){ for(let i=0;i<55;i++){ const cx=rnd()*N,
     x.beginPath(); x.ellipse((cx+Math.cos(a)*d+N)%N,(cy+Math.sin(a)*d+N)%N,2+rnd()*3,1+rnd()*1.5,rnd()*3,0,7); x.fill(); } }
   x.fillStyle='rgba(60,40,20,.9)'; for(let i=0;i<3;i++){ let a=rnd()*N, b=rnd()*N; x.fillRect(a|0,b|0,1,1); for(let k=0;k<10;k++){ a+=rnd()*4-2; b+=2; x.fillRect((a+N)%N|0,(b+N)%N|0,1,2); } } }
 /* sols en image (trottoir, route cyberpunk) : grandes dalles qui couvrent plusieurs cases, sans répétition à chaque mètre */
-const FLIMG={mer:{src:'res/themes/mer/mer.webp',cw:4,ch:2.23,anim:1},mermut:{src:'res/themes/mer/mer-mutant.webp',cw:4,ch:2.23,anim:1},mermag:{src:'res/themes/mer/mer-magique.webp',cw:4,ch:2.23,anim:1},flamingo:{src:'res/themes/flamingo/sol.webp',cw:5,ch:5},trottoir:{src:'res/themes/ruelle/trottoir.webp',cw:3,ch:2.234},bitume:{src:'res/themes/ruelle/route.webp',cw:4,ch:4},crypte:{src:'res/themes/crypte/sol.webp',cw:4,ch:2.23},interieur:{src:'res/themes/ruelle/sol-interieur.webp',cw:4,ch:3}};
+const FLIMG={herbe:{src:'res/themes/herbe/herbe.webp',cw:2.5,ch:2.8},herbnoc:{src:'res/themes/herbe/herbe-noctile.webp',cw:2.5,ch:2.8},mer:{src:'res/themes/mer/mer.webp',cw:4,ch:2.23,anim:1},mermut:{src:'res/themes/mer/mer-mutant.webp',cw:4,ch:2.23,anim:1},mermag:{src:'res/themes/mer/mer-magique.webp',cw:4,ch:2.23,anim:1},flamingo:{src:'res/themes/flamingo/sol.webp',cw:5,ch:5},trottoir:{src:'res/themes/ruelle/trottoir.webp',cw:3,ch:2.234},bitume:{src:'res/themes/ruelle/route.webp',cw:4,ch:4},crypte:{src:'res/themes/crypte/sol.webp',cw:4,ch:2.23},interieur:{src:'res/themes/ruelle/sol-interieur.webp',cw:4,ch:3}};
 /* fenêtre en image (cyberpunk) : cadre en relief, vitre transparente (alpha 128 dans l'image) */
 const WINIMG={cyber:{src:'res/themes/ruelle/fenetre.png'},crypte:{src:'res/themes/crypte/fenetre.png'}}, WIN_OF={crypte:'crypte',trottoir:'cyber',bitume:'cyber',ruelle:'cyber',interieur:'cyber'};
 /* fenêtres « en relief » : image + carte de hauteur (fronton, pilastres, jardinière, touffes très en avant), vitres transparentes (alpha 60-200) */
