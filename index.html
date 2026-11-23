@@ -4936,7 +4936,7 @@ function dgTplBuild(k){ const S0=S.dg; const tmp={on:true,th:(S0&&S0.th)||'pierr
   const ks=Object.keys(tmp.c).map(k=>k.split(',').map(Number)), w=Math.max(...ks.map(p=>p[0]))+1, h=Math.max(...ks.map(p=>p[1]))+1; tmp.lum&&Object.keys(tmp.lum).forEach(k=>{ if(typeof LUM==='undefined'||!LUM[tmp.lum[k]]) delete tmp.lum[k]; });
   return dgZoneGet({a0:0,b0:0,a1:w-1,b1:h-1},tmp); }
 const DG_TPLC={};   /* modèles construits (vidés quand les textures choisies changent) */
-const DG_TPL=[['couloir','Couloir'],['salle','Salle 5 × 5'],['croix','Croisement'],['ronde','Salle ronde'],['enfilade','Enfilade'],['taverne','Taverne']];
+const DG_TPL=[['couloir','Couloir'],['salle','Salle 5 × 5'],['croix','Croisement'],['enfilade','Enfilade'],['taverne','Taverne']];
 
 const dgSubMode=()=>(DG.pmode==='sub')!==!!DG.shiftDown;
 const dgPP=()=>({sol:dgPS(),mur:dgPM(),cl:dgPC(),ch:DG.pch||DG.wh||2,h:DG.wh||2});
@@ -5160,9 +5160,7 @@ function renderDgPanel(){ const box=$('dg-body'); if(!box) return;
       if(DG.clip) acts.splice(DG.zone?2:0,0,['dz-paste','Coller','<path d="M9 4h6v3H9z"/><path d="M9 5H6v15h12V5h-3"/>']); if(DG.edgeSel) acts.push(['dz-wdel','Retirer le mur','<path d="M3 5h18v14H3z" opacity=".35"/><path d="M8 8l8 8M16 8l-8 8"/>']);
       sub=acts.length?`<div class="wxrow dg-acts">${acts.map(([id,l,d])=>`<button type="button" class="wxb" id="${id}">${SV(d)}<span>${l}</span></button>`).join('')}</div>`:''; }
   else if(T==='rect'){ const sl=DG.pSlot||'sol', cur={sol:dgPS(),mur:dgPM(),plafond:dgPC()||''}, th=(v,part)=>v==='-'?dgI('sky',1.4):v?`<img src="${dgThumb(v,part)}" alt="">`:'<i>—</i>';
-    sub=seg('psh',[['rect','Rectangle',SV('<rect x="4" y="6" width="16" height="12" rx="1"/>')],['circ','Cercle',SV('<circle cx="12" cy="12" r="8"/>')],['poly','Forme libre',SV('<path d="M4 18l3-12 7 3 6-4-2 14z"/>')]],DG.shape||'rect')
-      +seg('pmo',[['add','Construire',SV('<path d="M12 5v14M5 12h14"/>')],['sub','Creuser',SV('<path d="M5 12h14"/>')]],DG.pmode||'add')
-      +(DG.shape==='poly'&&DG.poly&&DG.poly.length>=3?`<button class="btn wide" type="button" id="dg-pend">Fermer la forme</button>`:'')
+    sub=''+seg('pmo',[['add','Construire',SV('<path d="M12 5v14M5 12h14"/>')],['sub','Creuser',SV('<path d="M5 12h14"/>')]],DG.pmode||'add')
       +`<div class="dg-slots">${[['sol','Sol','floor'],['mur','Murs','wall'],['plafond','Plafond','ceil']].map(([k,l,part])=>`<button type="button" class="${sl===k?'on':''}" data-ps="${k}"><span>${l}</span><b>${th(cur[k],part)}</b></button>`).join('')}</div>`
       +hr('dg-h',DG.wh||2,'Hauteur des murs')+(sl==='plafond'&&cur.plafond&&cur.plafond!=='-'?hr('dg-pch',DG.pch||DG.wh||2,'Hauteur du plafond'):'')+pal(sl==='mur'?'wall':sl==='plafond'?'ceil':'floor',cur[sl],sl==='plafond'?[NONE,SKY]:[NONE]); }
   else if(murT) sub=seg('mm',[['wall','Visible',dgI('wall',1.6)],['iwall','Invisible',dgI('iwall',1.6)],['unwall','Retirer',dgI('nowall',1.6)]],T)+(T==='wall'?hr('dg-h',DG.wh||2,'Hauteur')+pal('wall',DG.wt||dgPM()):'');
