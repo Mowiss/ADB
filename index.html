@@ -157,12 +157,12 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
   .ps-brand{font-size:8pt;letter-spacing:.4em;color:#666}
   .ps-sub{font-size:9pt;color:#444}
   .ps-money{display:grid;grid-template-columns:auto auto;gap:1mm 4mm;align-items:baseline;font-size:9pt}.ps-money b{font-size:12pt;text-align:right}
-  .ps-top{display:grid;grid-template-columns:1fr 78mm;gap:6mm;break-inside:avoid}
+  .ps-top{display:grid;grid-template-columns:1fr 58mm;gap:6mm;break-inside:avoid;align-items:center}.ps-fig svg{width:58mm!important}
   .ps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2mm}
   .ps-stat{border:.6pt solid #aaa;border-radius:2mm;padding:1.5mm 2mm;display:flex;flex-direction:column}
   .ps-stat span{font-size:7pt;letter-spacing:.08em;text-transform:uppercase;color:#555}.ps-stat b{font-size:15pt;font-weight:400}.ps-stat small{font-size:7pt;color:#777}
   .ps-fx{margin:0;padding-left:4mm;font-size:8.5pt}.ps-fx small{color:#666}.ps-fx li.ps-race{list-style:none;margin:0 0 1.5mm -4mm;padding:1.5mm 2mm;border:.6pt solid #8a6a1a;border-radius:1.5mm;background:#faf6ec;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .ps-fig svg{position:static!important;width:78mm!important;height:auto!important;overflow:visible}
+  .ps-fig svg{position:static!important;width:58mm!important;height:auto!important;overflow:visible}
   .ps-fig #zones-p,.ps-fig .hand-t{display:none}
   .ps-t{width:100%;border-collapse:collapse;font-size:8.5pt}
   .ps-t th{text-align:left;font-size:7pt;letter-spacing:.08em;text-transform:uppercase;color:#555;border-bottom:.8pt solid #20222c;padding:1mm}
@@ -177,8 +177,9 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
   .ps-fx2{min-width:0;font-size:8.5pt;line-height:1.3}.ps-fx2 small{color:#777;font-size:7pt}.ps-fx2 b{display:block;font-size:9.5pt}.ps-fx2 p{margin:.6mm 0 0;color:#333}.ps-fx2 i{display:inline-block;margin-top:.8mm;font-style:normal;font-weight:700;color:#8a6a1a;font-size:8pt}
   .ps-ti{table-layout:fixed;width:calc(100% - 2pt)!important;margin:0 1pt;border:.8pt solid #2a2c35;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .ps-ti th{background:#ecedf1;border:.8pt solid #2a2c35;padding:1.2mm 1.2mm;color:#20222c}
-  .ps-ti td{border:.8pt solid #2a2c35;height:7.4mm;padding:.8mm 1.2mm;vertical-align:middle;overflow:hidden;word-wrap:break-word;font-size:8pt;line-height:1.2}
+  .ps-ti td{border:.8pt solid #2a2c35;height:6.6mm;padding:.6mm 1.2mm;vertical-align:middle;overflow:hidden;word-wrap:break-word;font-size:8pt;line-height:1.2}
   .ps-ti tr.ps-blank td{padding:0}
+  .ps-ti tr.ps-racer td{background:#faf6ec}
   .ps-bk{display:flex;align-items:baseline;gap:4mm;margin:2mm 0 4mm;font-size:9pt}.ps-bk span{font-size:7pt;letter-spacing:.08em;text-transform:uppercase;color:#555}.ps-bk b{flex:1;border-bottom:.6pt solid #20222c;min-height:5mm;font-size:11pt}
   .ps footer{margin-top:6mm;font-size:7pt;color:#888;text-align:right}
 }
@@ -1333,7 +1334,7 @@ function printSheet(){
   const stats=STATS.map(s=>{ const I=STAT_INFO[s], base=C.stats[s]||0, v=D.r[s]; return `<div class="ps-stat"><span>${I.name}</span><b>${v}</b>${v!==base?`<small>base ${base}</small>`:''}</div>`; }).join('');
   const ctr=[['Points de Vie',`${C.pv} / ${D.pvMax}`],['Points de Charge',`${D.pc} / ${D.pcMax}`],['Points d\'Action',D.pa],['Points d\'Armure',D.pp],['Points de Tourment',C.pt],['Points d\'Éveil',C.pe]]
     .map(([k,v])=>`<div class="ps-stat"><span>${k}</span><b>${v}</b></div>`).join('');
-  const nI=C.inventory.length, nC=C.cybernetics.length, rI=Math.max(nI,19), rC=Math.max(nC,4,31-rI);   /* inventaire + améliorations sur un recto */
+  const nI=C.inventory.length, nC=C.cybernetics.length, rI=Math.max(nI,11), rC=Math.max(nC+1,5,18-rI);   /* tout tient sur un recto : identité, stats, inventaire, améliorations */
   const blank=(n,c)=>Array.from({length:Math.max(0,n)},()=>`<tr class="ps-blank">${'<td></td>'.repeat(c)}</tr>`).join('');   /* lignes vides à remplir au crayon */
   const cg=a=>'<colgroup>'+a.map(w=>`<col style="width:${w}%">`).join('')+'</colgroup>', COLI=cg([24,10,7,8,7,6,6,8,24]), COLC=cg([24,13,7,8,8,7,33]);
   const BK=C.bankInventory||[], bankRows=BK.map(rowI).join('')+blank(Math.max(4,30-BK.length),9);
@@ -1344,9 +1345,9 @@ function printSheet(){
     <header class="ps-head"><div class="ps-photo">${C.photo?`<img src="${C.photo}" alt=""${C.photoCrop?` style="position:absolute;left:${-C.photoCrop.l*100}%;top:${-C.photoCrop.t*100}%;width:${C.photoCrop.w*100}%;height:${C.photoCrop.h*100}%;object-fit:fill"`:''}>`:''}</div><div><div class="ps-brand">ALDEBARAN</div><h1>${e(C.name||'Sans nom')}</h1><div class="ps-sub">${e(RACE_LABEL[C.race]||'')}${C.sexe?'':''}</div></div>
       <div class="ps-money"><span>Bastos</span><b>${(+C.bastos||0).toLocaleString('fr-FR')} ₿</b></div></header>
     <div class="ps-top"><div class="ps-left"><h2>Statistiques</h2><div class="ps-grid">${stats}</div><h2>Décompte</h2><div class="ps-grid">${ctr}</div>
-      <h2>Effets actifs</h2><ul class="ps-fx">${fx}</ul></div><div class="ps-fig">${fig}</div></div>
-    <h2 class="ps-fh">Inventaire</h2>${rowsI?`<table class="ps-t ps-ti">${COLI}<thead><tr><th>Objet</th><th>Zone</th><th>Stat</th><th>Dés</th><th>Seuil</th><th>PC</th><th>PP</th><th>₿</th><th>Effets &amp; description</th></tr></thead><tbody>${rowsI}${blank(rI-nI,9)}</tbody></table>`:`<table class="ps-t ps-ti">${COLI}<thead><tr><th>Objet</th><th>Zone</th><th>Stat</th><th>Dés</th><th>Seuil</th><th>PC</th><th>PP</th><th>₿</th><th>Effets &amp; description</th></tr></thead><tbody>${blank(rI,9)}</tbody></table>`}
-    <h2>Améliorations</h2>${rowsC?`<table class="ps-t ps-ti">${COLC}<thead><tr><th>Amélioration</th><th>Zone</th><th>Stat</th><th>Dés</th><th>Seuil</th><th>PC</th><th>Effets &amp; description</th></tr></thead><tbody>${rowsC}${blank(rC-nC,7)}</tbody></table>`:`<table class="ps-t ps-ti">${COLC}<thead><tr><th>Amélioration</th><th>Zone</th><th>Stat</th><th>Dés</th><th>Seuil</th><th>PC</th><th>Effets &amp; description</th></tr></thead><tbody>${blank(rC,7)}</tbody></table>`}
+      </div><div class="ps-fig">${fig}</div></div>
+    <h2>Inventaire</h2>${rowsI?`<table class="ps-t ps-ti">${COLI}<thead><tr><th>Objet</th><th>Zone</th><th>Stat</th><th>Dés</th><th>Seuil</th><th>PC</th><th>PP</th><th>₿</th><th>Effets &amp; description</th></tr></thead><tbody>${rowsI}${blank(rI-nI,9)}</tbody></table>`:`<table class="ps-t ps-ti">${COLI}<thead><tr><th>Objet</th><th>Zone</th><th>Stat</th><th>Dés</th><th>Seuil</th><th>PC</th><th>PP</th><th>₿</th><th>Effets &amp; description</th></tr></thead><tbody>${blank(rI,9)}</tbody></table>`}
+    <h2>Améliorations</h2><table class="ps-t ps-ti">${COLC}<thead><tr><th>Amélioration</th><th>Zone</th><th>Stat</th><th>Dés</th><th>Seuil</th><th>PC</th><th>Effets &amp; description</th></tr></thead><tbody><tr class="ps-racer"><td><b>${e(R.name)}</b><br><small>Trait racial · ${e(RACE_LABEL[C.race]||'')}</small></td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>${e(R.desc)}</td></tr>${rowsC}${blank(rC-nC-1,7)}</tbody></table>
     <h2 class="ps-fh">Banque</h2><div class="ps-bk"><span>Bastos au coffre</span><b>${(+C.bankBastos||0)?(+C.bankBastos).toLocaleString('fr-FR')+' ₿':''}</b></div>
     <table class="ps-t ps-ti">${COLI}<thead><tr><th>Objet au coffre</th><th>Zone</th><th>Stat</th><th>Dés</th><th>Seuil</th><th>PC</th><th>PP</th><th>₿</th><th>Effets &amp; description</th></tr></thead><tbody>${bankRows}</tbody></table>
     ${notes?`<h2 class="ps-fh">Notes</h2>${notes}`:''}
