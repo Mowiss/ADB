@@ -284,11 +284,9 @@ body{-webkit-user-select:none;user-select:none}input,textarea,select,[contentedi
 .line-in:focus{border-bottom-color:var(--ink)}
 .name-in{font-family:var(--f-title);font-size:25px;letter-spacing:.05em;color:var(--ink-strong)}
 .name-in::placeholder{color:#c3c6cf}
-.nm-wrap{position:relative}
-.nm-nk{position:absolute;left:0;top:0;bottom:0;display:flex;align-items:center;gap:10px;pointer-events:none;opacity:0;transition:opacity .6s;color:var(--ink-strong);overflow:hidden}
-.nm-nk svg{flex:none;max-width:100%}
-.nm-wrap .name-in{transition:color .6s}
-.nm-wrap.nk .nm-nk{opacity:1}.nm-wrap.nk .name-in{color:transparent}
+.who{position:relative}.who>*:not(.who-nk){position:relative;z-index:1}
+.who-nk{position:absolute;inset:-4px 0 0;z-index:0;pointer-events:none;opacity:.2;color:var(--ink-strong);overflow:hidden}
+.who-nk svg{display:block;width:100%;height:100%}
 select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:linear-gradient(45deg,transparent 50%,var(--ink-soft) 50%),linear-gradient(-45deg,transparent 50%,var(--ink-soft) 50%);background-size:5px 5px;background-position:calc(100% - 9px) 55%,calc(100% - 4px) 55%;background-repeat:no-repeat;padding-right:18px}
 .racial{font-size:12.5px;line-height:1.45;border-bottom:1px dashed var(--rule);padding:4px 2px}
 .racial b{color:var(--ink-strong)}
@@ -800,10 +798,10 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}input[type=num
   <aside class="panel" id="panel">
     <section class="blk">
       <svg class="ttl" data-title><text x="0" y="26">PERSONNAGE</text></svg>
-      <div class="who fade" style="padding-bottom:4px">
+      <div class="who fade" style="padding-bottom:4px"><div class="who-nk" id="nm-nk" aria-hidden="true"></div>
         <button class="portrait" id="portrait" type="button" title="Changer le portrait"></button>
         <div style="display:flex;flex-direction:column;gap:8px;min-width:0">
-          <div class="field"><label class="cap" for="f-name">Nom</label><div class="nm-wrap"><input id="f-name" class="line-in name-in" placeholder="Sans nom" autocomplete="off"><div class="nm-nk" id="nm-nk" aria-hidden="true"></div></div></div>
+          <div class="field"><label class="cap" for="f-name">Nom</label><input id="f-name" class="line-in name-in" placeholder="Sans nom" autocomplete="off"></div>
           <div class="field"><label class="cap" for="f-race">Race</label><div class="racerow"><select id="f-race" class="line-in"></select><button type="button" class="sexsw" id="f-sexe" title="Homme (toucher pour changer)">♂</button></div></div>
         </div>
       </div>
@@ -1715,12 +1713,16 @@ if (typeof module !== 'undefined') module.exports = Duploye;
 
 
 let NM_K='';
-function nmNk(){ const el=$('nm-nk'); if(!el||typeof Duploye==='undefined') return; const n=(C.name||'').trim(); if(n===NM_K) return; NM_K=n;
-  try{ const U=16; let x=0, y0=-U, y1=U*.3, g='';   /* un seul dessin, même échelle et même ligne de base pour tous les mots : trait d'épaisseur constante */
-    n.split(/[^A-Za-zÀ-ÖØ-öø-ÿŒœÆæ'’\-]+/).filter(Boolean).forEach(w=>{ const c=Duploye.phon(w); if(!c.length) return; const G=Duploye.geom(c,U), b=G.box; g+=`<g transform="translate(${(x-b.x0).toFixed(2)} 0)">${Duploye.inner(G,1.6,'currentColor')}</g>`; x+=b.x1-b.x0+U*.8; y0=Math.min(y0,b.y0); y1=Math.max(y1,b.y1); });
-    el.innerHTML=x?`<svg viewBox="-2 ${(y0-2).toFixed(1)} ${(x-U*.8+4).toFixed(1)} ${(y1-y0+4).toFixed(1)}" width="${(x-U*.8+4).toFixed(0)}" height="${(y1-y0+4).toFixed(0)}">${g}</svg>`:''; }catch(e){ el.innerHTML=''; } }
-setInterval(()=>{ const w=document.querySelector('.nm-wrap'); if(!w) return; const on=!w.classList.contains('nk')&&document.activeElement!==$('f-name')&&!!$('nm-nk').innerHTML; w.classList.toggle('nk',on); },4000);
-document.addEventListener('focusin',e=>{ if(e.target.id==='f-name') document.querySelector('.nm-wrap')?.classList.remove('nk'); });
+/* nom narakéen en fond du cartouche : mots répartis sur le nombre de lignes qui remplit le mieux la place */
+function nmNk(force){ const el=$('nm-nk'); if(!el||typeof Duploye==='undefined') return; const n=(C.name||'').trim(), W=el.clientWidth, H=el.clientHeight, key=n+'|'+W+'|'+H; if(key===NM_K&&!force) return; NM_K=key;
+  try{ const U=20, G=n.split(/[^A-Za-zÀ-ÖØ-öø-ÿŒœÆæ'’\-]+/).filter(Boolean).map(w=>Duploye.phon(w)).filter(c=>c.length).map(c=>Duploye.geom(c,U));
+    if(!G.length||!W||!H){ el.innerHTML=''; return; } const gap=U*.7, Y0=Math.min(...G.map(g=>g.box.y0)), Y1=Math.max(...G.map(g=>g.box.y1)), lh=Y1-Y0+U*.3;
+    let best=null; for(let n2=1;n2<=G.length;n2++){ const tot=G.reduce((a,g)=>a+g.box.x1-g.box.x0,0)+gap*(G.length-n2), tw=tot/n2; const L=[[]]; let x=0;
+      G.forEach(g=>{ const w=g.box.x1-g.box.x0; if(x>0&&x+w/2>tw&&L.length<n2){ L.push([]); x=0; } L[L.length-1].push(g); x+=w+gap; });
+      const lw=L.map(l=>l.reduce((a,g)=>a+g.box.x1-g.box.x0,0)+gap*(l.length-1)), mw=Math.max(...lw), mh=lh*L.length, sc=Math.min(W/mw,H/mh); if(!best||sc>best.sc) best={sc,L,lw,mw,mh}; }
+    let svg=''; best.L.forEach((l,r)=>{ let x=(best.mw-best.lw[r])/2; const base=r*lh-Y0; l.forEach(g=>{ svg+=`<g transform="translate(${(x-g.box.x0).toFixed(1)} ${base.toFixed(1)})">${Duploye.inner(g,Math.max(.8,3/best.sc),'currentColor')}</g>`; x+=g.box.x1-g.box.x0+gap; }); });
+    el.innerHTML=`<svg viewBox="-4 -4 ${(best.mw+8).toFixed(1)} ${(best.mh+8).toFixed(1)}" preserveAspectRatio="xMidYMid meet">${svg}</svg>`; }catch(e){ el.innerHTML=''; } }
+window.addEventListener('resize',()=>nmNk());
 function renderIdentity(){
   const pc=C.photoCrop; $('portrait').innerHTML=C.photo?`<img src="${C.photo}" alt="Portrait"${pc?` class="cropped" style="left:${-pc.l*100}%;top:${-pc.t*100}%;width:${pc.w*100}%;height:${pc.h*100}%"`:''}>`:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="9" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>`;
   if(document.activeElement!==$('f-name')) $('f-name').value=C.name||'';
