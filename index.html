@@ -5014,9 +5014,13 @@ const LUM={cyber:{l:'Borne néon',h:3.41,R:4.5,c:[.55,.65,1],I:.95},lanterne:{l:
   /* lampes à poser (petits objets : aussi sur un bar ou une table) */
   tcyber:{l:'Lampe cyber',h:.8,R:2.6,c:[1,.62,.4],I:.7,p:1},tjungle:{l:'Lampe sous globe',h:.75,R:2.6,c:[1,.86,.5],I:.7,p:1},tgothique:{l:'Lanterne gothique',h:.95,R:2.4,c:[1,.32,.25],I:.65,fl:1,p:1},tabatjour:{l:'Lampe abat-jour',h:.8,R:2.8,c:[1,.88,.66],I:.7,p:1},tdoree:{l:'Lampe dorée',h:.85,R:2.8,c:[1,.85,.6],I:.7,p:1}};
 /* objets de décor posés par case (poubelles…) : sprite 3D, on ne les traverse pas */
-const OBJ={poubelle:{l:'Poubelle',h:.62},benne:{l:'Benne',h:.78},conteneur:{l:'Conteneur',h:.74}};
+const OBJ={poubelle:{l:'Poubelle',h:.62},benne:{l:'Benne',h:.78},conteneur:{l:'Conteneur',h:.74},
+  /* petite déco (bar, table…) */
+  biere:{l:'Bouteille de bière',h:.4},chope:{l:'Chope',h:.3},bouteille:{l:"Bouteille d'eau",h:.4},verre:{l:"Verre d'eau",h:.22},flasque:{l:'Flasque néon',h:.42},verrecyber:{l:'Verre néon',h:.22},
+  cruche:{l:'Cruche',h:.42},gobelet:{l:'Gobelet',h:.24},vin:{l:'Bouteille de vin',h:.46},calice:{l:'Calice',h:.3},gourde:{l:'Gourde',h:.4},canette:{l:'Canette',h:.22},
+  vase_pastel:{l:'Vase fleuri',h:.55},vase_tulipe:{l:'Soliflore',h:.55},vase_cyber:{l:'Fleur néon',h:.57},vase_tournesol:{l:'Tournesol en pot',h:.56},vase_rose:{l:'Rose noire',h:.55},vase_fane:{l:'Fleur fanée',h:.55}};
 /* taille des objets : les gros se posent au sol ; les petits (caisse enregistreuse…) aussi sur un bar ou une table */
-const OBJ_SZ={commerce:'p',baril:'g'}, objSz=k=>OBJ_SZ[k]||'g', SZ_L={p:'Petit objet',g:'Gros objet'};
+const OBJ_SZ={commerce:'p',baril:'g',biere:'p',chope:'p',bouteille:'p',verre:'p',flasque:'p',verrecyber:'p',cruche:'p',gobelet:'p',vin:'p',calice:'p',gourde:'p',canette:'p',vase_pastel:'p',vase_tulipe:'p',vase_cyber:'p',vase_tournesol:'p',vase_rose:'p',vase_fane:'p'}, objSz=k=>OBJ_SZ[k]||'g', SZ_L={p:'Petit objet',g:'Gros objet'};
 const obAt=(i,j)=>S.dg&&S.dg.ob?S.dg.ob[i+','+j]:null;
 const OBIM={};
 function obImg(k){ let o=OBIM[k]; if(!o){ o=OBIM[k]={im:new Image(),cv:null}; o.im.onload=()=>{ const c=document.createElement('canvas'); c.width=o.im.naturalWidth; c.height=o.im.naturalHeight; c.getContext('2d').drawImage(o.im,0,0); c._k='ob_'+k; c._hf=(OBJ[k]||{h:.6}).h; o.cv=c; drawDgLater(); fpsLater(); }; o.im.src='res/sprites/'+k+'.png'; } return o; }
