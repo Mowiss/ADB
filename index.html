@@ -6531,7 +6531,7 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
   const RM=['rain','storm','acid','demo','cold'].includes(S.weather||'')&&!out, M=RM?((FPS.wxm&&FPS.wxm.M.length===W*H)?FPS.wxm.M.fill(0):new Uint8Array(W*H)):null; let lD=-1, lO=0;
   const BL=fpsBlood(), bs=BL?(wx,wy)=>{ const X=((wx*CELL-BL.x0)*BL.k)|0, Y=((wy*CELL-BL.y0)*BL.k)|0; return X<0||Y<0||X>=BL.w||Y>=BL.h?0:BL.d[Y*BL.w+X]; }:null;
   const bmix=(c,b,s)=>{ const a=((b>>>24)/255)*(s==null?1:s)*.92; if(a<=.02) return c; const ia=1-a, a2=a*.7; return 0xff000000|((((c>>16)&255)*ia+((b>>16)&255)*a2)<<16)|((((c>>8)&255)*ia+((b>>8)&255)*a2)<<8)|(((c&255)*ia+(b&255)*a2)|0); };
-  let MAXW=1; for(const k in DG_TH) MAXW=Math.max(MAXW,DG_TH[k].wh||1); for(const k in (S.dg&&S.dg.w||{})){ const w=S.dg.w[k]; if(!w.no) MAXW=Math.max(MAXW,+w.h||1); } for(const k in (S.dg&&S.dg.ew||{})) if(!S.dg.ew[k].inv) MAXW=Math.max(MAXW,+S.dg.ew[k].h||1); const V2=true, WSILL=.32, WTOP=.82, HW=WALL_HW;   /* sans mur tracé, pas de bordure */
+  let MAXW=1; for(const k in DG_TH) MAXW=Math.max(MAXW,DG_TH[k].wh||1); for(const k in (S.dg&&S.dg.w||{})){ const w=S.dg.w[k]; if(!w.no) MAXW=Math.max(MAXW,+w.h||1); } for(const k in (S.dg&&S.dg.ew||{})) if(!S.dg.ew[k].inv) MAXW=Math.max(MAXW,+S.dg.ew[k].h||1); const V2=true, WSILL=1/3, WTOP=1, HW=WALL_HW;   /* sans mur tracé, pas de bordure */
   for(let xx=0;xx<W;xx++){ const cX=2*xx/W-1, rdx=dx+px*cX, rdy=dy+py*cX; let mx=ci, my=cj;
     const ddx=Math.abs(1/rdx), ddy=Math.abs(1/rdy); let stx,sty,sdx,sdy,side=0,n=0,pmx,pmy;
     if(rdx<0){ stx=-1; sdx=(cam.x-mx)*ddx; } else { stx=1; sdx=(mx+1-cam.x)*ddx; }
@@ -6562,7 +6562,7 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
     /* fenêtre : ouverture au milieu du mur, cadre + croisillons selon le style */
     const faceWin=(z0,z1,d,tex,N,st,WI)=>{ const yT=Math.max(0,Math.ceil(h2+(eye-z1)*PS/d)), yB=Math.min(H-1,Math.floor(h2+(eye-z0)*PS/d)); if(yB<yT) return;
       let u=side===0?cam.y+d*rdy:cam.x+d*rdx; u-=Math.floor(u); let tx=(u*N)|0; if(side===0&&rdx>0||side===1&&rdy<0) tx=N-tx-1;
-      const f=lit(d)*(side?.78:1)*vis(cam.x+d*rdx,cam.y+d*rdy), wa=LON?la(cam.x+d*rdx,cam.y+d*rdy):null, U0=.2, U1=.8, FW=st.fw, inU=u>U0&&u<U1, fr=inU&&(u<U0+FW||u>U1-FW);
+      const f=lit(d)*(side?.78:1)*vis(cam.x+d*rdx,cam.y+d*rdy), wa=LON?la(cam.x+d*rdx,cam.y+d*rdy):null, U0=.08, U1=.92, FW=st.fw, inU=u>U0&&u<U1, fr=inU&&(u<U0+FW||u>U1-FW);
       for(let y=yT;y<=yB;y++){ const z=eye-(y+.5-h2)*d/PS; let c;
         if(inU&&z>z0+WSILL&&z<z0+WTOP){ const zz=z-z0, edge=fr||zz<WSILL+FW*.8||zz>WTOP-FW*.8, mun=st.mun&&(Math.abs(u-.5)<.018||Math.abs(zz-(WSILL+WTOP)/2)<.014);
           if(edge) c=zz<WSILL+FW*.8?st.sill:st.frame; else if(mun) c=st.frame; else { const i=y*W+xx; if(DZ[i]===Infinity&&!GS[i]){ GD[i]=d; GS[i]=((u*9+zz*5)%1)<.13?2:1; GLASS=true; } continue; } }
@@ -6591,7 +6591,7 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
         if(hit) continue; const j0=at(u0,z), a0=j0<0?0:PX[j0]>>>24;
         if(a0>200){ B[i]=shL(PX[j0],f*.45,wa); continue; }                                   /* flancs des reliefs, dans l'ombre */
         if(a0>60&&a0<=200&&DZ[i]>=d-.01){ if(VI){ B[i]=VI&&vwPx(VI,u0,z,tg,dz1,Z0,Z1); DZ[i]=d+.01; continue; } DZ[i]=Infinity; if(!GS[i]){ GD[i]=d; GS[i]=((u0*9+(z-Z0)*5)%1)<.12?2:1; GLASS=true; } } } };   /* vitre : on voit à travers (ou la vue lointaine) */
-    const winOver=(z0,d,WO,VI,WZ)=>{ const M=.1, MW=WZ?(1-WZ)/2:M, Z0=z0+.32, Z1=Z0+(1-2*M)*WO.h/WO.w, yT=Math.max(0,Math.ceil(h2+(eye-Z1-.05)*PS/d)), yB=Math.min(H-1,Math.floor(h2+(eye-Z0+.05)*PS/d)); if(yB<yT) return;
+    const winOver=(z0,d,WO,VI,WZ)=>{ const M=.08, MW=WZ?(1-WZ)/2:M, Z0=z0+1/3, Z1=z0+1,   /* toutes les fenêtres : 2/3 du bloc, 1/3 de soubassement */ yT=Math.max(0,Math.ceil(h2+(eye-Z1-.05)*PS/d)), yB=Math.min(H-1,Math.floor(h2+(eye-Z0+.05)*PS/d)); if(yB<yT) return;
       const flip=side===0&&rdx>0||side===1&&rdy<0, nrm=side===0?Math.abs(rdx):Math.abs(rdy), tg=Math.max(-2,Math.min(2,(side===0?rdy:rdx)*(flip?-1:1)/nrm)); let u0=side===0?cam.y+d*rdy:cam.x+d*rdx; u0-=Math.floor(u0); if(flip) u0=1-u0;
       const hx=cam.x+d*rdx, hy=cam.y+d*rdy, f=lit(d)*(side?.82:1)*vis(hx,hy), wa=LON?la(hx,hy):null, P=.045;
       const at=(u,z)=>{ u=(u-MW)/(1-2*MW); if(u<0||u>=1||z<Z0||z>=Z1) return -1; return (((1-(z-Z0)/(Z1-Z0))*WO.h|0)*WO.w)+((u*WO.w)|0); };   /* marge : le cadre en saillie reste dans la case, même de biais */
