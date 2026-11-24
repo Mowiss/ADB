@@ -5449,10 +5449,25 @@ function dgDirEl(t){ return dgOn()&&t.type==='player'&&t.dir!=null?`<i class="dg
 const MK_LBL={up:'Escalier qui monte',down:'Escalier qui descend',tp:'Zone TP',sign:'Panneau'};
 const mkIco=k=>dgI(k==='tp'?'tp':k==='sign'?'sign':k==='up'?'sup':'sdown',1.7);
 /* ---------- sélection : ce qui est posé sur une case (végétation, lumière, passage, portes) et sa suppression ---------- */
-const dgDecoAt=(wx,wy)=>{ const D=S.dg||{}, k=dgK(...dgCell(wx,wy)); return !!((D.veg&&D.veg[k])||(D.ob&&D.ob[k])||(D.lum&&D.lum[k])); };
+const dgDecoAt=(wx,wy)=>{ const D=S.dg||{}, k=dgK(...dgCell(wx,wy)); return !!((D.veg&&D.veg[k])||(D.ob&&D.ob[k])||(D.lum&&D.lum[k])||(D.sup&&D.sup[k])); };
+/* support : tout le comptoir (cases voisines du même type et du même style) */
+function supGroup(k){ const D=S.dg||{}, SP=D.sup||{}, o=SP[k]; if(!o) return []; const G=new Set([k]), st=[k];
+  while(st.length){ const [i,j]=st.pop().split(',').map(Number); [[1,0],[-1,0],[0,1],[0,-1]].forEach(([u,v])=>{ const n=(i+u)+','+(j+v), q=SP[n]; if(q&&!G.has(n)&&q.k===o.k&&q.s===o.s){ G.add(n); st.push(n); } }); }
+  return [...G]; }
+function supEdit(k){ const D=S.dg||{}, o=D.sup&&D.sup[k]; if(!o) return; const G=supGroup(k), done=()=>{ SUPB.delete(o); drawDgLater(); FPS.sprites.clear(); fpsLater(); markDirty(); sync(); };
+  openDialog(`<div class="dphead"><h3>${o.k==='table'?'Table':'Bar'} · ${SUP[o.s]||o.s}</h3></div>${G.length>1?`<p class="meta" style="text-align:left;margin:0 0 8px">${G.length} cases : les réglages s'appliquent à tout ${o.k==='table'?'l\'ensemble':'le comptoir'}.</p>`:''}
+    <div class="wxrow dpseg"><button type="button" class="wxb${o.k==='bar'?' on':''}" data-spk="bar"><span>Bar</span></button><button type="button" class="wxb${o.k==='table'?' on':''}" data-spk="table"><span>Table</span></button></div>
+    <span class="cap" style="display:block;margin-top:10px">Style</span><div class="vegpick">${Object.entries(SUP).map(([s2,l])=>`<button type="button" class="vegb${o.s===s2?' on':''}" data-sps="${s2}" title="${l}"><img src="res/sup/${o.k==='table'?s2+'-table':s2}.png" alt=""><small>${l}</small></button>`).join('')}</div>
+    <div class="actions"><button class="btn ghost danger" type="button" id="sp-del1">${IB('bin')}Cette case</button>${G.length>1?`<button class="btn danger" type="button" id="sp-delg">${IB('bin')}Tout ${o.k==='table'?'l\'ensemble':'le comptoir'}</button>`:''}<span style="flex:1"></span><button class="btn" type="button" data-close>OK</button></div>`);
+  const all=f=>{ G.forEach(n=>{ const q=D.sup[n]; if(q){ f(q); SUPB.delete(q); } }); done(); if(typeof dlg!=='undefined'&&dlg.open) supEdit(k); };   /* dans le volet, il se redessine seul */
+  document.querySelectorAll('[data-spk]').forEach(b=>b.onclick=()=>all(q=>q.k=b.dataset.spk));
+  document.querySelectorAll('[data-sps]').forEach(b=>b.onclick=()=>all(q=>q.s=b.dataset.sps));
+  $('sp-del1').onclick=()=>{ delete D.sup[k]; done(); dlg.close(); if(typeof renderDgPanel==='function') renderDgPanel(); };
+  if($('sp-delg')) $('sp-delg').onclick=()=>{ G.forEach(n=>delete D.sup[n]); done(); dlg.close(); if(typeof renderDgPanel==='function') renderDgPanel(); }; }
 function dgSelItems(i,j){ const D=S.dg||{}, k=dgK(i,j), L=[];
   if(D.veg&&D.veg[k]){ const [b,t]=D.veg[k].split('-'); L.push({id:'veg',img:`res/vege/${D.veg[k]}.png`,l:`${VEG_K[t]||'Végétation'} · ${VEG_BIO[b]||''}`,del:()=>delete D.veg[k]}); }
   if(D.ob&&D.ob[k]) L.push({id:'ob',img:`res/sprites/${D.ob[k]}.png`,l:(OBJ[D.ob[k]]||{}).l||'Objet',del:()=>delete D.ob[k]});
+  if(D.sup&&D.sup[k]){ const o=D.sup[k]; L.push({id:'sup',img:`res/sup/${o.k==='table'?o.s+'-table':o.s}.png`,l:`${o.k==='table'?'Table':'Bar'} · ${SUP[o.s]||o.s}`,edit:()=>supEdit(k),del:()=>{ delete D.sup[k]; }}); }
   if(D.lum&&D.lum[k]){ const P=lumProps(D.lum[k]); L.push({id:'lum',img:`res/lum/${lumK(D.lum[k])}.png`,l:`${(P&&P.d.l)||'Lumière'} · ${{on:'allumée',off:'éteinte',broken:'cassée'}[(P&&P.st)||'on']}`,edit:()=>lumEdit(k),del:()=>delete D.lum[k]}); }
   return L; }
 function dgSelClick(wx,wy){
