@@ -6646,7 +6646,8 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
   /* végétation en X : deux plans croisés par case, testés colonne par colonne */
   { const VV=S.dg&&S.dg.veg; if(VV){ const L2=[]; for(const k in VV){ const p=k.indexOf(','), i=+k.slice(0,p), j=+k.slice(p+1), cx=i+.5-cam.x, cy=j+.5-cam.y, dd=cx*cx+cy*cy; if(dd>900) continue; const o=vegImg(VV[k]); if(!o.px) continue; L2.push({i,j,o,key:VV[k],dd}); }
     for(const g of L2){ const kind=g.key.split('-')[1], hg=VEG_H[kind]*(g.key==='desert-arbre'?.95:1), wd=Math.min(1.45,hg*g.o.w/g.o.h), hw=wd/2/Math.SQRT2, cx=g.i+.5, cy=g.j+.5, sv=vis(cx,cy);
-      const segs=[[cx-hw,cy-hw,cx+hw,cy+hw],[cx+hw,cy-hw,cx-hw,cy+hw]], IW=g.o.w, IH=g.o.h, PX=g.o.px, zb=0;
+      const BB=g.key==='plage-arbre', vl=Math.hypot(cx-cam.x,cy-cam.y)||1, qx=-(cy-cam.y)/vl*wd/2, qy=(cx-cam.x)/vl*wd/2;   /* palmier : un seul plan face à la caméra */
+      const segs=BB?[[cx+qx,cy+qy,cx-qx,cy-qy]]:[[cx-hw,cy-hw,cx+hw,cy+hw],[cx+hw,cy-hw,cx-hw,cy+hw]], IW=g.o.w, IH=g.o.h, PX=g.o.px, zb=0;
       for(const [ax,ay,bx,by] of segs){ const ex=bx-ax, ey=by-ay;
         for(let xx=0;xx<W;xx++){ const cX=2*xx/W-1, rdx=dx+px*cX, rdy=dy+py*cX, den=rdx*ey-rdy*ex; if(Math.abs(den)<1e-6) continue;
           const t=((ax-cam.x)*ey-(ay-cam.y)*ex)/den, u=((ax-cam.x)*rdy-(ay-cam.y)*rdx)/den; if(t<=.08||u<0||u>1) continue;
