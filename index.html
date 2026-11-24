@@ -4962,7 +4962,11 @@ const dgStyle=()=>dgBrushTh()+(DG.sky?'|s':'')+(DG.iw?'|i':'');
 const dgOn=()=>!!(S.dg&&S.dg.on);
 const dgK=(i,j)=>i+','+j;
 /* MUR : blocs posés sur une case (texture + hauteur) ; {no:1} = pas de mur (bord invisible) */
-const dgWB=(i,j)=>{ const w=S.dg&&S.dg.w&&S.dg.w[i+','+j]; return w&&!w.no?w:null; };
+/* supports (bar, table) : de vrais volumes bas sur lesquels on pose des objets ; ils bloquent le passage comme un bloc */
+const SUP={bois:'Bois',cyber:'Cyber',jungle:'Jungle',gothique:'Gothique',saloon:'Saloon'}, SUPH={bar:.5,table:.42}, SUPB=new WeakMap();
+const dgSup=(i,j)=>S.dg&&S.dg.sup?S.dg.sup[i+','+j]||null:null;
+const dgSupH=(i,j)=>{ const o=dgSup(i,j); return o?SUPH[o.k]||.5:0; };
+const dgWB=(i,j)=>{ const w=S.dg&&S.dg.w&&S.dg.w[i+','+j]; if(w&&!w.no) return w; const o=dgSup(i,j); if(!o) return null; let b=SUPB.get(o); if(!b){ const f=dgAt(i,j); b={t:(f&&f.th)||(S.dg&&S.dg.th)||'pierre',h:SUPH[o.k]||.5,sup:o}; SUPB.set(o,b); } return b; };
 /* MUR tracé sur l'arête entre deux cases : {t:texture,h:hauteur} ; sans mur tracé, le bord est invisible (on voit au loin sans pouvoir y aller) */
 const dgEWk=k=>S.dg&&S.dg.ew?S.dg.ew[k]:null;
 const dgEW=(i,j,ni,nj)=>dgEWk(dgEK(i,j,ni,nj));
@@ -5002,7 +5006,7 @@ const OBJ={poubelle:{l:'Poubelle',h:.62},benne:{l:'Benne',h:.78},conteneur:{l:'C
 const obAt=(i,j)=>S.dg&&S.dg.ob?S.dg.ob[i+','+j]:null;
 const OBIM={};
 function obImg(k){ let o=OBIM[k]; if(!o){ o=OBIM[k]={im:new Image(),cv:null}; o.im.onload=()=>{ const c=document.createElement('canvas'); c.width=o.im.naturalWidth; c.height=o.im.naturalHeight; c.getContext('2d').drawImage(o.im,0,0); c._k='ob_'+k; c._hf=(OBJ[k]||{h:.6}).h; o.cv=c; drawDgLater(); fpsLater(); }; o.im.src='res/sprites/'+k+'.png'; } return o; }
-function obClick(wx,wy){ const [i,j]=dgCell(wx,wy); if(!dgOpen(i,j)){ toast('Un objet se pose sur une case de sol',true); return; } const D=dgEnsure(); D.ob=D.ob||{}; const k=dgK(i,j);
+function obClick(wx,wy){ const [i,j]=dgCell(wx,wy); if(!dgOpen(i,j)&&!dgSup(i,j)){ toast('Un objet se pose sur une case de sol',true); return; } const D=dgEnsure(); D.ob=D.ob||{}; const k=dgK(i,j);
   if(D.ob[k]===DG.ok) delete D.ob[k]; else D.ob[k]=DG.ok; drawDgLater(); fpsLater(); markDirty(); sync(); }
 /* luminaire posé : type seul (texte) ou réglé {k, c (couleur #rrggbb), p (puissance), st : on / off / broken} */
 const lumK=v=>typeof v==='string'?v:v&&v.k;
@@ -5028,14 +5032,14 @@ function lumEdit(k){ const D=S.dg; if(!D||!D.lum||!D.lum[k]) return; let v=D.lum
   $('lum-c').oninput=e=>{ v.c=e.target.value; document.querySelectorAll('[data-lc]').forEach(x=>x.classList.remove('on')); done(); };
   $('lum-p').oninput=e=>{ v.p=+e.target.value; $('lum-pv').textContent=Math.round(v.p*100)+' %'; done(); };
   $('lum-del').onclick=()=>{ delete D.lum[k]; dlg.close(); done(); }; }
-function lumClick(wx,wy){ const [i,j]=dgCell(wx,wy); if(!dgOpen(i,j)){ toast('Une lumière se pose sur une case creusée',true); return; } const D=dgEnsure(); D.lum=D.lum||{}; const k=dgK(i,j);
+function lumClick(wx,wy){ const [i,j]=dgCell(wx,wy); if(!dgOpen(i,j)&&!dgSup(i,j)){ toast('Une lumière se pose sur une case creusée',true); return; } const D=dgEnsure(); D.lum=D.lum||{}; const k=dgK(i,j);
   if(lumK(D.lum[k])===DG.lk) delete D.lum[k]; else D.lum[k]=DG.lk; drawDgLater(); fpsLater(); markDirty(); sync(); }
 const dgPass=(i,j,ni,nj)=>dgOpen(ni,nj)&&!(dgEW(i,j,ni,nj)&&!dgDoor(i,j,ni,nj))&&!dgShut(dgDoor(i,j,ni,nj))&&!vegBlocks(ni,nj)&&!obAt(ni,nj)&&!(dgAt(ni,nj)||{}).wat;
 function dgEdgeAt(wx,wy){ const fx=wx/CELL, fy=wy/CELL, dh=Math.abs(fy-Math.round(fy)), dv=Math.abs(fx-Math.round(fx));
   if(dh<dv){ const i=Math.floor(fx), j=Math.round(fy); return {k:`${i},${j},h`,a:[i,j-1],b:[i,j]}; }
   const i=Math.round(fx), j=Math.floor(fy); return {k:`${i},${j},v`,a:[i-1,j],b:[i,j]}; }
 const dgEdgeSeg=k=>{ const [i,j,o]=k.split(','), X=+i*CELL, Y=+j*CELL; return o==='h'?[X,Y,X+CELL,Y]:[X,Y,X,Y+CELL]; };
-function dgPub(){ if(!S.dg) return null; const d={}; for(const k in (S.dg.d||{})){ const o=S.dg.d[k]; dgNormDoor(o); d[k]=dgHid(o)?{w:1}:{open:!!o.open,lk:o.lk?1:0,gr:o.gr?1:0,tpTo:o.tpTo||''}; } return {on:!!S.dg.on,hub:!!S.dg.hub,th:S.dg.th,c:S.dg.c,m:S.dg.m||null,veg:S.dg.veg||null,lum:S.dg.lum||null,ob:S.dg.ob||null,w:S.dg.w||null,ew:S.dg.ew||null,v2:!!S.dg.v2,cl:S.dg.cl||null,d}; }
+function dgPub(){ if(!S.dg) return null; const d={}; for(const k in (S.dg.d||{})){ const o=S.dg.d[k]; dgNormDoor(o); d[k]=dgHid(o)?{w:1}:{open:!!o.open,lk:o.lk?1:0,gr:o.gr?1:0,tpTo:o.tpTo||''}; } return {on:!!S.dg.on,hub:!!S.dg.hub,th:S.dg.th,c:S.dg.c,m:S.dg.m||null,veg:S.dg.veg||null,lum:S.dg.lum||null,ob:S.dg.ob||null,w:S.dg.w||null,sup:S.dg.sup||null,ew:S.dg.ew||null,v2:!!S.dg.v2,cl:S.dg.cl||null,d}; }
 function dgDoorClick(wx,wy){ const e=dgEdgeAt(wx,wy); if(!dgOpen(...e.a)&&!dgOpen(...e.b)){ toast('Une porte se place au bord d\'une case de sol',true); return; }   /* contre un mur, même sans rien derrière : elle ne s'ouvrira pas */
   const D=dgEnsure(); D.d=D.d||{}; const o=D.d[e.k];
   if(DG.tool==='door'){ if(!o){ D.d[e.k]={open:false}; dgDoorSet(D.d[e.k],DG.ds||dgDefDoor()); } else { dgDoorEdit(e.k); return; } }
@@ -5197,6 +5201,11 @@ function drawDg(){ const cv=$('dgn'); if(!cv) return; const r=board.getBoundingC
     for(const k in WW){ const o=WW[k]; if(o.no) continue; const p=k.indexOf(','), i=+k.slice(0,p), j=+k.slice(p+1); if(i<i0||i>i1||j<j0||j>j1) continue; const th=DG_TH[o.t]||DG_TH.pierre;
       x.fillStyle=th.sw; x.fillRect(i*CELL-.5,j*CELL-.5,CELL+1,CELL+1); x.fillStyle='rgba(0,0,0,.28)'; x.fillRect(i*CELL+4,j*CELL+4,CELL-8,CELL-8);
       if(DGED()&&V.z*CELL>=30){ x.fillStyle='rgba(255,255,255,.85)'; x.fillText(String(o.h).replace('.',','),(i+.5)*CELL,(j+.5)*CELL); } } }
+  /* supports : le dessus du bar ou de la table */
+  { const SP=S.dg.sup||{}; for(const k in SP){ const p=k.indexOf(','), i=+k.slice(0,p), j=+k.slice(p+1); if(i<i0||i>i1||j<j0||j>j1) continue; const o=SP[k], I=supImg(o.s+'-top'), sm=(a,b)=>{ const q=dgSup(a,b); return q&&q.k===o.k&&q.s===o.s; };
+    const m=o.k==='table'?6:2, X=i*CELL+(sm(i-1,j)?0:m), Y=j*CELL+(sm(i,j-1)?0:m), X2=(i+1)*CELL-(sm(i+1,j)?0:m), Y2=(j+1)*CELL-(sm(i,j+1)?0:m);
+    x.fillStyle='rgba(0,0,0,.35)'; x.fillRect(X+3,Y+4,X2-X,Y2-Y); if(I&&I.im){ x.imageSmoothingEnabled=false; x.drawImage(I.im,X,Y,X2-X,Y2-Y); } else { x.fillStyle='#6b4a2c'; x.fillRect(X,Y,X2-X,Y2-Y); }
+    x.strokeStyle='rgba(20,12,6,.8)'; x.lineWidth=1.5; x.beginPath(); if(!sm(i-1,j)){ x.moveTo(X,Y); x.lineTo(X,Y2); } if(!sm(i+1,j)){ x.moveTo(X2,Y); x.lineTo(X2,Y2); } if(!sm(i,j-1)){ x.moveTo(X,Y); x.lineTo(X2,Y); } if(!sm(i,j+1)){ x.moveTo(X,Y2); x.lineTo(X2,Y2); } x.stroke(); } }
   /* végétation */
   const VV=S.dg.veg||{}; for(const k in VV){ const p=k.indexOf(','), i=+k.slice(0,p), j=+k.slice(p+1); if(i<i0||i>i1||j<j0||j>j1) continue; const o=vegImg(VV[k]); if(!o.px) continue;
     const big=VV[k].endsWith('-arbre'), sz=CELL*(big?1.25:.85), r=o.w/o.h, w=r>1?sz:sz*r, h=r>1?sz/r:sz; x.save(); x.imageSmoothingEnabled=false; x.globalAlpha=.95; x.drawImage(o.im,(i+.5)*CELL-w/2,(j+.5)*CELL+CELL*.42-h,w,h); x.restore(); }
@@ -5285,7 +5294,7 @@ function dgPaintCell(i,j,P){ const D=dgEnsure(), k=dgK(i,j); let n=0;
 /* =========================================================
    Construction v2 : formes qui fusionnent, creuser en refermant, zones (déplacer, copier, tourner, supprimer)
    ========================================================= */
-const DGZ_MAPS=['c','cl','w','veg','ob','lum','m','h'];
+const DGZ_MAPS=['c','cl','w','veg','ob','lum','m','h','sup'];
 const dgNb=(i,j)=>[[dgEK(i,j,i,j-1),i,j-1],[dgEK(i,j,i,j+1),i,j+1],[dgEK(i,j,i-1,j),i-1,j],[dgEK(i,j,i+1,j),i+1,j]];
 const dgHasC=k=>!!(S.dg&&S.dg.c&&S.dg.c[k]);
 /* textures des pièces : le thème de la scène s'il a ses images, sinon la crypte (sol, murs et plafond texturés) */
@@ -5377,7 +5386,7 @@ const dgSubMode=()=>(DG.pmode==='sub')!==!!DG.shiftDown;
 const dgPP=()=>({sol:dgPS(),mur:dgPM(),cl:dgPC(),ch:DG.pch||DG.wh||2,h:DG.wh||2});
 function dgShapeApply(Q,sub){ if(!Q.size) return; if(sub) dgRoomSub(Q); else dgRoomAdd(Q,dgPP()); dgChanged(); }
 function dgPolyEnd(){ const P=DG.poly; DG.poly=null; if(P&&P.length>=3) dgShapeApply(dgShapeCells('poly',0,0,P),dgSubMode()); else drawDgLater(); }
-function dgPaintEnd(g){ if(g&&g.path){ if(g.path.p.length<2){ const D=dgEnsure(); D.paths=D.paths.filter(x=>x!==g.path); } FPS.pm=null; drawDgLater(); fpsLater(); markDirty(); sync(); } if(g&&DG.tool==='sel'&&!g.fs&&(g.zm||g.zs)){ const [a,b]=g.from, [c,d]=g.to||g.from;
+function dgPaintEnd(g){ if(g&&g.supd){ markDirty(); sync(); } if(g&&g.path){ if(g.path.p.length<2){ const D=dgEnsure(); D.paths=D.paths.filter(x=>x!==g.path); } FPS.pm=null; drawDgLater(); fpsLater(); markDirty(); sync(); } if(g&&DG.tool==='sel'&&!g.fs&&(g.zm||g.zs)){ const [a,b]=g.from, [c,d]=g.to||g.from;
     if(g.zm){ const off=DG.zoff; DG.zoff=null; if(off&&(off[0]||off[1])) dgZoneMove(off[0],off[1]); else drawDgLater(); return; }
     DG.zdrag=0; if(a===c&&b===d){ DG.zone=null; const e=dgEdgeAt(g.wx,g.wy), fx=g.wx/CELL, fy=g.wy/CELL, near=Math.min(Math.abs(fy-Math.round(fy)),Math.abs(fx-Math.round(fx)))<.2, D=S.dg||{};
       if(near&&D.d&&D.d[e.k]){ DG.edgeSel=null; dgDock(()=>dgDoorEdit(e.k)); drawDgLater(); return; }
@@ -5396,6 +5405,8 @@ function dgPaintEnd(g){ if(g&&g.path){ if(g.path.p.length<2){ const D=dgEnsure()
     if(rem){ delete E[k]; return; } if(one&&E[k]&&!E[k].inv&&!E[k].win){ delete E[k]; return; } const [ca,cb]=eCells(k); if(!dgHasC(ca)&&!dgHasC(cb)) return; E[k]={t:DG.wt||dgPM()||'blanc',h:DG.wh||2}; });
   FPS.sprites.clear(); drawDgLater(); fpsLater(); markDirty(); sync(); }
 function dgPaint(wx,wy,g){ DG._g=g; if(DG.tool==='deco'||DG.tool==='x') return;
+  if(DG.tool==='sup'){ const [i,j]=dgCell(wx,wy), k=dgK(i,j); if(!dgAt(i,j)||dgWB(i,j)&&!dgSup(i,j)) return; const [kd,st]=(DG.supk||'bar:bois').split(':'), D=dgEnsure(); D.sup=D.sup||{};   /* support : on le peint case par case ; les cases voisines du même style forment un seul comptoir */
+    const o=D.sup[k]; if(!o||o.k!==kd||o.s!==st){ D.sup[k]={k:kd,s:st}; g.supd=1; drawDgLater(); fpsLater(); } return; }
   if(DG.tool==='shopd'){ if(g.last) return; g.last=1; const [i,j]=dgCell(wx,wy); if(!dgAt(i,j)){ toast('Un commerce se pose sur du sol',true); return; }   /* déco interactive : commerce = un Commerçant posé au centre de la case */
     const cx=(i+.5)*CELL, cy=(j+.5)*CELL, ex=shopAt(cx,cy); if(ex){ if(typeof openCard==='function') openCard(ex.id); return; }
     const t=shopToken(); t.x=Math.round(cx); t.y=Math.round(cy); addToken(t); FPS.sprites.clear(); fpsLater(); return; }
@@ -5606,7 +5617,7 @@ function renderDgPanel(){ const box=$('dg-body'); if(!box) return;
   const SV=d=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
   const doorStyles=(cur,attr)=>dgDoorPick(cur,attr), doorStyles0=(cur,attr)=>`<div class="vegpick dg-styl">${dgDoorStyles().map(([k,l])=>`<button type="button" class="vegb${cur===k?' on':''}" data-${attr}="${k}" title="${esc(l)}"><img src="${dgThumb(k,'door')}" alt=""><small>${esc(l)}</small></button>`).join('')}</div>`;
   const winStyles=(cur,attr)=>`<div class="vegpick dg-styl">${dgWinStyles().map(([k,l])=>`<button type="button" class="vegb${cur===k?' on':''}" data-${attr}="${k}" title="${esc(l)}"><img src="${winThumb(k)}" alt=""><small>${esc(l)}</small></button>`).join('')}</div>`;
-  const bT=DG.bT||'sol', isB=T==='brush', murT=['wall','iwall','unwall'].includes(T)||(isB&&bT==='mur'), solT=isB&&bT==='sol', plaT=isB&&bT==='plafond', doorT=T==='door'||T==='secret', decoT=['veg','lum','ob','deco','shopd'].includes(T);
+  const bT=DG.bT||'sol', isB=T==='brush', murT=['wall','iwall','unwall'].includes(T)||(isB&&bT==='mur'), solT=isB&&bT==='sol', plaT=isB&&bT==='plafond', doorT=T==='door'||T==='secret', decoT=['veg','lum','ob','deco','shopd','sup'].includes(T);
   let sub='', ttl='';
   if(T==='sel'){ const E=(S.dg&&S.dg.ew)||{}, w=DG.edgeSel&&E[DG.edgeSel];
     if(DG.zone){ ttl='Zone'; const acts=[['dz-copy','Copier','<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>'],['dz-cut','Couper','<circle cx="6" cy="18" r="3"/><circle cx="18" cy="18" r="3"/><path d="M8 16L19 4M16 16L5 4"/>']].concat(DG.clip?[['dz-paste','Coller','<path d="M9 4h6v3H9z"/><path d="M9 5H6v15h12V5h-3"/>']]:[],[['dz-rot','Tourner','<path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/>'],['dz-del','Supprimer','<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>']]);
@@ -5630,10 +5641,10 @@ function renderDgPanel(){ const box=$('dg-body'); if(!box) return;
   else if(doorT) sub=doorStyles(DG.ds||dgDefDoor(),'dsv');
   else if(T==='win') sub=winStyles(DG.ws||'crypte','wsv');
   else if(decoT){ const cat=DG.dcat||'veg';
-    sub=seg('dcat',[['veg','Végétation'],['mob','Mobilier'],['int','Interactif']],cat)+(cat==='int'?`<div class="vegpick"><button type="button" class="vegb${T==='shopd'?' on':''}" data-int="shop" title="Commerce : un commerçant, son stock se règle sur sa fiche"><img src="res/sprites/commerce.png" alt=""><small>Commerce</small></button></div>`:cat==='veg'?`<div class="vegpick">${Object.keys(VEG_BIO).map(b=>Object.keys(VEG_K).map(k=>{ const key=b+'-'+k; return `<button type="button" class="vegb${T==='veg'&&DG.vk===key?' on':''}" data-veg="${key}" title="${VEG_K[k]} · ${VEG_BIO[b]}"><img src="res/vege/${key}.png" alt=""></button>`; }).join('')).join('')}</div>`
+    sub=seg('dcat',[['veg','Végétation'],['mob','Mobilier'],['sup','Supports'],['int','Interactif']],cat)+(cat==='sup'?`<span class="cap">Bars</span><div class="vegpick">${Object.entries(SUP).map(([k,l])=>`<button type="button" class="vegb${T==='sup'&&DG.supk==='bar:'+k?' on':''}" data-supk="bar:${k}" title="Bar ${l}"><img src="res/sup/${k}.png" alt=""><small>${l}</small></button>`).join('')}</div><span class="cap">Tables</span><div class="vegpick">${Object.entries(SUP).map(([k,l])=>`<button type="button" class="vegb${T==='sup'&&DG.supk==='table:'+k?' on':''}" data-supk="table:${k}" title="Table ${l}"><img src="res/sup/${k}-table.png" alt=""><small>${l}</small></button>`).join('')}</div>`:cat==='int'?`<div class="vegpick"><button type="button" class="vegb${T==='shopd'?' on':''}" data-int="shop" title="Commerce : un commerçant, son stock se règle sur sa fiche"><img src="res/sprites/commerce.png" alt=""><small>Commerce</small></button></div>`:cat==='veg'?`<div class="vegpick">${Object.keys(VEG_BIO).map(b=>Object.keys(VEG_K).map(k=>{ const key=b+'-'+k; return `<button type="button" class="vegb${T==='veg'&&DG.vk===key?' on':''}" data-veg="${key}" title="${VEG_K[k]} · ${VEG_BIO[b]}"><img src="res/vege/${key}.png" alt=""></button>`; }).join('')).join('')}</div>`
       :`<div class="vegpick">${Object.entries(LUM).map(([k,d])=>`<button type="button" class="vegb${T==='lum'&&DG.lk===k?' on':''}" data-lum="${k}" title="${d.l}"><img src="res/lum/${k}.png" alt=""></button>`).join('')}${Object.entries(OBJ).map(([k,d])=>`<button type="button" class="vegb${T==='ob'&&DG.ok===k?' on':''}" data-ob="${k}" title="${d.l}"><img src="res/sprites/${k}.png" alt=""></button>`).join('')}</div>`); }
   else if(T==='path') sub=hr('dg-pw',DG.pw||1.4,'Largeur du sentier');
-  const TN={sel:'Sélection',rect:'Pièce',tpl:'Modèles',wall:'Murs',iwall:'Murs',unwall:'Murs',door:'Porte',secret:'Porte',win:'Fenêtre',path:'Sentier',erase:'Effacer',veg:'Déco',lum:'Déco',ob:'Déco',deco:'Déco',shopd:'Déco',sup:'Passages',sdown:'Passages',sign:'Passages',tp:'Passages'};
+  const TN={sel:'Sélection',rect:'Pièce',tpl:'Modèles',wall:'Murs',iwall:'Murs',unwall:'Murs',door:'Porte',secret:'Porte',win:'Fenêtre',path:'Sentier',erase:'Effacer',veg:'Déco',lum:'Déco',ob:'Déco',deco:'Déco',shopd:'Déco',sup:'Déco',sup:'Passages',sdown:'Passages',sign:'Passages',tp:'Passages'};
   const tname=ttl?`Sélection · ${ttl}`:solT?'Sol':plaT?'Plafond':murT?'Murs':TN[T]||'Sélection';
   const CFG=T==='sel'&&!!(DG.cfgFn||DG.edgeSel||(typeof cardId!=='undefined'&&cardId&&dgDocked()));   /* objet sélectionné : le volet devient celui de ses réglages */
   if(CFG) box.innerHTML=`<div class="dg-cfghd"><button class="btn ghost" type="button" id="dg-back">${IB('left',2)}Construire</button></div>
@@ -5656,6 +5667,7 @@ function renderDgPanel(){ const box=$('dg-body'); if(!box) return;
   box.querySelectorAll('[data-ob]').forEach(b=>b.onclick=()=>{ DG.ok=b.dataset.ob; DG.tool='ob'; renderDgPanel(); });
   box.querySelectorAll('[data-lum]').forEach(b=>b.onclick=()=>{ DG.lk=b.dataset.lum; DG.tool='lum'; renderDgPanel(); });
   box.querySelectorAll('[data-veg]').forEach(b=>b.onclick=()=>{ DG.vk=b.dataset.veg; DG.tool='veg'; renderDgPanel(); });
+  box.querySelectorAll('[data-supk]').forEach(b=>b.onclick=()=>{ DG.supk=b.dataset.supk; DG.tool='sup'; renderDgPanel(); });
   box.querySelectorAll('[data-int]').forEach(b=>b.onclick=()=>{ DG.tool='shopd'; renderDgPanel(); });
   box.querySelectorAll('[data-dcat]').forEach(b=>b.onclick=()=>{ DG.dcat=b.dataset.dcat; renderDgPanel(); });
   box.querySelectorAll('[data-tpl]').forEach(b=>b.onclick=()=>{ if(T==='tpl'&&DG.tk===b.dataset.tpl){ pick('rect'); return; } DG.tk=b.dataset.tpl; DG.tool='tpl'; renderDgPanel(); });
@@ -5800,6 +5812,11 @@ function flLoad(k,T){ const o=(T||FLIMG)[k]; if(o.im) return; o.im=new Image(); 
   o.px=new Uint32Array(c.getContext('2d').getImageData(0,0,c.width,c.height).data.buffer.slice(0)); o.w=c.width; o.h=c.height; fpsLater(); drawDgLater(); }; o.im.src=o.src;
   if(o.mask){ const r=new Image(); r.onload=()=>{ const c=document.createElement('canvas'); c.width=r.naturalWidth; c.height=r.naturalHeight; const x=c.getContext('2d'); x.drawImage(r,0,0); const d=x.getImageData(0,0,c.width,c.height).data, M=new Uint8Array(c.width*c.height); for(let i=0;i<M.length;i++){ const v=d[i*4]; M[i]=v>190?2:v>60?1:0; } o.mk=M; fpsLater(); }; r.src=o.mask; }
   if(o.rel){ const r=new Image(); r.onload=()=>{ const c=document.createElement('canvas'); c.width=r.naturalWidth; c.height=r.naturalHeight; const x=c.getContext('2d'); x.drawImage(r,0,0); const d=x.getImageData(0,0,c.width,c.height).data, R=new Float32Array(c.width*c.height); for(let i=0;i<R.length;i++) R[i]=d[i*4]/255; o.rl=R; o.rw=c.width; o.rh=c.height; if(o.layers){ o.lm=o.layers; const st=new Set(); for(let i=0;i<R.length;i++) if(R[i]>0) st.add(Math.round(R[i]*o.layers*1000)/1000); o.lay=[...st].sort((a,b)=>b-a); } fpsLater(); }; r.src=o.rel; } }
+const SUPI={};
+function supImg(name){ let o=SUPI[name]; if(!o){ o=SUPI[name]={}; const im=new Image(); im.onload=()=>{ const c=document.createElement('canvas'); c.width=im.naturalWidth; c.height=im.naturalHeight; const x=c.getContext('2d'); x.drawImage(im,0,0); o.px=new Uint32Array(x.getImageData(0,0,c.width,c.height).data.buffer); o.w=c.width; o.h=c.height; o.im=im; FPS.texs&&Object.keys(FPS.texs).forEach(k=>{ if(k.startsWith('sup:')) delete FPS.texs[k]; }); drawDgLater(); fpsLater(); }; im.src='res/sup/'+name+'.png'; } return o.px?o:null; }
+function supTex(sp,th){ const key='sup:'+sp.s+':'+th; FPS.texs=FPS.texs||{}; if(FPS.texs[key]) return FPS.texs[key]; const B=fpsTextures(th), I=supImg(sp.s+'-top'); if(!I) return B;
+  const N=B.N, fl=new Uint32Array(N*N); for(let y=0;y<N;y++) for(let x=0;x<N;x++) fl[y*N+x]=I.px[((y*I.h/N)|0)*I.w+((x*I.w/N)|0)]|0xff000000;
+  return FPS.texs[key]=Object.assign({},B,{floor:fl,img:null}); }
 function fpsTextures(k){ k=k||(S.dg&&S.dg.th)||'pierre'; FPS.texs=FPS.texs||{}; if(FPS.tex===null) FPS.texs={}; FPS.tex=1; if(FPS.texs[k]) return FPS.texs[k]; if(CLIMG[k]) flLoad(k,CLIMG); if(FLIMG[k]&&!FPS.inTx){ FPS.inTx=1; const b=fpsTextures(k==='crypte'?'crypte~':k==='interieur'?'station':DG_TH[k]&&DG_TH[k].water?'mer~':'ruelle'); FPS.inTx=0; flLoad(k); if(WLIMG[k]) flLoad(k,WLIMG); const T2=FPS.texs[k]=Object.assign({},b,{img:k}); if(DOORIMG[k]) doorImg(k,T2); return T2; } if(k==='crypte~') k='crypte'; if(k==='mer~') k='mer';
   const N=64, NT=128, buf=c=>{ const o=document.createElement('canvas'); o.width=o.height=NT; const x=o.getContext('2d'); x.imageSmoothingEnabled=false; x.drawImage(c,0,0,NT,NT); return new Uint32Array(x.getImageData(0,0,NT,NT).data.buffer.slice(0)); };
   const mk=draw=>{ const c=document.createElement('canvas'); c.width=c.height=N; const x=c.getContext('2d'); draw(x); return c; };
@@ -6177,6 +6194,16 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
     if(rdy<0){ sty=-1; sdy=(cam.y-my)*ddy; } else { sty=1; sdy=(my+1-cam.y)*ddy; }
     const put=RM?(y,c,d)=>{ const i=y*W+xx; if(DZ[i]!==Infinity) return; B[i]=c; DZ[i]=d; if(d!==lD){ lD=d; lO=dgOpenSky(Math.floor(cam.x+(d-.06)*rdx),Math.floor(cam.y+(d-.06)*rdy))?1:0; } if(lO) M[i]=1; }:(y,c,d)=>{ const i=y*W+xx; if(DZ[i]!==Infinity) return; B[i]=c; DZ[i]=d; };
     /* face verticale (mur, marche, plafond qui descend, façade) entre les hauteurs z0 et z1 à la distance d */
+    const faceSup=(z0,z1,d,sp,mx,my)=>{ const I=supImg(sp.k==='table'?sp.s+'-table':sp.s); if(!I){ const T=fpsTextures(); face(z0,z1,d,T.wall,T.N); return; }
+      const yT=Math.max(0,Math.ceil(h2+(eye-z1)*PS/d)), yB=Math.min(H-1,Math.floor(h2+(eye-z0)*PS/d)); if(yB<yT) return;
+      const hx=cam.x+d*rdx, hy=cam.y+d*rdy, f=lit(d)*(side?.82:1)*vis(hx,hy), wa=LON?la(hx,hy):null, ax=side===1?0:1, al=ax?hy:hx, uc=al-Math.floor(al);
+      const same=(i,j)=>{ const o=dgSup(i,j); return o&&o.k===sp.k&&o.s===sp.s; }, hor=same(mx-1,my)||same(mx+1,my), ver=same(mx,my-1)||same(mx,my+1);
+      let X; if(sp.k==='table') X=uc*I.w;
+      else if((ax===0&&(hor||!ver))||(ax===1&&ver)){ let a=0, b=0; while(a<40&&same(ax?mx:mx-a-1,ax?my-a-1:my)) a++; while(b<40&&same(ax?mx:mx+b+1,ax?my+b+1:my)) b++;   /* façade : panneau gauche, panneaux du milieu, panneau droit, un demi-case chacun */
+        const sv=a+uc, ns=2*(a+b+1), sg=Math.min(ns-1,Math.floor(sv*2)), pn=sg===0?0:sg===ns-1?2:1; X=(pn+(sv*2-sg))/3*I.w; }
+      else X=(1+((uc*2)%1))/3*I.w;   /* bout du comptoir */
+      const xi=Math.min(I.w-1,X|0);
+      for(let y=yT;y<=yB;y++){ const z=eye-(y+.5-h2)*d/PS; if(z<z0||z>z1) continue; const yi=Math.min(I.h-1,((1-(z-z0)/(z1-z0))*I.h)|0); put(y,shL(I.px[yi*I.w+xi]|0xff000000,f,wa),d); } };
     const face=(z0,z1,d,tex,N,off)=>{ const yT=Math.max(0,Math.ceil(h2+(eye-z1)*PS/d)), yB=Math.min(H-1,Math.floor(h2+(eye-z0)*PS/d)); if(yB<yT) return;
       let wx=side===0?cam.y+d*rdy:cam.x+d*rdx; wx-=Math.floor(wx); if(off) wx=Math.max(0,wx-off); let tx=(wx*N)|0; if(side===0&&rdx>0||side===1&&rdy<0) tx=N-tx-1;
       const f=lit(d)*(side?.78:1)*vis(cam.x+d*rdx,cam.y+d*rdy), wa=LON?la(cam.x+d*rdx-(side===0?Math.sign(rdx)*.02:0),cam.y+d*rdy-(side===1?Math.sign(rdy)*.02:0)):null, wa2=wa&&wa.map(v=>v*(side?.78:1));
@@ -6282,7 +6309,7 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
           const pc=PMK&&(()=>{ const gx=((wx-PMK.x0)*PATH_R)|0, gy=((wy-PMK.y0)*PATH_R)|0; return gx>=0&&gy>=0&&gx<PMK.W&&gy<PMK.H?PMK.C[gy*PMK.W+gx]:0; })(); let fc=(FI&&FI.px?(FI.anim?FI.px[(((((wy+now*.13)/FI.ch)%1+1)%1*FI.h)|0)*FI.w+(((((wx+Math.sin(wy*2+now)*.06)/FI.cw)%1+1)%1*FI.w)|0)]:FI.px[((((wy/FI.ch)%1+1)%1*FI.h)|0)*FI.w+((((wx/FI.cw)%1+1)%1*FI.w)|0)]):WAT&&cur.th==='mer'&&!mm?FT[(((((wy+now*.13)*N)|0)&(N-1))*N)+((((wx+Math.sin(wy*2+now)*.06)*N)|0)&(N-1))]:FT[ty*N+tx]); if(pc) fc=(pc>>>24)===255?pc:pmix(fc,pc); if(SNW){ const sn=snowAt(wx,wy); if(sn>0){ const ia=1-sn; fc=0xff000000|((((fc>>16)&255)*ia+250*sn)<<16)|((((fc>>8)&255)*ia+246*sn)<<8)|(((fc&255)*ia+242*sn)|0); } } if(bs){ const b=bs(wx,wy); if(b) fc=bmix(fc,b); }
           put(y,shL(fc,(HUB?hubLit(wx,wy):mm&&mm.k==='tp'?1:lit(rd))*vis(wx,wy),LON?la(wx,wy):null),rd); } }
       /* plafond de la case (ou ciel) */
-      const CC=cur.blk?null:virt?VC:dgCeil(mx,my,cur);
+      const CC=cur.blk&&!cur.sup?null:virt?VC:dgCeil(mx,my,cur);
       if(CC){ const ch=+CC.h||1, CT=CC.t&&CC.t!==cur.th?fpsTextures(CC.t):TT, CN=CT.N; if(ch>eye){ const yA=Math.max(0,Math.ceil(h2+(eye-ch)*PS/d0)), yB=Math.min(H-1,Math.floor(h2+(eye-ch)*PS/d1));
         for(let y=yA;y<=yB;y++){ const rd=(eye-ch)*PS/(y+.5-h2); let wx=cam.x+rd*rdx, wy=cam.y+rd*rdy; const tx=((wx-Math.floor(wx))*CN)&(CN-1), ty=((wy-Math.floor(wy))*CN)&(CN-1); const CI=CLIMG[CC.t||cur.th], cc=CI&&CI.px?CI.px[((((wy/CI.ch)%1+1)%1*CI.h)|0)*CI.w+((((wx/CI.cw)%1+1)%1*CI.w)|0)]:CT.ceil[ty*CN+tx]; if((cc>>>24)<128){ anySky=true; continue; } put(y,shL(cc,lit(rd)*.85*vis(wx,wy),LON?la(wx,wy):null),rd); } } }
       else anySky=true;
@@ -6298,8 +6325,8 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
         else if(EW.win){ const WK=WINIMG[WS]?WS:WIN_OF[WS], WO=WK&&winImgLoad(WK); if(WO&&top>fh){ const WI=WLIMG[EWT]; if(WI&&WI.px) faceImg(fh,top,dd,WI); else if(EWT==='ruelle'||EWT==='trottoir'||EWT==='bitume'){ facLoad(); if(FAC.ready) faceFac(fh,top,dd); else face(fh,top,dd,ET.wall,ET.N); } else face(fh,top,dd,ET.wall,ET.N); winOver(fh,dd,WO); } else if(top>fh) faceWin(fh,top,dd,ET.wall,ET.N,winStyle(WS),WLIMG[EWT]); }   /* fenêtre : cadre au style du mur, on voit à travers */
         else { if(top>fh){ const WI=WLIMG[EWT]; if(WI&&WI.px) faceImg(fh,top,dd,WI); else if(EWT==='ruelle'||EWT==='trottoir'||EWT==='bitume'){ facLoad(); if(FAC.ready) faceFac(fh,top,dd); else face(fh,top,dd,ET.wall,ET.N); } else face(fh,top,dd,ET.wall,ET.N); } if(top>=cap) break; } }   /* MUR tracé sur l'arête */
       const WB=dgWB(mx,my);
-      if(WB){ const WT=fpsTextures(WB.t), cap=CC?+CC.h||1:MAXW, top=Math.min(+WB.h||1,cap); if(top>fh) face(fh,top,d0,WT.wall,WT.N); if(top>=cap) break;   /* bloc de MUR */
-        cur={th:WB.t,sky:true,blk:1,pb:cur.blk?cur.pb:{c:cur,T:TT,h:fh,v:virt}}; fh=+WB.h||1; TT=WT; virt=false; if(d0>60) break; continue; }
+      if(WB){ const WT=WB.sup?supTex(WB.sup,WB.t):fpsTextures(WB.t), cap=CC?+CC.h||1:MAXW, top=Math.min(+WB.h||1,cap); if(top>fh){ if(WB.sup) faceSup(fh,top,d0,WB.sup,mx,my); else face(fh,top,d0,WT.wall,WT.N); } if(top>=cap) break;   /* bloc de MUR (ou support : bar, table) */
+        cur={th:WB.t,sky:true,blk:1,sup:WB.sup?1:0,pb:cur.blk?cur.pb:{c:cur,T:TT,h:fh,v:virt}}; fh=+WB.h||1; TT=WT; virt=false; if(d0>60) break; continue; }
       let nf=dgAt(mx,my), wt=null; const door=!virt?dgDoor(pmx,pmy,mx,my):null;   /* aussi une porte plaquée contre un mur (rien derrière) */
       if(!nf&&cur.blk){ if(V2&&cur.pb){ nf=cur.pb.c; TT=cur.pb.T; fh=cur.pb.h; cur=nf; }   /* derrière un bâtiment (blocs de mur) : le décor continue, comme avant le bâtiment */ else break; }
       if(!nf){ if(V2||cur.iw||virt||dgWNo(mx,my)){ nf=cur; virt=true; } else wt=TT.wall; } else virt=false;
@@ -6358,7 +6385,7 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
   const inv=1/(px*dy-dx*py);
   L.forEach(o=>{ const tX=inv*(dy*o.sx-dx*o.sy), tY=inv*(-py*o.sx+px*o.sy); if(tY<=.15) return; const img=fpsSprite(o.t); if(!img) return;
     if(!img._px) img._px=new Uint32Array(img.getContext('2d').getImageData(0,0,img.width,img.height).data.buffer.slice(0));
-    let it=dgItem(o.t), sk=img._k, zb=(o.t.mk==='hang'?o.t.ch-.62:dgH(Math.floor(o.t.x/CELL),Math.floor(o.t.y/CELL)))+(img._lift||0), scrX=(W/2)*(1+tX/tY), hh0=0, hh=Math.abs(PS/tY)*(sk?(o.t.mk==='lum'&&dgCeil(Math.floor(o.t.x/CELL),Math.floor(o.t.y/CELL))?.95:(img._hf||SPR_H[sk])):it?.34:.62)*(!it&&o.t.s&&o.t.type!=='mk'&&o.t.type!=='prop'?Math.min(5,Math.max(.4,+o.t.s)):1), ww=hh*img.width/img.height;
+    let it=dgItem(o.t), sk=img._k, zb=(o.t.mk==='hang'?o.t.ch-.62:dgH(Math.floor(o.t.x/CELL),Math.floor(o.t.y/CELL))+dgSupH(Math.floor(o.t.x/CELL),Math.floor(o.t.y/CELL)))+(img._lift||0), scrX=(W/2)*(1+tX/tY), hh0=0, hh=Math.abs(PS/tY)*(sk?(o.t.mk==='lum'&&dgCeil(Math.floor(o.t.x/CELL),Math.floor(o.t.y/CELL))?.95:(img._hf||SPR_H[sk])):it?.34:.62)*(!it&&o.t.s&&o.t.type!=='mk'&&o.t.type!=='prop'?Math.min(5,Math.max(.4,+o.t.s)):1), ww=hh*img.width/img.height;
     if(it&&!sk){ const r0=FPS.rise&&FPS.rise[o.t.id], e=r0?Math.min(1,(performance.now()-r0)/1800):1, ee=1-Math.pow(1-e,3); zb+=(.3+Math.sin(performance.now()/480+(o.t.x+o.t.y)*.01)*.045)*ee; FPS.fkRun=1; }   /* butin découvert : il flotte dans les airs */
     const shk=FPS.shk&&FPS.shk.get(o.t.id), sa=shk?Math.max(0,1-(performance.now()-shk)/450):0; if(sa>0){ FPS.fkRun=1; scrX+=sa*Math.sin(performance.now()/22)*ww*.1; }   /* touché : le sprite tremble */
     const bot=h2+(eye-zb)*PS/tY, top=bot-hh, x0=Math.round(scrX-ww/2), x1=Math.round(scrX+ww/2);
