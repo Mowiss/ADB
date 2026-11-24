@@ -4767,6 +4767,7 @@ function faceHTML(t,cls){
   if(t.stamp&&typeof MAP!=='undefined'){ const s=t.s||1, f=cls==='sm'?1:Math.min(3,72*s*.06)*.6/(3*s)/1.1; return MAP.stampMarkup(t.stamp,f); }
   const ico=()=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${cls==='sm'?1.8:1.6}" stroke-linecap="round" stroke-linejoin="round">${IC[t.ico]||IC[TYPES[t.type]?.def||'skull']}</svg>`;
   /* image en ligne (bestiaire du livre) : si elle ne charge pas, l'icône reprend sa place */
+  if(t.kind==='shop'&&!t.img) return `<img src="res/sprites/commerce.png" alt="" style="object-fit:contain">`;   /* commerce : la caisse */
   if(t.img) return /^https?:/.test(t.img)?`<img src="${esc(t.img)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()" hidden onload="this.hidden=false;this.nextElementSibling&&this.nextElementSibling.remove()">${ico()}`:`<img src="${t.img}" alt="">`;
   if(t.ico==='emoji'&&t.emo) return `<svg viewBox="0 0 24 24" class="emo"><text x="12" y="13" text-anchor="middle" dominant-baseline="central" font-size="17">${esc(t.emo)}</text></svg>`;
   if(t.ico==='initials'&&t.name){ const s=t.name.trim().split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase(); return `<span class="ini">${esc(s)}</span>`; }
@@ -5393,6 +5394,9 @@ function dgPaintEnd(g){ if(g&&g.path){ if(g.path.p.length<2){ const D=dgEnsure()
     if(rem){ delete E[k]; return; } if(one&&E[k]&&!E[k].inv&&!E[k].win){ delete E[k]; return; } const [ca,cb]=eCells(k); if(!dgHasC(ca)&&!dgHasC(cb)) return; E[k]={t:DG.wt||dgPM()||'blanc',h:DG.wh||2}; });
   FPS.sprites.clear(); drawDgLater(); fpsLater(); markDirty(); sync(); }
 function dgPaint(wx,wy,g){ DG._g=g; if(DG.tool==='deco'||DG.tool==='x') return;
+  if(DG.tool==='shopd'){ if(g.last) return; g.last=1; const [i,j]=dgCell(wx,wy); if(!dgAt(i,j)){ toast('Un commerce se pose sur du sol',true); return; }   /* déco interactive : commerce = un Commerçant posé au centre de la case */
+    const cx=(i+.5)*CELL, cy=(j+.5)*CELL, ex=shopAt(cx,cy); if(ex){ if(typeof openCard==='function') openCard(ex.id); return; }
+    const t=shopToken(); t.x=Math.round(cx); t.y=Math.round(cy); addToken(t); FPS.sprites.clear(); fpsLater(); return; }
   if(g.fs){ const c=dgCell(wx,wy); if(!g.last){ g.last=1; g.from=c; g.to=c; DG.sel=c; drawDgLater(); return; } g.to=c; DG.hover=c; drawDgLater(); return; }
   if(DG.tool==='erase'){ const c=dgCell(wx,wy);
     if(!g.rc) g.rc={a:c,b:c,all:1}; else g.rc.b=c; DG.rect=g.rc; DG.hover=null; drawDgLater(); return; }   /* Effacer : clic, étirer, lâcher → tout ce qui est dans le rectangle disparaît */
@@ -5600,7 +5604,7 @@ function renderDgPanel(){ const box=$('dg-body'); if(!box) return;
   const SV=d=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
   const doorStyles=(cur,attr)=>dgDoorPick(cur,attr), doorStyles0=(cur,attr)=>`<div class="vegpick dg-styl">${dgDoorStyles().map(([k,l])=>`<button type="button" class="vegb${cur===k?' on':''}" data-${attr}="${k}" title="${esc(l)}"><img src="${dgThumb(k,'door')}" alt=""><small>${esc(l)}</small></button>`).join('')}</div>`;
   const winStyles=(cur,attr)=>`<div class="vegpick dg-styl">${dgWinStyles().map(([k,l])=>`<button type="button" class="vegb${cur===k?' on':''}" data-${attr}="${k}" title="${esc(l)}"><img src="${winThumb(k)}" alt=""><small>${esc(l)}</small></button>`).join('')}</div>`;
-  const bT=DG.bT||'sol', isB=T==='brush', murT=['wall','iwall','unwall'].includes(T)||(isB&&bT==='mur'), solT=isB&&bT==='sol', plaT=isB&&bT==='plafond', doorT=T==='door'||T==='secret', decoT=['veg','lum','ob','deco'].includes(T);
+  const bT=DG.bT||'sol', isB=T==='brush', murT=['wall','iwall','unwall'].includes(T)||(isB&&bT==='mur'), solT=isB&&bT==='sol', plaT=isB&&bT==='plafond', doorT=T==='door'||T==='secret', decoT=['veg','lum','ob','deco','shopd'].includes(T);
   let sub='', ttl='';
   if(T==='sel'){ const E=(S.dg&&S.dg.ew)||{}, w=DG.edgeSel&&E[DG.edgeSel];
     if(DG.zone){ ttl='Zone'; const acts=[['dz-copy','Copier','<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>'],['dz-cut','Couper','<circle cx="6" cy="18" r="3"/><circle cx="18" cy="18" r="3"/><path d="M8 16L19 4M16 16L5 4"/>']].concat(DG.clip?[['dz-paste','Coller','<path d="M9 4h6v3H9z"/><path d="M9 5H6v15h12V5h-3"/>']]:[],[['dz-rot','Tourner','<path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/>'],['dz-del','Supprimer','<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>']]);
@@ -5624,10 +5628,10 @@ function renderDgPanel(){ const box=$('dg-body'); if(!box) return;
   else if(doorT) sub=doorStyles(DG.ds||dgDefDoor(),'dsv');
   else if(T==='win') sub=winStyles(DG.ws||'crypte','wsv');
   else if(decoT){ const cat=DG.dcat||'veg';
-    sub=seg('dcat',[['veg','Végétation'],['mob','Mobilier']],cat)+(cat==='veg'?`<div class="vegpick">${Object.keys(VEG_BIO).map(b=>Object.keys(VEG_K).map(k=>{ const key=b+'-'+k; return `<button type="button" class="vegb${T==='veg'&&DG.vk===key?' on':''}" data-veg="${key}" title="${VEG_K[k]} · ${VEG_BIO[b]}"><img src="res/vege/${key}.png" alt=""></button>`; }).join('')).join('')}</div>`
+    sub=seg('dcat',[['veg','Végétation'],['mob','Mobilier'],['int','Interactif']],cat)+(cat==='int'?`<div class="vegpick"><button type="button" class="vegb${T==='shopd'?' on':''}" data-int="shop" title="Commerce : un commerçant, son stock se règle sur sa fiche"><img src="res/sprites/commerce.png" alt=""><small>Commerce</small></button></div>`:cat==='veg'?`<div class="vegpick">${Object.keys(VEG_BIO).map(b=>Object.keys(VEG_K).map(k=>{ const key=b+'-'+k; return `<button type="button" class="vegb${T==='veg'&&DG.vk===key?' on':''}" data-veg="${key}" title="${VEG_K[k]} · ${VEG_BIO[b]}"><img src="res/vege/${key}.png" alt=""></button>`; }).join('')).join('')}</div>`
       :`<div class="vegpick">${Object.entries(LUM).map(([k,d])=>`<button type="button" class="vegb${T==='lum'&&DG.lk===k?' on':''}" data-lum="${k}" title="${d.l}"><img src="res/lum/${k}.png" alt=""></button>`).join('')}${Object.entries(OBJ).map(([k,d])=>`<button type="button" class="vegb${T==='ob'&&DG.ok===k?' on':''}" data-ob="${k}" title="${d.l}"><img src="res/sprites/${k}.png" alt=""></button>`).join('')}</div>`); }
   else if(T==='path') sub=hr('dg-pw',DG.pw||1.4,'Largeur du sentier');
-  const TN={sel:'Sélection',rect:'Pièce',tpl:'Modèles',wall:'Murs',iwall:'Murs',unwall:'Murs',door:'Porte',secret:'Porte',win:'Fenêtre',path:'Sentier',erase:'Effacer',veg:'Déco',lum:'Déco',ob:'Déco',deco:'Déco',sup:'Passages',sdown:'Passages',sign:'Passages',tp:'Passages'};
+  const TN={sel:'Sélection',rect:'Pièce',tpl:'Modèles',wall:'Murs',iwall:'Murs',unwall:'Murs',door:'Porte',secret:'Porte',win:'Fenêtre',path:'Sentier',erase:'Effacer',veg:'Déco',lum:'Déco',ob:'Déco',deco:'Déco',shopd:'Déco',sup:'Passages',sdown:'Passages',sign:'Passages',tp:'Passages'};
   const tname=ttl?`Sélection · ${ttl}`:solT?'Sol':plaT?'Plafond':murT?'Murs':TN[T]||'Sélection';
   box.innerHTML=`<div class="subttl">Construire</div>
     <div class="dg-tgrid">${wb('dg-sel',IB('hand'),'Sélection',T==='sel'||!T)}${wb('dg-rect',dgI('fit',1.7),'Pièce',T==='rect'||T==='tpl')}${wb('dg-bsol',dgI('floor',1.7),'Sol',solT)}${wb('dg-wall',dgI('wall',1.7),'Murs',murT)}${wb('dg-bpla',dgI('ceilt',1.7),'Plafond',plaT)}${wb('dg-door',dgI('door',1.7),'Porte',doorT)}${wb('dg-wwin',dgI('winw',1.7),'Fenêtre',T==='win')}${wb('dg-deco',SV('<path d="M12 3c-3 4-6 6-6 10a6 6 0 0 0 12 0c0-4-3-6-6-10z"/><path d="M12 21v-6"/>'),'Déco',decoT)}${wb('dg-path',dgI('pathw',1.7),'Sentier',T==='path')}${wb('dg-erase',IB('eraser'),'Effacer',T==='erase')}</div>
@@ -5646,6 +5650,7 @@ function renderDgPanel(){ const box=$('dg-body'); if(!box) return;
   box.querySelectorAll('[data-ob]').forEach(b=>b.onclick=()=>{ DG.ok=b.dataset.ob; DG.tool='ob'; renderDgPanel(); });
   box.querySelectorAll('[data-lum]').forEach(b=>b.onclick=()=>{ DG.lk=b.dataset.lum; DG.tool='lum'; renderDgPanel(); });
   box.querySelectorAll('[data-veg]').forEach(b=>b.onclick=()=>{ DG.vk=b.dataset.veg; DG.tool='veg'; renderDgPanel(); });
+  box.querySelectorAll('[data-int]').forEach(b=>b.onclick=()=>{ DG.tool='shopd'; renderDgPanel(); });
   box.querySelectorAll('[data-dcat]').forEach(b=>b.onclick=()=>{ DG.dcat=b.dataset.dcat; renderDgPanel(); });
   box.querySelectorAll('[data-tpl]').forEach(b=>b.onclick=()=>{ if(T==='tpl'&&DG.tk===b.dataset.tpl){ pick('rect'); return; } DG.tk=b.dataset.tpl; DG.tool='tpl'; renderDgPanel(); });
   on('dg-sel',()=>pick('sel')); on('dg-rect',()=>pick('rect')); on('dg-wall',()=>pick(murT?T:'wall')); on('dg-door',()=>pick(doorT?T:'door')); on('dg-wwin',()=>pick('win')); on('dg-path',()=>pick('path')); on('dg-erase',()=>pick('erase'));
@@ -5715,9 +5720,9 @@ function dgClockPaint(){ const g=$('dg-clkh'), t=$('dg-clkt'); if(!g) return; co
 /* ---------- vue à la première personne ---------- */
 const HANDS={"humain": "res/mains/humain.webp", "troll": "res/mains/troll.webp", "demon": "res/mains/demon.webp", "trifide": "res/mains/trifide.webp", "droide": "res/mains/droide.webp"};HANDS.elfe=HANDS.humain;
 /* contenants (choisis par le MJ) et dépouille : images vues en 3D */
-const DGSPR={"coffre": "res/sprites/coffre.png", "caisse": "res/sprites/caisse.png", "tech": "res/sprites/tech.png", "jarre": "res/sprites/jarre.png", "viande": "res/sprites/viande.png", "epave": "res/sprites/epave.png"};
+const DGSPR={"coffre": "res/sprites/coffre.png", "caisse": "res/sprites/caisse.png", "tech": "res/sprites/tech.png", "jarre": "res/sprites/jarre.png", "viande": "res/sprites/viande.png", "epave": "res/sprites/epave.png", "commerce": "res/sprites/commerce.png"};
 const CONT={coffre:'Coffre',caisse:'Caisse',tech:'Caisse tech',jarre:'Jarre',viande:'Tas de chair',epave:'Épave'};
-const SPR_H={mklamp:1.45,mkup:1,mktp:.95,coffre:.48,caisse:.55,tech:.55,jarre:.55,viande:.4,epave:.48};
+const SPR_H={commerce:.95,mklamp:1.45,mkup:1,mktp:.95,coffre:.48,caisse:.55,tech:.55,jarre:.55,viande:.4,epave:.48};
 const DGIM={};
 /* aventuriers vus par les autres : sprite en pied selon la race et le sexe (res/persos/<race>-<h|f>.png) */
 /* véhicules vus en 3D : sprite par facteur (res/vehicules/facteur<n>.png) + pastille du nombre de passagers */
@@ -6058,7 +6063,7 @@ function fpsSprite(t){ const cv=fpsSprite0(t); if(!cv||!dgDown(t)) return cv; if
   for(let y=0;y<H;y++) for(let x=0;x<W;x++) if(D[(y*W+x)*4+3]>100){ if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; } if(x1<0) return cv;
   const bw=x1-x0+1, bh=y1-y0+1, o=document.createElement('canvas'); o.width=bh; o.height=bw; const g=o.getContext('2d'); g.imageSmoothingEnabled=false; g.translate(bh,0); g.rotate(Math.PI/2); g.drawImage(cv,x0,lh+y0,bw,bh,0,0,bw,bh);
   const Hb=(cv._hf||.62)*bh/cv.height; o._k='perso'; o._hf=Hb*bw/bh; o._lift=.06; return cv._down=o; }
-function fpsSprite0(t){ if(t.type==='mk'&&t.mk==='hang') return hangImg(t.hk); if(t.type==='mk'&&t.mk==='lum'){ const o=lumImg(t.lk); return o.cv; } if(t.type==='mk'&&t.mk==='ob'){ const o=obImg(t.ok); return o.cv; } if(t.type==='mk'){ if(t.mk==='tp'){ FPS.fkRun=1; return tpFrame(); } return mkSprite(t.mk); } const sk=dgSprK(t), key=t.id+'|'+(t.img||'')+'|'+(t.name||'')+'|'+t.type+'|'+(t.ico||'')+'|'+(sk||''); let s=FPS.sprites.get(t.id); if(s&&s.key===key) return s.ready?s.cv:null;
+function fpsSprite0(t){ if(t.type==='mk'&&t.mk==='hang') return hangImg(t.hk); if(t.type==='mk'&&t.mk==='lum'){ const o=lumImg(t.lk); return o.cv; } if(t.type==='mk'&&t.mk==='ob'){ const o=obImg(t.ok); return o.cv; } if(t.type==='mk'){ if(t.mk==='tp'){ FPS.fkRun=1; return tpFrame(); } return mkSprite(t.mk); } const sk=t.kind==='shop'?'commerce':dgSprK(t), key=t.id+'|'+(t.img||'')+'|'+(t.name||'')+'|'+t.type+'|'+(t.ico||'')+'|'+(sk||''); let s=FPS.sprites.get(t.id); if(s&&s.key===key) return s.ready?s.cv:null;
   const vk=vehKey(t); if(vk){ const id='v:'+vk; let im=DGIM[id]; if(!im){ im=DGIM[id]=new Image(); im.onload=()=>{ FPS.sprites.clear(); fpsLater(); }; im.src='res/vehicules/'+vk+'.png'; } if(!im.complete||!im.naturalWidth) return null;
     const pax=(t.veh.pax!=null?+t.veh.pax:S.tokens.filter(x=>x.inveh===t.id).length), seats=+t.veh.seats||0, key2=key+'|'+vk+'|'+pax+'/'+seats; if(s&&s.key===key2) return s.cv;
     const cv=document.createElement('canvas'), x=cv.getContext('2d'), R=34; cv.width=im.naturalWidth; cv.height=im.naturalHeight+R*2+6; x.imageSmoothingEnabled=false; x.drawImage(im,0,R*2+6);
@@ -9616,7 +9621,7 @@ function renderItemPanel(){ const box=$('litem-body'); if(!box) return; jetRead=
   $('litem').style.setProperty('--tc','var(--brown)');
   if(IP.edit){ const t=clone(IP.edit); box.innerHTML='<div id="it-main"></div>';
     propForm($('it-main'),t,{edit:IP.edit,pid:'ie',noIcons:1,top:top('Modifier'),onBack:back}); $('it-back').onclick=back; jetStamp(false); return; }
-  const SECS=[['create','Créer un item','plus'],['inv','Inventaire','chest'],['shop','Commerçant','shop']]; if(IP.sec==='board') IP.sec='inv';
+  const SECS=[['create','Créer un item','plus'],['inv','Inventaire','chest']];   /* le Commerçant se pose depuis la construction (Déco › Interactif) */ if(IP.sec==='board') IP.sec='inv';
   box.innerHTML=`<div class="jtabs">${SECS.map(([k,l,ic])=>`<button type="button" class="wxb${IP.sec===k?' on':''}" data-is="${k}" style="--tc:var(--brown)" aria-pressed="${IP.sec===k}">${IB(ic,1.7)}<span>${l}</span></button>`).join('')}</div><div class="jbody" id="it-body"></div>`;
   box.querySelectorAll('[data-is]').forEach(b=>b.onclick=()=>{ IP.sec=IP.sec===b.dataset.is?null:b.dataset.is; IP.cfg=null; renderItemPanel(); });
   const body=$('it-body');
@@ -9633,13 +9638,11 @@ function renderItemPanel(){ const box=$('litem-body'); if(!box) return; jetRead=
   else if(IP.sec==='create'){ if(!IP.item) IP.item={type:'prop',kind:'item',name:'',ico:'o_misc',g:'misc',img:null,note:'',s:1};
     jetRead=propForm(body,IP.item,{pid:'ic',onChange,save:saveItem}); }
   else if(IP.sec==='shop'){ const SH=S.tokens.filter(t=>t.kind==='shop'); if(!SH.some(t=>t.id===IP.shop)) IP.shop=SH[0]?SH[0].id:null; const sh=IP.shop&&tok(IP.shop);
-    body.innerHTML=`<div class="wxrow"><button type="button" class="wxb" id="sh-new" title="Glisser sur le plateau">${IB('shop')}<span>Commerçant</span></button></div>
-      ${SH.length>1?`<div class="jtabs" style="margin-top:6px">${SH.map(t=>`<button type="button" class="wxb${t.id===IP.shop?' on':''}" data-sh="${t.id}" style="--tc:var(--brown)">${IB('shop')}<span>${esc(t.name||'Vendeur')}</span></button>`).join('')}</div>`:''}
+    body.innerHTML=`${SH.length>1?`<div class="jtabs" style="margin-top:6px">${SH.map(t=>`<button type="button" class="wxb${t.id===IP.shop?' on':''}" data-sh="${t.id}" style="--tc:var(--brown)">${IB('shop')}<span>${esc(t.name||'Vendeur')}</span></button>`).join('')}</div>`:''}
       ${sh?`<div class="shop-pm"><span class="cap" style="flex:1">Prix de ${esc(sh.name||'ce vendeur')}</span><button type="button" class="pmb" id="sh-pm-" title="−10 %">−</button><b id="sh-pmv">${sh.shop.pm>0?'+':''}${sh.shop.pm} %</b><button type="button" class="pmb" id="sh-pm+" title="+10 %">+</button></div>
         <div class="jlist shop-st" id="sh-st"></div>
         <div class="bsearch" style="margin-top:10px"><input class="line-in" id="sh-q" placeholder="Ajouter au stock : chercher un objet, un véhicule…" autocomplete="off"></div><div class="jlist" id="sh-add"></div>`
-      :`<p class="meta" style="text-align:left;padding:6px 2px">Glissez un Commerçant sur le plateau, puis glissez-lui des objets (depuis l'Inventaire ou le plateau).</p>`}`;
-    dragOut($('sh-new'),()=>faceHTML({type:'prop',ico:'shop'}),(x,y)=>{ const t=shopToken(); t.x=Math.round(x); t.y=Math.round(y); addToken(t); IP.shop=t.id; renderItemPanel(); },()=>{ const t=addToken(shopToken()); IP.shop=t.id; renderItemPanel(); toast('Commerçant posé au centre du plateau'); });
+      :`<p class="meta" style="text-align:left;padding:6px 2px">Aucun commerce : posez-en un depuis la construction (Déco › Interactif).</p>`}`;
     body.querySelectorAll('[data-sh]').forEach(b=>b.onclick=()=>{ IP.shop=b.dataset.sh; renderItemPanel(); });
     if(sh){ const pm=d=>{ sh.shop.pm=clamp(sh.shop.pm+d,-90,500); $('sh-pmv').textContent=`${sh.shop.pm>0?'+':''}${sh.shop.pm} %`; drawSt(); markDirty(); sync(); };
       $('sh-pm-').onclick=()=>pm(-10); $('sh-pm+').onclick=()=>pm(10);
