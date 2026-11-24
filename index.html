@@ -5457,7 +5457,7 @@ function dgPaintEnd(g){ if(g&&g.supd){ markDirty(); sync(); } if(g&&g.path){ if(
     DG.zdrag=0; if(a===c&&b===d){ DG.zone=null; const e=dgEdgeAt(g.wx,g.wy), fx=g.wx/CELL, fy=g.wy/CELL, near=Math.min(Math.abs(fy-Math.round(fy)),Math.abs(fx-Math.round(fx)))<.2, D=S.dg||{};
       { const sk=swAt(g.wx,g.wy); if(sk){ DG.edgeSel=null; dgDock(()=>swEdit(sk)); drawDgLater(); return; } const pk=picAt(g.wx,g.wy); if(pk){ DG.edgeSel=null; dgDock(()=>picEdit(pk)); drawDgLater(); return; } }
       if(near&&D.d&&D.d[e.k]){ DG.edgeSel=null; dgDock(()=>dgDoorEdit(e.k)); drawDgLater(); return; }
-      DG.cfgFn=null; DG.edgeSel=near&&D.ew&&D.ew[e.k]?e.k:null; DG.glowE=DG.edgeSel; DG.glow=null; drawDgLater(); renderDgPanel(); return; }
+      const nearW=Math.min(Math.abs(fy-Math.round(fy)),Math.abs(fx-Math.round(fx)))<.34&&D.ew&&D.ew[e.k]&&D.ew[e.k].win; DG.cfgFn=null; DG.edgeSel=(near||nearW)&&D.ew&&D.ew[e.k]?e.k:null; DG.glowE=DG.edgeSel; DG.glow=null;   /* une fenêtre se prend un peu plus largement qu'un mur */ drawDgLater(); renderDgPanel(); return; }
     drawDgLater(); renderDgPanel(); return; }
   if(g&&g.from&&(DG.tool==='sel'||g.fs)){ const [a,b]=g.from, [c,d]=g.to||g.from; DG.hover=null;
     if(a===c&&b===d){ dgDock(()=>dgSelClick((a+.5)*CELL,(b+.5)*CELL)); return; }
@@ -5717,8 +5717,8 @@ function renderDgPanel(){ const box=$('dg-body'); if(!box) return;
       sub=`<div class="wxrow dg-acts">${acts.map(([id,l,d])=>`<button type="button" class="wxb" id="${id}">${SV(d)}<span>${l}</span></button>`).join('')}</div>`; }
     else if(w&&!w.inv){ ttl=w.win?'Fenêtre':'Mur';
       sub=(w.win?`<span class="cap">Style de la fenêtre</span>${winStyles(w.ws||'','ews')}
-        <span class="cap">Derrière la vitre</span><div class="vegpick"><button type="button" class="vegb${!w.view?' on':''}" data-ewv="" title="On voit ce qu'il y a derrière"><b>Transparent</b></button>${Object.entries(WVIEW).map(([k,V])=>`<button type="button" class="vegb${w.view===k?' on':''}" data-ewv="${k}" title="${V.l}"><img src="${V.src}" alt="" style="object-fit:cover"><small>${V.l}</small></button>`).join('')}<button type="button" class="vegb${w.view==='cauto'?' on':''}" data-ewv="cauto" title="Jour ou nuit selon l'heure de la scène"><img src="res/vues/cyber-nuit.webp" alt="" style="object-fit:cover"><small>Cyber · selon l'heure</small></button></div>
-        ${w.view?`<span class="cap">Partie du panorama</span><div class="wxrow dpseg">${[[-1,'Gauche'],[0,'Centre'],[1,'Droite']].map(([v,l])=>`<button type="button" class="wxb${(+w.vz||0)===v?' on':''}" data-ewz="${v}"><span>${l}</span></button>`).join('')}</div>`:''}
+        <span class="cap">Derrière la vitre</span><div class="vegpick"><button type="button" class="vegb${!wvTheme(w.view)?' on':''}" data-ewv="" title="On voit ce qu'il y a derrière"><b>Transparent</b></button>${Object.entries(WVT).map(([k,T])=>`<button type="button" class="vegb${wvTheme(w.view)===k?' on':''}" data-ewv="${k}" title="${T.l} : jour, nuit ou temps gris selon la scène"><img src="res/vues/${T.v[wvState().v]}.webp" alt="" style="object-fit:cover"><small>${T.l}</small></button>`).join('')}</div>
+        ${wvTheme(w.view)?`<span class="cap">Partie du panorama</span><div class="wxrow dpseg">${[[-1,'Gauche'],[0,'Centre'],[1,'Droite']].map(([v,l])=>`<button type="button" class="wxb${(+w.vz||0)===v?' on':''}" data-ewz="${v}"><span>${l}</span></button>`).join('')}</div>`:''}
         <div class="crange"><span class="cap">Largeur de la baie</span><input type="range" min=".3" max=".98" step=".02" value="${+w.wz||.8}" id="ew-wz"><b id="ew-wzv">${Math.round((+w.wz||.8)*100)} %</b></div>
         <button class="btn ghost wide" type="button" id="ew-nowin">Reboucher la fenêtre</button>`:'')
         +(()=>{ const hz=DG.edgeSel.endsWith(',h'), F=DG.ewFace||'both', cur=F==='a'?(w.ta||w.t):F==='b'?(w.tb||w.t):w.t, th=v=>`<img src="${dgThumb(v,'wall')}" alt="">`;
@@ -5917,11 +5917,16 @@ function flLoad(k,T){ const o=(T||FLIMG)[k]; if(o.im) return; o.im=new Image(); 
   if(o.rel){ const r=new Image(); r.onload=()=>{ const c=document.createElement('canvas'); c.width=r.naturalWidth; c.height=r.naturalHeight; const x=c.getContext('2d'); x.drawImage(r,0,0); const d=x.getImageData(0,0,c.width,c.height).data, R=new Float32Array(c.width*c.height); for(let i=0;i<R.length;i++) R[i]=d[i*4]/255; o.rl=R; o.rw=c.width; o.rh=c.height; if(o.layers){ o.lm=o.layers; const st=new Set(); for(let i=0;i<R.length;i++) if(R[i]>0) st.add(Math.round(R[i]*o.layers*1000)/1000); o.lay=[...st].sort((a,b)=>b-a); } fpsLater(); }; r.src=o.rel; } }
 const SUPI={};
 /* vues derrière les fenêtres : un décor lointain, en parallaxe, qui éclaire la pièce */
-const WVIEW={cjour:{l:'Cyber · jour',src:'res/vues/cyber-jour.webp',c:[.85,.93,1],I:.85},cnuit:{l:'Cyber · nuit',src:'res/vues/cyber-nuit.webp',c:[.78,.5,1],I:.45},csmog:{l:'Cyber · smog',src:'res/vues/cyber-smog.webp',c:[1,.84,.55],I:.6}};
+/* l'image suit la scène : jour, nuit, ou temps gris (pluie, orage…) avec un filtre de pluie */
+const WVT={cyber:{l:'Cyberpunk',v:{jour:'cyber-jour',nuit:'cyber-nuit',gris:'cyber-smog'}},solar:{l:'Solarpunk',v:{jour:'solar-jour',nuit:'solar-nuit',gris:'solar-gris'}}};
+const WVL={jour:{c:[.85,.93,1],I:.85},gris:{c:[.8,.85,.92],I:.5},nuit:{c:[.7,.6,1],I:.35}};
+const WVRAIN={rain:1,storm:1,acid:1,demo:1};
+const wvTheme=v=>v&&(WVT[v]?v:/^c/.test(v)?'cyber':null);   /* anciennes valeurs (cjour, cnuit…) : cyberpunk */
+function wvState(){ const day=typeof dgDay==='function'?dgDay(dgHour())>=.35:S.light!==false, rain=!!WVRAIN[S.weather||'']; return {v:!day?'nuit':rain?'gris':'jour',rain}; }
+const WVIEW={}; Object.entries(WVT).forEach(([t,T])=>Object.entries(T.v).forEach(([v,f])=>WVIEW[f]={src:'res/vues/'+f+'.webp'}));
 const WVI={};
 function wvImg(k){ const V=WVIEW[k]; if(!V) return null; let o=WVI[k]; if(!o){ o=WVI[k]={}; const im=new Image(); im.onload=()=>{ const c=document.createElement('canvas'); c.width=im.naturalWidth; c.height=im.naturalHeight; const x=c.getContext('2d'); x.drawImage(im,0,0); o.px=new Uint32Array(x.getImageData(0,0,c.width,c.height).data.buffer); o.w=c.width; o.h=c.height; fpsLater(); }; im.src=V.src; } return o.px?o:null; }
-const wvZ=EW=>{ const I=wvImg(wvKey(EW.view)); return I?Object.assign(Object.create(I),{vz:+EW.vz||0}):null; };
-const wvKey=v=>v==='cauto'?((S.hour==null?12:+S.hour)>=7&&(S.hour==null?12:+S.hour)<19?'cjour':'cnuit'):v;
+const wvZ=EW=>{ const T=WVT[wvTheme(EW.view)]; if(!T) return null; const st=wvState(), I=wvImg(T.v[st.v]); return I?Object.assign(Object.create(I),{vz:+EW.vz||0,rain:st.rain}):null; };
 /* interrupteurs : fixés sur un mur, côté d'une case ; reliés par câble à des lumières, portes, barils… */
 const SWS=[['cyber1','Cyber'],['cyber2','Cyber (boîtier)'],['jungle1','Jungle'],['jungle2','Jungle (globe)'],['gothique1','Gothique (levier)'],['gothique2','Gothique (serrure)'],['moderne1','Moderne'],['moderne2','Moderne (molette)'],['ancien1','Ancien'],['ancien2','Ancien (cadre)']];
 const SWL={lum:'Lumière',door:'Porte',bomb:'Baril',scr:'Écran'};
@@ -5936,6 +5941,8 @@ function picCanvas(o){ const F=PICF[o.f]||PICF.c, B=ldImg(PICB,'res/fame/'+F.n+'
   x.closePath(); x.clip(); x.fillStyle='#1b1712'; x.fillRect(L,T,w,h); if(IM){ const r=Math.max(w/IM.naturalWidth,h/IM.naturalHeight); x.drawImage(IM,L+(w-IM.naturalWidth*r)/2,T+(h-IM.naturalHeight*r)/2,IM.naturalWidth*r,IM.naturalHeight*r); } x.restore();
   x.drawImage(B,0,0,W,H); const px=new Uint32Array(x.getImageData(0,0,W,H).data.buffer); return PICC[key]={px,w:W,h:H,im:c}; }
 /* case contre un mur : le mur le plus proche du clic, côté de cette case (sans porte) */
+/* fenêtre sous le clic (arête proche) */
+function winAt(wx,wy){ const D=S.dg||{}, e=dgEdgeAt(wx,wy), fx=wx/CELL, fy=wy/CELL; return Math.min(Math.abs(fy-Math.round(fy)),Math.abs(fx-Math.round(fx)))<.34&&D.ew&&D.ew[e.k]&&D.ew[e.k].win?e.k:null; }
 function wallSlot(wx,wy){ const [i,j]=dgCell(wx,wy), fx=wx/CELL-i, fy=wy/CELL-j, C=[[i,j-1,fy],[i,j+1,1-fy],[i-1,j,fx],[i+1,j,1-fx]].sort((a,b)=>a[2]-b[2]);
   const E=C.map(([a,b])=>dgEK(i,j,a,b)).find(ek=>{ const w=dgEWk(ek); return w&&!w.inv&&!(S.dg.d&&S.dg.d[ek]); }); return dgAt(i,j)&&E?E+'|'+swSide(E,i,j):null; }
 function picAt(wx,wy){ const P=S.dg&&S.dg.pic; if(!P) return null; const [i,j]=dgCell(wx,wy), fx=wx/CELL-i, fy=wy/CELL-j;
@@ -6385,7 +6392,7 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
   /* lumières posées : apport coloré additionnel, qui éclaire aussi hors de la perception */
   const LT=[], now=performance.now()/1000; for(const k in (S.dg&&S.dg.lum||{})){ const P=lumProps(S.dg.lum[k],now+k.length*.37); if(!P||P.st==='off') continue; const d=P.d, p=k.indexOf(','), lx=+k.slice(0,p)+.5, ly=+k.slice(p+1)+.5; if(Math.hypot(lx-cam.x,ly-cam.y)>40) continue;
     let I=P.I; if(d.fl){ I*=1+.13*Math.sin(now*13+lx*3)*Math.sin(now*7.3+ly); FPS.fkRun=1; } if(P.st==='broken') FPS.fkRun=1; if(I>0) LT.push({x:lx,y:ly,R:P.R,R2:P.R*P.R,c:P.c,I}); }
-  for(const k in (S.dg&&S.dg.ew||{})){ const o=S.dg.ew[k]; if(!o||!o.win||!o.view) continue; const V=WVIEW[wvKey(o.view)]; if(!V) continue; const [i,j,h]=k.split(','), a=+i, b=+j;
+  for(const k in (S.dg&&S.dg.ew||{})){ const o=S.dg.ew[k]; if(!o||!o.win||!wvTheme(o.view)) continue; const V=WVL[wvState().v]; const [i,j,h]=k.split(','), a=+i, b=+j;
     for(const [lx,ly] of h==='h'?[[a+.5,b+.3],[a+.5,b-.3]]:[[a+.3,b+.5],[a-.3,b+.5]]){ if(!dgAt(Math.floor(lx),Math.floor(ly))||Math.hypot(lx-cam.x,ly-cam.y)>30) continue; const I=V.I*Math.min(1.4,(+o.wz||.8)/.8); LT.push({x:lx,y:ly,R:3.6,R2:12.96,c:V.c,I}); } }   /* le jour (ou les néons) entre par la fenêtre */
   for(const k in (S.dg&&S.dg.d||{})){ const o=S.dg.d[k]; if(!o||o.tpTo==null||!o.open) continue; const [i,j,h]=k.split(','), lx=+i+(h==='h'?.5:0), ly=+j+(h==='h'?0:.5); if(Math.hypot(lx-cam.x,ly-cam.y)>30) continue; LT.push({x:lx,y:ly,R:3.2,R2:10.24,c:[1,.93,.66],I:1.1+.15*Math.sin(now*3+lx)}); FPS.fkRun=1; }   /* halo jaune-blanc qui sort de la porte ouverte */
   const la=(wx,wy)=>{ let r=0,g=0,b=0; for(let n=0;n<LT.length;n++){ const L=LT[n], ex=wx-L.x, ey=wy-L.y, d2=ex*ex+ey*ey; if(d2>=L.R2) continue; const k=1-Math.sqrt(d2)/L.R, w=(k*.55+k*k*1.25)*L.I; r+=L.c[0]*w; g+=L.c[1]*w; b+=L.c[2]*w; } return r||g||b?[r,g,b]:null; };
@@ -6446,7 +6453,7 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
         if(glow){ const l=Math.max(c&255,(c>>8)&255,(c>>16)&255); if(l>120) f=Math.max(f,Math.min(1,.55+l/400)*vv); }
         put(y,shL(c,f,wa),d); } };
     /* fenêtre en image par-dessus le mur : cadre en saillie (parallaxe + ombre portée), vitre qu'on traverse du regard */
-    const vwPx=(VI,u0,z,tg,dz1,Z0,Z1)=>{ const DEP=1.2, VW=4.2, VH=VW*VI.h/VI.w, zc=(Z0+Z1)/2, Uf=u0+(VI.vz||0)+tg*DEP,   /* panorama en 3 zones (gauche, centre, droite) : 3 fenêtres côte à côte font un seul paysage */ Zf=z+dz1*DEP, ix=Math.max(0,Math.min(VI.w-1,(((Uf-.5)/VW+.5)*VI.w)|0)), iy=Math.max(0,Math.min(VI.h-1,((1-(Zf-(zc-VH*.42))/VH)*VI.h)|0)); return VI.px[iy*VI.w+ix]|0xff000000; };
+    const vwPx=(VI,u0,z,tg,dz1,Z0,Z1)=>{ const DEP=1.2, VW=4.2, VH=VW*VI.h/VI.w, zc=(Z0+Z1)/2, Uf=u0+(VI.vz||0)+tg*DEP,   /* panorama en 3 zones (gauche, centre, droite) : 3 fenêtres côte à côte font un seul paysage */ Zf=z+dz1*DEP, ix=Math.max(0,Math.min(VI.w-1,(((Uf-.5)/VW+.5)*VI.w)|0)), iy=Math.max(0,Math.min(VI.h-1,((1-(Zf-(zc-VH*.42))/VH)*VI.h)|0)); let c=VI.px[iy*VI.w+ix]|0xff000000; if(VI.rain){ FPS.fkRun=1; const col=(ix>>1), ph=(iy*.9+now*95+((col*73856093)>>>0)%97)%26; if(ph<2.2){ const k=.55; c=0xff000000|((((c>>16)&255)*(1-k)+200*k)<<16)|((((c>>8)&255)*(1-k)+210*k)<<8)|(((c&255)*(1-k)+225*k)|0); } else c=0xff000000|((((c>>16)&255)*.86)<<16)|((((c>>8)&255)*.88)<<8)|(((c&255)*.92)|0); } return c; };
     const winOverP=(z0,d,WO,VI,WZ)=>{ const M=.03, MW=WZ?(1-WZ)/2:M, Z0=z0+.28, Z1=Z0+(1-2*M)*WO.h/WO.w, HM=WO.hm, yT=Math.max(0,Math.ceil(h2+(eye-Z1-HM)*PS/d)), yB=Math.min(H-1,Math.floor(h2+(eye-Z0+HM)*PS/d)); if(yB<yT) return;
       const flip=side===0&&rdx>0||side===1&&rdy<0, nrm=side===0?Math.abs(rdx):Math.abs(rdy), tg=Math.max(-3,Math.min(3,(side===0?rdy:rdx)*(flip?-1:1)/nrm)); let u0=side===0?cam.y+d*rdy:cam.x+d*rdx; u0-=Math.floor(u0); if(flip) u0=1-u0;
       const hx=cam.x+d*rdx, hy=cam.y+d*rdy, f=lit(d)*(side?.82:1)*vis(hx,hy), wa=LON?la(hx,hy):null, PX=WO.px, RL=WO.rl;
@@ -7591,6 +7598,7 @@ function boardDown(e){
   if(e.button===0&&typeof FPS!=='undefined'&&FPS.mode==='prev'&&FPS.el&&FPS.cam&&Math.hypot(wx/CELL-FPS.cam.x,wy/CELL-FPS.cam.y)<.55){ e.preventDefault(); gesture={k:'cam'}; board.setPointerCapture(e.pointerId); return; }   /* caméra de l'aperçu : on la déplace sur la carte */
   if(e.button===0&&!tool&&typeof dgDecoAt==='function'&&dgOn()&&dgDecoAt(wx,wy)){ e.preventDefault(); closeCard(); if(sceneIs3D()){ DG.tool='sel'; openLeft('dgdrw',true); if(tool!=='dgn') setTool('dgn'); } gesture={k:'dgn',last:null,fs:1}; board.setPointerCapture(e.pointerId); dgPaint(wx,wy,gesture); return; }   /* décor : sélectionnable même volet fermé, son volet s'ouvre */   /* décor (luminaire, objet, végétation) : sélectionnable même volet fermé */
   if(e.button===0&&typeof DG!=='undefined'&&DG.linkSw){ e.preventDefault(); swLinkClick(wx,wy); return; }   /* câble d'interrupteur : on choisit l'élément relié */
+  if(e.button===0&&!tool&&typeof winAt==='function'&&dgOn()&&sceneIs3D()){ const wk=winAt(wx,wy); if(wk&&!(typeof picAt==='function'&&picAt(wx,wy))&&!(typeof swAt==='function'&&swAt(wx,wy))){ e.preventDefault(); closeCard(); DG.tool='sel'; DG.cfgFn=null; openLeft('dgdrw',true); if(tool!=='dgn') setTool('dgn'); DG.edgeSel=wk; DG.glowE=wk; DG.glow=null; renderDgPanel(); drawDgLater(); return; } }   /* fenêtre : son volet s'ouvre au clic */
   if(e.button===0&&!tool&&typeof picAt==='function'&&dgOn()){ const pk=picAt(wx,wy); if(pk){ e.preventDefault(); closeCard(); if(sceneIs3D()){ DG.tool='sel'; openLeft('dgdrw',true); if(tool!=='dgn') setTool('dgn'); dgDock(()=>picEdit(pk)); } else picEdit(pk); return; } }
   if(e.button===0&&!tool&&typeof swAt==='function'&&dgOn()){ const sk=swAt(wx,wy); if(sk){ e.preventDefault(); closeCard(); if(sceneIs3D()){ DG.tool='sel'; openLeft('dgdrw',true); if(tool!=='dgn') setTool('dgn'); dgDock(()=>swEdit(sk)); } else swEdit(sk); return; } }
   if(e.button===0&&!tool&&typeof dgEdgeAt==='function'&&dgOn()&&S.dg.d){ const fx=wx/CELL, fy=wy/CELL, k=dgEdgeAt(wx,wy).k; if(Math.min(Math.abs(fy-Math.round(fy)),Math.abs(fx-Math.round(fx)))<.2&&S.dg.d[k]){ e.preventDefault(); closeCard(); if(sceneIs3D()){ DG.tool='sel'; openLeft('dgdrw',true); if(tool!=='dgn') setTool('dgn'); dgDock(()=>dgDoorEdit(k)); } else dgDoorEdit(k); return; } }   /* porte : son volet s'ouvre, même fermé */
