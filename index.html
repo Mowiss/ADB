@@ -5052,7 +5052,7 @@ function dgEdgeAt(wx,wy){ const fx=wx/CELL, fy=wy/CELL, dh=Math.abs(fy-Math.roun
   if(dh<dv){ const i=Math.floor(fx), j=Math.round(fy); return {k:`${i},${j},h`,a:[i,j-1],b:[i,j]}; }
   const i=Math.round(fx), j=Math.floor(fy); return {k:`${i},${j},v`,a:[i-1,j],b:[i,j]}; }
 const dgEdgeSeg=k=>{ const [i,j,o]=k.split(','), X=+i*CELL, Y=+j*CELL; return o==='h'?[X,Y,X+CELL,Y]:[X,Y,X,Y+CELL]; };
-function dgPub(){ if(!S.dg) return null; const d={}; for(const k in (S.dg.d||{})){ const o=S.dg.d[k]; dgNormDoor(o); d[k]=dgHid(o)?{w:1}:{open:!!o.open,lk:o.lk?1:0,gr:o.gr?1:0,tpTo:o.tpTo||''}; } return {on:!!S.dg.on,hub:!!S.dg.hub,th:S.dg.th,c:S.dg.c,m:S.dg.m||null,veg:S.dg.veg||null,lum:S.dg.lum||null,ob:S.dg.ob||null,w:S.dg.w||null,sup:S.dg.sup||null,ew:S.dg.ew||null,v2:!!S.dg.v2,cl:S.dg.cl||null,d}; }
+function dgPub(){ if(!S.dg) return null; const d={}; for(const k in (S.dg.d||{})){ const o=S.dg.d[k]; dgNormDoor(o); d[k]=dgHid(o)?{w:1}:{open:!!o.open,lk:o.lk?1:0,gr:o.gr?1:0,tpTo:o.tpTo||''}; } return {on:!!S.dg.on,hub:!!S.dg.hub,th:S.dg.th,c:S.dg.c,m:S.dg.m||null,veg:S.dg.veg||null,lum:S.dg.lum||null,ob:S.dg.ob||null,w:S.dg.w||null,sup:S.dg.sup||null,sw:S.dg.sw||null,ew:S.dg.ew||null,v2:!!S.dg.v2,cl:S.dg.cl||null,d}; }
 function dgDoorClick(wx,wy){ const e=dgEdgeAt(wx,wy); if(!dgOpen(...e.a)&&!dgOpen(...e.b)){ toast('Une porte se place au bord d\'une case de sol',true); return; }   /* contre un mur, même sans rien derrière : elle ne s'ouvrira pas */
   const D=dgEnsure(); D.d=D.d||{}; const o=D.d[e.k];
   if(DG.tool==='door'){ if(!o){ D.d[e.k]={open:false}; dgDoorSet(D.d[e.k],DG.ds||dgDefDoor()); } else { dgDoorEdit(e.k); return; } }
@@ -5219,6 +5219,10 @@ function drawDg(){ const cv=$('dgn'); if(!cv) return; const r=board.getBoundingC
     const m=o.k==='table'?6:2, X=i*CELL+(sm(i-1,j)?0:m), Y=j*CELL+(sm(i,j-1)?0:m), X2=(i+1)*CELL-(sm(i+1,j)?0:m), Y2=(j+1)*CELL-(sm(i,j+1)?0:m);
     x.save(); if(SG&&SG.has(k)){ x.shadowColor='#ffd84a'; x.shadowBlur=Math.max(10,16*V.z); x.fillStyle='#ffd84a'; x.fillRect(X,Y,X2-X,Y2-Y); } x.restore(); x.fillStyle='rgba(0,0,0,.35)'; x.fillRect(X+3,Y+4,X2-X,Y2-Y); if(I&&I.im){ x.imageSmoothingEnabled=false; x.drawImage(I.im,X,Y,X2-X,Y2-Y); } else { x.fillStyle='#6b4a2c'; x.fillRect(X,Y,X2-X,Y2-Y); }
     x.save(); if(SG&&SG.has(k)){ x.shadowColor='#ffd84a'; x.shadowBlur=Math.max(10,16*V.z); x.strokeStyle='#ffd84a'; x.lineWidth=3; } else { x.strokeStyle='rgba(20,12,6,.8)'; x.lineWidth=1.5; } x.beginPath(); if(!sm(i-1,j)){ x.moveTo(X,Y); x.lineTo(X,Y2); } if(!sm(i+1,j)){ x.moveTo(X2,Y); x.lineTo(X2,Y2); } if(!sm(i,j-1)){ x.moveTo(X,Y); x.lineTo(X2,Y); } if(!sm(i,j+1)){ x.moveTo(X,Y2); x.lineTo(X2,Y2); } x.stroke(); x.restore(); } }
+  /* interrupteurs et leurs câbles */
+  { const SW=S.dg.sw||{}, CBL=!isPlayer&&(tool==='dgn'||DG.linkSw||DG.swSel);
+    for(const k in SW){ const o=SW[k], [px,py]=swPos(k), I=supImg('../inter/sw-'+o.s); if(CBL) (o.links||[]).forEach(L=>{ const q=swLinkPos(L); if(!q) return; x.save(); x.strokeStyle=DG.swSel===k?'#ffb020':'rgba(255,176,32,.55)'; x.lineWidth=(DG.swSel===k?3:2)/Math.max(.5,V.z)+.5; x.setLineDash([6,5]); x.beginPath(); x.moveTo(px,py); x.quadraticCurveTo((px+q[0])/2,Math.max(py,q[1])+CELL*.4,q[0],q[1]); x.stroke(); x.restore(); });
+      if(I&&I.im){ const h=CELL*.36, w=h*I.w/I.h; x.save(); x.imageSmoothingEnabled=false; if(DG.swSel===k&&!isPlayer){ x.shadowColor='#ffd84a'; x.shadowBlur=14; } x.drawImage(I.im,px-w/2,py-h/2,w,h); x.restore(); } } }
   /* sélection : l'objet luit autour de sa silhouette */
   const GS=!isPlayer&&DG.glow, glw=(i,j)=>GS&&GS[0]===i&&GS[1]===j, glo=()=>{ x.shadowColor='#ffd84a'; x.shadowBlur=Math.max(10,16*V.z); x.shadowOffsetX=0; x.shadowOffsetY=0; };
   /* végétation */
@@ -5405,6 +5409,7 @@ function dgPolyEnd(){ const P=DG.poly; DG.poly=null; if(P&&P.length>=3) dgShapeA
 function dgPaintEnd(g){ if(g&&g.supd){ markDirty(); sync(); } if(g&&g.path){ if(g.path.p.length<2){ const D=dgEnsure(); D.paths=D.paths.filter(x=>x!==g.path); } FPS.pm=null; drawDgLater(); fpsLater(); markDirty(); sync(); } if(g&&DG.tool==='sel'&&!g.fs&&(g.zm||g.zs)){ const [a,b]=g.from, [c,d]=g.to||g.from;
     if(g.zm){ const off=DG.zoff; DG.zoff=null; if(off&&(off[0]||off[1])) dgZoneMove(off[0],off[1]); else drawDgLater(); return; }
     DG.zdrag=0; if(a===c&&b===d){ DG.zone=null; const e=dgEdgeAt(g.wx,g.wy), fx=g.wx/CELL, fy=g.wy/CELL, near=Math.min(Math.abs(fy-Math.round(fy)),Math.abs(fx-Math.round(fx)))<.2, D=S.dg||{};
+      { const sk=swAt(g.wx,g.wy); if(sk){ DG.edgeSel=null; dgDock(()=>swEdit(sk)); drawDgLater(); return; } }
       if(near&&D.d&&D.d[e.k]){ DG.edgeSel=null; dgDock(()=>dgDoorEdit(e.k)); drawDgLater(); return; }
       DG.cfgFn=null; DG.edgeSel=near&&D.ew&&D.ew[e.k]?e.k:null; DG.glowE=DG.edgeSel; DG.glow=null; drawDgLater(); renderDgPanel(); return; }
     drawDgLater(); renderDgPanel(); return; }
@@ -5423,6 +5428,10 @@ function dgPaintEnd(g){ if(g&&g.supd){ markDirty(); sync(); } if(g&&g.path){ if(
 function dgPaint(wx,wy,g){ DG._g=g; if(DG.tool==='deco'||DG.tool==='x') return;
   if(DG.tool==='sup'){ const [i,j]=dgCell(wx,wy), k=dgK(i,j); if(!dgAt(i,j)||dgWB(i,j)&&!dgSup(i,j)) return; const [kd,st]=(DG.supk||'bar:bois').split(':'), D=dgEnsure(); D.sup=D.sup||{};   /* support : on le peint case par case ; les cases voisines du même style forment un seul comptoir */
     const o=D.sup[k]; if(!o||o.k!==kd||o.s!==st){ D.sup[k]={k:kd,s:st}; g.supd=1; drawDgLater(); fpsLater(); } return; }
+  if(DG.tool==='swd'){ if(g.last) return; g.last=1; const [i,j]=dgCell(wx,wy), fx=wx/CELL-i, fy=wy/CELL-j, C=[[i,j-1,fy],[i,j+1,1-fy],[i-1,j,fx],[i+1,j,1-fx]].sort((a,b)=>a[2]-b[2]);   /* le mur le plus proche du clic, côté de cette case */
+    const E=C.map(([a,b])=>dgEK(i,j,a,b)).find(ek=>{ const w=dgEWk(ek); return w&&!w.inv&&!(S.dg.d&&S.dg.d[ek]); });
+    if(!dgAt(i,j)||!E){ toast('Un interrupteur se fixe sur un mur, depuis une case voisine',true); return; } const D=dgEnsure(); D.sw=D.sw||{}; const key=E+'|'+swSide(E,i,j);
+    if(!D.sw[key]) D.sw[key]={s:DG.swk||'moderne1',on:false,links:[]}; else D.sw[key].s=DG.swk||D.sw[key].s; FPS.sprites.clear(); drawDgLater(); fpsLater(); markDirty(); sync(); return; }
   if(DG.tool==='bombd'){ if(g.last) return; g.last=1; const [i,j]=dgCell(wx,wy); if(!dgOpen(i,j)){ toast(dgSup(i,j)?'Seuls les petits objets se posent sur un bar ou une table':'Un baril se pose sur du sol',true); return; }
     const t=bombToken(); t.x=Math.round((i+.5)*CELL); t.y=Math.round((j+.5)*CELL); addToken(t); FPS.sprites.clear(); fpsLater(); if(typeof openCard==='function') openCard(t.id); return; }
   if(DG.tool==='shopd'){ if(g.last) return; g.last=1; const [i,j]=dgCell(wx,wy); if(!dgAt(i,j)){ toast('Un commerce se pose sur du sol',true); return; }   /* déco interactive : commerce = un Commerçant posé au centre de la case */
@@ -5650,7 +5659,7 @@ function renderDgPanel(){ const box=$('dg-body'); if(!box) return;
   const SV=d=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
   const doorStyles=(cur,attr)=>dgDoorPick(cur,attr), doorStyles0=(cur,attr)=>`<div class="vegpick dg-styl">${dgDoorStyles().map(([k,l])=>`<button type="button" class="vegb${cur===k?' on':''}" data-${attr}="${k}" title="${esc(l)}"><img src="${dgThumb(k,'door')}" alt=""><small>${esc(l)}</small></button>`).join('')}</div>`;
   const winStyles=(cur,attr)=>`<div class="vegpick dg-styl">${dgWinStyles().map(([k,l])=>`<button type="button" class="vegb${cur===k?' on':''}" data-${attr}="${k}" title="${esc(l)}"><img src="${winThumb(k)}" alt=""><small>${esc(l)}</small></button>`).join('')}</div>`;
-  const bT=DG.bT||'sol', isB=T==='brush', murT=['wall','iwall','unwall'].includes(T)||(isB&&bT==='mur'), solT=isB&&bT==='sol', plaT=isB&&bT==='plafond', doorT=T==='door'||T==='secret', decoT=['veg','lum','ob','deco','shopd','bombd','sup'].includes(T);
+  const bT=DG.bT||'sol', isB=T==='brush', murT=['wall','iwall','unwall'].includes(T)||(isB&&bT==='mur'), solT=isB&&bT==='sol', plaT=isB&&bT==='plafond', doorT=T==='door'||T==='secret', decoT=['veg','lum','ob','deco','shopd','bombd','sup','swd'].includes(T);
   let sub='', ttl='';
   if(T==='sel'){ const E=(S.dg&&S.dg.ew)||{}, w=DG.edgeSel&&E[DG.edgeSel];
     if(DG.zone){ ttl='Zone'; const acts=[['dz-copy','Copier','<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>'],['dz-cut','Couper','<circle cx="6" cy="18" r="3"/><circle cx="18" cy="18" r="3"/><path d="M8 16L19 4M16 16L5 4"/>']].concat(DG.clip?[['dz-paste','Coller','<path d="M9 4h6v3H9z"/><path d="M9 5H6v15h12V5h-3"/>']]:[],[['dz-rot','Tourner','<path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/>'],['dz-del','Supprimer','<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>']]);
@@ -5674,10 +5683,10 @@ function renderDgPanel(){ const box=$('dg-body'); if(!box) return;
   else if(doorT) sub=doorStyles(DG.ds||dgDefDoor(),'dsv');
   else if(T==='win') sub=winStyles(DG.ws||'crypte','wsv');
   else if(decoT){ const cat=DG.dcat||'veg';
-    sub=seg('dcat',[['veg','Végétation'],['mob','Mobilier'],['sup','Supports'],['int','Interactif']],cat)+(cat==='sup'?`<span class="cap">Bars</span><div class="vegpick">${Object.entries(SUP).map(([k,l])=>`<button type="button" class="vegb${T==='sup'&&DG.supk==='bar:'+k?' on':''}" data-supk="bar:${k}" title="Bar ${l}"><img src="res/sup/${k}.png" alt=""><small>${l}</small></button>`).join('')}</div><span class="cap">Tables</span><div class="vegpick">${Object.entries(SUP).map(([k,l])=>`<button type="button" class="vegb${T==='sup'&&DG.supk==='table:'+k?' on':''}" data-supk="table:${k}" title="Table ${l}"><img src="res/sup/${k}-table.png" alt=""><small>${l}</small></button>`).join('')}</div>`:cat==='int'?`<div class="vegpick"><button type="button" class="vegb${T==='shopd'?' on':''}" data-int="shop" title="Commerce · petit objet : un commerçant, son stock se règle sur sa fiche ; se pose aussi sur un bar ou une table"><img src="res/sprites/commerce.png" alt=""><small>Commerce · petit</small></button><button type="button" class="vegb${T==='bombd'?' on':''}" data-int="bomb" title="Baril explosif · gros objet : minuteur, dégâts, rayon et effet se règlent sur sa fiche"><img src="res/sprites/baril.png" alt=""><small>Baril explosif · gros</small></button></div><span class="cap">Lumières</span><div class="vegpick">${Object.entries(LUM).map(([k,d])=>`<button type="button" class="vegb${T==='lum'&&DG.lk===k?' on':''}" data-lum="${k}" title="${d.l} · ${d.p?'petit objet : aussi sur un bar ou une table':'gros objet'}"><img src="res/lum/${k}.png" alt=""><small>${d.p?'Petit':'Gros'}</small></button>`).join('')}</div>`:cat==='veg'?`<div class="vegpick">${Object.keys(VEG_BIO).map(b=>Object.keys(VEG_K).map(k=>{ const key=b+'-'+k; return `<button type="button" class="vegb${T==='veg'&&DG.vk===key?' on':''}" data-veg="${key}" title="${VEG_K[k]} · ${VEG_BIO[b]}"><img src="res/vege/${key}.png" alt=""></button>`; }).join('')).join('')}</div>`
+    sub=seg('dcat',[['veg','Végétation'],['mob','Mobilier'],['sup','Supports'],['int','Interactif']],cat)+(cat==='sup'?`<span class="cap">Bars</span><div class="vegpick">${Object.entries(SUP).map(([k,l])=>`<button type="button" class="vegb${T==='sup'&&DG.supk==='bar:'+k?' on':''}" data-supk="bar:${k}" title="Bar ${l}"><img src="res/sup/${k}.png" alt=""><small>${l}</small></button>`).join('')}</div><span class="cap">Tables</span><div class="vegpick">${Object.entries(SUP).map(([k,l])=>`<button type="button" class="vegb${T==='sup'&&DG.supk==='table:'+k?' on':''}" data-supk="table:${k}" title="Table ${l}"><img src="res/sup/${k}-table.png" alt=""><small>${l}</small></button>`).join('')}</div>`:cat==='int'?`<div class="vegpick"><button type="button" class="vegb${T==='shopd'?' on':''}" data-int="shop" title="Commerce · petit objet : un commerçant, son stock se règle sur sa fiche ; se pose aussi sur un bar ou une table"><img src="res/sprites/commerce.png" alt=""><small>Commerce · petit</small></button><button type="button" class="vegb${T==='bombd'?' on':''}" data-int="bomb" title="Baril explosif · gros objet : minuteur, dégâts, rayon et effet se règlent sur sa fiche"><img src="res/sprites/baril.png" alt=""><small>Baril explosif · gros</small></button></div><span class="cap">Interrupteurs</span><div class="vegpick">${SWS.map(([k,l])=>`<button type="button" class="vegb${T==='swd'&&DG.swk===k?' on':''}" data-swk="${k}" title="${l} · se fixe sur un mur, côté de la case cliquée"><img src="res/inter/sw-${k}.png" alt=""></button>`).join('')}</div><span class="cap">Lumières</span><div class="vegpick">${Object.entries(LUM).map(([k,d])=>`<button type="button" class="vegb${T==='lum'&&DG.lk===k?' on':''}" data-lum="${k}" title="${d.l} · ${d.p?'petit objet : aussi sur un bar ou une table':'gros objet'}"><img src="res/lum/${k}.png" alt=""><small>${d.p?'Petit':'Gros'}</small></button>`).join('')}</div>`:cat==='veg'?`<div class="vegpick">${Object.keys(VEG_BIO).map(b=>Object.keys(VEG_K).map(k=>{ const key=b+'-'+k; return `<button type="button" class="vegb${T==='veg'&&DG.vk===key?' on':''}" data-veg="${key}" title="${VEG_K[k]} · ${VEG_BIO[b]}"><img src="res/vege/${key}.png" alt=""></button>`; }).join('')).join('')}</div>`
       :`<div class="vegpick">${Object.entries(OBJ).map(([k,d])=>`<button type="button" class="vegb${T==='ob'&&DG.ok===k?' on':''}" data-ob="${k}" title="${d.l} · ${SZ_L[objSz(k)].toLowerCase()}"><img src="res/sprites/${k}.png" alt=""><small>${objSz(k)==='p'?'Petit':'Gros'}</small></button>`).join('')}</div>`); }
   else if(T==='path') sub=hr('dg-pw',DG.pw||1.4,'Largeur du sentier');
-  const TN={sel:'Sélection',rect:'Pièce',tpl:'Modèles',wall:'Murs',iwall:'Murs',unwall:'Murs',door:'Porte',secret:'Porte',win:'Fenêtre',path:'Sentier',erase:'Effacer',veg:'Déco',lum:'Déco',ob:'Déco',deco:'Déco',shopd:'Déco',bombd:'Déco',sup:'Déco',sup:'Passages',sdown:'Passages',sign:'Passages',tp:'Passages'};
+  const TN={sel:'Sélection',rect:'Pièce',tpl:'Modèles',wall:'Murs',iwall:'Murs',unwall:'Murs',door:'Porte',secret:'Porte',win:'Fenêtre',path:'Sentier',erase:'Effacer',veg:'Déco',lum:'Déco',ob:'Déco',deco:'Déco',shopd:'Déco',bombd:'Déco',swd:'Déco',sup:'Déco',sup:'Passages',sdown:'Passages',sign:'Passages',tp:'Passages'};
   const tname=ttl?`Sélection · ${ttl}`:solT?'Sol':plaT?'Plafond':murT?'Murs':TN[T]||'Sélection';
   const CFG=T==='sel'&&!!(DG.cfgFn||DG.edgeSel||(typeof cardId!=='undefined'&&cardId&&dgDocked()));   /* objet sélectionné : le volet devient celui de ses réglages */
   if(CFG) box.innerHTML=`<div class="dg-cfghd"><button class="btn ghost" type="button" id="dg-back">${IB('left',2)}Construire</button></div>
@@ -5695,12 +5704,13 @@ function renderDgPanel(){ const box=$('dg-body'); if(!box) return;
   const clearSel=()=>{ DG.sel=null; DG.zone=null; DG.edgeSel=null; DG.cfgFn=null; };
   const pick=m=>{ DG.rect=null; DG.poly=null; if(m!=='sel') clearSel(); if(!dgOn()){ dgEnsure().on=true; } DG.tool=(DG.tool===m&&m!=='sel'&&tool==='dgn')?'sel':m; if(tool!=='dgn') setTool('dgn'); drawDgLater(); renderDgPanel(); };
   const on=(id,f)=>{ const b=$(id); if(b) b.onclick=f; };
-  on('dg-back',()=>{ DG.cfgFn=null; DG.edgeSel=null; DG.sel=null; DG.glow=null; DG.glowE=null; if(typeof closeCard==='function') closeCard(); renderDgPanel(); drawDgLater(); });
+  on('dg-back',()=>{ DG.cfgFn=null; DG.edgeSel=null; DG.sel=null; DG.glow=null; DG.glowE=null; DG.swSel=null; if(typeof closeCard==='function') closeCard(); renderDgPanel(); drawDgLater(); });
   const fx=()=>{ FPS.sprites.clear(); FPS.capK=null; drawDgLater(); fpsLater(); markDirty(); sync(); };
   box.querySelectorAll('[data-ob]').forEach(b=>b.onclick=()=>{ DG.ok=b.dataset.ob; DG.tool='ob'; renderDgPanel(); });
   box.querySelectorAll('[data-lum]').forEach(b=>b.onclick=()=>{ DG.lk=b.dataset.lum; DG.tool='lum'; renderDgPanel(); });
   box.querySelectorAll('[data-veg]').forEach(b=>b.onclick=()=>{ DG.vk=b.dataset.veg; DG.tool='veg'; renderDgPanel(); });
   box.querySelectorAll('[data-supk]').forEach(b=>b.onclick=()=>{ DG.supk=b.dataset.supk; DG.tool='sup'; renderDgPanel(); });
+  box.querySelectorAll('[data-swk]').forEach(b=>b.onclick=()=>{ DG.swk=b.dataset.swk; DG.tool='swd'; renderDgPanel(); });
   box.querySelectorAll('[data-int]').forEach(b=>b.onclick=()=>{ DG.tool=b.dataset.int==='bomb'?'bombd':'shopd'; renderDgPanel(); });
   box.querySelectorAll('[data-dcat]').forEach(b=>b.onclick=()=>{ DG.dcat=b.dataset.dcat; renderDgPanel(); });
   box.querySelectorAll('[data-tpl]').forEach(b=>b.onclick=()=>{ if(T==='tpl'&&DG.tk===b.dataset.tpl){ pick('rect'); return; } DG.tk=b.dataset.tpl; DG.tool='tpl'; renderDgPanel(); });
@@ -5846,6 +5856,43 @@ function flLoad(k,T){ const o=(T||FLIMG)[k]; if(o.im) return; o.im=new Image(); 
   if(o.mask){ const r=new Image(); r.onload=()=>{ const c=document.createElement('canvas'); c.width=r.naturalWidth; c.height=r.naturalHeight; const x=c.getContext('2d'); x.drawImage(r,0,0); const d=x.getImageData(0,0,c.width,c.height).data, M=new Uint8Array(c.width*c.height); for(let i=0;i<M.length;i++){ const v=d[i*4]; M[i]=v>190?2:v>60?1:0; } o.mk=M; fpsLater(); }; r.src=o.mask; }
   if(o.rel){ const r=new Image(); r.onload=()=>{ const c=document.createElement('canvas'); c.width=r.naturalWidth; c.height=r.naturalHeight; const x=c.getContext('2d'); x.drawImage(r,0,0); const d=x.getImageData(0,0,c.width,c.height).data, R=new Float32Array(c.width*c.height); for(let i=0;i<R.length;i++) R[i]=d[i*4]/255; o.rl=R; o.rw=c.width; o.rh=c.height; if(o.layers){ o.lm=o.layers; const st=new Set(); for(let i=0;i<R.length;i++) if(R[i]>0) st.add(Math.round(R[i]*o.layers*1000)/1000); o.lay=[...st].sort((a,b)=>b-a); } fpsLater(); }; r.src=o.rel; } }
 const SUPI={};
+/* interrupteurs : fixés sur un mur, côté d'une case ; reliés par câble à des lumières, portes, barils… */
+const SWS=[['cyber1','Cyber'],['cyber2','Cyber (boîtier)'],['jungle1','Jungle'],['jungle2','Jungle (globe)'],['gothique1','Gothique (levier)'],['gothique2','Gothique (serrure)'],['moderne1','Moderne'],['moderne2','Moderne (molette)'],['ancien1','Ancien'],['ancien2','Ancien (cadre)']];
+const SWL={lum:'Lumière',door:'Porte',bomb:'Baril'};
+const swSide=(ek,i,j)=>{ const [a,b,o]=ek.split(','), x=+a, y=+b; return (o==='h'?(i===x&&j===y-1):(i===x-1&&j===y))?'a':'b'; };   /* a : case haut/gauche de l'arête */
+const swCell=key=>{ const [ek,sd]=key.split('|'), [a,b,o]=ek.split(','), x=+a, y=+b; return sd==='a'?(o==='h'?[x,y-1]:[x-1,y]):[x,y]; };
+const swPos=key=>{ const [ek]=key.split('|'), [ax,ay,bx,by]=dgEdgeSeg(ek), [ci,cj]=swCell(key), mx=(ax+bx)/2, my=(ay+by)/2, cx=(ci+.5)*CELL, cy=(cj+.5)*CELL; return [mx+(cx-mx)*.36,my+(cy-my)*.36]; };
+function swAt(wx,wy){ const SW=S.dg&&S.dg.sw; if(!SW) return null; const [i,j]=dgCell(wx,wy), fx=wx/CELL-i, fy=wy/CELL-j;
+  for(const [ek,d] of [[dgEK(i,j,i,j-1),fy],[dgEK(i,j,i,j+1),1-fy],[dgEK(i,j,i-1,j),fx],[dgEK(i,j,i+1,j),1-fx]]){ const k=ek+'|'+swSide(ek,i,j); if(SW[k]&&d<.42) return k; } return null; }
+function swTarget(wx,wy){ const D=S.dg||{}, e=dgEdgeAt(wx,wy), fx=wx/CELL, fy=wy/CELL, near=Math.min(Math.abs(fy-Math.round(fy)),Math.abs(fx-Math.round(fx)))<.22;
+  const b=S.tokens.find(t=>t.kind==='bomb'&&Math.hypot(t.x-wx,t.y-wy)<CELL*.45); if(b) return {t:'bomb',id:b.id};
+  if(near&&D.d&&D.d[e.k]) return {t:'door',k:e.k}; const k=dgK(...dgCell(wx,wy)); if(D.lum&&D.lum[k]) return {t:'lum',k}; return null; }
+function swLinkPos(L){ const D=S.dg||{}; if(L.t==='lum'){ const [i,j]=L.k.split(',').map(Number); return D.lum&&D.lum[L.k]?[(i+.5)*CELL,(j+.5)*CELL]:null; }
+  if(L.t==='door'){ if(!D.d||!D.d[L.k]) return null; const [ax,ay,bx,by]=dgEdgeSeg(L.k); return [(ax+bx)/2,(ay+by)/2]; }
+  if(L.t==='bomb'){ const b=typeof tok==='function'&&tok(L.id); return b?[b.x,b.y]:null; } return null; }
+function swToggle(key){ const D=S.dg||{}, o=D.sw&&D.sw[key]; if(!o) return; o.on=!o.on;
+  (o.links||[]).forEach(L=>{ if(L.t==='lum'&&D.lum&&D.lum[L.k]){ let v=D.lum[L.k]; if(typeof v==='string') v=D.lum[L.k]={k:v}; if(v.st!=='broken') v.st=(v.st||'on')==='off'?'on':'off'; }
+    else if(L.t==='door'&&D.d&&D.d[L.k]){ const d=dgNormDoor(D.d[L.k]); d.open=!d.open; if(d.open) delete d.lk; }
+    else if(L.t==='bomb'){ const b=typeof tok==='function'&&tok(L.id); if(b&&b.bomb){ if(+b.bomb.sec>0&&!b.bomb.end) b.bomb.end=Date.now()+b.bomb.sec*1000; else if(typeof bombBoom==='function') bombBoom(b.id); } } });
+  FPS.sprites.clear(); drawDgLater(); fpsLater(); if(!isPlayer){ markDirty(); sync(); } }
+function swEdit(key){ const D=S.dg||{}, o=D.sw&&D.sw[key]; if(!o) return; DG.glowE=key.split('|')[0]; DG.glow=null; DG.swSel=key; drawDgLater();
+  const lab=L=>L.t==='bomb'?'Baril explosif':L.t==='lum'?((LUM[lumK(D.lum&&D.lum[L.k])]||{}).l||'Lumière')+` · ${L.k.replace(',',' · ')}`:`Porte · ${L.k.split(',').slice(0,2).join(' · ')}`;
+  openDialog(`<div class="dphead"><h3>Interrupteur</h3><button class="ib" type="button" id="sw-del" title="Retirer l'interrupteur">${IB('bin')}</button></div>
+    <div class="wxrow"><button class="btn" type="button" id="sw-act">${o.on?'Actionné':'Au repos'} · Actionner</button></div>
+    <span class="cap" style="display:block;margin-top:10px">Câbles</span><div class="selist">${(o.links||[]).length?o.links.map((L,n)=>`<div class="selrow"><i>${IB(L.t==='door'?'door':L.t==='bomb'?'bin':'sun')}</i><span>${esc(lab(L))}</span><button class="ib" type="button" data-swu="${n}" title="Couper le câble">${IB('x')}</button></div>`).join(''):'<div class="meta" style="text-align:left">Aucun élément relié.</div>'}</div>
+    <button class="btn ghost wide" type="button" id="sw-link">${IB('plus')}Tirer un câble</button>
+    <span class="cap" style="display:block;margin-top:10px">Style</span><div class="vegpick">${SWS.map(([k,l])=>`<button type="button" class="vegb${o.s===k?' on':''}" data-sws="${k}" title="${l}"><img src="res/inter/sw-${k}.png" alt=""></button>`).join('')}</div>`);
+  const done=()=>{ FPS.sprites.clear(); drawDgLater(); fpsLater(); markDirty(); sync(); };
+  $('sw-act').onclick=()=>{ swToggle(key); if(typeof dlg!=='undefined'&&dlg.open) swEdit(key); };
+  $('sw-link').onclick=()=>{ DG.linkSw=key; toast('Cliquez sur une lumière, une porte ou un baril à relier (Échap pour annuler)'); if(typeof dlg!=='undefined'&&dlg.open) dlg.close(); drawDgLater(); };
+  $('sw-del').onclick=()=>{ delete D.sw[key]; DG.glowE=null; DG.swSel=null; done(); if(typeof dlg!=='undefined'&&dlg.open) dlg.close(); if(typeof renderDgPanel==='function') renderDgPanel(); };
+  document.querySelectorAll('[data-swu]').forEach(b=>b.onclick=()=>{ o.links.splice(+b.dataset.swu,1); done(); if(typeof dlg!=='undefined'&&dlg.open) swEdit(key); });
+  document.querySelectorAll('[data-sws]').forEach(b=>b.onclick=()=>{ o.s=b.dataset.sws; done(); document.querySelectorAll('[data-sws]').forEach(x=>x.classList.toggle('on',x===b)); }); }
+/* câble : le clic suivant choisit l'élément relié */
+function swLinkClick(wx,wy){ const key=DG.linkSw; DG.linkSw=null; const o=S.dg&&S.dg.sw&&S.dg.sw[key]; if(!o) return; const T=swTarget(wx,wy);
+  if(!T){ toast('Rien à relier ici : câble annulé'); drawDgLater(); return; } o.links=o.links||[]; const n=o.links.findIndex(L=>L.t===T.t&&(L.k||L.id)===(T.k||T.id));
+  if(n>=0){ o.links.splice(n,1); toast('Câble coupé'); } else { o.links.push(T); toast(`Câble tiré vers : ${SWL[T.t]}`); }
+  FPS.sprites.clear(); drawDgLater(); markDirty(); sync(); if(dgDocked()) dgDock(()=>swEdit(key)); else swEdit(key); }
 function supImg(name){ let o=SUPI[name]; if(!o){ o=SUPI[name]={}; const im=new Image(); im.onload=()=>{ const c=document.createElement('canvas'); c.width=im.naturalWidth; c.height=im.naturalHeight; const x=c.getContext('2d'); x.drawImage(im,0,0); o.px=new Uint32Array(x.getImageData(0,0,c.width,c.height).data.buffer); o.w=c.width; o.h=c.height; o.im=im; FPS.texs&&Object.keys(FPS.texs).forEach(k=>{ if(k.startsWith('sup:')) delete FPS.texs[k]; }); drawDgLater(); fpsLater(); }; im.src='res/sup/'+name+'.png'; } return o.px?o:null; }
 function supTex(sp,th){ const key='sup:'+sp.s+':'+th; FPS.texs=FPS.texs||{}; if(FPS.texs[key]) return FPS.texs[key]; const B=fpsTextures(th), I=supImg(sp.s+'-top'); if(!I) return B;
   const N=B.N, fl=new Uint32Array(N*N); for(let y=0;y<N;y++) for(let x=0;x<N;x++) fl[y*N+x]=I.px[((y*I.h/N)|0)*I.w+((x*I.w/N)|0)]|0xff000000;
@@ -6227,6 +6274,10 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
     if(rdy<0){ sty=-1; sdy=(cam.y-my)*ddy; } else { sty=1; sdy=(my+1-cam.y)*ddy; }
     const put=RM?(y,c,d)=>{ const i=y*W+xx; if(DZ[i]!==Infinity) return; B[i]=c; DZ[i]=d; if(d!==lD){ lD=d; lO=dgOpenSky(Math.floor(cam.x+(d-.06)*rdx),Math.floor(cam.y+(d-.06)*rdy))?1:0; } if(lO) M[i]=1; }:(y,c,d)=>{ const i=y*W+xx; if(DZ[i]!==Infinity) return; B[i]=c; DZ[i]=d; };
     /* face verticale (mur, marche, plafond qui descend, façade) entre les hauteurs z0 et z1 à la distance d */
+    const swOver=(sw,d)=>{ const I=supImg('../inter/sw-'+sw.s); if(!I) return; const nrm=side===0?Math.abs(rdx):Math.abs(rdy), dp=d-.045/nrm, hz=.27, wz=hz*I.w/I.h, z0=.44, z1=z0+hz;
+      let u=side===0?cam.y+dp*rdy:cam.x+dp*rdx; u-=Math.floor(u); if(side===0&&rdx>0||side===1&&rdy<0) u=1-u; const ul=(u-(.5-wz/2))/wz; if(ul<0||ul>=1) return;
+      const yT=Math.max(0,Math.ceil(h2+(eye-z1)*PS/dp)), yB=Math.min(H-1,Math.floor(h2+(eye-z0)*PS/dp)); if(yB<yT) return; const hx=cam.x+dp*rdx, hy=cam.y+dp*rdy, f=lit(dp)*(side?.82:1)*vis(hx,hy), wa=LON?la(hx,hy):null, xi=Math.min(I.w-1,(ul*I.w)|0);
+      for(let y=yT;y<=yB;y++){ const z=eye-(y+.5-h2)*dp/PS; if(z<z0||z>z1) continue; const c=I.px[Math.min(I.h-1,((1-(z-z0)/hz)*I.h)|0)*I.w+xi]; if((c>>>24)<128) continue; put(y,shL(c|0xff000000,f,wa),dp); } };
     const faceSup=(z0,z1,d,sp,mx,my)=>{ const I=supImg(sp.k==='table'?sp.s+'-table':sp.s); if(!I){ const T=fpsTextures(); face(z0,z1,d,T.wall,T.N); return; }
       const yT=Math.max(0,Math.ceil(h2+(eye-z1)*PS/d)), yB=Math.min(H-1,Math.floor(h2+(eye-z0)*PS/d)); if(yB<yT) return;
       const hx=cam.x+d*rdx, hy=cam.y+d*rdy, f=lit(d)*(side?.82:1)*vis(hx,hy), wa=LON?la(hx,hy):null, ax=side===1?0:1, al=ax?hy:hx, uc=al-Math.floor(al);
@@ -6357,6 +6408,7 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
       if(EW&&!EW.inv&&!(DR0&&!dgHid(DR0))){ const ET=fpsTextures(EWT), cap=CC?+CC.h||1:MAXW, top=Math.min(+EW.h||1,cap);
         /* mur épais : on touche sa face avant, à une demi-épaisseur de la ligne */
         const dW=side===0?(((stx>0?mx:mx+1)-stx*HW)-cam.x)/rdx:(((sty>0?my:my+1)-sty*HW)-cam.y)/rdy, dd=dW>.02?dW:d0;
+        { const SWO=S.dg.sw&&S.dg.sw[dgEK(pmx,pmy,mx,my)+'|'+((pmx<mx||pmy<my)?'a':'b')]; if(SWO) swOver(SWO,dd); }   /* interrupteur fixé sur ce côté du mur */
         const WS=EW.ws||EWT;   /* style de fenêtre choisi, sinon celui du mur */
         if(EW.win&&WINPOM[WS]&&top>fh){ const WP=winPomLoad(WS), WI=WLIMG[EWT]; if(WI&&WI.px) faceImg(fh,top,dd,WI); else face(fh,top,dd,ET.wall,ET.N); if(WP) winOverP(cur.blk&&cur.pb?cur.pb.h:fh,dd,WP); }
         else if(EW.win){ const WK=WINIMG[WS]?WS:WIN_OF[WS], WO=WK&&winImgLoad(WK); if(WO&&top>fh){ const WI=WLIMG[EWT]; if(WI&&WI.px) faceImg(fh,top,dd,WI); else if(EWT==='ruelle'||EWT==='trottoir'||EWT==='bitume'){ facLoad(); if(FAC.ready) faceFac(fh,top,dd); else face(fh,top,dd,ET.wall,ET.N); } else face(fh,top,dd,ET.wall,ET.N); winOver(cur.blk&&cur.pb?cur.pb.h:fh,dd,WO); } else if(top>fh) faceWin(fh,top,dd,ET.wall,ET.N,winStyle(WS),WLIMG[EWT]); }   /* fenêtre : cadre au style du mur, on voit à travers */
@@ -6478,7 +6530,8 @@ function fpsWorldAt(cx,cy){ if(!FPS.el||FPS.el.hidden||!FPS.lastCam||!FPS.dz) re
   return [(cam.x+d*rdx)*CELL,(cam.y+d*rdy)*CELL]; }
 /* ouvrir / fermer la porte d'en face */
 function fpsFacing(){ const c=FPS.cam, d=(((Math.round(c.a/(Math.PI/2))%4)+4)%4), V4=[[0,-1],[1,0],[0,1],[-1,0]], i=Math.floor(c.x), j=Math.floor(c.y); return [i,j,i+V4[d][0],j+V4[d][1]]; }
-function fpsDoor(){ if(!FPS.cam||FPS.anim) return false; const [i,j,ni,nj]=fpsFacing(), o=dgDoor(i,j,ni,nj); if(!o||dgHid(o)){ fpsBump(); return false; }
+function fpsDoor(){ if(!FPS.cam||FPS.anim) return false; const [i,j,ni,nj]=fpsFacing(), o=dgDoor(i,j,ni,nj);
+  if(!o||dgHid(o)){ const ek=dgEK(i,j,ni,nj), sk=ek+'|'+swSide(ek,i,j); if(S.dg&&S.dg.sw&&S.dg.sw[sk]){ if(FPS.mode==='play'&&!window.DGTEST) up({t:'dsw',k:sk}); else swToggle(sk); toast('Clic !'); return true; } fpsBump(); return false; }
   if(o.lk){ fpsBump(); toast('🔒 Porte verrouillée'); return true; }
   if(!o.open&&dgDoorBlind(dgEK(i,j,ni,nj))){ fpsBump(); toast('La porte ne s\'ouvre pas'); return true; }   /* rien derrière (mur, bloc de pierre) : elle reste fermée */
   if(FPS.mode==='play'){ o.open=!o.open; if(o.open&&window.DGTEST) dgAutoClose(dgEK(i,j,ni,nj)); fpsLater(); up({t:'ddoor',x:(i+.5)*CELL,y:(j+.5)*CELL,nx:(ni+.5)*CELL,ny:(nj+.5)*CELL}); } else dgToggleDoor(dgEK(i,j,ni,nj)); return true; }
@@ -7395,6 +7448,8 @@ function boardDown(e){
     if(e.pointerType==='mouse'){ gesture={k:'rsel',sx:e.clientX,sy:e.clientY,x1:wx,y1:wy,moved:false,add:e.shiftKey||e.ctrlKey||e.metaKey}; board.setPointerCapture(e.pointerId); } return; }
   if(e.button===0&&typeof FPS!=='undefined'&&FPS.mode==='prev'&&FPS.el&&FPS.cam&&Math.hypot(wx/CELL-FPS.cam.x,wy/CELL-FPS.cam.y)<.55){ e.preventDefault(); gesture={k:'cam'}; board.setPointerCapture(e.pointerId); return; }   /* caméra de l'aperçu : on la déplace sur la carte */
   if(e.button===0&&!tool&&typeof dgDecoAt==='function'&&dgOn()&&dgDecoAt(wx,wy)){ e.preventDefault(); closeCard(); if(sceneIs3D()){ DG.tool='sel'; openLeft('dgdrw',true); if(tool!=='dgn') setTool('dgn'); } gesture={k:'dgn',last:null,fs:1}; board.setPointerCapture(e.pointerId); dgPaint(wx,wy,gesture); return; }   /* décor : sélectionnable même volet fermé, son volet s'ouvre */   /* décor (luminaire, objet, végétation) : sélectionnable même volet fermé */
+  if(e.button===0&&typeof DG!=='undefined'&&DG.linkSw){ e.preventDefault(); swLinkClick(wx,wy); return; }   /* câble d'interrupteur : on choisit l'élément relié */
+  if(e.button===0&&!tool&&typeof swAt==='function'&&dgOn()){ const sk=swAt(wx,wy); if(sk){ e.preventDefault(); closeCard(); if(sceneIs3D()){ DG.tool='sel'; openLeft('dgdrw',true); if(tool!=='dgn') setTool('dgn'); dgDock(()=>swEdit(sk)); } else swEdit(sk); return; } }
   if(e.button===0&&!tool&&typeof dgEdgeAt==='function'&&dgOn()&&S.dg.d){ const fx=wx/CELL, fy=wy/CELL, k=dgEdgeAt(wx,wy).k; if(Math.min(Math.abs(fy-Math.round(fy)),Math.abs(fx-Math.round(fx)))<.2&&S.dg.d[k]){ e.preventDefault(); closeCard(); if(sceneIs3D()){ DG.tool='sel'; openLeft('dgdrw',true); if(tool!=='dgn') setTool('dgn'); dgDock(()=>dgDoorEdit(k)); } else dgDoorEdit(k); return; } }   /* porte : son volet s'ouvre, même fermé */
   closeCard(); if(e.button===0&&!tool) selClear();
   /* vue : clic molette (ou Alt + clic) à la souris ; au doigt, glisser dans le vide */
@@ -10559,7 +10614,7 @@ function wire(){ wireTouch(); $('b-undo').innerHTML=IB('undo'); $('b-redo').inne
     if((e.ctrlKey||e.metaKey)&&k==='z'){ e.preventDefault(); undo(); return; }
     if(tool==='map'&&wallDraft&&k==='enter'){ e.preventDefault(); finishWall(); return; }
     if(k==='delete'&&!(tool==='map')){ const ids=SEL.size?[...SEL]:(cardId?[cardId]:[]); if(ids.length){ e.preventDefault(); removeTokens(ids); } return; }
-    if(k==='escape'){ if(typeof DG!=='undefined'){ DG.tool='sel'; DG.cfgFn=null; DG.edgeSel=null; DG.zone=null; DG.sel=null; DG.poly=null; DG.rect=null; DG.glow=null; DG.glowE=null; } selClear(); if(wallDraft) finishWall(); arrowTip=null; mapPrev=null; closeLeft(); if(tool) setTool(tool); jetStamp(false); closeCard(); closePop(); if(sheetPid) closeSheet(); drawMapLater(); }
+    if(k==='escape'){ if(typeof DG!=='undefined'){ DG.linkSw=null; DG.swSel=null; DG.tool='sel'; DG.cfgFn=null; DG.edgeSel=null; DG.zone=null; DG.sel=null; DG.poly=null; DG.rect=null; DG.glow=null; DG.glowE=null; } selClear(); if(wallDraft) finishWall(); arrowTip=null; mapPrev=null; closeLeft(); if(tool) setTool(tool); jetStamp(false); closeCard(); closePop(); if(sheetPid) closeSheet(); drawMapLater(); }
     else if((MODS_OFF||document.documentElement.classList.contains('noscene'))&&(k==='m'||k==='d'||k==='j'||k==='i'||k==='b'||(k==='f'&&!e.ctrlKey&&!e.metaKey))){ }
     else if(k==='m'&&!sceneIs3D()){ if(!$('ldraw').classList.contains('open')) openLeft('ldraw'); pickMapTool('measure'); } else if(k==='d') openLeft(sceneIs3D()?'dgdrw':'ldraw'); else if(k==='b') openJet({secBest:true,secCreate:false,secProp:false}); else if(k==='j') openLeft('ljet'); else if(k==='i') openLeft('litem'); else if(k==='f'&&!e.ctrlKey&&!e.metaKey) openLeft('fond'); else if(k==='0') fitBoard();
     else if(e.code==='Space'){ e.preventDefault(); nextTurn(); } });
@@ -10957,6 +11012,7 @@ function netIn(c,d){ if(!d||typeof d!=='object') return;
     netTo(c.pid,{t:'bought',price,g:x.g,item,veh:x.veh?Object.fromEntries(Object.entries(x.veh).filter(([k])=>k!=='price')):null});
     toast(`${c.name} achète ${x.data.name} (${price.toLocaleString('fr-FR')} ₿)`); markDirty(); sync(); if($('litem').classList.contains('open')&&IP.sec==='shop') renderItemPanel(); if(cardId===sh.id) renderCard(); }
   else if(d.t==='diag'&&c.pid){ const own=S.tokens.some(x=>x.owner===c.pid&&x.type==='player'); if(!d.st) toast(`${c.name} n'a pas encore reçu la table (connexion lente ?)`,true); else if(own&&!d.me) toast(`${c.name} a reçu la table mais pas son jeton : réessayez`,true); }
+  else if(d.t==='dsw'&&c.pid){ const t=S.tokens.find(x=>x.owner===c.pid&&x.type==='player'&&!x.inveh); if(!t||!dgOn()||!S.dg.sw||!S.dg.sw[d.k]) return; const [ci,cj]=swCell(String(d.k)); if(Math.floor(t.x/CELL)===ci&&Math.floor(t.y/CELL)===cj) swToggle(String(d.k)); }
   else if(d.t==='ddoor'&&c.pid){ const t=S.tokens.find(x=>x.owner===c.pid&&x.type==='player'&&!x.inveh); if(!t||!dgOn()) return; const [i,j]=dgCell(+d.x,+d.y), [ni,nj]=dgCell(+d.nx,+d.ny), [i0,j0]=dgCell(t.x,t.y);
     if(i!==i0||j!==j0||Math.abs(ni-i)+Math.abs(nj-j)!==1||!dgToggleDoor(dgEK(i,j,ni,nj))) sync(); }
   else if(d.t==='dmove'&&c.pid){ const t=S.tokens.find(x=>x.owner===c.pid&&x.type==='player'&&!x.inveh); if(!t||!dgOn()) return;
