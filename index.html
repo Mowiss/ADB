@@ -3292,7 +3292,14 @@ input,textarea,select,[contenteditable],[contenteditable] *,.rg-txt,.rg-txt *,.n
 .wxrow.dg-tools{flex-wrap:nowrap;gap:4px}.dg-tools .wxb{flex:1 1 0;min-width:0;padding:8px 0;min-height:0}.dg-tools .wxb span{display:none}.dg-tools .wxb svg{width:22px;height:22px}
 .dg-tgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}.dg-tgrid .wxb{min-width:0;padding:7px 0 5px;min-height:0;display:flex;flex-direction:column;align-items:center;gap:2px}.dg-tgrid .wxb svg{width:21px;height:21px}.dg-tgrid .wxb span{font-size:9.5px;letter-spacing:.02em}
 .dg-cfg:empty,#dg-cardslot:empty{display:none}.tk.open .face{filter:drop-shadow(0 0 6px #ffd84a) drop-shadow(0 0 12px rgba(255,216,74,.7))}
-.dg-cfghd{display:flex;margin-bottom:10px}.dg-cfghd .btn{gap:6px}
+.dg-cfghd{display:flex;margin-bottom:10px}
+.bgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:4px 0 8px}.bfld{display:flex;flex-direction:column;gap:2px;min-width:0}.bfld .line-in{width:100%;min-width:0}
+.bcd{display:flex;align-items:baseline;gap:10px;margin:8px 0}.bcd b{font-size:18px;font-variant-numeric:tabular-nums}
+.tk.armed .face{animation:armed .8s ease-in-out infinite}@keyframes armed{50%{box-shadow:0 0 0 4px rgba(230,60,30,.55),0 0 18px rgba(255,90,30,.8)}}
+.tk.armed::after{content:attr(data-cd);position:absolute;left:50%;top:-14px;transform:translateX(-50%);background:#d6321e;color:#fff;font:800 12px/1 var(--f-ui,sans-serif);padding:3px 6px;border-radius:9px;pointer-events:none}
+.boomfx{position:absolute;width:calc(var(--r)*2);height:calc(var(--r)*2);margin:calc(var(--r)*-1) 0 0 calc(var(--r)*-1);border-radius:50%;pointer-events:none;z-index:50;background:radial-gradient(circle,#fff6c8 0,#ffb030 25%,rgba(240,80,20,.75) 55%,rgba(120,30,10,0) 72%);animation:boom 1.3s ease-out forwards}
+@keyframes boom{0%{transform:scale(.1);opacity:1}35%{transform:scale(1);opacity:1}100%{transform:scale(1.15);opacity:0}}
+.boomflash{position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle,rgba(255,240,190,.95),rgba(255,120,30,.6) 60%,rgba(120,30,10,.2));animation:bflash .9s ease-out forwards;z-index:5}@keyframes bflash{to{opacity:0}}.dg-cfghd .btn{gap:6px}
 .dg-cfg{margin:8px 0;padding:10px;border:1.5px solid #47e4ff;border-radius:12px}.dg-cfgin h3{margin:0 0 8px;font-size:15px}.dg-cfgin .actions{margin-top:10px}.dg-cfgin .dphead{margin-bottom:6px}
 #card.docked{position:relative;left:auto!important;top:auto!important;width:auto;margin:8px 0;box-shadow:none;border:1.5px solid #47e4ff}
 .dg-sub{margin:8px 0 4px;padding:8px;border:1px solid var(--rule);border-radius:12px;background:color-mix(in srgb,var(--paper) 92%,var(--ink) 3%)}.dg-sub>.dg-seg:first-child{margin-top:0}.dg-seg .wxb{display:flex;align-items:center;justify-content:center;gap:5px}.dg-seg .wxb svg{width:16px;height:16px;flex:none}.dg-seg .wxb span{font-size:11px}
@@ -4770,6 +4777,7 @@ function faceHTML(t,cls){
   if(t.stamp&&typeof MAP!=='undefined'){ const s=t.s||1, f=cls==='sm'?1:Math.min(3,72*s*.06)*.6/(3*s)/1.1; return MAP.stampMarkup(t.stamp,f); }
   const ico=()=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${cls==='sm'?1.8:1.6}" stroke-linecap="round" stroke-linejoin="round">${IC[t.ico]||IC[TYPES[t.type]?.def||'skull']}</svg>`;
   /* image en ligne (bestiaire du livre) : si elle ne charge pas, l'icône reprend sa place */
+  if(t.kind==='bomb'&&!t.img) return `<img src="res/sprites/baril.png" alt="" style="object-fit:contain">`;
   if(t.kind==='shop'&&!t.img) return `<img src="res/sprites/commerce.png" alt="" style="object-fit:contain">`;   /* commerce : la caisse */
   if(t.img) return /^https?:/.test(t.img)?`<img src="${esc(t.img)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()" hidden onload="this.hidden=false;this.nextElementSibling&&this.nextElementSibling.remove()">${ico()}`:`<img src="${t.img}" alt="">`;
   if(t.ico==='emoji'&&t.emo) return `<svg viewBox="0 0 24 24" class="emo"><text x="12" y="13" text-anchor="middle" dominant-baseline="central" font-size="17">${esc(t.emo)}</text></svg>`;
@@ -5005,7 +5013,7 @@ const LUM={cyber:{l:'Borne néon',h:3.41,R:4.5,c:[.55,.65,1],I:.95},lanterne:{l:
 /* objets de décor posés par case (poubelles…) : sprite 3D, on ne les traverse pas */
 const OBJ={poubelle:{l:'Poubelle',h:.62},benne:{l:'Benne',h:.78},conteneur:{l:'Conteneur',h:.74}};
 /* taille des objets : les gros se posent au sol ; les petits (caisse enregistreuse…) aussi sur un bar ou une table */
-const OBJ_SZ={commerce:'p'}, objSz=k=>OBJ_SZ[k]||'g', SZ_L={p:'Petit objet',g:'Gros objet'};
+const OBJ_SZ={commerce:'p',baril:'g'}, objSz=k=>OBJ_SZ[k]||'g', SZ_L={p:'Petit objet',g:'Gros objet'};
 const obAt=(i,j)=>S.dg&&S.dg.ob?S.dg.ob[i+','+j]:null;
 const OBIM={};
 function obImg(k){ let o=OBIM[k]; if(!o){ o=OBIM[k]={im:new Image(),cv:null}; o.im.onload=()=>{ const c=document.createElement('canvas'); c.width=o.im.naturalWidth; c.height=o.im.naturalHeight; c.getContext('2d').drawImage(o.im,0,0); c._k='ob_'+k; c._hf=(OBJ[k]||{h:.6}).h; o.cv=c; drawDgLater(); fpsLater(); }; o.im.src='res/sprites/'+k+'.png'; } return o; }
@@ -5413,6 +5421,8 @@ function dgPaintEnd(g){ if(g&&g.supd){ markDirty(); sync(); } if(g&&g.path){ if(
 function dgPaint(wx,wy,g){ DG._g=g; if(DG.tool==='deco'||DG.tool==='x') return;
   if(DG.tool==='sup'){ const [i,j]=dgCell(wx,wy), k=dgK(i,j); if(!dgAt(i,j)||dgWB(i,j)&&!dgSup(i,j)) return; const [kd,st]=(DG.supk||'bar:bois').split(':'), D=dgEnsure(); D.sup=D.sup||{};   /* support : on le peint case par case ; les cases voisines du même style forment un seul comptoir */
     const o=D.sup[k]; if(!o||o.k!==kd||o.s!==st){ D.sup[k]={k:kd,s:st}; g.supd=1; drawDgLater(); fpsLater(); } return; }
+  if(DG.tool==='bombd'){ if(g.last) return; g.last=1; const [i,j]=dgCell(wx,wy); if(!dgOpen(i,j)){ toast(dgSup(i,j)?'Seuls les petits objets se posent sur un bar ou une table':'Un baril se pose sur du sol',true); return; }
+    const t=bombToken(); t.x=Math.round((i+.5)*CELL); t.y=Math.round((j+.5)*CELL); addToken(t); FPS.sprites.clear(); fpsLater(); if(typeof openCard==='function') openCard(t.id); return; }
   if(DG.tool==='shopd'){ if(g.last) return; g.last=1; const [i,j]=dgCell(wx,wy); if(!dgAt(i,j)){ toast('Un commerce se pose sur du sol',true); return; }   /* déco interactive : commerce = un Commerçant posé au centre de la case */
     const cx=(i+.5)*CELL, cy=(j+.5)*CELL, ex=shopAt(cx,cy); if(ex){ if(typeof openCard==='function') openCard(ex.id); return; }
     const t=shopToken(); t.x=Math.round(cx); t.y=Math.round(cy); addToken(t); FPS.sprites.clear(); fpsLater(); return; }
@@ -5638,7 +5648,7 @@ function renderDgPanel(){ const box=$('dg-body'); if(!box) return;
   const SV=d=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
   const doorStyles=(cur,attr)=>dgDoorPick(cur,attr), doorStyles0=(cur,attr)=>`<div class="vegpick dg-styl">${dgDoorStyles().map(([k,l])=>`<button type="button" class="vegb${cur===k?' on':''}" data-${attr}="${k}" title="${esc(l)}"><img src="${dgThumb(k,'door')}" alt=""><small>${esc(l)}</small></button>`).join('')}</div>`;
   const winStyles=(cur,attr)=>`<div class="vegpick dg-styl">${dgWinStyles().map(([k,l])=>`<button type="button" class="vegb${cur===k?' on':''}" data-${attr}="${k}" title="${esc(l)}"><img src="${winThumb(k)}" alt=""><small>${esc(l)}</small></button>`).join('')}</div>`;
-  const bT=DG.bT||'sol', isB=T==='brush', murT=['wall','iwall','unwall'].includes(T)||(isB&&bT==='mur'), solT=isB&&bT==='sol', plaT=isB&&bT==='plafond', doorT=T==='door'||T==='secret', decoT=['veg','lum','ob','deco','shopd','sup'].includes(T);
+  const bT=DG.bT||'sol', isB=T==='brush', murT=['wall','iwall','unwall'].includes(T)||(isB&&bT==='mur'), solT=isB&&bT==='sol', plaT=isB&&bT==='plafond', doorT=T==='door'||T==='secret', decoT=['veg','lum','ob','deco','shopd','bombd','sup'].includes(T);
   let sub='', ttl='';
   if(T==='sel'){ const E=(S.dg&&S.dg.ew)||{}, w=DG.edgeSel&&E[DG.edgeSel];
     if(DG.zone){ ttl='Zone'; const acts=[['dz-copy','Copier','<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>'],['dz-cut','Couper','<circle cx="6" cy="18" r="3"/><circle cx="18" cy="18" r="3"/><path d="M8 16L19 4M16 16L5 4"/>']].concat(DG.clip?[['dz-paste','Coller','<path d="M9 4h6v3H9z"/><path d="M9 5H6v15h12V5h-3"/>']]:[],[['dz-rot','Tourner','<path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/>'],['dz-del','Supprimer','<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>']]);
@@ -5662,10 +5672,10 @@ function renderDgPanel(){ const box=$('dg-body'); if(!box) return;
   else if(doorT) sub=doorStyles(DG.ds||dgDefDoor(),'dsv');
   else if(T==='win') sub=winStyles(DG.ws||'crypte','wsv');
   else if(decoT){ const cat=DG.dcat||'veg';
-    sub=seg('dcat',[['veg','Végétation'],['mob','Mobilier'],['sup','Supports'],['int','Interactif']],cat)+(cat==='sup'?`<span class="cap">Bars</span><div class="vegpick">${Object.entries(SUP).map(([k,l])=>`<button type="button" class="vegb${T==='sup'&&DG.supk==='bar:'+k?' on':''}" data-supk="bar:${k}" title="Bar ${l}"><img src="res/sup/${k}.png" alt=""><small>${l}</small></button>`).join('')}</div><span class="cap">Tables</span><div class="vegpick">${Object.entries(SUP).map(([k,l])=>`<button type="button" class="vegb${T==='sup'&&DG.supk==='table:'+k?' on':''}" data-supk="table:${k}" title="Table ${l}"><img src="res/sup/${k}-table.png" alt=""><small>${l}</small></button>`).join('')}</div>`:cat==='int'?`<div class="vegpick"><button type="button" class="vegb${T==='shopd'?' on':''}" data-int="shop" title="Commerce · petit objet : un commerçant, son stock se règle sur sa fiche ; se pose aussi sur un bar ou une table"><img src="res/sprites/commerce.png" alt=""><small>Commerce · petit</small></button></div>`:cat==='veg'?`<div class="vegpick">${Object.keys(VEG_BIO).map(b=>Object.keys(VEG_K).map(k=>{ const key=b+'-'+k; return `<button type="button" class="vegb${T==='veg'&&DG.vk===key?' on':''}" data-veg="${key}" title="${VEG_K[k]} · ${VEG_BIO[b]}"><img src="res/vege/${key}.png" alt=""></button>`; }).join('')).join('')}</div>`
+    sub=seg('dcat',[['veg','Végétation'],['mob','Mobilier'],['sup','Supports'],['int','Interactif']],cat)+(cat==='sup'?`<span class="cap">Bars</span><div class="vegpick">${Object.entries(SUP).map(([k,l])=>`<button type="button" class="vegb${T==='sup'&&DG.supk==='bar:'+k?' on':''}" data-supk="bar:${k}" title="Bar ${l}"><img src="res/sup/${k}.png" alt=""><small>${l}</small></button>`).join('')}</div><span class="cap">Tables</span><div class="vegpick">${Object.entries(SUP).map(([k,l])=>`<button type="button" class="vegb${T==='sup'&&DG.supk==='table:'+k?' on':''}" data-supk="table:${k}" title="Table ${l}"><img src="res/sup/${k}-table.png" alt=""><small>${l}</small></button>`).join('')}</div>`:cat==='int'?`<div class="vegpick"><button type="button" class="vegb${T==='shopd'?' on':''}" data-int="shop" title="Commerce · petit objet : un commerçant, son stock se règle sur sa fiche ; se pose aussi sur un bar ou une table"><img src="res/sprites/commerce.png" alt=""><small>Commerce · petit</small></button><button type="button" class="vegb${T==='bombd'?' on':''}" data-int="bomb" title="Baril explosif · gros objet : minuteur, dégâts, rayon et effet se règlent sur sa fiche"><img src="res/sprites/baril.png" alt=""><small>Baril explosif · gros</small></button></div>`:cat==='veg'?`<div class="vegpick">${Object.keys(VEG_BIO).map(b=>Object.keys(VEG_K).map(k=>{ const key=b+'-'+k; return `<button type="button" class="vegb${T==='veg'&&DG.vk===key?' on':''}" data-veg="${key}" title="${VEG_K[k]} · ${VEG_BIO[b]}"><img src="res/vege/${key}.png" alt=""></button>`; }).join('')).join('')}</div>`
       :`<div class="vegpick">${Object.entries(LUM).map(([k,d])=>`<button type="button" class="vegb${T==='lum'&&DG.lk===k?' on':''}" data-lum="${k}" title="${d.l} · gros objet"><img src="res/lum/${k}.png" alt=""><small>Gros</small></button>`).join('')}${Object.entries(OBJ).map(([k,d])=>`<button type="button" class="vegb${T==='ob'&&DG.ok===k?' on':''}" data-ob="${k}" title="${d.l} · ${SZ_L[objSz(k)].toLowerCase()}"><img src="res/sprites/${k}.png" alt=""><small>${objSz(k)==='p'?'Petit':'Gros'}</small></button>`).join('')}</div>`); }
   else if(T==='path') sub=hr('dg-pw',DG.pw||1.4,'Largeur du sentier');
-  const TN={sel:'Sélection',rect:'Pièce',tpl:'Modèles',wall:'Murs',iwall:'Murs',unwall:'Murs',door:'Porte',secret:'Porte',win:'Fenêtre',path:'Sentier',erase:'Effacer',veg:'Déco',lum:'Déco',ob:'Déco',deco:'Déco',shopd:'Déco',sup:'Déco',sup:'Passages',sdown:'Passages',sign:'Passages',tp:'Passages'};
+  const TN={sel:'Sélection',rect:'Pièce',tpl:'Modèles',wall:'Murs',iwall:'Murs',unwall:'Murs',door:'Porte',secret:'Porte',win:'Fenêtre',path:'Sentier',erase:'Effacer',veg:'Déco',lum:'Déco',ob:'Déco',deco:'Déco',shopd:'Déco',bombd:'Déco',sup:'Déco',sup:'Passages',sdown:'Passages',sign:'Passages',tp:'Passages'};
   const tname=ttl?`Sélection · ${ttl}`:solT?'Sol':plaT?'Plafond':murT?'Murs':TN[T]||'Sélection';
   const CFG=T==='sel'&&!!(DG.cfgFn||DG.edgeSel||(typeof cardId!=='undefined'&&cardId&&dgDocked()));   /* objet sélectionné : le volet devient celui de ses réglages */
   if(CFG) box.innerHTML=`<div class="dg-cfghd"><button class="btn ghost" type="button" id="dg-back">${IB('left',2)}Construire</button></div>
@@ -5689,7 +5699,7 @@ function renderDgPanel(){ const box=$('dg-body'); if(!box) return;
   box.querySelectorAll('[data-lum]').forEach(b=>b.onclick=()=>{ DG.lk=b.dataset.lum; DG.tool='lum'; renderDgPanel(); });
   box.querySelectorAll('[data-veg]').forEach(b=>b.onclick=()=>{ DG.vk=b.dataset.veg; DG.tool='veg'; renderDgPanel(); });
   box.querySelectorAll('[data-supk]').forEach(b=>b.onclick=()=>{ DG.supk=b.dataset.supk; DG.tool='sup'; renderDgPanel(); });
-  box.querySelectorAll('[data-int]').forEach(b=>b.onclick=()=>{ DG.tool='shopd'; renderDgPanel(); });
+  box.querySelectorAll('[data-int]').forEach(b=>b.onclick=()=>{ DG.tool=b.dataset.int==='bomb'?'bombd':'shopd'; renderDgPanel(); });
   box.querySelectorAll('[data-dcat]').forEach(b=>b.onclick=()=>{ DG.dcat=b.dataset.dcat; renderDgPanel(); });
   box.querySelectorAll('[data-tpl]').forEach(b=>b.onclick=()=>{ if(T==='tpl'&&DG.tk===b.dataset.tpl){ pick('rect'); return; } DG.tk=b.dataset.tpl; DG.tool='tpl'; renderDgPanel(); });
   on('dg-sel',()=>pick('sel')); on('dg-rect',()=>pick('rect')); on('dg-wall',()=>pick(murT?T:'wall')); on('dg-door',()=>pick(doorT?T:'door')); on('dg-wwin',()=>pick('win')); on('dg-path',()=>pick('path')); on('dg-erase',()=>pick('erase'));
@@ -5759,9 +5769,9 @@ function dgClockPaint(){ const g=$('dg-clkh'), t=$('dg-clkt'); if(!g) return; co
 /* ---------- vue à la première personne ---------- */
 const HANDS={"humain": "res/mains/humain.webp", "troll": "res/mains/troll.webp", "demon": "res/mains/demon.webp", "trifide": "res/mains/trifide.webp", "droide": "res/mains/droide.webp"};HANDS.elfe=HANDS.humain;
 /* contenants (choisis par le MJ) et dépouille : images vues en 3D */
-const DGSPR={"coffre": "res/sprites/coffre.png", "caisse": "res/sprites/caisse.png", "tech": "res/sprites/tech.png", "jarre": "res/sprites/jarre.png", "viande": "res/sprites/viande.png", "epave": "res/sprites/epave.png", "commerce": "res/sprites/commerce.png"};
+const DGSPR={"coffre": "res/sprites/coffre.png", "caisse": "res/sprites/caisse.png", "tech": "res/sprites/tech.png", "jarre": "res/sprites/jarre.png", "viande": "res/sprites/viande.png", "epave": "res/sprites/epave.png", "commerce": "res/sprites/commerce.png", "baril": "res/sprites/baril.png"};
 const CONT={coffre:'Coffre',caisse:'Caisse',tech:'Caisse tech',jarre:'Jarre',viande:'Tas de chair',epave:'Épave'};
-const SPR_H={commerce:.5,mklamp:1.45,mkup:1,mktp:.95,coffre:.48,caisse:.55,tech:.55,jarre:.55,viande:.4,epave:.48};
+const SPR_H={commerce:.5,baril:.8,mklamp:1.45,mkup:1,mktp:.95,coffre:.48,caisse:.55,tech:.55,jarre:.55,viande:.4,epave:.48};
 const DGIM={};
 /* aventuriers vus par les autres : sprite en pied selon la race et le sexe (res/persos/<race>-<h|f>.png) */
 /* véhicules vus en 3D : sprite par facteur (res/vehicules/facteur<n>.png) + pastille du nombre de passagers */
@@ -6107,7 +6117,7 @@ function fpsSprite(t){ const cv=fpsSprite0(t); if(!cv||!dgDown(t)) return cv; if
   for(let y=0;y<H;y++) for(let x=0;x<W;x++) if(D[(y*W+x)*4+3]>100){ if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; } if(x1<0) return cv;
   const bw=x1-x0+1, bh=y1-y0+1, o=document.createElement('canvas'); o.width=bh; o.height=bw; const g=o.getContext('2d'); g.imageSmoothingEnabled=false; g.translate(bh,0); g.rotate(Math.PI/2); g.drawImage(cv,x0,lh+y0,bw,bh,0,0,bw,bh);
   const Hb=(cv._hf||.62)*bh/cv.height; o._k='perso'; o._hf=Hb*bw/bh; o._lift=.06; return cv._down=o; }
-function fpsSprite0(t){ if(t.type==='mk'&&t.mk==='hang') return hangImg(t.hk); if(t.type==='mk'&&t.mk==='lum'){ const o=lumImg(t.lk); return o.cv; } if(t.type==='mk'&&t.mk==='ob'){ const o=obImg(t.ok); return o.cv; } if(t.type==='mk'){ if(t.mk==='tp'){ FPS.fkRun=1; return tpFrame(); } return mkSprite(t.mk); } const sk=t.kind==='shop'?'commerce':dgSprK(t), key=t.id+'|'+(t.img||'')+'|'+(t.name||'')+'|'+t.type+'|'+(t.ico||'')+'|'+(sk||''); let s=FPS.sprites.get(t.id); if(s&&s.key===key) return s.ready?s.cv:null;
+function fpsSprite0(t){ if(t.type==='mk'&&t.mk==='hang') return hangImg(t.hk); if(t.type==='mk'&&t.mk==='lum'){ const o=lumImg(t.lk); return o.cv; } if(t.type==='mk'&&t.mk==='ob'){ const o=obImg(t.ok); return o.cv; } if(t.type==='mk'){ if(t.mk==='tp'){ FPS.fkRun=1; return tpFrame(); } return mkSprite(t.mk); } const sk=t.kind==='shop'?'commerce':t.kind==='bomb'?'baril':dgSprK(t), key=t.id+'|'+(t.img||'')+'|'+(t.name||'')+'|'+t.type+'|'+(t.ico||'')+'|'+(sk||''); let s=FPS.sprites.get(t.id); if(s&&s.key===key) return s.ready?s.cv:null;
   const vk=vehKey(t); if(vk){ const id='v:'+vk; let im=DGIM[id]; if(!im){ im=DGIM[id]=new Image(); im.onload=()=>{ FPS.sprites.clear(); fpsLater(); }; im.src='res/vehicules/'+vk+'.png'; } if(!im.complete||!im.naturalWidth) return null;
     const pax=(t.veh.pax!=null?+t.veh.pax:S.tokens.filter(x=>x.inveh===t.id).length), seats=+t.veh.seats||0, key2=key+'|'+vk+'|'+pax+'/'+seats; if(s&&s.key===key2) return s.cv;
     const cv=document.createElement('canvas'), x=cv.getContext('2d'), R=34; cv.width=im.naturalWidth; cv.height=im.naturalHeight+R*2+6; x.imageSmoothingEnabled=false; x.drawImage(im,0,R*2+6);
@@ -7488,6 +7498,20 @@ function bindToken(el){
 }
 const SEL=new Set(); let rselAt=0;
 /* Commerce : un PNJ vendeur garde un stock ; le MJ règle ses prix par tranches de 10 % */
+/* baril explosif : minuteur, dégâts, rayon (en cases) et effet facultatif ; il explose à la fin du minuteur, ou tout de suite */
+const bombToken=()=>({type:'prop',kind:'bomb',ico:'shop',name:'Baril explosif',s:1,bomb:{dmg:3,r:2,sec:10,fx:'brulure',end:null},note:''});
+function bombBoom(id){ const b=tok(id); if(!b||!b.bomb) return; const B=b.bomb, R=(+B.r||0)+.5, hit=[];
+  S.tokens.forEach(v=>{ if(v===b||!['player','mob','npc'].includes(v.type)||v.inveh||!ALIVE(v)||v.hp==null) return; if(Math.hypot(v.x-b.x,v.y-b.y)/CELL>R) return; hit.push(v);
+    v.hp=clamp(v.hp-(+B.dmg||0),-1,v.hpMax); tokenEl(v); if(v.owner&&typeof netTo==='function') netTo(v.owner,{t:'pv',v:v.hp});
+    if(B.fx&&!effSt(v).includes(B.fx)) toggleSt(v,B.fx); });
+  const w=document.createElement('div'); w.className='boomfx'; w.style.left=b.x+'px'; w.style.top=b.y+'px'; w.style.setProperty('--r',(R*CELL)+'px'); $('world').appendChild(w); setTimeout(()=>w.remove(),1400);
+  if(typeof FPS!=='undefined'&&FPS.el&&!FPS.el.hidden&&FPS.cam&&Math.hypot(FPS.cam.x-b.x/CELL,FPS.cam.y-b.y/CELL)<R+8){ const f=document.createElement('div'); f.className='boomflash'; FPS.el.appendChild(f); setTimeout(()=>f.remove(),900); }
+  removeToken(b.id); renderTracker(); markDirty(); sync(); toast(`Explosion : ${hit.length?hit.map(v=>v.name||'?').join(', ')+` (−${+B.dmg||0} PV)`:'personne n\'est touché'}`); }
+setInterval(()=>{ if(isPlayer) return; const now=Date.now(); (S.tokens||[]).forEach(b=>{ if(b.kind!=='bomb'||!b.bomb) return; const el=document.querySelector(`.tk[data-id="${b.id}"]`), on=!!b.bomb.end;
+  if(el){ el.classList.toggle('armed',on); el.dataset.cd=on?Math.max(0,Math.ceil((b.bomb.end-now)/1000)):''; }
+  const cd=document.querySelector(`[data-bcd="${b.id}"]`); if(cd) cd.textContent=on?`${Math.max(0,Math.ceil((b.bomb.end-now)/1000))} s`:'à l\'arrêt';
+  if(on&&now>=b.bomb.end) bombBoom(b.id); }); },250);
+document.addEventListener('change',e=>{ const f=e.target.closest&&e.target.closest('#card [data-bf]'); if(!f) return; const b=tok(cardId); if(!b||!b.bomb) return; const k=f.dataset.bf; b.bomb[k]=k==='fx'?f.value:Math.max(0,+f.value||0); markDirty(); sync(); });
 const shopToken=()=>({type:'prop',kind:'shop',ico:'shop',name:'Commerçant',s:1.3,shop:{pm:0,stock:[]},note:''});
 const shopAt=(x,y,not)=>S.tokens.find(t=>t.kind==='shop'&&t!==not&&Math.hypot(t.x-x,t.y-y)<40*(t.s||1)+14);
 const shopPrice=(sh,x)=>Math.max(0,Math.round(x.bp*(100+(sh.shop.pm||0))/100));
@@ -7596,6 +7620,11 @@ function renderCard(){
     if((t.attacks||[]).length) body+=`<div class="atks">${t.attacks.map((a,i)=>{ const n=effStat(t,a.stat)+(+a.bonus||0); return `<div class="atk"><b>${esc(a.name||'Attaque')}</b><small>${a.stat}${+a.bonus?` ${+a.bonus>0?'+':''}${+a.bonus}`:''}</small><button class="useb" type="button" data-atk="${i}" title="Lancer ${n} D10">${IB('dice')}${n}</button></div>`; }).join('')}</div>`;
   }
   if(t.kind==='shop'){ const st=t.shop.stock; body+=`<span class="cap">Commerce · prix ${t.shop.pm>0?'+':''}${t.shop.pm} %</span><div class="cpax">${st.length?st.map(x=>`<div>${esc(x.data.name)} ×${x.qty}<span style="margin-left:auto;color:#b8892a">${shopPrice(t,x).toLocaleString('fr-FR')} ₿</span></div>`).join(''):'<div style="font-weight:500;color:var(--ink-soft)">Stock vide : glissez-lui des objets.</div>'}</div><button class="mini" type="button" data-shopmng>Gérer le stock et les prix</button>`; }
+  if(t.kind==='bomb'){ const B=t.bomb, nf=(k,l,v,mx)=>`<label class="bfld"><span class="cap">${l}</span><input class="line-in" type="number" min="0" max="${mx}" step="1" value="${v}" data-bf="${k}"></label>`;
+    body+=`<div class="bgrid">${nf('dmg','Dégâts (PV)',B.dmg,99)}${nf('r','Rayon (cases)',B.r,20)}${nf('sec','Minuteur (s)',B.sec,3600)}</div>
+      <label class="bfld"><span class="cap">Effet</span><select class="line-in" data-bf="fx"><option value="">Aucun</option>${STATUS.filter(s=>s[0]!=='fracture').map(s=>`<option value="${s[0]}"${B.fx===s[0]?' selected':''}>${s[1]}</option>`).join('')}</select></label>
+      <div class="bcd"><span class="cap">Minuteur</span><b data-bcd="${t.id}">${B.end?Math.max(0,Math.ceil((B.end-Date.now())/1000))+' s':'à l\'arrêt'}</b></div>
+      <div class="wxrow">${B.end?`<button class="mini" type="button" data-bomb="stop">Désamorcer</button>`:`<button class="mini" type="button" data-bomb="arm">Lancer le minuteur</button>`}<button class="mini danger" type="button" data-bomb="now">Exploser maintenant</button></div>`; }
   if(t.kind==='item'&&!t.inbox) body+=`<span class="cap">Prix ${priceOf(t.data,t.name).toLocaleString('fr-FR')} ₿</span>`;
   if(t.kind==='vehicle'){ const V=t.veh||{}, P=paxOf(t);
     body+=`<div class="hpr"><button class="pmb" type="button" data-vi="-1" title="Retirer 1 point d'intégrité">−</button><div class="hpbar" title="Intégrité"><i class="${hpCls(V.integ/(V.integMax||1))}" style="width:${Math.max(0,V.integ/(V.integMax||1))*100}%"></i><b>${V.integ} / ${V.integMax} intégrité</b></div><button class="pmb" type="button" data-vi="1" title="Ajouter 1 point d'intégrité">+</button></div>
@@ -7610,6 +7639,7 @@ function renderCard(){
   body+=`<div class="cfoot"><span></span><button class="mini" type="button" data-a="del">${IB('bin')}Retirer</button></div>`;
   c.innerHTML=head+body; if($('c-box')) $('c-box').onchange=e=>setInbox(t,e.target.checked); c.querySelectorAll('.ctpick [data-ct]').forEach(b=>b.onclick=()=>{ t.ct=b.dataset.ct; renderCard(); markDirty(); sync(); });
   c.onclick=e=>{ const b=e.target.closest('button'); if(!b) return; if(performance.now()-cardAt<450) return;
+    if(b.dataset.bomb&&t.bomb){ const a=b.dataset.bomb; if(a==='arm') t.bomb.end=Date.now()+Math.max(0,+t.bomb.sec||0)*1000; else if(a==='stop') t.bomb.end=null; else { bombBoom(t.id); return; } renderCard(); markDirty(); sync(); return; }
     if(b.dataset.st==='fracture'){ FRACFLY=FRACFLY===t.id?null:t.id; renderCard(); fracPos(); return; }
     if(b.dataset.frac){ toggleFrac(t,b.dataset.frac); fracPos(); return; }
     if(b.dataset.st){ toggleSt(t,b.dataset.st); return; }
