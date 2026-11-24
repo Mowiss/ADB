@@ -3324,6 +3324,7 @@ input,textarea,select,[contenteditable],[contenteditable] *,.rg-txt,.rg-txt *,.n
 @keyframes boom{0%{transform:scale(.1);opacity:1}35%{transform:scale(1);opacity:1}100%{transform:scale(1.15);opacity:0}}
 .boomflash{position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle,rgba(255,240,190,.95),rgba(255,120,30,.6) 60%,rgba(120,30,10,.2));animation:bflash .9s ease-out forwards;z-index:5}@keyframes bflash{to{opacity:0}}.dg-cfghd .btn{gap:6px}
 .dg-cfg{margin:8px 0;padding:10px;border:1.5px solid #47e4ff;border-radius:12px}.dg-cfgin h3{margin:0 0 8px;font-size:15px}.dg-cfgin .actions{margin-top:10px}.dg-cfgin .dphead{margin-bottom:6px}
+#card.volet{position:fixed;bottom:0;width:min(400px,calc(100vw - 60px))!important;min-height:0!important;border-radius:0;border:0;border-right:1px solid var(--rule);overflow-y:auto;overflow-x:visible;z-index:45;box-shadow:6px 0 24px rgba(20,24,40,.10);padding-top:16px}
 #card.docked{position:relative;left:auto!important;top:auto!important;width:auto;margin:8px 0;box-shadow:none;border:1.5px solid #47e4ff}
 .dg-sub{margin:8px 0 4px;padding:8px;border:1px solid var(--rule);border-radius:12px;background:color-mix(in srgb,var(--paper) 92%,var(--ink) 3%)}.dg-sub>.dg-seg:first-child{margin-top:0}.dg-seg .wxb{display:flex;align-items:center;justify-content:center;gap:5px}.dg-seg .wxb svg{width:16px;height:16px;flex:none}.dg-seg .wxb span{font-size:11px}
 .dg-acts{gap:4px}.dg-acts .wxb{flex:1 1 0;min-width:0;padding:6px 2px;display:flex;flex-direction:column;align-items:center;gap:3px}.dg-acts .wxb svg{width:18px;height:18px}.dg-acts .wxb span{font-size:10px}
@@ -3735,6 +3736,8 @@ input.hue{-webkit-appearance:none;appearance:none;height:12px;border-radius:6px;
 #board.night .tk .beam{opacity:.6}
 @keyframes lBeam{from{transform:translate(-50%,-50%) rotate(0)}to{transform:translate(-50%,-50%) rotate(-360deg)}}
 @media (prefers-reduced-motion:reduce){.tk .glow,.tk .beam{animation:none}}.tk.deco .face svg{width:100%;height:100%}.tk.deco .nm,.tk.deco .ndot,.tk.deco .halo{display:none}
+/* baril, caisse enregistreuse : un sprite posé sur la carte, pas un cadre avec une image */
+.tk.spr .face{border:0!important;background:none!important;box-shadow:none!important;border-radius:0!important;overflow:visible}.tk.spr .face img{object-fit:contain;filter:drop-shadow(0 3px 3px rgba(0,0,0,.45))}.tk.spr .ring,.tk.spr .nm{display:none}.tk.spr.open .face,.tk.spr.sel .face{filter:drop-shadow(0 0 6px #ffd23a)}
 .tk.deco.open .face{outline:2px dashed var(--brown);outline-offset:4px}#card .av.deco{border:0;background:none;color:#2a2c33}
 .tk.inbox{opacity:.6}.tk.inbox .face{border-style:dashed}.tk.inbox::after{content:'';position:absolute;right:-4px;top:-4px;width:18px;height:18px;border-radius:6px;background:var(--brown) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='6' width='18' height='14' rx='2'/%3E%3Cpath d='M3 11h18M10 11v3h4v-3'/%3E%3C/svg%3E") center/13px no-repeat;box-shadow:0 0 0 2px var(--paper)}
 .boxchk{display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;font-weight:700;color:var(--ink-soft,#7a7f8c);user-select:none}.boxchk input{width:16px;height:16px;margin:0;accent-color:var(--brown);cursor:pointer}.boxchk svg{width:17px;height:17px}.boxchk.on{color:var(--brown)}
@@ -4834,7 +4837,7 @@ function tokenHTML(t){
 function tokenEl(t){
   let el=document.querySelector(`.tk[data-id="${t.id}"]`);
   if(!el){ el=document.createElement('div'); el.dataset.id=t.id; $('tokens').appendChild(el); if(!isPlayer) bindToken(el); }
-  el.className=`tk ${t.type}`+(t.hidden?' hid':'')+(t.inbox?' inbox':'')+(t.inveh?' inveh':'')+(t.box?' box':'')+(t.kind==='deco'?' deco':'')+(SWAY[t.stamp]?' sway':'')+(ALIVE(t)&&t.hp<=0?' down':'')+(cardId===t.id?' open':'')+(SEL.has(t.id)?' sel':'')+(curTurnId()===t.id?' current':'')+(isPlayer&&ME&&t.owner===ME&&t.kind!=='vehicle'?' mine':'')+(t.stamp==='lucioles'?' flies'+(lightState(t)==='off'?' off':''):'')+stClasses(t);
+  el.className=`tk ${t.type}`+(t.hidden?' hid':'')+(t.inbox?' inbox':'')+(t.inveh?' inveh':'')+(t.box?' box':'')+(t.kind==='deco'?' deco':'')+(t.kind==='bomb'||t.kind==='shop'?' spr':'')+(SWAY[t.stamp]?' sway':'')+(ALIVE(t)&&t.hp<=0?' down':'')+(cardId===t.id?' open':'')+(SEL.has(t.id)?' sel':'')+(curTurnId()===t.id?' current':'')+(isPlayer&&ME&&t.owner===ME&&t.kind!=='vehicle'?' mine':'')+(t.stamp==='lucioles'?' flies'+(lightState(t)==='off'?' off':''):'')+stClasses(t);
   if(ALIVE(t)){ const was=HPPREV.get(t.id); HPPREV.set(t.id,t.hp); if(was!==undefined&&was>0&&t.hp<=0) splat(t); else if(was!==undefined&&t.hp!=null&&was!==t.hp&&(was>0||t.hp>0)) hpFx(t,t.hp-was); }
   if(isPlayer&&ME&&t.owner===ME&&!el._mine){ el._mine=1; bindMine(el); }
   el.style.left=t.x+'px'; el.style.top=t.y+'px'; el.style.setProperty('--s',t.s||1);
@@ -5751,7 +5754,7 @@ function dgRunCfg(){ const slot=$('dg-cfg'); if(!slot||!DG.cfgFn) return; let us
   if(!used){ DG.cfgFn=null; slot.innerHTML=''; }
   slot.onclick=e=>{ if(e.target.closest('select,input,textarea,label')||!e.target.closest('button')) return; setTimeout(()=>{ if(DG.cfgFn) dgRunCfg(); else renderDgPanel(); drawDgLater(); },0); }; }
 /* jeton (joueur, PNJ, mob) : sa fiche se range dans le volet tant que la construction est ouverte */
-function dgDockCard(){ const c=$('card'), slot=$('dg-cardslot'); if(!c) return; if(slot&&cardId&&dgDocked()&&!$('dg-back')){ renderDgPanel(); return; } if(slot&&cardId&&dgDocked()){ if(c.parentNode!==slot) slot.appendChild(c); c.classList.add('docked'); DG.cfgFn=null; DG.zone=null; DG.edgeSel=null; const s2=$('dg-cfg'); if(s2) s2.innerHTML=''; }
+function dgDockCard(){ const c=$('card'), slot=$('dg-cardslot'); if(!c) return; if(slot&&cardId&&dgDocked()&&!$('dg-back')){ renderDgPanel(); return; } if(slot&&cardId&&dgDocked()){ if(c.parentNode!==slot) slot.appendChild(c); c.classList.add('docked'); c.classList.remove('volet'); DG.cfgFn=null; DG.zone=null; DG.edgeSel=null; const s2=$('dg-cfg'); if(s2) s2.innerHTML=''; }
   else if(c.parentNode!==document.body){ document.body.appendChild(c); c.classList.remove('docked'); } }
 function renderDgPanel(){ const box=$('dg-body'); if(!box) return;
   { const c=$('card'); if(c&&box.contains(c)){ document.body.appendChild(c); c.classList.remove('docked'); } }
@@ -7939,6 +7942,8 @@ function renderCard(){
 }
 function placeCard(){
   if(!cardId||$('card').classList.contains('docked')) return; const t=tok(cardId), c=$('card'); if(!t){ closeCard(); return; }
+  if(!isPlayer){ const rl=$('rail'), rr=rl?rl.getBoundingClientRect():{right:0,top:56}; c.classList.add('volet'); c.style.left=rr.right+'px'; c.style.top=(rl?rr.top:56)+'px'; return; }   /* MJ : plus d'infobulle, la fiche s'ouvre en volet sur le côté */
+  c.classList.remove('volet');
   const [sx,sy]=toScreen(t.x,t.y), rad=40*(t.s||1)*V.z, W=c.offsetWidth||290, H=c.offsetHeight||200, br=board.getBoundingClientRect();
   let x=sx+rad+14; if(x+W>br.right-8) x=sx-rad-14-W; x=clamp(x,br.left+8,br.right-W-8);
   const y=clamp(sy-H/2,br.top+8,br.bottom-H-8); c.style.left=x+'px'; c.style.top=y+'px';
