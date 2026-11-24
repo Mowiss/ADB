@@ -5031,6 +5031,32 @@ function lumProps(v,now){ const k=lumK(v), d=LUM[k]; if(!d) return null; const o
   return {k,d,c,p,st,I,R:d.R*Math.sqrt(Math.min(2.5,p))}; }
 const lumAt=(i,j)=>S.dg&&S.dg.lum?S.dg.lum[i+','+j]:null;
 const LUMIM={};
+/* lumières à flamme : la flamme du dessin est retirée, puis rejouée en effet animé quand la lumière est allumée (elle naît et s'éteint en douceur) */
+const LUMF={}, LUMT={}, LUMC={};
+function lumFire(k){ if(LUMF[k]!==undefined) return LUMF[k]; const o=lumImg(k); if(!o.cv) return null; if(!(LUM[k]||{}).fl) return LUMF[k]=null;
+  const W=o.cv.width, H=o.cv.height, D=o.cv.getContext('2d').getImageData(0,0,W,H), d=D.data, fl=new Uint8Array(W*H);
+  for(let i=0;i<W*H;i++){ const r=d[i*4], g=d[i*4+1], b=d[i*4+2], a=d[i*4+3]; if(a>100&&((r>190&&r>=g&&g>70&&b<150&&r-b>90)||(r>225&&g>170&&r-b>45&&b<200))) fl[i]=1; }   /* flamme : oranges, jaunes, cœur blanc-jaune */
+  for(let it=0;it<3;it++){ const add=[]; for(let i=0;i<W*H;i++){ if(fl[i]) continue; const r=d[i*4], g=d[i*4+1], b=d[i*4+2], a=d[i*4+3]; if(a<60||!(r>110&&r>g*1.15&&b<110&&r-b>60)) continue;   /* bords de flamme plus sombres (rouges, oranges) */
+    const x=i%W; if((x>0&&fl[i-1])||(x<W-1&&fl[i+1])||(i>=W&&fl[i-W])||(i+W<W*H&&fl[i+W])) add.push(i); } add.forEach(i=>fl[i]=1); if(!add.length) break; }
+  const comp=new Int32Array(W*H).fill(-1), C=[]; for(let i=0;i<W*H;i++){ if(!fl[i]||comp[i]>=0) continue; const id=C.length, st=[i]; let y0=H, y1=0; comp[i]=id; const px=[];
+    while(st.length){ const p=st.pop(), x=p%W, y=(p/W)|0; px.push(p); if(y<y0) y0=y; if(y>y1) y1=y; for(const q of [p-1,p+1,p-W,p+W]){ if(q<0||q>=W*H||comp[q]>=0||!fl[q]||Math.abs((q%W)-x)>1) continue; comp[q]=id; st.push(q); } }
+    C.push({y0,y1,px}); }
+  const base=new ImageData(new Uint8ClampedArray(d),W,H), b=base.data, P=[];
+  C.forEach(c=>c.px.forEach(p=>{ const x=p%W, y=(p/W)|0; let inside=false; for(let yy=y-1;yy>=Math.max(0,y-40);yy--){ const q=yy*W+x; if(!fl[q]&&d[q*4+3]>100){ inside=true; break; } }   /* flamme sous un toit (lanterne) : le verre devient sombre ; à l'air libre : rien */
+    if(inside){ b[p*4]=28; b[p*4+1]=22; b[p*4+2]=20; } else b[p*4+3]=0; P.push([x,y,(c.y1-y)/Math.max(1,c.y1-c.y0+1),d[p*4],d[p*4+1],d[p*4+2]]); }));
+  const tips=P.filter(([x,y])=>!fl[(y-1)*W+x]); const bc=document.createElement('canvas'); bc.width=W; bc.height=H; bc.getContext('2d').putImageData(base,0,0);
+  return LUMF[k]={W,H,base:bc,P,tips:tips.length?tips:P}; }
+function lumFrame(id,k,st,now){ const o=lumImg(k), F=lumFire(k); if(!F) return o.cv; const on=st==='on', T=LUMT[id]||(LUMT[id]={on,t:-1e9});
+  if(T.on!==on){ T.on=on; T.t=now; } const g=on?Math.min(1,(now-T.t)/550):Math.max(0,1-(now-T.t)/380), live=on||g>0, key=live?Math.floor(now/70)+':'+g.toFixed(2):'off';
+  let c=LUMC[id]; if(!c){ c=LUMC[id]=document.createElement('canvas'); c.width=F.W; c.height=F.H; } c._k='lum_'+k; c._hf=LUM[k].h; c._live=on||g>0; if(c._key===key) return c; c._key=key; c._px=null;
+  const x=c.getContext('2d'); x.clearRect(0,0,F.W,F.H); x.drawImage(F.base,0,0); if(!live) return c;
+  const sd=(id.length*131+id.charCodeAt(id.length-1)*17)%100, t=now/1000, I=x.getImageData(0,0,F.W,F.H), d=I.data;
+  F.P.forEach(([px,py,rel,r,gg,b])=>{ if(rel>g*1.05) return; const sw=Math.round(Math.sin(t*9+py*.45+sd)*rel*2.2+Math.sin(t*14.7+sd)*rel), nx=px+sw, ny=py+Math.round((1-g)*3); if(nx<0||nx>=F.W||ny<0||ny>=F.H) return;
+    const fk=.86+.18*Math.sin(t*11+py*.7+sd*2)+.08*Math.sin(t*23+px), q=(ny*F.W+nx)*4; d[q]=Math.min(255,r*fk+8); d[q+1]=Math.min(255,gg*fk*(1-rel*.15)); d[q+2]=Math.min(255,b*fk); d[q+3]=255; });
+  x.putImageData(I,0,0);
+  if(g>.5) for(let s2=0;s2<5;s2++){ const ph=((t*.9+s2/5+sd/100)%1), tp=F.tips[(s2*37+Math.floor(t*.9+s2/5+sd/100)*11)%F.tips.length], sx=Math.round(tp[0]+Math.sin(t*5+s2)*2), sy=Math.round(tp[1]-2-ph*22);   /* étincelles */
+    if(sy<0) continue; x.fillStyle=`rgba(255,${170+Math.round(60*(1-ph))},70,${(1-ph)*g})`; x.fillRect(sx,sy,1+(s2&1),1+(s2&1)); }
+  return c; }
 function lumImg(k){ let o=LUMIM[k]; if(!o){ o=LUMIM[k]={im:new Image(),cv:null}; o.im.onload=()=>{ const c=document.createElement('canvas'); c.width=o.im.naturalWidth; c.height=o.im.naturalHeight; c.getContext('2d').drawImage(o.im,0,0); c._k='lum_'+k; c._hf=LUM[k].h; o.cv=c; drawDgLater(); fpsLater(); }; o.im.src='res/lum/'+k+'.png'; } return o; }
 function lumEdit(k){ const D=S.dg; if(!D||!D.lum||!D.lum[k]) return; let v=D.lum[k]; if(typeof v==='string') v=D.lum[k]={k:v}; const P=lumProps(v), hex=c=>'#'+c.map(x=>Math.round(x*255).toString(16).padStart(2,'0')).join('');
   const SW=[['Chaude','#ffb860'],['Bougie','#ff8a3a'],['Blanche','#fff4e0'],['Froide','#a8c8ff'],['Néon bleu','#4aa8ff'],['Vert','#5dff8a'],['Rouge','#ff4040'],['Violet','#b46bff']];
@@ -5246,7 +5272,7 @@ function drawDg(){ const cv=$('dgn'); if(!cv) return; const r=board.getBoundingC
       x.save(); x.globalCompositeOperation='screen'; x.fillStyle=g;
       if(typeof sightRay==='function'){ const lx=i+.5, ly=j+.5; x.beginPath(); for(let n=0;n<180;n++){ const t=n/180*Math.PI*2, dx=Math.cos(t), dy=Math.sin(t), d=sightRay(lx,ly,dx,dy,Ld.R)+.06; n?x.lineTo((lx+dx*d)*CELL,(ly+dy*d)*CELL):x.moveTo((lx+dx*d)*CELL,(ly+dy*d)*CELL); } x.closePath(); x.fill(); }   /* la lumière s'arrête aux murs */
       else x.fillRect(cx-rr,cy-rr,rr*2,rr*2); x.restore(); }   /* halo bien visible sur le plan (plus fort la nuit) */
-    const o=lumImg(lumK(LL[k])); if(o.cv){ const h=CELL*1.15, w=h*o.cv.width/o.cv.height; x.save(); x.imageSmoothingEnabled=false; if(glw(i,j)){ glo(); x.drawImage(o.cv,cx-w/2,cy+CELL*.42-h,w,h); } x.drawImage(o.cv,cx-w/2,cy+CELL*.42-h,w,h); x.restore(); } }
+    const o={cv:lumFrame('lum'+k,lumK(LL[k]),Ld.st,performance.now())}; if(o.cv){ if(o.cv._live&&!DG.lumT) DG.lumT=setTimeout(()=>{ DG.lumT=0; drawDgLater(); },90); const h=CELL*1.15, w=h*o.cv.width/o.cv.height; x.save(); x.imageSmoothingEnabled=false; if(glw(i,j)){ glo(); x.drawImage(o.cv,cx-w/2,cy+CELL*.42-h,w,h); } x.drawImage(o.cv,cx-w/2,cy+CELL*.42-h,w,h); x.restore(); } }
   /* passages */
   const MM=S.dg.m||{}; for(const k in MM){ const m=MM[k], p=k.indexOf(','), i=+k.slice(0,p), j=+k.slice(p+1); if(i<i0||i>i1||j<j0||j>j1) continue; const X=i*CELL, Y=j*CELL, c=m.k==='tp'?'#18b8d8':'#7a5a2c';
     x.save(); x.translate(X,Y);
@@ -6242,7 +6268,7 @@ function fpsSprite(t){ const cv=fpsSprite0(t); if(!cv||!dgDown(t)) return cv; if
   for(let y=0;y<H;y++) for(let x=0;x<W;x++) if(D[(y*W+x)*4+3]>100){ if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; } if(x1<0) return cv;
   const bw=x1-x0+1, bh=y1-y0+1, o=document.createElement('canvas'); o.width=bh; o.height=bw; const g=o.getContext('2d'); g.imageSmoothingEnabled=false; g.translate(bh,0); g.rotate(Math.PI/2); g.drawImage(cv,x0,lh+y0,bw,bh,0,0,bw,bh);
   const Hb=(cv._hf||.62)*bh/cv.height; o._k='perso'; o._hf=Hb*bw/bh; o._lift=.06; return cv._down=o; }
-function fpsSprite0(t){ if(t.type==='mk'&&t.mk==='hang') return hangImg(t.hk); if(t.type==='mk'&&t.mk==='lum'){ const o=lumImg(t.lk); return o.cv; } if(t.type==='mk'&&t.mk==='ob'){ const o=obImg(t.ok); return o.cv; } if(t.type==='mk'&&t.mk==='scr'){ const o=S.dg&&S.dg.scr&&S.dg.scr[t.sk]; return o?scrCanvas(t.sk,o,performance.now()):null; } if(t.type==='mk'){ if(t.mk==='tp'){ FPS.fkRun=1; return tpFrame(); } return mkSprite(t.mk); } const sk=t.kind==='shop'?'commerce':t.kind==='bomb'?'baril':dgSprK(t), key=t.id+'|'+(t.img||'')+'|'+(t.name||'')+'|'+t.type+'|'+(t.ico||'')+'|'+(sk||''); let s=FPS.sprites.get(t.id); if(s&&s.key===key) return s.ready?s.cv:null;
+function fpsSprite0(t){ if(t.type==='mk'&&t.mk==='hang') return hangImg(t.hk); if(t.type==='mk'&&t.mk==='lum'){ const c=lumFrame(t.id,t.lk,t.lst,performance.now()); if(c&&c._live) FPS.fkRun=1; return c; } if(t.type==='mk'&&t.mk==='ob'){ const o=obImg(t.ok); return o.cv; } if(t.type==='mk'&&t.mk==='scr'){ const o=S.dg&&S.dg.scr&&S.dg.scr[t.sk]; return o?scrCanvas(t.sk,o,performance.now()):null; } if(t.type==='mk'){ if(t.mk==='tp'){ FPS.fkRun=1; return tpFrame(); } return mkSprite(t.mk); } const sk=t.kind==='shop'?'commerce':t.kind==='bomb'?'baril':dgSprK(t), key=t.id+'|'+(t.img||'')+'|'+(t.name||'')+'|'+t.type+'|'+(t.ico||'')+'|'+(sk||''); let s=FPS.sprites.get(t.id); if(s&&s.key===key) return s.ready?s.cv:null;
   const vk=vehKey(t); if(vk){ const id='v:'+vk; let im=DGIM[id]; if(!im){ im=DGIM[id]=new Image(); im.onload=()=>{ FPS.sprites.clear(); fpsLater(); }; im.src='res/vehicules/'+vk+'.png'; } if(!im.complete||!im.naturalWidth) return null;
     const pax=(t.veh.pax!=null?+t.veh.pax:S.tokens.filter(x=>x.inveh===t.id).length), seats=+t.veh.seats||0, key2=key+'|'+vk+'|'+pax+'/'+seats; if(s&&s.key===key2) return s.cv;
     const cv=document.createElement('canvas'), x=cv.getContext('2d'), R=34; cv.width=im.naturalWidth; cv.height=im.naturalHeight+R*2+6; x.imageSmoothingEnabled=false; x.drawImage(im,0,R*2+6);
