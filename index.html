@@ -6384,18 +6384,22 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
         if(a0>60&&a0<200&&DZ[i]>=d-.01){ DZ[i]=Infinity; if(!GS[i]){ GD[i]=d; GS[i]=((u0*9+(z-Z0)*5)%1)<.12?2:1; GLASS=true; } } } };   /* vitre : on voit à travers */
     /* porte en relief réel : cadre et boîtier avancent (jusqu'à 7 cm), leurs flancs se voient de biais */
     /* porte en relief réel : le cadre (fixe) et le boîtier / la poignée (sur le battant qui coulisse) avancent ; flancs dans l'ombre */
-    const faceDoor=(z0,d,off,TX)=>{ const N=TX.N, yT=Math.max(0,Math.ceil(h2+(eye-z0-1)*PS/d)), yB=Math.min(H-1,Math.floor(h2+(eye-z0)*PS/d)); if(yB<yT) return;
+    /* ouverture de l'arche : pixels hors cadre reliés au bas du passage ; le reste (coins au-dessus de l'arche) est du mur */
+    const wallPx=(wk,uw,z)=>{ const WI=WLIMG[wk]; if(WI&&WI.px) return WI.px[wlY(WI,z)*WI.w+wlX(WI,uw)]; const T=fpsTextures(wk), N=T.N; return T.wall[(((1-(z-Math.floor(z)))*N|0)&(N-1))*N+((((uw%1)+1)%1*N|0)&(N-1))]; };   /* le mur où la porte est percée */
+    const doorOpen=(TX,lim=.05)=>{ const N=TX.N, DR=TX.drel, O=new Uint8Array(N*N), st=[]; for(let y=N>>2;y<N;y++) st.push(y*N+(N>>1));   /* graines : la colonne du milieu, du quart haut jusqu'au sol */ while(st.length){ const i=st.pop(); if(O[i]||DR[i]>=lim) continue; O[i]=1; const x=i%N, y=(i/N)|0; if(x>0) st.push(i-1); if(x<N-1) st.push(i+1); if(y>0) st.push(i-N); if(y<N-1) st.push(i+N); } return O; };
+    const faceDoor=(z0,d,off,TX,wk)=>{ const N=TX.N, yT=Math.max(0,Math.ceil(h2+(eye-z0-1)*PS/d)), yB=Math.min(H-1,Math.floor(h2+(eye-z0)*PS/d)); if(yB<yT) return;
       const flip=side===0&&rdx>0||side===1&&rdy<0, nrm=side===0?Math.abs(rdx):Math.abs(rdy), tg=(side===0?rdy:rdx)*(flip?-1:1)/nrm;
-      let w0=side===0?cam.y+d*rdy:cam.x+d*rdx; w0-=Math.floor(w0); if(flip) w0=1-w0; const hx=cam.x+d*rdx, hy=cam.y+d*rdy, f=lit(d)*(side?.82:1)*vis(hx,hy), wa=LON?la(hx,hy):null, DR=TX.drel, FR=.05;
+      let w0=side===0?cam.y+d*rdy:cam.x+d*rdx; w0-=Math.floor(w0); if(flip) w0=1-w0; const hx=cam.x+d*rdx, hy=cam.y+d*rdy, f=lit(d)*(side?.82:1)*vis(hx,hy), wa=LON?la(hx,hy):null, DR=TX.drel, FR=.05, OP=TX._op||(TX._op=doorOpen(TX));
       const tn=(u,z)=>{ u=1-u; if(u<0||u>=1||z<0||z>=1) return -1; return ((1-z)*N|0)*N+((u*N)|0); };
       const to=(u,z)=>{ u=1-u+off; if(u<0||u>=1||z<0||z>=1) return -1; return ((1-z)*N|0)*N+((u*N)|0); };   /* battant décalé de l'ouverture */
       for(let y=yT;y<=yB;y++){ const z=eye-(y+.5-h2)*d/PS-z0, k=(z+z0-eye)/d/nrm; let c=-1, ff=f;
         { const h=.055, j=tn(w0-h*tg,z-k*h); if(j>=0&&DR[j]>=FR&&(TX.door[j]>>>24)>127){ c=TX.door[j]; ff=f*1.08; } }
         if(c===-1&&off<1) for(const h of [.044,.033]){ const j=to(w0-h*tg,z-k*h), jn=tn(w0-h*tg,z-k*h); if(j>=0&&DR[j]<FR&&DR[j]>=h-.004&&!(jn>=0&&DR[jn]>=FR)&&(TX.door[j]>>>24)>127){ c=TX.door[j]; ff=f*1.06; break; } }
         if(c===-1){ const i0=tn(w0,z); if(i0<0) continue; if(DR[i0]>=FR){ c=TX.door[i0]; ff=f*.42; }
+          else if(!OP[i0]){ const uw=side===0?cam.y+d*rdy:cam.x+d*rdx; c=wallPx(wk||cur.th,(side===0&&rdx>0||side===1&&rdy<0)?uw:-uw,z+z0); ff=f; }   /* coin hors de l'arche : mur plein */
           else { if(off>=1) continue; const i1=to(w0,z); if(i1<0||DR[i1]>=FR||(TX.door[i1]>>>24)<128) continue; c=TX.door[i1]; if(DR[i1]>.01) ff=f*.45; } }
         put(y,shL(c,ff,wa),d); } };
-    const faceDoorP=(z0,d,off,P)=>{ const N=P.N, yT=Math.max(0,Math.ceil(h2+(eye-z0-1)*PS/d)), yB=Math.min(H-1,Math.floor(h2+(eye-z0)*PS/d)); if(yB<yT) return;
+    const faceDoorP=(z0,d,off,P,wk)=>{ const N=P.N, yT=Math.max(0,Math.ceil(h2+(eye-z0-1)*PS/d)), yB=Math.min(H-1,Math.floor(h2+(eye-z0)*PS/d)); if(yB<yT) return;
       const flip=side===0&&rdx>0||side===1&&rdy<0, nrm=side===0?Math.abs(rdx):Math.abs(rdy), tg=(side===0?rdy:rdx)*(flip?-1:1)/nrm;
       let w0=side===0?cam.y+d*rdy:cam.x+d*rdx; const uwW=flip?w0:-w0; w0-=Math.floor(w0); if(flip) w0=1-w0;
       const hx=cam.x+d*rdx, hy=cam.y+d*rdy, f=lit(d)*(side?.82:1)*vis(hx,hy), wa=LON?la(hx,hy):null, DR=P.drel, DD=P.door, HM=P.hm, LF=.02, WI=WLIMG[P.wk], WOK=WI&&WI.px;
@@ -6404,7 +6408,7 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
       for(let y=yT;y<=yB;y++){ const z=eye-(y+.5-h2)*d/PS-z0, k=(z+z0-eye)/d/nrm; let c=-1, ff=f;
         for(let h=HM;h>=LF;h-=.008){ const j=tn(w0-h*tg,z-k*h); if(j>=0&&DR[j]>=h&&(DD[j]>>>24)>127){ c=DD[j]; ff=f*(.92+h*.6); break; } }   /* fronton, pilastres, imposte, touffes : chacun à sa profondeur */
         if(c===-1){ const i0=tn(w0,z); if(i0<0) continue;
-          if(DR[i0]<.004&&(DD[i0]>>>24)<128){ if(!WOK) continue; c=WI.px[wlY(WI,z)*WI.w+wlX(WI,uwW)]; }   /* autour de la porte : le mur */
+          if(DR[i0]<.004&&(DD[i0]>>>24)<128&&!(P._op||(P._op=doorOpen(P,LF)))[i0]){ c=wk?wallPx(wk,uwW,z+z0):WOK?WI.px[wlY(WI,z)*WI.w+wlX(WI,uwW)]:wallPx(cur.th,uwW,z+z0); }   /* autour de la porte : le mur */
           else if(DR[i0]<LF){ if(off>=1) continue; const i1=to(w0,z); if(i1<0||DR[i1]>=LF||DR[i1]<.004||(DD[i1]>>>24)<128) continue; c=DD[i1]; ff=f*.9; }   /* battants */
           else { c=DD[i0]; ff=f*.45; } }   /* flancs des reliefs, dans l'ombre */
         put(y,shL(c,ff,wa),d); } };
@@ -6467,7 +6471,7 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
       let doff=0;
       if(door) dgNormDoor(door);
       const DT=door&&door.st&&DG_TH[door.st]?fpsTextures(door.st):TT;   /* style de porte choisi, sinon celui du décor */
-      if(door&&!dgHid(door)){ const p=doorP(dgEK(pmx,pmy,mx,my),door); if(DT.pd&&DT.pd.door&&DT.pd.drel) faceDoorP(fh,d0,p,DT.pd); else if(DT.drel&&DT.door){ const GX=door.gr&&DT.grille&&DT.grille.door&&DT.grille.drel?DT.grille:DT; faceDoor(fh,d0,p,GX); } else if(p<1){ let u=side===0?cam.y+d0*rdy:cam.x+d0*rdx; u-=Math.floor(u); if(u>=p){ wt=DT.door; doff=p; } }
+      if(door&&!dgHid(door)){ const p=doorP(dgEK(pmx,pmy,mx,my),door); const DWK=EWT||dgFlank(pmx,pmy,mx,my).t||cur.th; if(DT.pd&&DT.pd.door&&DT.pd.drel) faceDoorP(fh,d0,p,DT.pd,DWK); else if(DT.drel&&DT.door){ const GX=door.gr&&DT.grille&&DT.grille.door&&DT.grille.drel?DT.grille:DT; faceDoor(fh,d0,p,GX,DWK); } else if(p<1){ let u=side===0?cam.y+d0*rdy:cam.x+d0*rdx; u-=Math.floor(u); if(u>=p){ wt=DT.door; doff=p; } }
         if(door.tpTo!=null&&p>0&&!wt){ const yT=Math.max(0,Math.ceil(h2+(eye-fh-1)*PS/d0)), yB=Math.min(H-1,Math.floor(h2+(eye-fh)*PS/d0)); let u=side===0?cam.y+d0*rdy:cam.x+d0*rdx; u-=Math.floor(u);   /* téléportation : l'embrasure ouverte est pleine de lumière jaune-blanc */
           for(let y=yT;y<=yB;y++){ const z=eye-(y+.5-h2)*d0/PS-fh, c2=Math.min(1,Math.min(u,1-u,z,1-z)*5), sh=.72+.28*Math.sin(now*3+z*9+u*7); const w=c2*sh; put(y,0xff000000|((110+120*w|0)<<16)|((205+48*w|0)<<8)|255,d0); } } }
       else if(door&&dgShut(door)) wt=TT.wall;
