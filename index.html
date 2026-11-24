@@ -6816,9 +6816,14 @@ function fpsTap(e,cv){ const r=cv.getBoundingClientRect(), u=(e.clientX-r.left)/
   if(h&&FPS.mode==='play'&&(dgItem(h.t)||h.t.shop)){ if(h.r>1.6){ toast('Trop loin, approchez-vous'); return; } openAsk(h.t.id,[r.left+(h.x0+h.x1)/2*r.width,r.top+h.y0*r.height]); return; }
   if(h&&FPS.mode==='prev'&&tok(h.t.id)){ const t=tok(h.t.id);
     if(t.inbox||dgItem(t)||t.shop){ if(FPS.sim&&h.r>1.6){ toast('Trop loin, approchez-vous'); return; } prevAsk(t,[r.left+(h.x0+h.x1)/2*r.width,r.top+h.y0*r.height]); return; }
-    if(typeof toggleCard==='function') toggleCard(t.id); return; }
+    if(atkTarget(t)) prevAtk(t); return; }   /* aperçu = clic de test : comme le joueur (attaquer), pas de fiche MJ */
   if(!h) fpsDoor(); }
 /* aperçu du MJ : mêmes bulles que le joueur (Ouvrir ? / Prendre), sans rien modifier sur la table */
+function prevAtk(t){ let w=$('atksheet'); if(!w){ w=document.createElement('div'); w.id='atksheet'; document.body.appendChild(w); }
+  w.innerHTML=`<span class="as-f">${faceHTML(t,'sm')}</span><b>${esc(t.name||(t.kind==='bomb'?'Baril':'Cible'))}</b><button type="button" class="as-go">${IB('sword',1.8)}Attaquer</button><button type="button" class="as-x" title="Fermer">${IB('x',2)}</button>`; w.hidden=false;
+  w.querySelector('.as-x').onclick=()=>{ w.hidden=true; };
+  w.querySelector('.as-go').onclick=()=>{ w.hidden=true; const n=3, th=8, R=Array.from({length:n},()=>1+Math.floor(Math.random()*10)), ok=R.filter(r=>r>=th).length;
+    if(!S.fight) fightBanner(); toast(`Aperçu : attaque de test sur ${t.name||'la cible'} · ${R.join(' ')} → ${ok?ok+' succès':'échec'}${S.atkOn?'':' (option des combats joueurs désactivée)'}`); }; }
 function prevAsk(t,at){ if(t.shop&&typeof shopDlg==='function'){ shopDlg(t.id); return; } let a=$('prevask'); if(!a){ a=document.createElement('div'); a.id='prevask'; document.body.appendChild(a); }
   a.style.left=at[0]+'px'; a.style.top=(at[1]-8)+'px'; const nm=t.name||'Objet';
   a.innerHTML=t.inbox?`<button type="button" class="oa-go">${IB('chest',1.8)}Ouvrir ?</button><button type="button" class="oa-x" title="Laisser fermé">${IB('x',2)}</button>`
