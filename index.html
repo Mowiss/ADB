@@ -5003,10 +5003,12 @@ const LUM={cyber:{l:'Borne néon',h:3.41,R:4.5,c:[.55,.65,1],I:.95},lanterne:{l:
   bricole:{l:'Lampe bricolée',h:3.15,R:3.5,c:[1,.92,.65],I:.8},brasero:{l:'Brasero',h:2.83,R:5,c:[1,.55,.2],I:1.1,fl:1},moderne:{l:'Lampadaire',h:2.95,R:6,c:[.92,.96,1],I:.85}};
 /* objets de décor posés par case (poubelles…) : sprite 3D, on ne les traverse pas */
 const OBJ={poubelle:{l:'Poubelle',h:.62},benne:{l:'Benne',h:.78},conteneur:{l:'Conteneur',h:.74}};
+/* taille des objets : les gros se posent au sol ; les petits (caisse enregistreuse…) aussi sur un bar ou une table */
+const OBJ_SZ={commerce:'p'}, objSz=k=>OBJ_SZ[k]||'g', SZ_L={p:'Petit objet',g:'Gros objet'};
 const obAt=(i,j)=>S.dg&&S.dg.ob?S.dg.ob[i+','+j]:null;
 const OBIM={};
 function obImg(k){ let o=OBIM[k]; if(!o){ o=OBIM[k]={im:new Image(),cv:null}; o.im.onload=()=>{ const c=document.createElement('canvas'); c.width=o.im.naturalWidth; c.height=o.im.naturalHeight; c.getContext('2d').drawImage(o.im,0,0); c._k='ob_'+k; c._hf=(OBJ[k]||{h:.6}).h; o.cv=c; drawDgLater(); fpsLater(); }; o.im.src='res/sprites/'+k+'.png'; } return o; }
-function obClick(wx,wy){ const [i,j]=dgCell(wx,wy); if(!dgOpen(i,j)&&!dgSup(i,j)){ toast('Un objet se pose sur une case de sol',true); return; } const D=dgEnsure(); D.ob=D.ob||{}; const k=dgK(i,j);
+function obClick(wx,wy){ const [i,j]=dgCell(wx,wy); if(dgSup(i,j)&&objSz(DG.ok)!=='p'){ toast('Seuls les petits objets se posent sur un bar ou une table',true); return; } if(!dgOpen(i,j)&&!dgSup(i,j)){ toast('Un objet se pose sur une case de sol',true); return; } const D=dgEnsure(); D.ob=D.ob||{}; const k=dgK(i,j);
   if(D.ob[k]===DG.ok) delete D.ob[k]; else D.ob[k]=DG.ok; drawDgLater(); fpsLater(); markDirty(); sync(); }
 /* luminaire posé : type seul (texte) ou réglé {k, c (couleur #rrggbb), p (puissance), st : on / off / broken} */
 const lumK=v=>typeof v==='string'?v:v&&v.k;
@@ -5032,7 +5034,7 @@ function lumEdit(k){ const D=S.dg; if(!D||!D.lum||!D.lum[k]) return; let v=D.lum
   $('lum-c').oninput=e=>{ v.c=e.target.value; document.querySelectorAll('[data-lc]').forEach(x=>x.classList.remove('on')); done(); };
   $('lum-p').oninput=e=>{ v.p=+e.target.value; $('lum-pv').textContent=Math.round(v.p*100)+' %'; done(); };
   $('lum-del').onclick=()=>{ delete D.lum[k]; dlg.close(); done(); }; }
-function lumClick(wx,wy){ const [i,j]=dgCell(wx,wy); if(!dgOpen(i,j)&&!dgSup(i,j)){ toast('Une lumière se pose sur une case creusée',true); return; } const D=dgEnsure(); D.lum=D.lum||{}; const k=dgK(i,j);
+function lumClick(wx,wy){ const [i,j]=dgCell(wx,wy); if(dgSup(i,j)){ toast('Seuls les petits objets se posent sur un bar ou une table',true); return; } if(!dgOpen(i,j)){ toast('Une lumière se pose sur une case creusée',true); return; } const D=dgEnsure(); D.lum=D.lum||{}; const k=dgK(i,j);
   if(lumK(D.lum[k])===DG.lk) delete D.lum[k]; else D.lum[k]=DG.lk; drawDgLater(); fpsLater(); markDirty(); sync(); }
 const dgPass=(i,j,ni,nj)=>dgOpen(ni,nj)&&!(dgEW(i,j,ni,nj)&&!dgDoor(i,j,ni,nj))&&!dgShut(dgDoor(i,j,ni,nj))&&!vegBlocks(ni,nj)&&!obAt(ni,nj)&&!(dgAt(ni,nj)||{}).wat;
 function dgEdgeAt(wx,wy){ const fx=wx/CELL, fy=wy/CELL, dh=Math.abs(fy-Math.round(fy)), dv=Math.abs(fx-Math.round(fx));
@@ -5641,8 +5643,8 @@ function renderDgPanel(){ const box=$('dg-body'); if(!box) return;
   else if(doorT) sub=doorStyles(DG.ds||dgDefDoor(),'dsv');
   else if(T==='win') sub=winStyles(DG.ws||'crypte','wsv');
   else if(decoT){ const cat=DG.dcat||'veg';
-    sub=seg('dcat',[['veg','Végétation'],['mob','Mobilier'],['sup','Supports'],['int','Interactif']],cat)+(cat==='sup'?`<span class="cap">Bars</span><div class="vegpick">${Object.entries(SUP).map(([k,l])=>`<button type="button" class="vegb${T==='sup'&&DG.supk==='bar:'+k?' on':''}" data-supk="bar:${k}" title="Bar ${l}"><img src="res/sup/${k}.png" alt=""><small>${l}</small></button>`).join('')}</div><span class="cap">Tables</span><div class="vegpick">${Object.entries(SUP).map(([k,l])=>`<button type="button" class="vegb${T==='sup'&&DG.supk==='table:'+k?' on':''}" data-supk="table:${k}" title="Table ${l}"><img src="res/sup/${k}-table.png" alt=""><small>${l}</small></button>`).join('')}</div>`:cat==='int'?`<div class="vegpick"><button type="button" class="vegb${T==='shopd'?' on':''}" data-int="shop" title="Commerce : un commerçant, son stock se règle sur sa fiche"><img src="res/sprites/commerce.png" alt=""><small>Commerce</small></button></div>`:cat==='veg'?`<div class="vegpick">${Object.keys(VEG_BIO).map(b=>Object.keys(VEG_K).map(k=>{ const key=b+'-'+k; return `<button type="button" class="vegb${T==='veg'&&DG.vk===key?' on':''}" data-veg="${key}" title="${VEG_K[k]} · ${VEG_BIO[b]}"><img src="res/vege/${key}.png" alt=""></button>`; }).join('')).join('')}</div>`
-      :`<div class="vegpick">${Object.entries(LUM).map(([k,d])=>`<button type="button" class="vegb${T==='lum'&&DG.lk===k?' on':''}" data-lum="${k}" title="${d.l}"><img src="res/lum/${k}.png" alt=""></button>`).join('')}${Object.entries(OBJ).map(([k,d])=>`<button type="button" class="vegb${T==='ob'&&DG.ok===k?' on':''}" data-ob="${k}" title="${d.l}"><img src="res/sprites/${k}.png" alt=""></button>`).join('')}</div>`); }
+    sub=seg('dcat',[['veg','Végétation'],['mob','Mobilier'],['sup','Supports'],['int','Interactif']],cat)+(cat==='sup'?`<span class="cap">Bars</span><div class="vegpick">${Object.entries(SUP).map(([k,l])=>`<button type="button" class="vegb${T==='sup'&&DG.supk==='bar:'+k?' on':''}" data-supk="bar:${k}" title="Bar ${l}"><img src="res/sup/${k}.png" alt=""><small>${l}</small></button>`).join('')}</div><span class="cap">Tables</span><div class="vegpick">${Object.entries(SUP).map(([k,l])=>`<button type="button" class="vegb${T==='sup'&&DG.supk==='table:'+k?' on':''}" data-supk="table:${k}" title="Table ${l}"><img src="res/sup/${k}-table.png" alt=""><small>${l}</small></button>`).join('')}</div>`:cat==='int'?`<div class="vegpick"><button type="button" class="vegb${T==='shopd'?' on':''}" data-int="shop" title="Commerce · petit objet : un commerçant, son stock se règle sur sa fiche ; se pose aussi sur un bar ou une table"><img src="res/sprites/commerce.png" alt=""><small>Commerce · petit</small></button></div>`:cat==='veg'?`<div class="vegpick">${Object.keys(VEG_BIO).map(b=>Object.keys(VEG_K).map(k=>{ const key=b+'-'+k; return `<button type="button" class="vegb${T==='veg'&&DG.vk===key?' on':''}" data-veg="${key}" title="${VEG_K[k]} · ${VEG_BIO[b]}"><img src="res/vege/${key}.png" alt=""></button>`; }).join('')).join('')}</div>`
+      :`<div class="vegpick">${Object.entries(LUM).map(([k,d])=>`<button type="button" class="vegb${T==='lum'&&DG.lk===k?' on':''}" data-lum="${k}" title="${d.l} · gros objet"><img src="res/lum/${k}.png" alt=""><small>Gros</small></button>`).join('')}${Object.entries(OBJ).map(([k,d])=>`<button type="button" class="vegb${T==='ob'&&DG.ok===k?' on':''}" data-ob="${k}" title="${d.l} · ${SZ_L[objSz(k)].toLowerCase()}"><img src="res/sprites/${k}.png" alt=""><small>${objSz(k)==='p'?'Petit':'Gros'}</small></button>`).join('')}</div>`); }
   else if(T==='path') sub=hr('dg-pw',DG.pw||1.4,'Largeur du sentier');
   const TN={sel:'Sélection',rect:'Pièce',tpl:'Modèles',wall:'Murs',iwall:'Murs',unwall:'Murs',door:'Porte',secret:'Porte',win:'Fenêtre',path:'Sentier',erase:'Effacer',veg:'Déco',lum:'Déco',ob:'Déco',deco:'Déco',shopd:'Déco',sup:'Déco',sup:'Passages',sdown:'Passages',sign:'Passages',tp:'Passages'};
   const tname=ttl?`Sélection · ${ttl}`:solT?'Sol':plaT?'Plafond':murT?'Murs':TN[T]||'Sélection';
@@ -5740,7 +5742,7 @@ const HANDS={"humain": "res/mains/humain.webp", "troll": "res/mains/troll.webp",
 /* contenants (choisis par le MJ) et dépouille : images vues en 3D */
 const DGSPR={"coffre": "res/sprites/coffre.png", "caisse": "res/sprites/caisse.png", "tech": "res/sprites/tech.png", "jarre": "res/sprites/jarre.png", "viande": "res/sprites/viande.png", "epave": "res/sprites/epave.png", "commerce": "res/sprites/commerce.png"};
 const CONT={coffre:'Coffre',caisse:'Caisse',tech:'Caisse tech',jarre:'Jarre',viande:'Tas de chair',epave:'Épave'};
-const SPR_H={commerce:.95,mklamp:1.45,mkup:1,mktp:.95,coffre:.48,caisse:.55,tech:.55,jarre:.55,viande:.4,epave:.48};
+const SPR_H={commerce:.5,mklamp:1.45,mkup:1,mktp:.95,coffre:.48,caisse:.55,tech:.55,jarre:.55,viande:.4,epave:.48};
 const DGIM={};
 /* aventuriers vus par les autres : sprite en pied selon la race et le sexe (res/persos/<race>-<h|f>.png) */
 /* véhicules vus en 3D : sprite par facteur (res/vehicules/facteur<n>.png) + pastille du nombre de passagers */
