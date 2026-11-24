@@ -3291,7 +3291,8 @@ input,textarea,select,[contenteditable],[contenteditable] *,.rg-txt,.rg-txt *,.n
 .dg-pal .dg-x{display:grid;place-items:center;background:var(--paper);border:1px dashed var(--rule)}.dg-pal .dg-x i{font-style:normal;font-weight:800;color:#999}.dg-pal .dg-x svg{width:20px;height:20px}
 .wxrow.dg-tools{flex-wrap:nowrap;gap:4px}.dg-tools .wxb{flex:1 1 0;min-width:0;padding:8px 0;min-height:0}.dg-tools .wxb span{display:none}.dg-tools .wxb svg{width:22px;height:22px}
 .dg-tgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}.dg-tgrid .wxb{min-width:0;padding:7px 0 5px;min-height:0;display:flex;flex-direction:column;align-items:center;gap:2px}.dg-tgrid .wxb svg{width:21px;height:21px}.dg-tgrid .wxb span{font-size:9.5px;letter-spacing:.02em}
-.dg-cfg:empty,#dg-cardslot:empty{display:none}.dg-cfg{margin:8px 0;padding:10px;border:1.5px solid #47e4ff;border-radius:12px}.dg-cfgin h3{margin:0 0 8px;font-size:15px}.dg-cfgin .actions{margin-top:10px}.dg-cfgin .dphead{margin-bottom:6px}
+.dg-cfg:empty,#dg-cardslot:empty{display:none}.dg-cfghd{display:flex;margin-bottom:10px}.dg-cfghd .btn{gap:6px}
+.dg-cfg{margin:8px 0;padding:10px;border:1.5px solid #47e4ff;border-radius:12px}.dg-cfgin h3{margin:0 0 8px;font-size:15px}.dg-cfgin .actions{margin-top:10px}.dg-cfgin .dphead{margin-bottom:6px}
 #card.docked{position:relative;left:auto!important;top:auto!important;width:auto;margin:8px 0;box-shadow:none;border:1.5px solid #47e4ff}
 .dg-sub{margin:8px 0 4px;padding:8px;border:1px solid var(--rule);border-radius:12px;background:color-mix(in srgb,var(--paper) 92%,var(--ink) 3%)}.dg-sub>.dg-seg:first-child{margin-top:0}.dg-seg .wxb{display:flex;align-items:center;justify-content:center;gap:5px}.dg-seg .wxb svg{width:16px;height:16px;flex:none}.dg-seg .wxb span{font-size:11px}
 .dg-acts{gap:4px}.dg-acts .wxb{flex:1 1 0;min-width:0;padding:6px 2px;display:flex;flex-direction:column;align-items:center;gap:3px}.dg-acts .wxb svg{width:18px;height:18px}.dg-acts .wxb span{font-size:10px}
@@ -5590,7 +5591,7 @@ function dgRunCfg(){ const slot=$('dg-cfg'); if(!slot||!DG.cfgFn) return; let us
   if(!used){ DG.cfgFn=null; slot.innerHTML=''; }
   slot.onclick=e=>{ if(e.target.closest('select,input,textarea,label')||!e.target.closest('button')) return; setTimeout(()=>{ if(DG.cfgFn) dgRunCfg(); else renderDgPanel(); drawDgLater(); },0); }; }
 /* jeton (joueur, PNJ, mob) : sa fiche se range dans le volet tant que la construction est ouverte */
-function dgDockCard(){ const c=$('card'), slot=$('dg-cardslot'); if(!c) return; if(slot&&cardId&&dgDocked()){ if(c.parentNode!==slot) slot.appendChild(c); c.classList.add('docked'); DG.cfgFn=null; DG.zone=null; DG.edgeSel=null; const s2=$('dg-cfg'); if(s2) s2.innerHTML=''; }
+function dgDockCard(){ const c=$('card'), slot=$('dg-cardslot'); if(!c) return; if(slot&&cardId&&dgDocked()&&!$('dg-back')){ renderDgPanel(); return; } if(slot&&cardId&&dgDocked()){ if(c.parentNode!==slot) slot.appendChild(c); c.classList.add('docked'); DG.cfgFn=null; DG.zone=null; DG.edgeSel=null; const s2=$('dg-cfg'); if(s2) s2.innerHTML=''; }
   else if(c.parentNode!==document.body){ document.body.appendChild(c); c.classList.remove('docked'); } }
 function renderDgPanel(){ const box=$('dg-body'); if(!box) return;
   { const c=$('card'); if(c&&box.contains(c)){ document.body.appendChild(c); c.classList.remove('docked'); } }
@@ -5634,7 +5635,10 @@ function renderDgPanel(){ const box=$('dg-body'); if(!box) return;
   else if(T==='path') sub=hr('dg-pw',DG.pw||1.4,'Largeur du sentier');
   const TN={sel:'Sélection',rect:'Pièce',tpl:'Modèles',wall:'Murs',iwall:'Murs',unwall:'Murs',door:'Porte',secret:'Porte',win:'Fenêtre',path:'Sentier',erase:'Effacer',veg:'Déco',lum:'Déco',ob:'Déco',deco:'Déco',shopd:'Déco',sup:'Passages',sdown:'Passages',sign:'Passages',tp:'Passages'};
   const tname=ttl?`Sélection · ${ttl}`:solT?'Sol':plaT?'Plafond':murT?'Murs':TN[T]||'Sélection';
-  box.innerHTML=`<div class="subttl">Construire</div>
+  const CFG=T==='sel'&&!!(DG.cfgFn||DG.edgeSel||(typeof cardId!=='undefined'&&cardId&&dgDocked()));   /* objet sélectionné : le volet devient celui de ses réglages */
+  if(CFG) box.innerHTML=`<div class="dg-cfghd"><button class="btn ghost" type="button" id="dg-back">${IB('left',2)}Construire</button></div>
+    ${sub?`<div class="dg-sub">${sub}</div>`:''}<div id="dg-cfg" class="dg-cfg"></div><div id="dg-cardslot"></div>`;
+  else box.innerHTML=`<div class="subttl">Construire</div>
     <div class="dg-tgrid">${wb('dg-sel',IB('hand'),'Sélection',T==='sel'||!T)}${wb('dg-rect',dgI('fit',1.7),'Pièce',T==='rect'||T==='tpl')}${wb('dg-bsol',dgI('floor',1.7),'Sol',solT)}${wb('dg-wall',dgI('wall',1.7),'Murs',murT)}${wb('dg-bpla',dgI('ceilt',1.7),'Plafond',plaT)}${wb('dg-door',dgI('door',1.7),'Porte',doorT)}${wb('dg-wwin',dgI('winw',1.7),'Fenêtre',T==='win')}${wb('dg-deco',SV('<path d="M12 3c-3 4-6 6-6 10a6 6 0 0 0 12 0c0-4-3-6-6-10z"/><path d="M12 21v-6"/>'),'Déco',decoT)}${wb('dg-path',dgI('pathw',1.7),'Sentier',T==='path')}${wb('dg-erase',IB('eraser'),'Effacer',T==='erase')}</div>
     <div class="dg-tname">${tname}</div>
     ${sub?`<div class="dg-sub">${sub}</div>`:''}
@@ -5647,6 +5651,7 @@ function renderDgPanel(){ const box=$('dg-body'); if(!box) return;
   const clearSel=()=>{ DG.sel=null; DG.zone=null; DG.edgeSel=null; DG.cfgFn=null; };
   const pick=m=>{ DG.rect=null; DG.poly=null; if(m!=='sel') clearSel(); if(!dgOn()){ dgEnsure().on=true; } DG.tool=(DG.tool===m&&m!=='sel'&&tool==='dgn')?'sel':m; if(tool!=='dgn') setTool('dgn'); drawDgLater(); renderDgPanel(); };
   const on=(id,f)=>{ const b=$(id); if(b) b.onclick=f; };
+  on('dg-back',()=>{ DG.cfgFn=null; DG.edgeSel=null; DG.sel=null; if(typeof closeCard==='function') closeCard(); renderDgPanel(); drawDgLater(); });
   const fx=()=>{ FPS.sprites.clear(); FPS.capK=null; drawDgLater(); fpsLater(); markDirty(); sync(); };
   box.querySelectorAll('[data-ob]').forEach(b=>b.onclick=()=>{ DG.ok=b.dataset.ob; DG.tool='ob'; renderDgPanel(); });
   box.querySelectorAll('[data-lum]').forEach(b=>b.onclick=()=>{ DG.lk=b.dataset.lum; DG.tool='lum'; renderDgPanel(); });
@@ -6294,9 +6299,9 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
         else { if(top>fh){ const WI=WLIMG[EWT]; if(WI&&WI.px) faceImg(fh,top,dd,WI); else if(EWT==='ruelle'||EWT==='trottoir'||EWT==='bitume'){ facLoad(); if(FAC.ready) faceFac(fh,top,dd); else face(fh,top,dd,ET.wall,ET.N); } else face(fh,top,dd,ET.wall,ET.N); } if(top>=cap) break; } }   /* MUR tracé sur l'arête */
       const WB=dgWB(mx,my);
       if(WB){ const WT=fpsTextures(WB.t), cap=CC?+CC.h||1:MAXW, top=Math.min(+WB.h||1,cap); if(top>fh) face(fh,top,d0,WT.wall,WT.N); if(top>=cap) break;   /* bloc de MUR */
-        cur={th:WB.t,sky:true,blk:1}; fh=+WB.h||1; TT=WT; virt=false; if(d0>60) break; continue; }
+        cur={th:WB.t,sky:true,blk:1,pb:cur.blk?cur.pb:{c:cur,T:TT,h:fh,v:virt}}; fh=+WB.h||1; TT=WT; virt=false; if(d0>60) break; continue; }
       let nf=dgAt(mx,my), wt=null; const door=!virt?dgDoor(pmx,pmy,mx,my):null;   /* aussi une porte plaquée contre un mur (rien derrière) */
-      if(!nf&&cur.blk) break;
+      if(!nf&&cur.blk){ if(V2&&cur.pb){ nf=cur.pb.c; TT=cur.pb.T; fh=cur.pb.h; cur=nf; }   /* derrière un bâtiment (blocs de mur) : le décor continue, comme avant le bâtiment */ else break; }
       if(!nf){ if(V2||cur.iw||virt||dgWNo(mx,my)){ nf=cur; virt=true; } else wt=TT.wall; } else virt=false;
       let doff=0;
       if(door) dgNormDoor(door);
@@ -6411,6 +6416,7 @@ function fpsWorldAt(cx,cy){ if(!FPS.el||FPS.el.hidden||!FPS.lastCam||!FPS.dz) re
 function fpsFacing(){ const c=FPS.cam, d=(((Math.round(c.a/(Math.PI/2))%4)+4)%4), V4=[[0,-1],[1,0],[0,1],[-1,0]], i=Math.floor(c.x), j=Math.floor(c.y); return [i,j,i+V4[d][0],j+V4[d][1]]; }
 function fpsDoor(){ if(!FPS.cam||FPS.anim) return false; const [i,j,ni,nj]=fpsFacing(), o=dgDoor(i,j,ni,nj); if(!o||dgHid(o)){ fpsBump(); return false; }
   if(o.lk){ fpsBump(); toast('🔒 Porte verrouillée'); return true; }
+  if(!o.open&&dgDoorBlind(dgEK(i,j,ni,nj))){ fpsBump(); toast('La porte ne s\'ouvre pas'); return true; }   /* rien derrière (mur, bloc de pierre) : elle reste fermée */
   if(FPS.mode==='play'){ o.open=!o.open; if(o.open&&window.DGTEST) dgAutoClose(dgEK(i,j,ni,nj)); fpsLater(); up({t:'ddoor',x:(i+.5)*CELL,y:(j+.5)*CELL,nx:(ni+.5)*CELL,ny:(nj+.5)*CELL}); } else dgToggleDoor(dgEK(i,j,ni,nj)); return true; }
 /* toucher l'écran : ramasser l'objet visé (à portée de main) ou manœuvrer la porte */
 function fpsTap(e,cv){ const r=cv.getBoundingClientRect(), u=(e.clientX-r.left)/r.width, v=(e.clientY-r.top)/r.height;
@@ -7497,7 +7503,7 @@ function addToken(t){
 /* Fiche flottante */
 let cardId=null;
 function toggleCard(id){ if(cardId===id) closeCard(); else openCard(id); }
-function closeCard(){ if(!cardId) return; const el=document.querySelector(`.tk[data-id="${cardId}"]`); if(el) el.classList.remove('open'); cardId=null; $('card').hidden=true; }
+function closeCard(){ if(!cardId) return; const el=document.querySelector(`.tk[data-id="${cardId}"]`); if(el) el.classList.remove('open'); cardId=null; $('card').hidden=true;  if($('dg-back')&&typeof renderDgPanel==='function'&&!DG.cfgFn&&!DG.edgeSel) setTimeout(renderDgPanel,0); }
 let cardAt=0;
 function openCard(id){
   const t=tok(id); if(!t) return; closeCard(); cardId=id; cardAt=performance.now();
