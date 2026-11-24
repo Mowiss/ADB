@@ -6203,7 +6203,7 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
         const sv=a+uc, ns=2*(a+b+1), sg=Math.min(ns-1,Math.floor(sv*2)), pn=sg===0?0:sg===ns-1?2:1; X=(pn+(sv*2-sg))/3*I.w; }
       else X=(1+((uc*2)%1))/3*I.w;   /* bout du comptoir */
       const xi=Math.min(I.w-1,X|0);
-      for(let y=yT;y<=yB;y++){ const z=eye-(y+.5-h2)*d/PS; if(z<z0||z>z1) continue; const yi=Math.min(I.h-1,((1-(z-z0)/(z1-z0))*I.h)|0); put(y,shL(I.px[yi*I.w+xi]|0xff000000,f,wa),d); } };
+      for(let y=yT;y<=yB;y++){ const z=eye-(y+.5-h2)*d/PS; if(z<z0||z>z1) continue; const yi=Math.min(I.h-1,((1-(z-z0)/(z1-z0))*I.h)|0); const c=I.px[yi*I.w+xi]; if(sp.k==='table'&&(c>>>24)<128) continue; put(y,shL(c|0xff000000,f,wa),d); } };
     const face=(z0,z1,d,tex,N,off)=>{ const yT=Math.max(0,Math.ceil(h2+(eye-z1)*PS/d)), yB=Math.min(H-1,Math.floor(h2+(eye-z0)*PS/d)); if(yB<yT) return;
       let wx=side===0?cam.y+d*rdy:cam.x+d*rdx; wx-=Math.floor(wx); if(off) wx=Math.max(0,wx-off); let tx=(wx*N)|0; if(side===0&&rdx>0||side===1&&rdy<0) tx=N-tx-1;
       const f=lit(d)*(side?.78:1)*vis(cam.x+d*rdx,cam.y+d*rdy), wa=LON?la(cam.x+d*rdx-(side===0?Math.sign(rdx)*.02:0),cam.y+d*rdy-(side===1?Math.sign(rdy)*.02:0)):null, wa2=wa&&wa.map(v=>v*(side?.78:1));
@@ -6301,6 +6301,10 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
     let cur=here, fh=dgH(mx,my), TT=fpsTextures(cur.th), virt=false, d0=.01, VC=null;
     if(cam.z!=null) fh=Math.min(fh,cam.z);   /* en pleine montée : le sol de départ suit la caméra */
     while(n++<160){ const d1=Math.min(sdx,sdy), N=TT.N;
+      { const tb=!virt&&dgSup(mx,my); if(tb&&tb.k==='table'){ const th=fh+SUPH.table, ST=supTex(tb,cur.th);   /* table : son plateau, puis ses pieds du fond */
+          if(eye>th){ const yA=Math.max(0,Math.ceil(h2+(eye-th)*PS/d1)), yB=Math.min(H-1,Math.floor(h2+(eye-th)*PS/d0)), SN=ST.N;
+            for(let y=yA;y<=yB;y++){ const rd=(eye-th)*PS/(y+.5-h2), wx=cam.x+rd*rdx, wy=cam.y+rd*rdy; put(y,shL(ST.floor[((((wy-Math.floor(wy))*SN)|0)&(SN-1))*SN+((((wx-Math.floor(wx))*SN)|0)&(SN-1))],lit(rd)*vis(wx,wy),LON?la(wx,wy):null),rd); } }
+          const s0=side; side=sdx<sdy?0:1; faceSup(fh,th,d1,tb,mx,my); side=s0; } }
       /* sol de la case */
       if(eye>fh){ const yA=Math.max(0,Math.ceil(h2+(eye-fh)*PS/d1)), yB=Math.min(H-1,Math.floor(h2+(eye-fh)*PS/d0)), mm=!virt&&dgMk(mx,my), FT=mm&&(mm.k==='down'||mm.k==='tp')?mkTex()[mm.k]:TT.floor, SNW=COLD&&!dgCeil(mx,my);
         for(let y=yA;y<=yB;y++){ const rd=(eye-fh)*PS/(y+.5-h2); let wx=cam.x+rd*rdx, wy=cam.y+rd*rdy; const fx=wx-Math.floor(wx), fy=wy-Math.floor(wy), tx=(fx*N)&(N-1), ty=(fy*N)&(N-1);
@@ -6324,7 +6328,7 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
         if(EW.win&&WINPOM[WS]&&top>fh){ const WP=winPomLoad(WS), WI=WLIMG[EWT]; if(WI&&WI.px) faceImg(fh,top,dd,WI); else face(fh,top,dd,ET.wall,ET.N); if(WP) winOverP(fh,dd,WP); }
         else if(EW.win){ const WK=WINIMG[WS]?WS:WIN_OF[WS], WO=WK&&winImgLoad(WK); if(WO&&top>fh){ const WI=WLIMG[EWT]; if(WI&&WI.px) faceImg(fh,top,dd,WI); else if(EWT==='ruelle'||EWT==='trottoir'||EWT==='bitume'){ facLoad(); if(FAC.ready) faceFac(fh,top,dd); else face(fh,top,dd,ET.wall,ET.N); } else face(fh,top,dd,ET.wall,ET.N); winOver(fh,dd,WO); } else if(top>fh) faceWin(fh,top,dd,ET.wall,ET.N,winStyle(WS),WLIMG[EWT]); }   /* fenêtre : cadre au style du mur, on voit à travers */
         else { if(top>fh){ const WI=WLIMG[EWT]; if(WI&&WI.px) faceImg(fh,top,dd,WI); else if(EWT==='ruelle'||EWT==='trottoir'||EWT==='bitume'){ facLoad(); if(FAC.ready) faceFac(fh,top,dd); else face(fh,top,dd,ET.wall,ET.N); } else face(fh,top,dd,ET.wall,ET.N); } if(top>=cap) break; } }   /* MUR tracé sur l'arête */
-      const WB=dgWB(mx,my);
+      let WB=dgWB(mx,my); if(WB&&WB.sup&&WB.sup.k==='table'){ const th=Math.min(SUPH.table,(CC?+CC.h||1:MAXW)); if(!virt) faceSup(fh,fh+th,d0,WB.sup,mx,my); WB=null; }   /* table évidée : façade ajourée, le sol continue dessous */
       if(WB){ const WT=WB.sup?supTex(WB.sup,WB.t):fpsTextures(WB.t), cap=CC?+CC.h||1:MAXW, top=Math.min(+WB.h||1,cap); if(top>fh){ if(WB.sup) faceSup(fh,top,d0,WB.sup,mx,my); else face(fh,top,d0,WT.wall,WT.N); } if(top>=cap) break;   /* bloc de MUR (ou support : bar, table) */
         cur={th:WB.t,sky:true,blk:1,sup:WB.sup?1:0,pb:cur.blk?cur.pb:{c:cur,T:TT,h:fh,v:virt}}; fh=+WB.h||1; TT=WT; virt=false; if(d0>60) break; continue; }
       let nf=dgAt(mx,my), wt=null; const door=!virt?dgDoor(pmx,pmy,mx,my):null;   /* aussi une porte plaquée contre un mur (rien derrière) */
