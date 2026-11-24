@@ -6540,7 +6540,7 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
       const tn=(u,z)=>{ u=1-u; if(u<0||u>=1||z<0||z>=1) return -1; return ((1-z)*N|0)*N+((u*N)|0); };
       const to=(u,z)=>{ u=1-u+off; if(u<0||u>=1||z<0||z>=1) return -1; return ((1-z)*N|0)*N+((u*N)|0); };
       for(let y=yT;y<=yB;y++){ const z=eye-(y+.5-h2)*d/PS-z0, k=(z+z0-eye)/d/nrm; let c=-1, ff=f;
-        for(let h=HM;h>=LF;h-=.008){ const j=tn(w0-h*tg,z-k*h); if(j>=0&&DR[j]>=h&&(DD[j]>>>24)>127){ c=DD[j]; ff=f*(.92+h*.6); break; } }   /* fronton, pilastres, imposte, touffes : chacun à sa profondeur */
+        { const h=.05, j=tn(w0-h*tg,z-k*h); if(j>=0&&DR[j]>=LF&&(DD[j]>>>24)>127){ c=DD[j]; ff=f*1.04; } }   /* une seule couche de relief : encadrement en saillie, net */
         if(c===-1){ const i0=tn(w0,z); if(i0<0) continue;
           if(DR[i0]<.004&&(DD[i0]>>>24)<128&&!(P._op||(P._op=doorOpen(P,LF)))[i0]){ c=wk?wallPx(wk,uwW,z+z0):WOK?WI.px[wlY(WI,z)*WI.w+wlX(WI,uwW)]:wallPx(cur.th,uwW,z+z0); }   /* autour de la porte : le mur */
           else if(DR[i0]<LF){ if(off>=1) continue; const i1=to(w0,z); if(i1<0||DR[i1]>=LF||DR[i1]<.004||(DD[i1]>>>24)<128) continue; c=DD[i1]; ff=f*.9; }   /* battants */
