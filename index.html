@@ -4989,6 +4989,7 @@ const DG_TH={
   planches:{lbl:'Planches',sw:'#a8794a',rock:'#1a130b',floor2d:'#9c7a52',wall2d:'#5a3c20',seed:13},
   trottoir:{lbl:'Trottoir',sw:'#4d5866',rock:'#0b0710',floor2d:'#56606c',wall2d:'#1a1426',seed:14,sky:1},
   bitume:{lbl:'Route',sw:'#2c333c',rock:'#0b0710',floor2d:'#353c46',wall2d:'#1a1426',seed:15,sky:1},
+  solarint:{lbl:'Solarpunk intérieur',sw:'#7a5a3a',rock:'#120d08',floor2d:'#6a5038',wall2d:'#3a2a1a',seed:23},
   interieur:{lbl:'Intérieur cyber',sw:'#3c5260',rock:'#0b0710',floor2d:'#3f5560',wall2d:'#1a2430',seed:16},
   flamingo:{lbl:'Flamingo',sw:'#d9a07a',rock:'#1a1410',floor2d:'#c9a27a',wall2d:'#7a9a6a',seed:17,sky:1,noCeil:1},
   mer:{lbl:'Mer',sw:'#2f8fc9',rock:'#06202e',floor2d:'#3a95c8',wall2d:'#1c5a80',seed:11,sky:1,wh:1,water:1},
@@ -5933,7 +5934,7 @@ function leafCeil(x,N,rnd,h0,h1,l0,l1){ for(let i=0;i<55;i++){ const cx=rnd()*N,
     x.beginPath(); x.ellipse((cx+Math.cos(a)*d+N)%N,(cy+Math.sin(a)*d+N)%N,2+rnd()*3,1+rnd()*1.5,rnd()*3,0,7); x.fill(); } }
   x.fillStyle='rgba(60,40,20,.9)'; for(let i=0;i<3;i++){ let a=rnd()*N, b=rnd()*N; x.fillRect(a|0,b|0,1,1); for(let k=0;k<10;k++){ a+=rnd()*4-2; b+=2; x.fillRect((a+N)%N|0,(b+N)%N|0,1,2); } } }
 /* sols en image (trottoir, route cyberpunk) : grandes dalles qui couvrent plusieurs cases, sans répétition à chaque mètre */
-const FLIMG={herbe:{src:'res/themes/herbe/herbe.webp',cw:2.5,ch:2.8},herbnoc:{src:'res/themes/herbe/herbe-noctile.webp',cw:2.5,ch:2.8},mer:{src:'res/themes/mer/mer.webp',cw:4,ch:2.23,anim:1},mermut:{src:'res/themes/mer/mer-mutant.webp',cw:4,ch:2.23,anim:1},mermag:{src:'res/themes/mer/mer-magique.webp',cw:4,ch:2.23,anim:1},flamingo:{src:'res/themes/flamingo/sol.webp',cw:5,ch:5},trottoir:{src:'res/themes/ruelle/trottoir.webp',cw:3,ch:2.234},bitume:{src:'res/themes/ruelle/route.webp',cw:4,ch:4},crypte:{src:'res/themes/crypte/sol.webp',cw:4,ch:2.23},interieur:{src:'res/themes/ruelle/sol-interieur.webp',cw:4,ch:3}};
+const FLIMG={herbe:{src:'res/themes/herbe/herbe.webp',cw:2.5,ch:2.8},herbnoc:{src:'res/themes/herbe/herbe-noctile.webp',cw:2.5,ch:2.8},mer:{src:'res/themes/mer/mer.webp',cw:4,ch:2.23,anim:1},mermut:{src:'res/themes/mer/mer-mutant.webp',cw:4,ch:2.23,anim:1},mermag:{src:'res/themes/mer/mer-magique.webp',cw:4,ch:2.23,anim:1},flamingo:{src:'res/themes/flamingo/sol.webp',cw:5,ch:5},trottoir:{src:'res/themes/ruelle/trottoir.webp',cw:3,ch:2.234},bitume:{src:'res/themes/ruelle/route.webp',cw:4,ch:4},crypte:{src:'res/themes/crypte/sol.webp',cw:4,ch:2.23},interieur:{src:'res/themes/ruelle/sol-interieur.webp',cw:4,ch:3},planches:{src:'res/themes/planches/sol.webp',cw:3,ch:1.636},solarint:{src:'res/themes/planches/sol.webp',cw:3,ch:1.636}};
 /* fenêtre en image (cyberpunk) : cadre en relief, vitre transparente (alpha 128 dans l'image) */
 const WINIMG={simple:{src:'res/themes/simple/fenetre.png'},cyber:{src:'res/themes/ruelle/fenetre.png'},crypte:{src:'res/themes/crypte/fenetre.png'}}, WIN_OF={flamingo:'simple',crypte:'crypte',trottoir:'cyber',bitume:'cyber',ruelle:'cyber',interieur:'cyber'};
 /* fenêtres « en relief » : image + carte de hauteur (fronton, pilastres, jardinière, touffes très en avant), vitres transparentes (alpha 60-200) */
@@ -5959,7 +5960,9 @@ function doorImg(k,T){ const P=DOORPOM[k]; if(P){ const pd=T.pd={N:P.N,hm:P.hm,w
 const CLIMG={trottoir:{src:'res/themes/ruelle/plafond.webp',cw:4,ch:2.23},crypte:{src:'res/themes/crypte/plafond.webp',cw:4,ch:2.23}}; CLIMG.bitume=CLIMG.ruelle=CLIMG.interieur=CLIMG.trottoir;
 /* murs en image : continus le long du mur (cw cases de large, ch de haut) */
 /* Flamingo : maisons victoriennes (3 façades, 8 m × 6,4 m) ; escaliers au rez-de-chaussée, étages répétés au-dessus ; relief + parallaxe */
-const WLIMG={flamingo:{src:'res/themes/flamingo/mur.webp',mask:'res/themes/flamingo/mur-masque.png',cw:8,ch:6.4,dep:0,top:[3.83,6.4]},crypte:{src:'res/themes/crypte/mur.webp',rel:'res/themes/crypte/mur-relief.png',cw:3.6,ch:1.96,dep:.07},interieur:{src:'res/themes/ruelle/mur-interieur.webp',rel:'res/themes/ruelle/mur-interieur-relief.png',cw:2.67,ch:2,dep:.035}};
+const WLIMG={flamingo:{src:'res/themes/flamingo/mur.webp',mask:'res/themes/flamingo/mur-masque.png',cw:8,ch:6.4,dep:0,top:[3.83,6.4]},crypte:{src:'res/themes/crypte/mur.webp',rel:'res/themes/crypte/mur-relief.png',cw:3.6,ch:1.96,dep:.07,fit:1},interieur:{src:'res/themes/ruelle/mur-interieur.webp',rel:'res/themes/ruelle/mur-interieur-relief.png',cw:2.67,ch:2,dep:.035,fit:1},solarint:{src:'res/themes/solarint/mur.webp',cw:3.06,ch:2,fit:1}};
+/* fit : l'image prend toute la hauteur du mur (sa largeur suit, proportions gardées) */
+function wlFit(WI,H){ if(!WI.fit||!(H>0)||Math.abs(H-WI.ch)<.01) return WI; const c=WI._f||(WI._f={}), k=Math.round(H*100); let o=c[k]; if(!o){ o=c[k]=Object.create(WI); o.ch=H; o.cw=WI.cw*H/WI.ch; } else if(o.px!==WI.px){ o.px=WI.px; o.rl=WI.rl; o.w=WI.w; o.h=WI.h; } return o; }
 function flLoad(k,T){ const o=(T||FLIMG)[k]; if(o.im) return; o.im=new Image(); o.im.onload=()=>{ const c=document.createElement('canvas'); c.width=o.im.naturalWidth; c.height=o.im.naturalHeight; c.getContext('2d').drawImage(o.im,0,0);
   o.px=new Uint32Array(c.getContext('2d').getImageData(0,0,c.width,c.height).data.buffer.slice(0)); o.w=c.width; o.h=c.height; fpsLater(); drawDgLater(); }; o.im.src=o.src;
   if(o.mask){ const r=new Image(); r.onload=()=>{ const c=document.createElement('canvas'); c.width=r.naturalWidth; c.height=r.naturalHeight; const x=c.getContext('2d'); x.drawImage(r,0,0); const d=x.getImageData(0,0,c.width,c.height).data, M=new Uint8Array(c.width*c.height); for(let i=0;i<M.length;i++){ const v=d[i*4]; M[i]=v>190?2:v>60?1:0; } o.mk=M; fpsLater(); }; r.src=o.mask; }
@@ -6080,7 +6083,7 @@ function supImg(name){ let o=SUPI[name]; if(!o){ o=SUPI[name]={}; const im=new I
 function supTex(sp,th){ const key='sup:'+sp.s+':'+th; FPS.texs=FPS.texs||{}; if(FPS.texs[key]) return FPS.texs[key]; const B=fpsTextures(th), I=supImg(sp.s+'-top'); if(!I) return B;
   const N=B.N, fl=new Uint32Array(N*N); for(let y=0;y<N;y++) for(let x=0;x<N;x++) fl[y*N+x]=I.px[((y*I.h/N)|0)*I.w+((x*I.w/N)|0)]|0xff000000;
   return FPS.texs[key]=Object.assign({},B,{floor:fl,img:null}); }
-function fpsTextures(k){ k=k||(S.dg&&S.dg.th)||'pierre'; FPS.texs=FPS.texs||{}; if(FPS.tex===null) FPS.texs={}; FPS.tex=1; if(FPS.texs[k]) return FPS.texs[k]; if(CLIMG[k]) flLoad(k,CLIMG); if(FLIMG[k]&&!FPS.inTx){ FPS.inTx=1; const b=fpsTextures(k==='crypte'?'crypte~':k==='interieur'?'station':DG_TH[k]&&DG_TH[k].water?'mer~':'ruelle'); FPS.inTx=0; flLoad(k); if(WLIMG[k]) flLoad(k,WLIMG); const T2=FPS.texs[k]=Object.assign({},b,{img:k}); if(DOORIMG[k]) doorImg(k,T2); return T2; } if(k==='crypte~') k='crypte'; if(k==='mer~') k='mer';
+function fpsTextures(k){ k=k||(S.dg&&S.dg.th)||'pierre'; if(WLIMG[k]&&!WLIMG[k].im&&!FLIMG[k]) flLoad(k,WLIMG); FPS.texs=FPS.texs||{}; if(FPS.tex===null) FPS.texs={}; FPS.tex=1; if(FPS.texs[k]) return FPS.texs[k]; if(CLIMG[k]) flLoad(k,CLIMG); if(FLIMG[k]&&!FPS.inTx){ FPS.inTx=1; const b=fpsTextures(k==='crypte'?'crypte~':k==='planches'||k==='solarint'?'planches~':k==='interieur'?'station':DG_TH[k]&&DG_TH[k].water?'mer~':'ruelle'); FPS.inTx=0; flLoad(k); if(WLIMG[k]) flLoad(k,WLIMG); const T2=FPS.texs[k]=Object.assign({},b,{img:k}); if(DOORIMG[k]) doorImg(k,T2); return T2; } const k0=k; if(k==='crypte~') k='crypte'; if(k==='mer~') k='mer'; if(k==='planches~') k='planches';   /* k0 : la version « ~ » garde sa propre place en cache */
   const N=64, NT=128, buf=c=>{ const o=document.createElement('canvas'); o.width=o.height=NT; const x=o.getContext('2d'); x.imageSmoothingEnabled=false; x.drawImage(c,0,0,NT,NT); return new Uint32Array(x.getImageData(0,0,NT,NT).data.buffer.slice(0)); };
   const mk=draw=>{ const c=document.createElement('canvas'); c.width=c.height=N; const x=c.getContext('2d'); draw(x); return c; };
   let sd=DG_TH[k].seed*9301; const rnd=()=>(sd=(sd*9301+49297)%233280)/233280;
@@ -6189,7 +6192,7 @@ function fpsTextures(k){ k=k||(S.dg&&S.dg.th)||'pierre'; FPS.texs=FPS.texs||{}; 
       noise(x,'0,0,0',.3,200); x.fillStyle='#2a2a2c'; x.fillRect(6,12,53,5); x.fillRect(6,46,53,5); x.fillStyle='#55555a'; [[10,14],[54,14],[10,48],[54,48]].forEach(([a,b])=>x.fillRect(a,b,2,2));
       x.strokeStyle='#b8a46a'; x.lineWidth=2; x.beginPath(); x.arc(48,33,4,0,Math.PI*2); x.stroke(); });
     ceil=mk(x=>{ x.fillStyle=crypt?'#231b16':'#2f2e2b'; x.fillRect(0,0,N,N); noise(x,'0,0,0',.4,260); noise(x,'255,255,255',.05,60); }); }
-    const T={wall,floor,ceil,door,N:NT}; for(const f in THF){ const im=thImg(k,THF[f]); T[f]=buf(im||T[f]); } { const im=thImg(k,'flanc'); T.side=im||side?buf(im||side):T.wall; } return FPS.texs[k]=T; }
+    const T={wall,floor,ceil,door,N:NT}; for(const f in THF){ const im=thImg(k,THF[f]); T[f]=buf(im||T[f]); } { const im=thImg(k,'flanc'); T.side=im||side?buf(im||side):T.wall; } return FPS.texs[k0]=T; }
 /* heure du jour (molette du MJ) : soleil, coucher, lune et étoiles */
 const dgHour=()=>S.hour!=null?+S.hour:(S.light===false?23:13);
 function dgDay(h){ const e=Math.sin((h-6)/12*Math.PI); return Math.max(0,Math.min(1,(e+.12)/.42)); }
@@ -6554,7 +6557,7 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
           else if(DR[i0]<LF){ if(off>=1) continue; const i1=to(w0,z); if(i1<0||DR[i1]>=LF||DR[i1]<.004||(DD[i1]>>>24)<128) continue; c=DD[i1]; ff=f*.9; }   /* battants */
           else { c=DD[i0]; ff=f*.45; } }   /* flancs des reliefs, dans l'ombre */
         put(y,shL(c,ff,wa),d); } };
-    const faceImg=(z0,z1,d,WI,zb)=>{ const zo=zb==null?z0:z0-zb;   /* texture calée sur le sol, même vue par-dessus un bar */ const yT=Math.max(0,Math.ceil(h2+(eye-z1)*PS/d)), yB=Math.min(H-1,Math.floor(h2+(eye-z0)*PS/d)); if(yB<yT) return;
+    const faceImg=(z0,z1,d,WI,zb)=>{ WI=wlFit(WI,z1-(zb==null?z0:zb)); const zo=zb==null?z0:z0-zb;   /* texture calée sur le sol, même vue par-dessus un bar */ const yT=Math.max(0,Math.ceil(h2+(eye-z1)*PS/d)), yB=Math.min(H-1,Math.floor(h2+(eye-z0)*PS/d)); if(yB<yT) return;
       const flip=!(side===0&&rdx>0||side===1&&rdy<0); let uw=side===0?cam.y+d*rdy:cam.x+d*rdx; if(flip) uw=-uw; const tx=((((uw/WI.cw)%1)+1)%1*WI.w)|0, hx=cam.x+d*rdx, hy=cam.y+d*rdy;
       const f=lit(d)*(side?.82:1)*vis(hx,hy), wa=LON?la(hx-(side===0?Math.sign(rdx)*.02:0),hy-(side===1?Math.sign(rdy)*.02:0)):null;
       const RL=WI.rl, nrm=side===0?Math.abs(rdx):Math.abs(rdy), tg=(side===0?rdy:rdx)*(flip?-1:1)/nrm, DP=WI.dep||0;
