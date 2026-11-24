@@ -3024,12 +3024,26 @@ html.pl-land .drawer:not(#tabledrw){top:0;right:0;z-index:40}`;
 }
 
 /* clavier du téléphone : il passe par-dessus la table ; on donne sa hauteur à la table pour y aligner le champ de message */
-function netKb(){ if(netKb.on) return; netKb.on=1; let last=0;
-  const set=kb=>{ const f=NETP&&NETP.frame; if(!f||!f.contentDocument) return; kb=Math.max(0,Math.round(kb)); f.contentDocument.documentElement.style.setProperty('--kb',kb+'px'); if(last>40&&kb<20&&f.contentWindow&&f.contentWindow.chatKbClosed) f.contentWindow.chatKbClosed(); last=kb; };
-  const VK=navigator.virtualKeyboard;
-  if(VK){ try{ VK.overlaysContent=true; }catch(e){} VK.addEventListener('geometrychange',()=>{ const f=NETP&&NETP.frame; if(!f) return; const r=f.getBoundingClientRect(), h=VK.boundingRect.height; set(h?r.bottom-(innerHeight-h):0); }); return; }   /* Chrome Android : le clavier passe par-dessus et donne sa hauteur */
-  const vv=window.visualViewport; if(!vv) return; const up=()=>{ const f=NETP&&NETP.frame; if(!f) return; const r=f.getBoundingClientRect(); set(r.bottom-(vv.offsetTop+vv.height)); };
-  vv.addEventListener('resize',up); vv.addEventListener('scroll',up); }
+function netKb(){ if(netKb.on) return; netKb.on=1; let last=0, foc=0, raf=0;   /* sans mesure fiable, le champ reste en haut de l'écran (CSS) */
+  const VK=navigator.virtualKeyboard; if(VK){ try{ VK.overlaysContent=true; }catch(e){} }
+  const vv=window.visualViewport;
+  /* hauteur du clavier : API clavier ou fenêtre visible ; sans mesure, le champ se met en haut */
+  const meas=()=>{ const f=NETP&&NETP.frame; if(!f) return 0; const r=f.getBoundingClientRect(); let kb=0;
+    if(VK&&VK.boundingRect&&VK.boundingRect.height>0) kb=Math.max(kb,r.bottom-(innerHeight-VK.boundingRect.height));
+    if(vv) kb=Math.max(kb,r.bottom-(vv.offsetTop+vv.height));
+    return kb; };
+  const set=kb=>{ const f=NETP&&NETP.frame; if(!f||!f.contentDocument) return; kb=Math.max(0,Math.round(kb)); if(Math.abs(kb-last)<2) return; const de=f.contentDocument.documentElement; de.style.setProperty('--kb',kb+'px'); de.classList.toggle('kbon',kb>40); if(last>40&&kb<20&&!foc&&f.contentWindow&&f.contentWindow.chatKbClosed) f.contentWindow.chatKbClosed(); last=kb; };
+  const up=()=>set(meas());
+  const watch=ms=>{ cancelAnimationFrame(raf); const t0=performance.now(); const loop=()=>{ up(); if(performance.now()-t0<ms) raf=requestAnimationFrame(loop); }; loop(); };
+  if(VK) VK.addEventListener('geometrychange',()=>{ up(); });
+  if(vv){ vv.addEventListener('resize',up); vv.addEventListener('scroll',up); }
+  addEventListener('resize',up);
+  /* le champ de discussion (dans le cadre de la table) prend ou perd le focus */
+  const hook=()=>{ const f=NETP&&NETP.frame; let d; try{ d=f&&f.contentDocument; }catch(e){} if(!d||d.__kbh) return; d.__kbh=1;
+    d.addEventListener('focusin',e=>{ if(!e.target.matches||!e.target.matches('input,textarea')) return; foc=1;
+      watch(1200); });
+    d.addEventListener('focusout',()=>{ foc=0; watch(700); setTimeout(()=>{ if(!foc) set(0); },450); }); };
+  const t=setInterval(()=>{ if(!netKb.on) return clearInterval(t); hook(); },500); hook(); }
 
 /* Écran toujours allumé (Wake Lock) : réglage commun Aventurier / Maître du destin */
 const WAKE={lock:null};
@@ -3449,7 +3463,11 @@ html.incombat #rb-dgn,html.incombat #rb-fond{opacity:.3;pointer-events:none}
 html.fpsmode .vehbtn,html.fpsmode .chatbtn{top:14px;bottom:auto;right:14px;width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.72);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border:2.5px solid #8a8f9f;color:#2f3340;box-shadow:0 4px 14px rgba(0,0,0,.35)}
 html.fpsmode .vehbtn{top:76px}
 html.fpsmode .vehbtn svg,html.fpsmode .chatbtn svg{filter:none;width:24px;height:24px}
-html.fpsmode .chatpop{top:auto;bottom:calc(var(--kb,0px) + 10px);left:50%;right:auto;transform:translateX(-50%);width:min(520px,calc(100vw - 20px))}   /* juste au-dessus du clavier (hauteur donnée par la fiche) */
+html.fpsmode .chatpop{top:calc(env(safe-area-inset-top,0px) + 12px);bottom:auto;left:50%;right:auto;transform:translateX(-50%);width:min(520px,calc(100vw - 20px))}
+html.fpsmode.kbon .chatpop{top:auto;bottom:calc(var(--kb,0px) + 10px)}   /* clavier mesuré : collé au-dessus ; sinon en haut de l'écran */
+html.fpsmode.chatopen:not(.kbon) .chatbtn,html.fpsmode.chatopen:not(.kbon) .viewbtn{top:calc(env(safe-area-inset-top,0px) + 74px)}
+html.fpsmode.chatopen:not(.kbon) .vehbtn{top:calc(env(safe-area-inset-top,0px) + 136px)}
+html.fpsmode .chatbtn,html.fpsmode .viewbtn,html.fpsmode .vehbtn{transition:top .18s}   /* juste au-dessus du clavier (hauteur donnée par la fiche) */
 .viewbtn{display:none}
 html.fps2d #world{will-change:transform}
 html.fps2d .tk.unseen{opacity:0;pointer-events:none}
@@ -5539,7 +5557,9 @@ function dgPaint(wx,wy,g){ DG._g=g; if(DG.tool==='deco'||DG.tool==='x') return;
   g.last=[ci,cj]; DG.hover=[ci,cj]; drawDgLater(); syncLater(); markDirty(); }
 /* jetons calés au centre des cases quand le donjon est actif */
 function dgSnap(t){ if(!dgOn()||!['player','mob','npc'].includes(t.type)) return false; const [i,j]=dgCell(t.x,t.y), x=(i+.5)*CELL, y=(j+.5)*CELL; if(t.x===x&&t.y===y) return false; t.x=x; t.y=y; return true; }
-function dgDirEl(t){ return dgOn()&&t.type==='player'&&t.dir!=null?`<i class="dgdir" style="--r:${(t.dir||0)*90}deg"></i>`:''; }
+function dgDirEl(t){ if(!dgOn()||t.type!=='player'||t.dir==null) return ''; const mine=typeof FPS!=='undefined'&&FPS.self===t.id&&FPS.vang!=null, a=mine?FPS.vang*180/Math.PI:(t.ang!=null?t.ang*180/Math.PI:(t.dir||0)*90); return `<i class="dgdir" style="--r:${a.toFixed(1)}deg"></i>`; }
+/* mon jeton : l'écho de la table (en retard) n'écrase pas ma position locale pendant que je bouge */
+function fpsKeepMine(t){ if(typeof FPS==='undefined'||!FPS.cam||FPS.mode!=='play'||!t||t.id!==FPS.self) return false; if(!FPS.mvT||performance.now()-FPS.mvT>1200) return false; const x=FPS.cam.x*CELL, y=FPS.cam.y*CELL; if(Math.hypot(t.x-x,t.y-y)>CELL*1.6) return false; t.x=x; t.y=y; if(FPS.vang!=null) t.ang=FPS.vang; return true; }
 
 /* ---------- passages : escaliers et zones TP, reliés par code (destination possible sur une autre scène) ---------- */
 const MK_LBL={up:'Escalier qui monte',down:'Escalier qui descend',tp:'Zone TP',sign:'Panneau'};
@@ -6779,7 +6799,8 @@ function fpsSendMove(force){ if(FPS.mode!=='play'||!FPS.cam) return; const now=p
   up(m); if(window.DGTEST){ const me=S.tokens.find(t=>t.id===FPS.self); if(me){ me.x=m.x; me.y=m.y; me.dir=nd; me.ang=m.ang; dgTestArrive(); } } }
 /* joueur : vue 2D (le plan, vu de dessus) ou 3D ; en 2D le joystick reste, et pousse dans la direction montrée */
 function fpsV2d(){ try{ return localStorage.getItem('adb-v2d')==='1'; }catch(e){ return false; } }
-function fpsTick(dt){ let go=false; if(FPS.joy&&document.documentElement.classList.contains('fps2d')){ const J=FPS.joy, m=Math.min(1,Math.hypot(J.x,J.y)); FPS.cam.a=Math.atan2(J.x,-J.y); fpsMoveBy(m*FPS_V*dt); const me=S.tokens.find(t=>t.id===FPS.self); if(me&&typeof tokenEl==='function'){ me.x=FPS.cam.x*CELL; me.y=FPS.cam.y*CELL; me.ang=FPS.cam.a; const nd=(((Math.round(FPS.cam.a/(Math.PI/2))%4)+4)%4); if(nd!==me.dir){ me.dir=nd; tokenEl(me); } else { const el=document.querySelector(`.tk[data-id="${me.id}"]`); if(el){ el.style.left=me.x+'px'; el.style.top=me.y+'px'; } } } applyView(); return true; }   /* le jeton suit tout de suite, tourné vers où il va */ if(FPS.rot){ FPS.cam.a+=FPS.rot*FPS_TURN*dt; FPS.turned=performance.now(); fpsSendMove(false); go=true; } if(FPS.mv){ fpsMoveBy(FPS.mv*FPS_V*dt); go=true; } if(FPS.joy){ const J=FPS.joy; fpsMoveBy(-J.y*FPS_V*dt,J.x*FPS_V*.7*dt); go=true; } return go; }
+function fpsTick(dt){ let go=false; if(FPS.joy&&document.documentElement.classList.contains('fps2d')){ const J=FPS.joy, m=Math.min(1,Math.hypot(J.x,J.y)); FPS.cam.a=Math.atan2(J.x,-J.y); fpsMoveBy(m*FPS_V*dt); const me=S.tokens.find(t=>t.id===FPS.self); if(me&&typeof tokenEl==='function'){ me.x=FPS.cam.x*CELL; me.y=FPS.cam.y*CELL; const ta=FPS.cam.a; if(FPS.vang==null) FPS.vang=me.ang!=null?me.ang:ta; let da=ta-FPS.vang; da=Math.atan2(Math.sin(da),Math.cos(da)); FPS.vang+=da*Math.min(1,dt*14); me.ang=FPS.vang; FPS.mvT=performance.now();   /* le jeton pivote en douceur vers où il va */
+      me.dir=(((Math.round(ta/(Math.PI/2))%4)+4)%4); const el=document.querySelector(`.tk[data-id="${me.id}"]`); if(el){ el.style.left=me.x+'px'; el.style.top=me.y+'px'; const d=el.querySelector('.dgdir'); if(d) d.style.setProperty('--r',(FPS.vang*180/Math.PI).toFixed(1)+'deg'); else tokenEl(me); } } applyView(); return true; }   /* le jeton suit tout de suite, tourné vers où il va */ if(FPS.rot){ FPS.cam.a+=FPS.rot*FPS_TURN*dt; FPS.turned=performance.now(); fpsSendMove(false); go=true; } if(FPS.mv){ fpsMoveBy(FPS.mv*FPS_V*dt); go=true; } if(FPS.joy){ const J=FPS.joy; fpsMoveBy(-J.y*FPS_V*dt,J.x*FPS_V*.7*dt); go=true; } return go; }
 /* mains du personnage selon sa race */
 function fpsHands(){ if(!FPS.el) return; const im=FPS.el.querySelector('.fps-hands'); if(!im) return; const r=FPS.mode==='play'&&typeof VEHME!=='undefined'&&VEHME&&VEHME.race, src=r&&(HANDS[r]||HANDS.humain);
   if(!src){ im.hidden=true; return; } if(im.dataset.r!==r){ im.dataset.r=r; im.src=src; } im.hidden=false; }
@@ -10212,6 +10233,7 @@ function receive(m){ if(!m) return; if(m.t==='test'&&isPlayer){ dgTestLoad(); re
     if(m.bg!==undefined) S.bg=m.bg;
     Object.assign(S,{fight:m.fight||null,combat:m.combat||null,dexLock:!!m.dexLock,dg:m.dg||null,hour:m.hour,seen:m.seen||{},blood:m.blood||[],bgKind:m.bgKind||'',bgW:m.bgW||0,bgH:m.bgH||0,geo:m.geo||null,light:m.light,weather:m.weather||'',ground:m.ground||null,grid:m.grid,drawings:m.drawings,tokens:m.tokens,order:m.order}); const L=orderToks(); S.turn=L.findIndex(t=>t.id===m.turn);
     if(myDrag){ const t=tok(myDrag.id); if(t){ t.x=myDrag.x; t.y=myDrag.y; } }
+    if(typeof fpsKeepMine==='function'&&typeof FPS!=='undefined'&&FPS.self) fpsKeepMine(tok(FPS.self));
     followMe.got=1; followMe.closed=0; renderAllBoard(); if(NETVIEW) followMe(); else if(m.view) setPlayerView(m.view); if(typeof FPS!=='undefined'&&FPS.el) fpsLater(); }
   else if(m.t==='opened'){ reveal(m.id,m.item||{},m.by); }
   else if(m.t==='roll') bubble(m.pid,m.e?rollHTML(0,m.rn,m.e):rollHTML(m.succ,m.dn),'',m.who);
@@ -10220,7 +10242,7 @@ function receive(m){ if(!m) return; if(m.t==='test'&&isPlayer){ dgTestLoad(); re
   else if(m.t==='sys') sysMsg(m.text,false);
   else if(m.t==='view'){ if(!NETVIEW) setPlayerView(m); }
   else if(m.t==='ptr'){ if(m.pid!==ME) showPtr(m); }
-  else if(m.t==='mv'){ const t=tok(m.id); if(t&&!(myDrag&&myDrag.id===m.id)){ t.x=m.x; t.y=m.y; t.s=m.s; if(m.dir!=null) t.dir=m.dir; if(m.ang!=null) t.ang=m.ang; moveTokenEl(t); fowLater(); if(typeof fpsLater==='function') fpsLater(); if(NETVIEW&&(t.owner===ME||t.kind==='vehicle')) followMe(); } }
+  else if(m.t==='mv'){ const t=tok(m.id); if(t&&!(myDrag&&myDrag.id===m.id)){ if(typeof fpsKeepMine==='function'&&fpsKeepMine(Object.assign({},t,{x:m.x,y:m.y}))) return; t.x=m.x; t.y=m.y; t.s=m.s; if(m.dir!=null) t.dir=m.dir; if(m.ang!=null) t.ang=m.ang; moveTokenEl(t); fowLater(); if(typeof fpsLater==='function') fpsLater(); if(NETVIEW&&(t.owner===ME||t.kind==='vehicle')) followMe(); } }
   else if(m.t==='ping') ping(m.x,m.y);
   else if(m.t==='measure'){ if(m.on) drawMeasure(m); else { measure=null; $('over').innerHTML=''; $('mlabel').hidden=true; } }
   else if(m.t==='scene') sceneTitle(m.title,m.idx);
@@ -11439,6 +11461,7 @@ if(isPlayer){
     document.addEventListener('touchmove',e=>{ if(!is2d()) return; for(const t of e.changedTouches) if(PT.has(t.identifier)) PT.set(t.identifier,t); if(PT.size===2&&d0){ e.preventDefault(); const [a,b]=[...PT.values()], d=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY); V.z=clamp(z0*d/d0,.25,3); applyView(); drawDgLater(); } },{passive:false,capture:true});
     const tend=e=>{ for(const t of e.changedTouches) PT.delete(t.identifier); if(PT.size<2) d0=0; }; document.addEventListener('touchend',tend,true); document.addEventListener('touchcancel',tend,true);
     board.addEventListener('wheel',e=>{ if(!is2d()) return; e.preventDefault(); V.z=clamp(V.z*Math.exp(-e.deltaY*.0015),.25,3); applyView(); drawDgLater(); },{passive:false}); }
+    new MutationObserver(()=>document.documentElement.classList.toggle('chatopen',!cp.hidden)).observe(cp,{attributes:true,attributeFilter:['hidden']});
     window.chatKbClosed=()=>{ if(!cp.hidden){ cp.hidden=true; acHide(); ci.blur(); } };   /* appelé par la fiche quand le clavier se referme */
     { const vb=$('viewbtn'); const paint=()=>{ const d2=typeof fpsV2d==='function'&&fpsV2d(); vb.textContent=d2?'3D':'2D'; vb.title=d2?'Passer en vue 3D':'Passer en vue 2D (plan)'; }; vb.hidden=false; paint();
       vb.onclick=()=>{ const d2=!fpsV2d(); try{ localStorage.setItem('adb-v2d',d2?'1':'0'); }catch(e){} paint(); if(typeof fpsSync==='function') fpsSync(); if(!d2&&typeof fpsLater==='function') fpsLater(); }; }
