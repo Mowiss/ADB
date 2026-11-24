@@ -170,9 +170,13 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
   .ps-t small{color:#666}
   .ps-note{break-inside:avoid;margin-bottom:2mm}.ps-note p{margin:.5mm 0 0;white-space:pre-wrap}
   .ps-empty{color:#777}
-  .ps-fh{break-before:page}.ps-fame{display:grid;grid-template-columns:repeat(4,1fr);gap:6mm 5mm;margin-top:3mm;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .ps-ft{break-inside:avoid;text-align:center;margin:0}.ps-ft .fame-cadre{width:100%;margin:0 auto}.ps-ft .fame-toile .fame-ico svg{width:32%;max-width:12mm}
-  .ps-ft figcaption{margin-top:1.5mm;font-size:7.5pt;line-height:1.25}.ps-ft figcaption b{display:block;font-size:8pt}.ps-ft figcaption i{font-style:normal;font-weight:700;color:#8a6a1a}
+  .ps-fh{break-before:page}.ps-fame{display:grid;grid-template-columns:1fr 1fr;gap:5mm 7mm;margin-top:3mm;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .ps-ft{break-inside:avoid;display:flex;gap:3.5mm;align-items:flex-start}
+  .ps-fi{flex:none;width:17mm;height:17mm;border-radius:50%;overflow:hidden;border:.8pt solid #8a6a1a;display:flex;align-items:center;justify-content:center;background:#faf6ec}
+  .ps-fi img{width:100%;height:100%;object-fit:cover}.ps-fi svg{width:55%;height:55%}
+  .ps-fx2{min-width:0;font-size:8.5pt;line-height:1.3}.ps-fx2 small{color:#777;font-size:7pt}.ps-fx2 b{display:block;font-size:9.5pt}.ps-fx2 p{margin:.6mm 0 0;color:#333}.ps-fx2 i{display:inline-block;margin-top:.8mm;font-style:normal;font-weight:700;color:#8a6a1a;font-size:8pt}
+  .ps-t tr.ps-blank td{height:7mm;padding:0}
+  .ps-bk{display:flex;align-items:baseline;gap:4mm;margin:2mm 0 4mm;font-size:9pt}.ps-bk span{font-size:7pt;letter-spacing:.08em;text-transform:uppercase;color:#555}.ps-bk b{flex:1;border-bottom:.6pt solid #20222c;min-height:5mm;font-size:11pt}
   .ps footer{margin-top:6mm;font-size:7pt;color:#888;text-align:right}
 }
 /* Pas de barres de défilement : la molette suffit */
@@ -1326,18 +1330,21 @@ function printSheet(){
   const stats=STATS.map(s=>{ const I=STAT_INFO[s], base=C.stats[s]||0, v=D.r[s]; return `<div class="ps-stat"><span>${I.name}</span><b>${v}</b>${v!==base?`<small>base ${base}</small>`:''}</div>`; }).join('');
   const ctr=[['Points de Vie',`${C.pv} / ${D.pvMax}`],['Points de Charge',`${D.pc} / ${D.pcMax}`],['Points d\'Action',D.pa],['Points d\'Armure',D.pp],['Points de Tourment',C.pt],['Points d\'Éveil',C.pe]]
     .map(([k,v])=>`<div class="ps-stat"><span>${k}</span><b>${v}</b></div>`).join('');
-  const bank=(C.bankInventory||[]).map(it=>e(it.name||'Objet')).join(', ');
-  const fame=(C.fame||[]).slice().sort((a,b)=>a.at-b.at).map(f=>{ const F=fameFrame(f); return `<figure class="ps-ft"><div class="fame-cadre" style="${F.st}">${F.in}<img src="res/fame/${F.n}.png" alt=""></div><figcaption>${new Date(f.at).toLocaleDateString('fr-FR')}<b>${e(f.title)}</b>${f.pe?`<i>PE🧠 ${f.pe}</i>`:''}</figcaption></figure>`; }).join('');
-  const notes=(C.notes||[]).filter(n=>n.title||n.content).map(n=>`<div class="ps-note"><b>${e(n.title||'')}</b><p>${e(n.content||'')}</p></div>`).join('');
+  const blank=(n,c)=>Array.from({length:Math.max(0,n)},()=>`<tr class="ps-blank">${'<td></td>'.repeat(c)}</tr>`).join('');   /* lignes vides à remplir au crayon */
+  const BK=C.bankInventory||[], bankRows=BK.map(it=>`<tr><td><b>${e(it.name||'Objet')}</b></td><td>${+it.qty>1?+it.qty:''}</td><td>${e(it.description||'')}</td></tr>`).join('')+blank(26-BK.length,3);
+  const CUP='<svg viewBox="0 0 24 24" fill="none" stroke="#8a6a1a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3M12 14v4M8 20h8"/></svg>';
+  const fame=(C.fame||[]).filter(f=>!(C.fameGone||[]).includes(f.id)).slice().sort((a,b)=>a.at-b.at).map(f=>`<div class="ps-ft"><div class="ps-fi">${f.img?`<img src="${f.img}" alt="">`:CUP}</div><div class="ps-fx2"><small>${new Date(f.at).toLocaleDateString('fr-FR')}</small><b>${e(f.title||'')}</b>${f.desc?`<p>${e(f.desc)}</p>`:''}${f.pe?`<i>${f.pe} PE</i>`:''}</div></div>`).join('');
+  const notes=(C.notes||[]).filter(n=>(n.title&&n.title!=='Nouvelle entrée')||n.content).map(n=>`<div class="ps-note"><b>${e(n.title||'')}</b>${n.mjId?' <small>Maître du destin</small>':''}<p>${e(n.content||'')}</p></div>`).join('');
   $('printsheet').innerHTML=`<div class="ps">
     <header class="ps-head">${C.photo?`<img class="ps-photo" src="${C.photo}" alt="">`:''}<div><div class="ps-brand">ALDEBARAN</div><h1>${e(C.name||'Sans nom')}</h1><div class="ps-sub">${e(RACE_LABEL[C.race]||'')} · ${e(R.name)} — ${e(R.desc)}</div></div>
       <div class="ps-money"><span>Bastos</span><b>${(+C.bastos||0).toLocaleString('fr-FR')} ₿</b><span>Bank</span><b>${(+C.bankBastos||0).toLocaleString('fr-FR')} ₿</b></div></header>
     <div class="ps-top"><div class="ps-left"><h2>Statistiques</h2><div class="ps-grid">${stats}</div><h2>Décompte</h2><div class="ps-grid">${ctr}</div>
       <h2>Effets actifs</h2><ul class="ps-fx">${fx}</ul></div><div class="ps-fig">${fig}</div></div>
-    <h2>Inventaire</h2>${rowsI?`<table class="ps-t"><thead><tr><th>Objet</th><th>Zone</th><th>Dés</th><th>Seuil</th><th>PC</th><th>PP</th><th>₿</th><th>Effets &amp; description</th></tr></thead><tbody>${rowsI}</tbody></table>`:'<p class="ps-empty">Inventaire vide.</p>'}
-    <h2>Améliorations</h2>${rowsC?`<table class="ps-t"><thead><tr><th>Amélioration</th><th>Zone</th><th>Dés</th><th>Seuil</th><th>PC</th><th>Effets &amp; description</th></tr></thead><tbody>${rowsC}</tbody></table>`:'<p class="ps-empty">Aucune.</p>'}
-    ${bank?`<h2>Au coffre</h2><p>${bank}</p>`:''}
-    ${notes?`<h2>Journal</h2>${notes}`:''}
+    <h2>Inventaire</h2>${rowsI?`<table class="ps-t"><thead><tr><th>Objet</th><th>Zone</th><th>Dés</th><th>Seuil</th><th>PC</th><th>PP</th><th>₿</th><th>Effets &amp; description</th></tr></thead><tbody>${rowsI}${blank(Math.max(6,15-C.inventory.length),8)}</tbody></table>`:`<table class="ps-t"><thead><tr><th>Objet</th><th>Zone</th><th>Dés</th><th>Seuil</th><th>PC</th><th>PP</th><th>₿</th><th>Effets &amp; description</th></tr></thead><tbody>${blank(15,8)}</tbody></table>`}
+    <h2 class="ps-fh">Améliorations</h2>${rowsC?`<table class="ps-t"><thead><tr><th>Amélioration</th><th>Zone</th><th>Dés</th><th>Seuil</th><th>PC</th><th>Effets &amp; description</th></tr></thead><tbody>${rowsC}${blank(Math.max(6,30-C.cybernetics.length),6)}</tbody></table>`:`<table class="ps-t"><thead><tr><th>Amélioration</th><th>Zone</th><th>Dés</th><th>Seuil</th><th>PC</th><th>Effets &amp; description</th></tr></thead><tbody>${blank(30,6)}</tbody></table>`}
+    <h2 class="ps-fh">Banque</h2><div class="ps-bk"><span>Bastos au coffre</span><b>${(+C.bankBastos||0)?(+C.bankBastos).toLocaleString('fr-FR')+' ₿':''}</b></div>
+    <table class="ps-t"><thead><tr><th>Objet au coffre</th><th>Qté</th><th>Notes</th></tr></thead><tbody>${bankRows}</tbody></table>
+    ${notes?`<h2 class="ps-fh">Notes</h2>${notes}`:''}
     ${fame?`<h2 class="ps-fh">Succès</h2><div class="ps-fame">${fame}</div>`:''}
     <footer>Fiche imprimée le ${new Date().toLocaleDateString('fr-FR')}</footer></div>`;
   const go=()=>{ try{ window.print(); }catch(err){ toast("L'impression n'est pas disponible ici."); } };
