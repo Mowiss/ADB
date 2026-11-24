@@ -6050,7 +6050,7 @@ function wvState(){ const day=typeof dgDay==='function'?dgDay(dgHour())>=.35:S.l
 const WVIEW={}; Object.entries(WVT).forEach(([t,T])=>Object.entries(T.v).forEach(([v,f])=>WVIEW[f]={src:'res/vues/'+f+'.webp'}));
 const WVI={};
 function wvImg(k){ const V=WVIEW[k]; if(!V) return null; let o=WVI[k]; if(!o){ o=WVI[k]={}; const im=new Image(); im.onload=()=>{ const c=document.createElement('canvas'); c.width=im.naturalWidth; c.height=im.naturalHeight; const x=c.getContext('2d'); x.drawImage(im,0,0); o.px=new Uint32Array(x.getImageData(0,0,c.width,c.height).data.buffer); o.w=c.width; o.h=c.height; fpsLater(); }; im.src=V.src; } return o.px?o:null; }
-const wvZ=EW=>{ const T=WVT[wvTheme(EW.view)]; if(!T) return null; const st=wvState(), I=wvImg(T.v[st.v]); return I?Object.assign(Object.create(I),{vz:+EW.vz||0,rain:st.rain}):null; };
+const wvZ=EW=>{ const T=WVT[wvTheme(EW.view)]; if(!T) return null; const st=wvState(), I=wvImg(T.v[st.v]); return I?Object.assign(Object.create(I),{vz:+EW.vz||0,rain:false}):null; };
 /* interrupteurs : fixés sur un mur, côté d'une case ; reliés par câble à des lumières, portes, barils… */
 const SWS=[['cyber1','Cyber'],['cyber2','Cyber (boîtier)'],['jungle1','Jungle'],['jungle2','Jungle (globe)'],['gothique1','Gothique (levier)'],['gothique2','Gothique (serrure)'],['moderne1','Moderne'],['moderne2','Moderne (molette)'],['ancien1','Ancien'],['ancien2','Ancien (cadre)']];
 const SWL={lum:'Lumière',door:'Porte',bomb:'Baril',scr:'Écran'};
