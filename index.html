@@ -5708,7 +5708,7 @@ function hubPaint(){ document.documentElement.classList.toggle('inhub',!!(S.hub|
 /* ---------- XPLORE / FIGHT : le MJ entoure les combattants d'une « patate », ramenée à un cercle ---------- */
 function fightBtnPaint(){ const b=$('b-fight'); if(!b) return; const on=!!S.fight; b.setAttribute('aria-pressed',on?'true':'false'); b.innerHTML=on?'<i>⚔️</i>FIGHT':tool==='fzone'?'<i>✏️</i>ENTOUREZ':'<i>🔍</i>XPLORE';
   b.title=on?'Combat : cliquer pour revenir en exploration':'Exploration : cliquer puis entourer les combattants pour lancer un combat'; }
-function fightToggle(){ if(S.fight){ if(S.fight.dx){ S.dexLock=false; dexPaint(); } S.tokens.forEach(t=>{ delete t.paU; }); S.fight=null; toast('Exploration'); fightBtnPaint(); drawDgLater(); renderTracker(); markDirty(); sync(); return; }
+function fightToggle(){ if(S.fight){ if(S.fight.dx){ S.dexLock=false; dexPaint(); } S.tokens.forEach(t=>{ delete t.paU; }); S.fight=null; S.turn=-1; if(typeof markTurn==='function') markTurn();   /* fin du combat : plus de tour en cours */ toast('Exploration'); fightBtnPaint(); drawDgLater(); renderTracker(); markDirty(); sync(); return; }
   if(tool==='fzone'){ setTool('fzone'); fightBtnPaint(); return; } closeLeft(); setTool('fzone'); toast('Entourez les combattants sur la carte'); fightBtnPaint(); }
 /* plus petit cercle englobant (approché) des points tracés */
 function encCircle(P){ let c=P[0].slice(), r=0; for(let it=0;it<3;it++) P.forEach(p=>{ const d=Math.hypot(p[0]-c[0],p[1]-c[1]); if(d>r){ const k=(d-r)/2/d; r=(r+d)/2; c[0]+=(p[0]-c[0])*k; c[1]+=(p[1]-c[1])*k; } });
