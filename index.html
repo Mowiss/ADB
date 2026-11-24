@@ -5024,7 +5024,7 @@ function dgOpenSky(i,j){ const c=dgCeil(i,j); return !c||c.t==='jungle'||c.t==='
 function dgCeil(i,j){ if(FRC){ const k=(i+4096)*8192+j+4096; let v=FRC.cl.get(k); if(v===undefined){ const o=S.dg&&S.dg.cl&&S.dg.cl[i+','+j]; v=o&&!o.no?o:null; FRC.cl.set(k,v); } return v; } const o=S.dg&&S.dg.cl&&S.dg.cl[i+','+j]; return o&&!o.no?o:null; }   /* pas de plafond sans plafond posé */
 /* hauteur des murs de part et d'autre d'une porte (le linteau monte jusque-là ; la porte reste 1 × 1) */
 function dgFlank(i,j,ni,nj){ const k=dgEK(i,j,ni,nj).split(','), a=+k[0], b=+k[1], L=k[2]==='v'?[k.join(','),`${a},${b-1},v`,`${a},${b+1},v`]:[k.join(','),`${a-1},${b},h`,`${a+1},${b},h`]; let h=0, t=null;
-  L.forEach(e=>{ const w=dgEWk(e); if(w&&(+w.h||1)>h){ h=+w.h||1; t=w.t; } }); return {h,t}; }
+  const sa=i<ni||j<nj; L.forEach(e=>{ const w=dgEWk(e); if(w&&(+w.h||1)>h){ h=+w.h||1; t=(sa?w.ta:w.tb)||w.t; } }); return {h,t}; }   /* la face peinte du côté d'où l'on regarde */
 const dgCell=(wx,wy)=>[Math.floor(wx/CELL),Math.floor(wy/CELL)];
 const dgTheme=()=>DG_TH[(S.dg&&S.dg.th)||'pierre']||DG_TH.pierre;
 /* portes : posées sur l'arête entre deux cases ; clé « i,j,h » (bord haut de la case) ou « i,j,v » (bord gauche) */
