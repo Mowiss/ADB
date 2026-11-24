@@ -6703,7 +6703,7 @@ function doorP(k,o){ FPS.dst=FPS.dst||{}; const now=performance.now(); let a=FPS
 function fpsLater(){ if(!FPS.raf) FPS.raf=requestAnimationFrame(()=>{ FPS.raf=0; fpsDraw(); }); }
 function fpsDraw(){ if(!FPS.el||FPS.el.hidden||!FPS.cam) return; { const now=performance.now(), dt=Math.min(.05,(now-(FPS.tk||now))/1000); FPS.tk=now; if(fpsTick(dt)) FPS.fkRun=1; else FPS.tk=0; }
   if(document.documentElement.classList.contains('fps2d')){ if(FPS.fkRun&&FPS.joy){ FPS.fkRun=0; fpsLater(); } return; }   /* vue 2D : on ne calcule pas la 3D */ const cv=FPS.el.querySelector('canvas'), r=cv.getBoundingClientRect(); if(!r.width) return;
-  const Q=FPS.q||(FPS.q=1), W=Math.max(120,Math.round(Math.min(560,r.width/2)*Q)), H=Math.round(W*r.height/r.width); if(cv.width!==W||cv.height!==H){ cv.width=W; cv.height=H; FPS.img=null; }
+  const Q=FPS.q||(FPS.q=1), W=Math.max(200,Math.round(Math.min(640,r.width*.85)*Q))   /* plus fin qu'avant (largeur ×0,85 au lieu de ×0,5) ; la qualité s'adapte */, H=Math.round(W*r.height/r.width); if(cv.width!==W||cv.height!==H){ cv.width=W; cv.height=H; FPS.img=null; }
   let cam=FPS.cam; const A=FPS.anim; if(A){ const k=Math.min(1,(performance.now()-A.t0)/A.dur), e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
     cam={x:A.f.x+(A.to.x-A.f.x)*e,y:A.f.y+(A.to.y-A.f.y)*e,a:A.f.a+(A.to.a-A.f.a)*e,z:(A.f.z||0)+((A.to.z||0)-(A.f.z||0))*e}; if(k<1) fpsLater(); else { FPS.anim=null; FPS.cam=A.to; if(FPS.queue){ const q=FPS.queue; FPS.queue=null; fpsAct(q); } } }
   const spec=fpsSpectating(); FPS.el.classList.toggle('spec',spec);
@@ -6712,7 +6712,7 @@ function fpsDraw(){ if(!FPS.el||FPS.el.hidden||!FPS.cam) return; { const now=per
     let dd=tgt-FPS.specA; dd=Math.atan2(Math.sin(dd),Math.cos(dd)); FPS.specA+=dd*.1; if(Math.abs(dd)>.003) fpsLater(); cam={...cam,a:FPS.specA}; }
   else if(FPS.specA!=null&&!FPS.anim){ let f=FPS.specA, t=FPS.cam.a; f=t+Math.atan2(Math.sin(f-t),Math.cos(f-t)); FPS.specA=null; FPS.anim={f:{...FPS.cam,a:f},to:{...FPS.cam},t0:performance.now(),dur:450}; cam={...cam,a:f}; fpsLater(); }
   FPS.lastCam=cam; { const t0=performance.now(); FRC={at:new Map(),cl:new Map()}; try{ fpsRender(cv,cam,FPS.self); } finally{ FRC=null; } const ms=performance.now()-t0; FPS.rt=FPS.rt==null?ms:FPS.rt*.8+ms*.2;   /* résolution adaptative : l'appareil lent calcule moins de pixels */
-    const nowA=performance.now(); if(!FPS.qT||nowA-FPS.qT>600){ FPS.qT=nowA; if(FPS.rt>26&&FPS.q>.45){ FPS.q=Math.max(.45,Math.round((FPS.q-.1)*20)/20); } else if(FPS.rt<11&&FPS.q<1){ FPS.q=Math.min(1,Math.round((FPS.q+.05)*20)/20); } } }
+    const nowA=performance.now(); if(!FPS.qT||nowA-FPS.qT>600){ FPS.qT=nowA; if(FPS.rt>30&&FPS.q>.55){ FPS.q=Math.max(.55,Math.round((FPS.q-.1)*20)/20); } else if(FPS.rt<18&&FPS.q<1){ FPS.q=Math.min(1,Math.round((FPS.q+.05)*20)/20); } } }
   fpsWeather(); fpsFx();
   const cp=FPS.el.querySelector('.fps-cmp'); if(cp){ const d=(((Math.round(FPS.cam.a/(Math.PI/2))%4)+4)%4); cp.textContent=['Nord','Est','Sud','Ouest'][d]; } }
 /* déplacements : avancer, reculer, pas de côté, quart de tour */
