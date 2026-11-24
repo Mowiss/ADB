@@ -5033,7 +5033,12 @@ const lumAt=(i,j)=>S.dg&&S.dg.lum?S.dg.lum[i+','+j]:null;
 const LUMIM={};
 /* lumières à flamme : la flamme du dessin est retirée, puis rejouée en effet animé quand la lumière est allumée (elle naît et s'éteint en douceur) */
 const LUMF={}, LUMT={}, LUMC={};
-function lumFire(k){ if(LUMF[k]!==undefined) return LUMF[k]; const o=lumImg(k); if(!o.cv) return null; if(!(LUM[k]||{}).fl) return LUMF[k]=null;
+function lumElec(k,o){ const W=o.cv.width, H=o.cv.height, D=o.cv.getContext('2d').getImageData(0,0,W,H), d=D.data, base=new ImageData(new Uint8ClampedArray(d),W,H), b=base.data, em=new ImageData(W,H), e=em.data; let n=0;
+  for(let i=0;i<W*H;i++){ const r=d[i*4], g=d[i*4+1], bl=d[i*4+2], a=d[i*4+3], mx=Math.max(r,g,bl), mn=Math.min(r,g,bl); if(a<100||!((mx>=175&&!(mx-mn<25&&mx<230))||(mx>=130&&mx-mn>=55&&r>=bl))) continue;   /* verre, néon, abat-jour éclairé */
+    n++; e[i*4]=r; e[i*4+1]=g; e[i*4+2]=bl; e[i*4+3]=a; const f=.28; b[i*4]=r*f; b[i*4+1]=g*f; b[i*4+2]=bl*f*1.1; }
+  if(!n) return null; const mk=I=>{ const c=document.createElement('canvas'); c.width=W; c.height=H; c.getContext('2d').putImageData(I,0,0); return c; };
+  return {el:1,W,H,base:mk(base),em:mk(em),neon:/cyber|moderne/.test(k)}; }
+function lumFire(k){ if(LUMF[k]!==undefined) return LUMF[k]; const o=lumImg(k); if(!o.cv) return null; if(!(LUM[k]||{}).fl) return LUMF[k]=lumElec(k,o);
   const W=o.cv.width, H=o.cv.height, D=o.cv.getContext('2d').getImageData(0,0,W,H), d=D.data, fl=new Uint8Array(W*H);
   for(let i=0;i<W*H;i++){ const r=d[i*4], g=d[i*4+1], b=d[i*4+2], a=d[i*4+3]; if(a>100&&((r>190&&r>=g&&g>70&&b<150&&r-b>90)||(r>225&&g>170&&r-b>45&&b<200))) fl[i]=1; }   /* flamme : oranges, jaunes, cœur blanc-jaune */
   for(let it=0;it<3;it++){ const add=[]; for(let i=0;i<W*H;i++){ if(fl[i]) continue; const r=d[i*4], g=d[i*4+1], b=d[i*4+2], a=d[i*4+3]; if(a<60||!(r>110&&r>g*1.15&&b<110&&r-b>60)) continue;   /* bords de flamme plus sombres (rouges, oranges) */
@@ -5048,7 +5053,10 @@ function lumFire(k){ if(LUMF[k]!==undefined) return LUMF[k]; const o=lumImg(k); 
   return LUMF[k]={W,H,base:bc,P,tips:tips.length?tips:P}; }
 function lumFrame(id,k,st,now){ const o=lumImg(k), F=lumFire(k); if(!F) return o.cv; const on=st==='on', T=LUMT[id]||(LUMT[id]={on,t:-1e9});
   if(T.on!==on){ T.on=on; T.t=now; } const g=on?Math.min(1,(now-T.t)/550):Math.max(0,1-(now-T.t)/380), live=on||g>0, key=live?Math.floor(now/70)+':'+g.toFixed(2):'off';
-  let c=LUMC[id]; if(!c){ c=LUMC[id]=document.createElement('canvas'); c.width=F.W; c.height=F.H; } c._k='lum_'+k; c._hf=LUM[k].h; c._live=on||g>0; if(c._key===key) return c; c._key=key; c._px=null;
+  let c=LUMC[id]; if(!c){ c=LUMC[id]=document.createElement('canvas'); c.width=F.W; c.height=F.H; } c._k='lum_'+k; c._hf=LUM[k].h;
+  if(F.el){ const dt=now-T.t; let a=g; if(on&&F.neon&&dt<700) a=(dt<90||(dt>170&&dt<240)||(dt>330&&dt<380))?.15:g;   /* néon : il hésite avant de s'allumer */
+    c._live=(on?g<1:g>0)||(on&&F.neon&&dt<700); const k2='e'+a.toFixed(2); if(c._key===k2) return c; c._key=k2; c._px=null; const x=c.getContext('2d'); x.clearRect(0,0,F.W,F.H); x.drawImage(F.base,0,0); if(a>0){ x.globalAlpha=a; x.drawImage(F.em,0,0); x.globalAlpha=1; } return c; }
+  c._live=on||g>0; if(c._key===key) return c; c._key=key; c._px=null;
   const x=c.getContext('2d'); x.clearRect(0,0,F.W,F.H); x.drawImage(F.base,0,0); if(!live) return c;
   const sd=(id.length*131+id.charCodeAt(id.length-1)*17)%100, t=now/1000, I=x.getImageData(0,0,F.W,F.H), d=I.data;
   F.P.forEach(([px,py,rel,r,gg,b])=>{ if(rel>g*1.05) return; const sw=Math.round(Math.sin(t*9+py*.45+sd)*rel*2.2+Math.sin(t*14.7+sd)*rel), nx=px+sw, ny=py+Math.round((1-g)*3); if(nx<0||nx>=F.W||ny<0||ny>=F.H) return;
