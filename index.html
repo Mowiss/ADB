@@ -5052,7 +5052,7 @@ function dgEdgeAt(wx,wy){ const fx=wx/CELL, fy=wy/CELL, dh=Math.abs(fy-Math.roun
   if(dh<dv){ const i=Math.floor(fx), j=Math.round(fy); return {k:`${i},${j},h`,a:[i,j-1],b:[i,j]}; }
   const i=Math.round(fx), j=Math.floor(fy); return {k:`${i},${j},v`,a:[i-1,j],b:[i,j]}; }
 const dgEdgeSeg=k=>{ const [i,j,o]=k.split(','), X=+i*CELL, Y=+j*CELL; return o==='h'?[X,Y,X+CELL,Y]:[X,Y,X,Y+CELL]; };
-function dgPub(){ if(!S.dg) return null; const d={}; for(const k in (S.dg.d||{})){ const o=S.dg.d[k]; dgNormDoor(o); d[k]=dgHid(o)?{w:1}:{open:!!o.open,lk:o.lk?1:0,gr:o.gr?1:0,tpTo:o.tpTo||''}; } return {on:!!S.dg.on,hub:!!S.dg.hub,th:S.dg.th,c:S.dg.c,m:S.dg.m||null,veg:S.dg.veg||null,lum:S.dg.lum||null,ob:S.dg.ob||null,w:S.dg.w||null,sup:S.dg.sup||null,sw:S.dg.sw||null,ew:S.dg.ew||null,v2:!!S.dg.v2,cl:S.dg.cl||null,d}; }
+function dgPub(){ if(!S.dg) return null; const d={}; for(const k in (S.dg.d||{})){ const o=S.dg.d[k]; dgNormDoor(o); d[k]=dgHid(o)?{w:1}:{open:!!o.open,lk:o.lk?1:0,gr:o.gr?1:0,tpTo:o.tpTo||''}; } return {on:!!S.dg.on,hub:!!S.dg.hub,th:S.dg.th,c:S.dg.c,m:S.dg.m||null,veg:S.dg.veg||null,lum:S.dg.lum||null,ob:S.dg.ob||null,w:S.dg.w||null,sup:S.dg.sup||null,sw:S.dg.sw||null,scr:S.dg.scr||null,ew:S.dg.ew||null,v2:!!S.dg.v2,cl:S.dg.cl||null,d}; }
 function dgDoorClick(wx,wy){ const e=dgEdgeAt(wx,wy); if(!dgOpen(...e.a)&&!dgOpen(...e.b)){ toast('Une porte se place au bord d\'une case de sol',true); return; }   /* contre un mur, même sans rien derrière : elle ne s'ouvrira pas */
   const D=dgEnsure(); D.d=D.d||{}; const o=D.d[e.k];
   if(DG.tool==='door'){ if(!o){ D.d[e.k]={open:false}; dgDoorSet(D.d[e.k],DG.ds||dgDefDoor()); } else { dgDoorEdit(e.k); return; } }
@@ -5219,6 +5219,10 @@ function drawDg(){ const cv=$('dgn'); if(!cv) return; const r=board.getBoundingC
     const m=o.k==='table'?6:2, X=i*CELL+(sm(i-1,j)?0:m), Y=j*CELL+(sm(i,j-1)?0:m), X2=(i+1)*CELL-(sm(i+1,j)?0:m), Y2=(j+1)*CELL-(sm(i,j+1)?0:m);
     x.save(); if(SG&&SG.has(k)){ x.shadowColor='#ffd84a'; x.shadowBlur=Math.max(10,16*V.z); x.fillStyle='#ffd84a'; x.fillRect(X,Y,X2-X,Y2-Y); } x.restore(); x.fillStyle='rgba(0,0,0,.35)'; x.fillRect(X+3,Y+4,X2-X,Y2-Y); if(I&&I.im){ x.imageSmoothingEnabled=false; x.drawImage(I.im,X,Y,X2-X,Y2-Y); } else { x.fillStyle='#6b4a2c'; x.fillRect(X,Y,X2-X,Y2-Y); }
     x.save(); if(SG&&SG.has(k)){ x.shadowColor='#ffd84a'; x.shadowBlur=Math.max(10,16*V.z); x.strokeStyle='#ffd84a'; x.lineWidth=3; } else { x.strokeStyle='rgba(20,12,6,.8)'; x.lineWidth=1.5; } x.beginPath(); if(!sm(i-1,j)){ x.moveTo(X,Y); x.lineTo(X,Y2); } if(!sm(i+1,j)){ x.moveTo(X2,Y); x.lineTo(X2,Y2); } if(!sm(i,j-1)){ x.moveTo(X,Y); x.lineTo(X2,Y); } if(!sm(i,j+1)){ x.moveTo(X,Y2); x.lineTo(X2,Y2); } x.stroke(); x.restore(); } }
+  /* écrans */
+  { const SC=S.dg.scr||{}, now=performance.now(); let anim=false; for(const k in SC){ const p=k.indexOf(','), i=+k.slice(0,p), j=+k.slice(p+1); if(i<i0||i>i1||j<j0||j>j1) continue; const cv=scrCanvas(k,SC[k],now); if(!cv) continue; if(SC[k].on) anim=true;
+      const r=cv.width/cv.height, w=CELL*.62, h=w/r; x.save(); x.imageSmoothingEnabled=false; if(!isPlayer&&DG.glow&&DG.glow[0]===i&&DG.glow[1]===j){ x.shadowColor='#ffd84a'; x.shadowBlur=Math.max(10,16*V.z); x.drawImage(cv,(i+.5)*CELL-w/2,(j+.5)*CELL+CELL*.3-h,w,h); } x.drawImage(cv,(i+.5)*CELL-w/2,(j+.5)*CELL+CELL*.3-h,w,h); x.restore(); }
+    if(anim&&!DG.scrT){ DG.scrT=setTimeout(()=>{ DG.scrT=0; drawDgLater(); },120); } }
   /* interrupteurs et leurs câbles */
   { const SW=S.dg.sw||{}, CBL=!isPlayer&&(tool==='dgn'||DG.linkSw||DG.swSel);
     for(const k in SW){ const o=SW[k], [px,py]=swPos(k), I=supImg('../inter/sw-'+o.s); if(CBL) (o.links||[]).forEach(L=>{ const q=swLinkPos(L); if(!q) return; x.save(); x.strokeStyle=DG.swSel===k?'#ffb020':'rgba(255,176,32,.55)'; x.lineWidth=(DG.swSel===k?3:2)/Math.max(.5,V.z)+.5; x.setLineDash([6,5]); x.beginPath(); x.moveTo(px,py); x.quadraticCurveTo((px+q[0])/2,Math.max(py,q[1])+CELL*.4,q[0],q[1]); x.stroke(); x.restore(); });
@@ -5314,7 +5318,7 @@ function dgPaintCell(i,j,P){ const D=dgEnsure(), k=dgK(i,j); let n=0;
 /* =========================================================
    Construction v2 : formes qui fusionnent, creuser en refermant, zones (déplacer, copier, tourner, supprimer)
    ========================================================= */
-const DGZ_MAPS=['c','cl','w','veg','ob','lum','m','h','sup'];
+const DGZ_MAPS=['c','cl','w','veg','ob','lum','m','h','sup','scr'];
 const dgNb=(i,j)=>[[dgEK(i,j,i,j-1),i,j-1],[dgEK(i,j,i,j+1),i,j+1],[dgEK(i,j,i-1,j),i-1,j],[dgEK(i,j,i+1,j),i+1,j]];
 const dgHasC=k=>!!(S.dg&&S.dg.c&&S.dg.c[k]);
 /* textures des pièces : le thème de la scène s'il a ses images, sinon la crypte (sol, murs et plafond texturés) */
@@ -5428,6 +5432,8 @@ function dgPaintEnd(g){ if(g&&g.supd){ markDirty(); sync(); } if(g&&g.path){ if(
 function dgPaint(wx,wy,g){ DG._g=g; if(DG.tool==='deco'||DG.tool==='x') return;
   if(DG.tool==='sup'){ const [i,j]=dgCell(wx,wy), k=dgK(i,j); if(!dgAt(i,j)||dgWB(i,j)&&!dgSup(i,j)) return; const [kd,st]=(DG.supk||'bar:bois').split(':'), D=dgEnsure(); D.sup=D.sup||{};   /* support : on le peint case par case ; les cases voisines du même style forment un seul comptoir */
     const o=D.sup[k]; if(!o||o.k!==kd||o.s!==st){ D.sup[k]={k:kd,s:st}; g.supd=1; drawDgLater(); fpsLater(); } return; }
+  if(DG.tool==='scrd'){ if(g.last) return; g.last=1; const [i,j]=dgCell(wx,wy), k=dgK(i,j); if(!dgOpen(i,j)&&!dgSup(i,j)){ toast('Un écran se pose sur le sol, un bar ou une table',true); return; }
+    const D=dgEnsure(); D.scr=D.scr||{}; if(D.scr[k]) D.scr[k].s=DG.scrk||D.scr[k].s; else D.scr[k]={s:DG.scrk||'plat',on:false}; delete SCRC[k]; FPS.sprites.clear(); drawDgLater(); fpsLater(); markDirty(); sync(); return; }
   if(DG.tool==='swd'){ if(g.last) return; g.last=1; const [i,j]=dgCell(wx,wy), fx=wx/CELL-i, fy=wy/CELL-j, C=[[i,j-1,fy],[i,j+1,1-fy],[i-1,j,fx],[i+1,j,1-fx]].sort((a,b)=>a[2]-b[2]);   /* le mur le plus proche du clic, côté de cette case */
     const E=C.map(([a,b])=>dgEK(i,j,a,b)).find(ek=>{ const w=dgEWk(ek); return w&&!w.inv&&!(S.dg.d&&S.dg.d[ek]); });
     if(!dgAt(i,j)||!E){ toast('Un interrupteur se fixe sur un mur, depuis une case voisine',true); return; } const D=dgEnsure(); D.sw=D.sw||{}; const key=E+'|'+swSide(E,i,j);
@@ -5474,7 +5480,7 @@ function dgDirEl(t){ return dgOn()&&t.type==='player'&&t.dir!=null?`<i class="dg
 const MK_LBL={up:'Escalier qui monte',down:'Escalier qui descend',tp:'Zone TP',sign:'Panneau'};
 const mkIco=k=>dgI(k==='tp'?'tp':k==='sign'?'sign':k==='up'?'sup':'sdown',1.7);
 /* ---------- sélection : ce qui est posé sur une case (végétation, lumière, passage, portes) et sa suppression ---------- */
-const dgDecoAt=(wx,wy)=>{ const D=S.dg||{}, k=dgK(...dgCell(wx,wy)); return !!((D.veg&&D.veg[k])||(D.ob&&D.ob[k])||(D.lum&&D.lum[k])||(D.sup&&D.sup[k])); };
+const dgDecoAt=(wx,wy)=>{ const D=S.dg||{}, k=dgK(...dgCell(wx,wy)); return !!((D.veg&&D.veg[k])||(D.ob&&D.ob[k])||(D.lum&&D.lum[k])||(D.sup&&D.sup[k])||(D.scr&&D.scr[k])); };
 /* support : tout le comptoir (cases voisines du même type et du même style) */
 function supGroup(k){ const D=S.dg||{}, SP=D.sup||{}, o=SP[k]; if(!o) return []; const G=new Set([k]), st=[k];
   while(st.length){ const [i,j]=st.pop().split(',').map(Number); [[1,0],[-1,0],[0,1],[0,-1]].forEach(([u,v])=>{ const n=(i+u)+','+(j+v), q=SP[n]; if(q&&!G.has(n)&&q.k===o.k&&q.s===o.s){ G.add(n); st.push(n); } }); }
@@ -5492,6 +5498,7 @@ function supEdit(k){ const D=S.dg||{}, o=D.sup&&D.sup[k]; if(!o) return; const G
 function dgSelItems(i,j){ const D=S.dg||{}, k=dgK(i,j), L=[];
   if(D.veg&&D.veg[k]){ const [b,t]=D.veg[k].split('-'); L.push({id:'veg',img:`res/vege/${D.veg[k]}.png`,l:`${VEG_K[t]||'Végétation'} · ${VEG_BIO[b]||''}`,del:()=>delete D.veg[k]}); }
   if(D.ob&&D.ob[k]) L.push({id:'ob',img:`res/sprites/${D.ob[k]}.png`,l:(OBJ[D.ob[k]]||{}).l||'Objet',del:()=>delete D.ob[k]});
+  if(D.scr&&D.scr[k]){ const o=D.scr[k]; L.push({id:'scr',img:`res/inter/scr-${o.s}.png`,l:`${(SCR[o.s]||{}).l||'Écran'} · ${o.on?'allumé':'éteint'}`,edit:()=>scrEdit(k),del:()=>{ delete D.scr[k]; }}); }
   if(D.sup&&D.sup[k]){ const o=D.sup[k]; L.push({id:'sup',img:`res/sup/${o.k==='table'?o.s+'-table':o.s}.png`,l:`${o.k==='table'?'Table':'Bar'} · ${SUP[o.s]||o.s}`,edit:()=>supEdit(k),del:()=>{ delete D.sup[k]; }}); }
   if(D.lum&&D.lum[k]){ const P=lumProps(D.lum[k]); L.push({id:'lum',img:`res/lum/${lumK(D.lum[k])}.png`,l:`${(P&&P.d.l)||'Lumière'} · ${{on:'allumée',off:'éteinte',broken:'cassée'}[(P&&P.st)||'on']}`,edit:()=>lumEdit(k),del:()=>delete D.lum[k]}); }
   return L; }
@@ -5659,7 +5666,7 @@ function renderDgPanel(){ const box=$('dg-body'); if(!box) return;
   const SV=d=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
   const doorStyles=(cur,attr)=>dgDoorPick(cur,attr), doorStyles0=(cur,attr)=>`<div class="vegpick dg-styl">${dgDoorStyles().map(([k,l])=>`<button type="button" class="vegb${cur===k?' on':''}" data-${attr}="${k}" title="${esc(l)}"><img src="${dgThumb(k,'door')}" alt=""><small>${esc(l)}</small></button>`).join('')}</div>`;
   const winStyles=(cur,attr)=>`<div class="vegpick dg-styl">${dgWinStyles().map(([k,l])=>`<button type="button" class="vegb${cur===k?' on':''}" data-${attr}="${k}" title="${esc(l)}"><img src="${winThumb(k)}" alt=""><small>${esc(l)}</small></button>`).join('')}</div>`;
-  const bT=DG.bT||'sol', isB=T==='brush', murT=['wall','iwall','unwall'].includes(T)||(isB&&bT==='mur'), solT=isB&&bT==='sol', plaT=isB&&bT==='plafond', doorT=T==='door'||T==='secret', decoT=['veg','lum','ob','deco','shopd','bombd','sup','swd'].includes(T);
+  const bT=DG.bT||'sol', isB=T==='brush', murT=['wall','iwall','unwall'].includes(T)||(isB&&bT==='mur'), solT=isB&&bT==='sol', plaT=isB&&bT==='plafond', doorT=T==='door'||T==='secret', decoT=['veg','lum','ob','deco','shopd','bombd','sup','swd','scrd'].includes(T);
   let sub='', ttl='';
   if(T==='sel'){ const E=(S.dg&&S.dg.ew)||{}, w=DG.edgeSel&&E[DG.edgeSel];
     if(DG.zone){ ttl='Zone'; const acts=[['dz-copy','Copier','<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>'],['dz-cut','Couper','<circle cx="6" cy="18" r="3"/><circle cx="18" cy="18" r="3"/><path d="M8 16L19 4M16 16L5 4"/>']].concat(DG.clip?[['dz-paste','Coller','<path d="M9 4h6v3H9z"/><path d="M9 5H6v15h12V5h-3"/>']]:[],[['dz-rot','Tourner','<path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/>'],['dz-del','Supprimer','<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>']]);
@@ -5683,10 +5690,10 @@ function renderDgPanel(){ const box=$('dg-body'); if(!box) return;
   else if(doorT) sub=doorStyles(DG.ds||dgDefDoor(),'dsv');
   else if(T==='win') sub=winStyles(DG.ws||'crypte','wsv');
   else if(decoT){ const cat=DG.dcat||'veg';
-    sub=seg('dcat',[['veg','Végétation'],['mob','Mobilier'],['sup','Supports'],['int','Interactif']],cat)+(cat==='sup'?`<span class="cap">Bars</span><div class="vegpick">${Object.entries(SUP).map(([k,l])=>`<button type="button" class="vegb${T==='sup'&&DG.supk==='bar:'+k?' on':''}" data-supk="bar:${k}" title="Bar ${l}"><img src="res/sup/${k}.png" alt=""><small>${l}</small></button>`).join('')}</div><span class="cap">Tables</span><div class="vegpick">${Object.entries(SUP).map(([k,l])=>`<button type="button" class="vegb${T==='sup'&&DG.supk==='table:'+k?' on':''}" data-supk="table:${k}" title="Table ${l}"><img src="res/sup/${k}-table.png" alt=""><small>${l}</small></button>`).join('')}</div>`:cat==='int'?`<div class="vegpick"><button type="button" class="vegb${T==='shopd'?' on':''}" data-int="shop" title="Commerce · petit objet : un commerçant, son stock se règle sur sa fiche ; se pose aussi sur un bar ou une table"><img src="res/sprites/commerce.png" alt=""><small>Commerce · petit</small></button><button type="button" class="vegb${T==='bombd'?' on':''}" data-int="bomb" title="Baril explosif · gros objet : minuteur, dégâts, rayon et effet se règlent sur sa fiche"><img src="res/sprites/baril.png" alt=""><small>Baril explosif · gros</small></button></div><span class="cap">Interrupteurs</span><div class="vegpick">${SWS.map(([k,l])=>`<button type="button" class="vegb${T==='swd'&&DG.swk===k?' on':''}" data-swk="${k}" title="${l} · se fixe sur un mur, côté de la case cliquée"><img src="res/inter/sw-${k}.png" alt=""></button>`).join('')}</div><span class="cap">Lumières</span><div class="vegpick">${Object.entries(LUM).map(([k,d])=>`<button type="button" class="vegb${T==='lum'&&DG.lk===k?' on':''}" data-lum="${k}" title="${d.l} · ${d.p?'petit objet : aussi sur un bar ou une table':'gros objet'}"><img src="res/lum/${k}.png" alt=""><small>${d.p?'Petit':'Gros'}</small></button>`).join('')}</div>`:cat==='veg'?`<div class="vegpick">${Object.keys(VEG_BIO).map(b=>Object.keys(VEG_K).map(k=>{ const key=b+'-'+k; return `<button type="button" class="vegb${T==='veg'&&DG.vk===key?' on':''}" data-veg="${key}" title="${VEG_K[k]} · ${VEG_BIO[b]}"><img src="res/vege/${key}.png" alt=""></button>`; }).join('')).join('')}</div>`
+    sub=seg('dcat',[['veg','Végétation'],['mob','Mobilier'],['sup','Supports'],['int','Interactif']],cat)+(cat==='sup'?`<span class="cap">Bars</span><div class="vegpick">${Object.entries(SUP).map(([k,l])=>`<button type="button" class="vegb${T==='sup'&&DG.supk==='bar:'+k?' on':''}" data-supk="bar:${k}" title="Bar ${l}"><img src="res/sup/${k}.png" alt=""><small>${l}</small></button>`).join('')}</div><span class="cap">Tables</span><div class="vegpick">${Object.entries(SUP).map(([k,l])=>`<button type="button" class="vegb${T==='sup'&&DG.supk==='table:'+k?' on':''}" data-supk="table:${k}" title="Table ${l}"><img src="res/sup/${k}-table.png" alt=""><small>${l}</small></button>`).join('')}</div>`:cat==='int'?`<div class="vegpick"><button type="button" class="vegb${T==='shopd'?' on':''}" data-int="shop" title="Commerce · petit objet : un commerçant, son stock se règle sur sa fiche ; se pose aussi sur un bar ou une table"><img src="res/sprites/commerce.png" alt=""><small>Commerce · petit</small></button><button type="button" class="vegb${T==='bombd'?' on':''}" data-int="bomb" title="Baril explosif · gros objet : minuteur, dégâts, rayon et effet se règlent sur sa fiche"><img src="res/sprites/baril.png" alt=""><small>Baril explosif · gros</small></button></div><span class="cap">Interrupteurs</span><div class="vegpick">${SWS.map(([k,l])=>`<button type="button" class="vegb${T==='swd'&&DG.swk===k?' on':''}" data-swk="${k}" title="${l} · se fixe sur un mur, côté de la case cliquée"><img src="res/inter/sw-${k}.png" alt=""></button>`).join('')}</div><span class="cap">Écrans</span><div class="vegpick">${Object.entries(SCR).map(([k,d])=>`<button type="button" class="vegb${T==='scrd'&&DG.scrk===k?' on':''}" data-scrk="${k}" title="${d.l} · petit objet : allumé, éteint ou GIF"><img src="res/inter/scr-${k}.png" alt=""><small>Petit</small></button>`).join('')}</div><span class="cap">Lumières</span><div class="vegpick">${Object.entries(LUM).map(([k,d])=>`<button type="button" class="vegb${T==='lum'&&DG.lk===k?' on':''}" data-lum="${k}" title="${d.l} · ${d.p?'petit objet : aussi sur un bar ou une table':'gros objet'}"><img src="res/lum/${k}.png" alt=""><small>${d.p?'Petit':'Gros'}</small></button>`).join('')}</div>`:cat==='veg'?`<div class="vegpick">${Object.keys(VEG_BIO).map(b=>Object.keys(VEG_K).map(k=>{ const key=b+'-'+k; return `<button type="button" class="vegb${T==='veg'&&DG.vk===key?' on':''}" data-veg="${key}" title="${VEG_K[k]} · ${VEG_BIO[b]}"><img src="res/vege/${key}.png" alt=""></button>`; }).join('')).join('')}</div>`
       :`<div class="vegpick">${Object.entries(OBJ).map(([k,d])=>`<button type="button" class="vegb${T==='ob'&&DG.ok===k?' on':''}" data-ob="${k}" title="${d.l} · ${SZ_L[objSz(k)].toLowerCase()}"><img src="res/sprites/${k}.png" alt=""><small>${objSz(k)==='p'?'Petit':'Gros'}</small></button>`).join('')}</div>`); }
   else if(T==='path') sub=hr('dg-pw',DG.pw||1.4,'Largeur du sentier');
-  const TN={sel:'Sélection',rect:'Pièce',tpl:'Modèles',wall:'Murs',iwall:'Murs',unwall:'Murs',door:'Porte',secret:'Porte',win:'Fenêtre',path:'Sentier',erase:'Effacer',veg:'Déco',lum:'Déco',ob:'Déco',deco:'Déco',shopd:'Déco',bombd:'Déco',swd:'Déco',sup:'Déco',sup:'Passages',sdown:'Passages',sign:'Passages',tp:'Passages'};
+  const TN={sel:'Sélection',rect:'Pièce',tpl:'Modèles',wall:'Murs',iwall:'Murs',unwall:'Murs',door:'Porte',secret:'Porte',win:'Fenêtre',path:'Sentier',erase:'Effacer',veg:'Déco',lum:'Déco',ob:'Déco',deco:'Déco',shopd:'Déco',bombd:'Déco',swd:'Déco',scrd:'Déco',sup:'Déco',sup:'Passages',sdown:'Passages',sign:'Passages',tp:'Passages'};
   const tname=ttl?`Sélection · ${ttl}`:solT?'Sol':plaT?'Plafond':murT?'Murs':TN[T]||'Sélection';
   const CFG=T==='sel'&&!!(DG.cfgFn||DG.edgeSel||(typeof cardId!=='undefined'&&cardId&&dgDocked()));   /* objet sélectionné : le volet devient celui de ses réglages */
   if(CFG) box.innerHTML=`<div class="dg-cfghd"><button class="btn ghost" type="button" id="dg-back">${IB('left',2)}Construire</button></div>
@@ -5710,6 +5717,7 @@ function renderDgPanel(){ const box=$('dg-body'); if(!box) return;
   box.querySelectorAll('[data-lum]').forEach(b=>b.onclick=()=>{ DG.lk=b.dataset.lum; DG.tool='lum'; renderDgPanel(); });
   box.querySelectorAll('[data-veg]').forEach(b=>b.onclick=()=>{ DG.vk=b.dataset.veg; DG.tool='veg'; renderDgPanel(); });
   box.querySelectorAll('[data-supk]').forEach(b=>b.onclick=()=>{ DG.supk=b.dataset.supk; DG.tool='sup'; renderDgPanel(); });
+  box.querySelectorAll('[data-scrk]').forEach(b=>b.onclick=()=>{ DG.scrk=b.dataset.scrk; DG.tool='scrd'; renderDgPanel(); });
   box.querySelectorAll('[data-swk]').forEach(b=>b.onclick=()=>{ DG.swk=b.dataset.swk; DG.tool='swd'; renderDgPanel(); });
   box.querySelectorAll('[data-int]').forEach(b=>b.onclick=()=>{ DG.tool=b.dataset.int==='bomb'?'bombd':'shopd'; renderDgPanel(); });
   box.querySelectorAll('[data-dcat]').forEach(b=>b.onclick=()=>{ DG.dcat=b.dataset.dcat; renderDgPanel(); });
@@ -5858,25 +5866,62 @@ function flLoad(k,T){ const o=(T||FLIMG)[k]; if(o.im) return; o.im=new Image(); 
 const SUPI={};
 /* interrupteurs : fixés sur un mur, côté d'une case ; reliés par câble à des lumières, portes, barils… */
 const SWS=[['cyber1','Cyber'],['cyber2','Cyber (boîtier)'],['jungle1','Jungle'],['jungle2','Jungle (globe)'],['gothique1','Gothique (levier)'],['gothique2','Gothique (serrure)'],['moderne1','Moderne'],['moderne2','Moderne (molette)'],['ancien1','Ancien'],['ancien2','Ancien (cadre)']];
-const SWL={lum:'Lumière',door:'Porte',bomb:'Baril'};
+const SWL={lum:'Lumière',door:'Porte',bomb:'Baril',scr:'Écran'};
+/* écrans : petits objets ; éteint = noir, allumé = neige, ou un GIF importé (compressé en planche d'images) */
+const SCR={tv:{l:'Télé',r:[.28,.33,.76,.83]},plat:{l:'Écran plat',r:[.05,.06,.95,.8]},cyber:{l:'Écran cyber',r:[.15,.17,.93,.78]},jungle:{l:'Écran jungle',r:[.24,.27,.87,.77]},gothique:{l:'Écran gothique',r:[.21,.24,.83,.85]}};
+const SCRB={}, SCRG={}, SCRC={};
+function scrBase(s2){ let o=SCRB[s2]; if(!o){ o=SCRB[s2]={im:new Image()}; o.im.onload=()=>{ drawDgLater(); fpsLater(); }; o.im.src='res/inter/scr-'+s2+'.png'; } return o.im.complete&&o.im.naturalWidth?o.im:null; }
+function scrGif(g){ if(!g||!g.src) return null; let o=SCRG[g.src.length+':'+g.src.slice(-40)]; if(!o){ o=SCRG[g.src.length+':'+g.src.slice(-40)]={im:new Image()}; o.im.onload=()=>{ drawDgLater(); fpsLater(); }; o.im.src=g.src; } return o.im.complete&&o.im.naturalWidth?o.im:null; }
+/* le sprite de l'écran, avec ce qu'il affiche à cet instant */
+function scrCanvas(k,o,now){ const B=scrBase(o.s); if(!B) return null; const R=(SCR[o.s]||SCR.plat).r, W=B.naturalWidth, H=B.naturalHeight;
+  let c=SCRC[k]; if(!c){ c=SCRC[k]=document.createElement('canvas'); c.width=W; c.height=H; }
+  const G=o.on&&o.gif&&scrGif(o.gif); let fr=-1; if(G){ const D=o.gif.d||[], tot=D.reduce((a,b)=>a+b,0)||1; let t=now%tot; fr=0; while(fr<D.length-1&&t>=D[fr]){ t-=D[fr]; fr++; } }
+  const key=o.s+'|'+(o.on?1:0)+'|'+(G?'g'+fr:o.on?Math.floor(now/90):'0'); if(c._key===key) return c; c._key=key; c._px=null;
+  if(c.width!==W||c.height!==H){ c.width=W; c.height=H; } const x=c.getContext('2d'); x.clearRect(0,0,W,H); x.imageSmoothingEnabled=false; x.drawImage(B,0,0);
+  const X=Math.round(R[0]*W), Y=Math.round(R[1]*H), w=Math.round((R[2]-R[0])*W), h=Math.round((R[3]-R[1])*H);
+  if(!o.on){ x.fillStyle='#07080b'; x.fillRect(X,Y,w,h); x.fillStyle='rgba(255,255,255,.06)'; x.fillRect(X+2,Y+2,Math.max(1,w*.35|0),2); }
+  else if(G){ x.drawImage(G,fr*o.gif.w,0,o.gif.w,o.gif.h,X,Y,w,h); }
+  else { const n=x.createImageData(w,h), d=n.data; for(let i=0;i<d.length;i+=4){ const v=Math.random()*235|0; d[i]=d[i+1]=d[i+2]=v; d[i+3]=255; } x.putImageData(n,X,Y); }   /* neige */
+  c._k='scr_'+o.s; c._hf=.45; return c; }
+function scrEdit(k){ const D=S.dg||{}, o=D.scr&&D.scr[k]; if(!o) return; DG.glow=k.split(',').map(Number); DG.glowE=null; drawDgLater();
+  const done=()=>{ FPS.sprites.clear(); drawDgLater(); fpsLater(); markDirty(); sync(); };
+  openDialog(`<div class="dphead"><h3>${(SCR[o.s]||{}).l||'Écran'}</h3><button class="ib" type="button" id="scr-del" title="Retirer l'écran">${IB('bin')}</button></div>
+    <div class="wxrow dpseg"><button type="button" class="wxb${o.on?' on':''}" data-scon="1"><span>Allumé</span></button><button type="button" class="wxb${!o.on?' on':''}" data-scon="0"><span>Éteint</span></button></div>
+    <span class="cap" style="display:block;margin-top:10px">Image affichée</span><div class="wxrow"><button class="btn ghost" type="button" id="scr-gif">${IB('plus')}${o.gif?'Remplacer le GIF':'Importer un GIF'}</button>${o.gif?`<button class="btn ghost" type="button" id="scr-nogif">Neige</button>`:''}</div>
+    <span class="cap" style="display:block;margin-top:10px">Style</span><div class="vegpick">${Object.entries(SCR).map(([k2,d])=>`<button type="button" class="vegb${o.s===k2?' on':''}" data-scs="${k2}" title="${d.l}"><img src="res/inter/scr-${k2}.png" alt=""></button>`).join('')}</div>`);
+  document.querySelectorAll('[data-scon]').forEach(b=>b.onclick=()=>{ o.on=b.dataset.scon==='1'; done(); document.querySelectorAll('[data-scon]').forEach(x=>x.classList.toggle('on',x===b)); });
+  document.querySelectorAll('[data-scs]').forEach(b=>b.onclick=()=>{ o.s=b.dataset.scs; delete SCRC[k]; done(); document.querySelectorAll('[data-scs]').forEach(x=>x.classList.toggle('on',x===b)); });
+  $('scr-del').onclick=()=>{ delete D.scr[k]; DG.glow=null; done(); if(typeof dlg!=='undefined'&&dlg.open) dlg.close(); if(typeof renderDgPanel==='function') renderDgPanel(); };
+  if($('scr-nogif')) $('scr-nogif').onclick=()=>{ delete o.gif; done(); if(typeof dlg!=='undefined'&&dlg.open) scrEdit(k); };
+  $('scr-gif').onclick=()=>{ const inp=document.createElement('input'); inp.type='file'; inp.accept='image/gif,image/webp,image/png'; inp.onchange=async()=>{ const f=inp.files[0]; if(!f) return; toast('Compression du GIF…');
+    try{ o.gif=await gifSheet(f); o.on=true; done(); toast(`GIF importé : ${o.gif.n} image${o.gif.n>1?'s':''}, ${Math.round(o.gif.src.length/1024)} Ko`); if(typeof dlg!=='undefined'&&dlg.open) scrEdit(k); else if(typeof renderDgPanel==='function') renderDgPanel(); }catch(e){ console.warn(e); toast('GIF illisible',true); } }; inp.click(); }; }
+/* GIF → planche horizontale de petites images (64×48), 40 images au plus, en WebP compressé */
+async function gifSheet(file){ const W=64, H=48, MAXF=40, cv=document.createElement('canvas'), x=cv.getContext('2d'); let frames=[], d=[];
+  const fit=(src,sw,sh)=>{ const c=document.createElement('canvas'); c.width=W; c.height=H; const y=c.getContext('2d'), r=Math.max(W/sw,H/sh); y.imageSmoothingQuality='high'; y.drawImage(src,(W-sw*r)/2,(H-sh*r)/2,sw*r,sh*r); return c; };
+  if('ImageDecoder' in window){ const dec=new ImageDecoder({data:await file.arrayBuffer(),type:file.type||'image/gif'}); await dec.tracks.ready; const N=dec.tracks.selectedTrack.frameCount||1, st=Math.max(1,Math.ceil(N/MAXF));
+    for(let i=0;i<N;i++){ const {image}=await dec.decode({frameIndex:i}); if(i%st===0){ frames.push(fit(image,image.displayWidth,image.displayHeight)); d.push(0); } d[d.length-1]+=Math.max(20,(image.duration||100000)/1000); image.close(); } }
+  else { const u=URL.createObjectURL(file), im=new Image(); await new Promise((ok,ko)=>{ im.onload=ok; im.onerror=ko; im.src=u; }); frames=[fit(im,im.naturalWidth,im.naturalHeight)]; d=[1000]; URL.revokeObjectURL(u); }
+  cv.width=W*frames.length; cv.height=H; frames.forEach((c,i)=>x.drawImage(c,i*W,0)); let src=cv.toDataURL('image/webp',.55); if(!src.startsWith('data:image/webp')) src=cv.toDataURL('image/jpeg',.6);
+  return {src,n:frames.length,w:W,h:H,d:d.map(v=>Math.round(v))}; }
 const swSide=(ek,i,j)=>{ const [a,b,o]=ek.split(','), x=+a, y=+b; return (o==='h'?(i===x&&j===y-1):(i===x-1&&j===y))?'a':'b'; };   /* a : case haut/gauche de l'arête */
 const swCell=key=>{ const [ek,sd]=key.split('|'), [a,b,o]=ek.split(','), x=+a, y=+b; return sd==='a'?(o==='h'?[x,y-1]:[x-1,y]):[x,y]; };
-const swPos=key=>{ const [ek]=key.split('|'), [ax,ay,bx,by]=dgEdgeSeg(ek), [ci,cj]=swCell(key), mx=(ax+bx)/2, my=(ay+by)/2, cx=(ci+.5)*CELL, cy=(cj+.5)*CELL; return [mx+(cx-mx)*.36,my+(cy-my)*.36]; };
+const swPos=key=>{ const [ek]=key.split('|'), [ax,ay,bx,by]=dgEdgeSeg(ek), [ci,cj]=swCell(key), mx=(ax+bx)/2, my=(ay+by)/2, cx=(ci+.5)*CELL, cy=(cj+.5)*CELL; return [mx+(cx-mx)*.14,my+(cy-my)*.14]; };
 function swAt(wx,wy){ const SW=S.dg&&S.dg.sw; if(!SW) return null; const [i,j]=dgCell(wx,wy), fx=wx/CELL-i, fy=wy/CELL-j;
   for(const [ek,d] of [[dgEK(i,j,i,j-1),fy],[dgEK(i,j,i,j+1),1-fy],[dgEK(i,j,i-1,j),fx],[dgEK(i,j,i+1,j),1-fx]]){ const k=ek+'|'+swSide(ek,i,j); if(SW[k]&&d<.42) return k; } return null; }
 function swTarget(wx,wy){ const D=S.dg||{}, e=dgEdgeAt(wx,wy), fx=wx/CELL, fy=wy/CELL, near=Math.min(Math.abs(fy-Math.round(fy)),Math.abs(fx-Math.round(fx)))<.22;
   const b=S.tokens.find(t=>t.kind==='bomb'&&Math.hypot(t.x-wx,t.y-wy)<CELL*.45); if(b) return {t:'bomb',id:b.id};
-  if(near&&D.d&&D.d[e.k]) return {t:'door',k:e.k}; const k=dgK(...dgCell(wx,wy)); if(D.lum&&D.lum[k]) return {t:'lum',k}; return null; }
-function swLinkPos(L){ const D=S.dg||{}; if(L.t==='lum'){ const [i,j]=L.k.split(',').map(Number); return D.lum&&D.lum[L.k]?[(i+.5)*CELL,(j+.5)*CELL]:null; }
+  if(near&&D.d&&D.d[e.k]) return {t:'door',k:e.k}; const k=dgK(...dgCell(wx,wy)); if(D.scr&&D.scr[k]) return {t:'scr',k}; if(D.lum&&D.lum[k]) return {t:'lum',k}; return null; }
+function swLinkPos(L){ const D=S.dg||{}; if(L.t==='scr'){ const [i,j]=L.k.split(',').map(Number); return D.scr&&D.scr[L.k]?[(i+.5)*CELL,(j+.5)*CELL]:null; } if(L.t==='lum'){ const [i,j]=L.k.split(',').map(Number); return D.lum&&D.lum[L.k]?[(i+.5)*CELL,(j+.5)*CELL]:null; }
   if(L.t==='door'){ if(!D.d||!D.d[L.k]) return null; const [ax,ay,bx,by]=dgEdgeSeg(L.k); return [(ax+bx)/2,(ay+by)/2]; }
   if(L.t==='bomb'){ const b=typeof tok==='function'&&tok(L.id); return b?[b.x,b.y]:null; } return null; }
 function swToggle(key){ const D=S.dg||{}, o=D.sw&&D.sw[key]; if(!o) return; o.on=!o.on;
   (o.links||[]).forEach(L=>{ if(L.t==='lum'&&D.lum&&D.lum[L.k]){ let v=D.lum[L.k]; if(typeof v==='string') v=D.lum[L.k]={k:v}; if(v.st!=='broken') v.st=(v.st||'on')==='off'?'on':'off'; }
+    else if(L.t==='scr'&&D.scr&&D.scr[L.k]) D.scr[L.k].on=!D.scr[L.k].on;
     else if(L.t==='door'&&D.d&&D.d[L.k]){ const d=dgNormDoor(D.d[L.k]); d.open=!d.open; if(d.open) delete d.lk; }
     else if(L.t==='bomb'){ const b=typeof tok==='function'&&tok(L.id); if(b&&b.bomb){ if(+b.bomb.sec>0&&!b.bomb.end) b.bomb.end=Date.now()+b.bomb.sec*1000; else if(typeof bombBoom==='function') bombBoom(b.id); } } });
   FPS.sprites.clear(); drawDgLater(); fpsLater(); if(!isPlayer){ markDirty(); sync(); } }
 function swEdit(key){ const D=S.dg||{}, o=D.sw&&D.sw[key]; if(!o) return; DG.glowE=key.split('|')[0]; DG.glow=null; DG.swSel=key; drawDgLater();
-  const lab=L=>L.t==='bomb'?'Baril explosif':L.t==='lum'?((LUM[lumK(D.lum&&D.lum[L.k])]||{}).l||'Lumière')+` · ${L.k.replace(',',' · ')}`:`Porte · ${L.k.split(',').slice(0,2).join(' · ')}`;
+  const lab=L=>L.t==='scr'?`${(SCR[(D.scr&&D.scr[L.k]||{}).s]||{}).l||'Écran'} · ${L.k.replace(',',' · ')}`:L.t==='bomb'?'Baril explosif':L.t==='lum'?((LUM[lumK(D.lum&&D.lum[L.k])]||{}).l||'Lumière')+` · ${L.k.replace(',',' · ')}`:`Porte · ${L.k.split(',').slice(0,2).join(' · ')}`;
   openDialog(`<div class="dphead"><h3>Interrupteur</h3><button class="ib" type="button" id="sw-del" title="Retirer l'interrupteur">${IB('bin')}</button></div>
     <div class="wxrow"><button class="btn" type="button" id="sw-act">${o.on?'Actionné':'Au repos'} · Actionner</button></div>
     <span class="cap" style="display:block;margin-top:10px">Câbles</span><div class="selist">${(o.links||[]).length?o.links.map((L,n)=>`<div class="selrow"><i>${IB(L.t==='door'?'door':L.t==='bomb'?'bin':'sun')}</i><span>${esc(lab(L))}</span><button class="ib" type="button" data-swu="${n}" title="Couper le câble">${IB('x')}</button></div>`).join(''):'<div class="meta" style="text-align:left">Aucun élément relié.</div>'}</div>
@@ -6166,7 +6211,7 @@ function fpsSprite(t){ const cv=fpsSprite0(t); if(!cv||!dgDown(t)) return cv; if
   for(let y=0;y<H;y++) for(let x=0;x<W;x++) if(D[(y*W+x)*4+3]>100){ if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; } if(x1<0) return cv;
   const bw=x1-x0+1, bh=y1-y0+1, o=document.createElement('canvas'); o.width=bh; o.height=bw; const g=o.getContext('2d'); g.imageSmoothingEnabled=false; g.translate(bh,0); g.rotate(Math.PI/2); g.drawImage(cv,x0,lh+y0,bw,bh,0,0,bw,bh);
   const Hb=(cv._hf||.62)*bh/cv.height; o._k='perso'; o._hf=Hb*bw/bh; o._lift=.06; return cv._down=o; }
-function fpsSprite0(t){ if(t.type==='mk'&&t.mk==='hang') return hangImg(t.hk); if(t.type==='mk'&&t.mk==='lum'){ const o=lumImg(t.lk); return o.cv; } if(t.type==='mk'&&t.mk==='ob'){ const o=obImg(t.ok); return o.cv; } if(t.type==='mk'){ if(t.mk==='tp'){ FPS.fkRun=1; return tpFrame(); } return mkSprite(t.mk); } const sk=t.kind==='shop'?'commerce':t.kind==='bomb'?'baril':dgSprK(t), key=t.id+'|'+(t.img||'')+'|'+(t.name||'')+'|'+t.type+'|'+(t.ico||'')+'|'+(sk||''); let s=FPS.sprites.get(t.id); if(s&&s.key===key) return s.ready?s.cv:null;
+function fpsSprite0(t){ if(t.type==='mk'&&t.mk==='hang') return hangImg(t.hk); if(t.type==='mk'&&t.mk==='lum'){ const o=lumImg(t.lk); return o.cv; } if(t.type==='mk'&&t.mk==='ob'){ const o=obImg(t.ok); return o.cv; } if(t.type==='mk'&&t.mk==='scr'){ const o=S.dg&&S.dg.scr&&S.dg.scr[t.sk]; return o?scrCanvas(t.sk,o,performance.now()):null; } if(t.type==='mk'){ if(t.mk==='tp'){ FPS.fkRun=1; return tpFrame(); } return mkSprite(t.mk); } const sk=t.kind==='shop'?'commerce':t.kind==='bomb'?'baril':dgSprK(t), key=t.id+'|'+(t.img||'')+'|'+(t.name||'')+'|'+t.type+'|'+(t.ico||'')+'|'+(sk||''); let s=FPS.sprites.get(t.id); if(s&&s.key===key) return s.ready?s.cv:null;
   const vk=vehKey(t); if(vk){ const id='v:'+vk; let im=DGIM[id]; if(!im){ im=DGIM[id]=new Image(); im.onload=()=>{ FPS.sprites.clear(); fpsLater(); }; im.src='res/vehicules/'+vk+'.png'; } if(!im.complete||!im.naturalWidth) return null;
     const pax=(t.veh.pax!=null?+t.veh.pax:S.tokens.filter(x=>x.inveh===t.id).length), seats=+t.veh.seats||0, key2=key+'|'+vk+'|'+pax+'/'+seats; if(s&&s.key===key2) return s.cv;
     const cv=document.createElement('canvas'), x=cv.getContext('2d'), R=34; cv.width=im.naturalWidth; cv.height=im.naturalHeight+R*2+6; x.imageSmoothingEnabled=false; x.drawImage(im,0,R*2+6);
@@ -6274,7 +6319,7 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
     if(rdy<0){ sty=-1; sdy=(cam.y-my)*ddy; } else { sty=1; sdy=(my+1-cam.y)*ddy; }
     const put=RM?(y,c,d)=>{ const i=y*W+xx; if(DZ[i]!==Infinity) return; B[i]=c; DZ[i]=d; if(d!==lD){ lD=d; lO=dgOpenSky(Math.floor(cam.x+(d-.06)*rdx),Math.floor(cam.y+(d-.06)*rdy))?1:0; } if(lO) M[i]=1; }:(y,c,d)=>{ const i=y*W+xx; if(DZ[i]!==Infinity) return; B[i]=c; DZ[i]=d; };
     /* face verticale (mur, marche, plafond qui descend, façade) entre les hauteurs z0 et z1 à la distance d */
-    const swOver=(sw,d)=>{ const I=supImg('../inter/sw-'+sw.s); if(!I) return; const nrm=side===0?Math.abs(rdx):Math.abs(rdy), dp=d-.045/nrm, hz=.27, wz=hz*I.w/I.h, z0=.44, z1=z0+hz;
+    const swOver=(sw,d)=>{ const I=supImg('../inter/sw-'+sw.s); if(!I) return; const nrm=side===0?Math.abs(rdx):Math.abs(rdy), dp=d-.004/nrm, hz=.27, wz=hz*I.w/I.h, z0=.44, z1=z0+hz;
       let u=side===0?cam.y+dp*rdy:cam.x+dp*rdx; u-=Math.floor(u); if(side===0&&rdx>0||side===1&&rdy<0) u=1-u; const ul=(u-(.5-wz/2))/wz; if(ul<0||ul>=1) return;
       const yT=Math.max(0,Math.ceil(h2+(eye-z1)*PS/dp)), yB=Math.min(H-1,Math.floor(h2+(eye-z0)*PS/dp)); if(yB<yT) return; const hx=cam.x+dp*rdx, hy=cam.y+dp*rdy, f=lit(dp)*(side?.82:1)*vis(hx,hy), wa=LON?la(hx,hy):null, xi=Math.min(I.w-1,(ul*I.w)|0);
       for(let y=yT;y<=yB;y++){ const z=eye-(y+.5-h2)*dp/PS; if(z<z0||z>z1) continue; const c=I.px[Math.min(I.h-1,((1-(z-z0)/hz)*I.h)|0)*I.w+xi]; if((c>>>24)<128) continue; put(y,shL(c|0xff000000,f,wa),dp); } };
@@ -6468,6 +6513,7 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
   { const CL=S.dg&&S.dg.cl||{}, HK=['racines','chaine','toile','mousse','racines','mousse']; for(const k in CL){ const o=CL[k]; if(o.no||o.t!=='crypte') continue; const p=k.indexOf(','), i=+k.slice(0,p), j=+k.slice(p+1), hs=((i*73856093)^(j*19349663))>>>0; if(hs%100>38) continue;
       const t={id:'hg'+k,type:'mk',mk:'hang',hk:HK[(hs>>>8)%HK.length],ch:+o.h||1,x:(i+.25+((hs>>>12)%50)/100)*CELL,y:(j+.25+((hs>>>18)%50)/100)*CELL}, sx=t.x/CELL-cam.x, sy=t.y/CELL-cam.y, d=sx*sx+sy*sy; L.push({t,sx,sy,d,r:Math.sqrt(d),lim:Infinity}); } }
   for(const k in (S.dg&&S.dg.ob||{})){ const p=k.indexOf(','), t={id:'ob'+k,type:'mk',mk:'ob',ok:S.dg.ob[k],x:(+k.slice(0,p)+.5)*CELL,y:(+k.slice(p+1)+.5)*CELL}, sx=t.x/CELL-cam.x, sy=t.y/CELL-cam.y, d=sx*sx+sy*sy; L.push({t,sx,sy,d,r:Math.sqrt(d),lim:Infinity}); }
+  for(const k in (S.dg&&S.dg.scr||{})){ const p=k.indexOf(','), t={id:'scr'+k,type:'mk',mk:'scr',sk:k,x:(+k.slice(0,p)+.5)*CELL,y:(+k.slice(p+1)+.5)*CELL}, sx=t.x/CELL-cam.x, sy=t.y/CELL-cam.y, d=sx*sx+sy*sy; L.push({t,sx,sy,d,r:Math.sqrt(d),lim:Infinity}); if(S.dg.scr[k].on) FPS.fkRun=1; }
   for(const k in (S.dg&&S.dg.lum||{})){ const p=k.indexOf(','), t={id:'lum'+k,type:'mk',mk:'lum',lk:lumK(S.dg.lum[k]),lst:(S.dg.lum[k]&&S.dg.lum[k].st)||'on',x:(+k.slice(0,p)+.5)*CELL,y:(+k.slice(p+1)+.5)*CELL}, sx=t.x/CELL-cam.x, sy=t.y/CELL-cam.y, d=sx*sx+sy*sy; L.push({t,sx,sy,d,r:Math.sqrt(d),lim:Infinity}); }
   for(const k in (S.dg&&S.dg.m||{})){ const m=S.dg.m[k]; if(m.k==='down') continue; const p=k.indexOf(','), t={id:'mk'+k,type:'mk',mk:m.k,x:(+k.slice(0,p)+.5)*CELL,y:(+k.slice(p+1)+.5)*CELL}, sx=t.x/CELL-cam.x, sy=t.y/CELL-cam.y, d=sx*sx+sy*sy; L.push({t,sx,sy,d,r:Math.sqrt(d),lim:Infinity}); }
   FPS.hits=[]; FPS.lumh=[];
