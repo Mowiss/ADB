@@ -284,6 +284,11 @@ body{-webkit-user-select:none;user-select:none}input,textarea,select,[contentedi
 .line-in:focus{border-bottom-color:var(--ink)}
 .name-in{font-family:var(--f-title);font-size:25px;letter-spacing:.05em;color:var(--ink-strong)}
 .name-in::placeholder{color:#c3c6cf}
+.nm-wrap{position:relative}
+.nm-nk{position:absolute;left:0;top:0;bottom:0;display:flex;align-items:center;gap:10px;pointer-events:none;opacity:0;transition:opacity .6s;color:var(--ink-strong);overflow:hidden}
+.nm-nk svg{height:34px;width:auto;flex:none}
+.nm-wrap .name-in{transition:color .6s}
+.nm-wrap.nk .nm-nk{opacity:1}.nm-wrap.nk .name-in{color:transparent}
 select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:linear-gradient(45deg,transparent 50%,var(--ink-soft) 50%),linear-gradient(-45deg,transparent 50%,var(--ink-soft) 50%);background-size:5px 5px;background-position:calc(100% - 9px) 55%,calc(100% - 4px) 55%;background-repeat:no-repeat;padding-right:18px}
 .racial{font-size:12.5px;line-height:1.45;border-bottom:1px dashed var(--rule);padding:4px 2px}
 .racial b{color:var(--ink-strong)}
@@ -798,7 +803,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}input[type=num
       <div class="who fade" style="padding-bottom:4px">
         <button class="portrait" id="portrait" type="button" title="Changer le portrait"></button>
         <div style="display:flex;flex-direction:column;gap:8px;min-width:0">
-          <div class="field"><label class="cap" for="f-name">Nom</label><input id="f-name" class="line-in name-in" placeholder="Sans nom" autocomplete="off"></div>
+          <div class="field"><label class="cap" for="f-name">Nom</label><div class="nm-wrap"><input id="f-name" class="line-in name-in" placeholder="Sans nom" autocomplete="off"><div class="nm-nk" id="nm-nk" aria-hidden="true"></div></div></div>
           <div class="field"><label class="cap" for="f-race">Race</label><div class="racerow"><select id="f-race" class="line-in"></select><button type="button" class="sexsw" id="f-sexe" title="Homme (toucher pour changer)">♂</button></div></div>
         </div>
       </div>
@@ -1343,9 +1348,381 @@ function printSheet(){
     ;
   Promise.race([Promise.all(P),new Promise(r=>setTimeout(r,2500))]).then(go);
 }
+/* le nom du personnage alterne entre le français et son écriture narakéenne */
+const Duploye = (() => {
+  // t: l=ligne (a=angle, l=longueur) · a=arc (a=tangente de départ, s=balayage, r=rayon) · o=cercle (r)
+  // d:1 = signe pointé ; tailles en unités (1 = longueur du P)
+  const DEF_SIGNS = [
+    {id:'P', lab:'P', g:'Consonnes', ex:'pa', t:'l', a:90, l:1, k:'p', u:0x1BC02},
+    {id:'T', lab:'T', g:'Consonnes', ex:'ta', t:'l', a:0, l:1, k:'t', u:0x1BC03},
+    {id:'F', lab:'F', g:'Consonnes', ex:'fa, ph', t:'l', a:60, l:1.05, k:'f', u:0x1BC04},
+    {id:'K', lab:'K', g:'Consonnes', ex:'ca, qu, k', t:'l', a:120, l:1.05, k:'k', u:0x1BC05},
+    {id:'L', lab:'L', g:'Consonnes', ex:'la', t:'l', a:-45, l:1.3, k:'l', u:0x1BC06},
+    {id:'B', lab:'B', g:'Consonnes', ex:'ba', t:'l', a:90, l:2, k:'b', u:0x1BC07},
+    {id:'D', lab:'D', g:'Consonnes', ex:'da', t:'l', a:0, l:2, k:'d', u:0x1BC08},
+    {id:'V', lab:'V', g:'Consonnes', ex:'va', t:'l', a:60, l:2.1, k:'v', u:0x1BC09},
+    {id:'G', lab:'G', g:'Consonnes', ex:'ga, gu', t:'l', a:120, l:2.1, k:'g', u:0x1BC0A},
+    {id:'R', lab:'R', g:'Consonnes', ex:'ra', t:'l', a:-45, l:2.6, k:'r', u:0x1BC0B},
+    {id:'M', lab:'M', g:'Arcs', ex:'ma', t:'a', a:180, s:-180, r:.62, k:'m', u:0x1BC19},
+    {id:'N', lab:'N', g:'Arcs', ex:'na', t:'a', a:0, s:180, r:.62, k:'n', u:0x1BC1A},
+    {id:'CH', lab:'CH', g:'Arcs', ex:'chat', t:'a', a:-90, s:180, r:.7, k:'c', u:0x1BC1B},
+    {id:'S', lab:'S', g:'Arcs', ex:'sa, ce, ç', t:'a', a:90, s:-180, r:.7, k:'s', u:0x1BC1C},
+    {id:'GN', lab:'GN', g:'Arcs', ex:'agneau', t:'a', a:0, s:180, r:.62, d:1, k:'h', u:0x1BC22},
+    {id:'JH', lab:'J', g:'Arcs', ex:'ja, ge', t:'a', a:-90, s:180, r:.7, d:1, k:'j', u:0x1BC23},
+    {id:'Z', lab:'Z', g:'Arcs', ex:'za, rose', t:'a', a:90, s:-180, r:.7, d:1, k:'z', u:0x1BC25},
+    {id:'A', lab:'A', g:'Voyelles', ex:'a, à', t:'o', r:.2, k:'a', u:0x1BC41},
+    {id:'O', lab:'O', g:'Voyelles', ex:'o, au, eau', t:'o', r:.3, k:'o', u:0x1BC44},
+    {id:'OU', lab:'OU', g:'Voyelles', ex:'ou', t:'o', r:.3, d:1, k:'w', u:0x1BC5B},
+    {id:'I', lab:'I', g:'Voyelles', ex:'i, y', t:'a', a:180, s:-180, r:.17, k:'i', u:0x1BC46},
+    {id:'E', lab:'É', g:'Voyelles', ex:'é, è, ai', t:'a', a:90, s:-180, r:.2, k:'e', u:0x1BC47},
+    {id:'U', lab:'U', g:'Voyelles', ex:'u', t:'a', a:90, s:-90, r:.5, k:'u', u:0x1BC51},
+    {id:'EU', lab:'EU', g:'Voyelles', ex:'eu, œu, e', t:'a', a:0, s:-90, r:.5, k:'y', u:0x1BC52},
+    {id:'AN', lab:'AN', g:'Nasales', ex:'an, en', t:'a', a:-90, s:90, r:.3, k:'1', u:0x1BC64},
+    {id:'ON', lab:'ON', g:'Nasales', ex:'on', t:'a', a:0, s:-90, r:.3, k:'2', u:0x1BC62},
+    {id:'IN', lab:'IN', g:'Nasales', ex:'in, ain', t:'a', a:0, s:90, r:.3, k:'3', u:0x1BC63},
+    {id:'UN', lab:'UN', g:'Nasales', ex:'un', t:'a', a:90, s:-90, r:.3, k:'4', u:0x1BC61},
+  ];
+  const N = (id, lab, g, ex, c, k) => ({id, lab, g, ex, t:'p', c, k});
+  const NARA_SIGNS = [
+    N('P','P','Lames','pa','r .3 -1; r .3 1','p'),
+    N('T','T','Lames','ta','r .3 1; r .3 -1','t'),
+    N('K','K','Lames','ca, qu','r .12 -1.5; r .45 1.5','k'),
+    N('B','B','Lames','ba','r .3 -1; t -90 .35; r .3 1','b'),
+    N('D','D','Lames','da','r .3 1; t 90 .35; r .3 -1','d'),
+    N('G','G','Lames','ga, gu','r .12 -1.5; t -60 .35; r .45 1.5','g'),
+    N('F','F','Croissants','fa, ph','c .3 -1.3 .6 0','f'),
+    N('S','S','Croissants','sa, ce','c .3 1.3 .6 0','s'),
+    N('CH','CH','Croissants','chat','c .2 -1.1 .4 0; c .2 1.1 .4 0','c'),
+    N('V','V','Croissants','va','c 0 -.65 .3 -.65; t -90 .35; c .3 0 .3 .65','v'),
+    N('Z','Z','Croissants','za, rose','c 0 .65 .3 .65; t 90 .35; c .3 0 .3 -.65','z'),
+    N('JH','J','Croissants','ja, ge','c .2 -1.1 .4 0; c .2 1.1 .4 0; t -40 .35','j'),
+    N('L','L','Boucles','la','r .15 0; a 0 -360 .3; r .15 0','l'),
+    N('R','R','Boucles','ra','r .15 0; a 0 360 .3; r .15 0','r'),
+    N('M','M','Boucles','ma','r .1 -1.1; a -80 330 .16; r .12 1.1','m'),
+    N('N','N','Boucles','na','r .1 1.1; a 80 -330 .16; r .12 -1.1','n'),
+    N('GN','GN','Boucles','agneau','r .1 1.1; a 80 -330 .16; r .12 -1.1; d -90 .45','h'),
+    N('A','A','Voyelles','a, à','r .16 0; d -90 .5; r .16 0','a'),
+    N('E','É','Voyelles','é, è, ai','r .16 0; d 90 .5; r .16 0','e'),
+    N('I','I','Voyelles','i, y','r .16 0; t -90 .5; r .16 0','i'),
+    N('U','U','Voyelles','u','r .16 0; t 90 .5; r .16 0','u'),
+    N('EU','EU','Voyelles','eu, e','r .16 0; d -90 .5; d 90 .5; r .16 0','y'),
+    N('O','O','Voyelles','o, au','r .16 0; o .14 -90 .62; r .16 0','o'),
+    N('OU','OU','Voyelles','ou','r .16 0; o .14 90 .62; r .16 0','w'),
+    N('AN','AN','Nasales','an, en','r .16 0; t -65 .5; t -115 .5; r .16 0','1'),
+    N('ON','ON','Nasales','on','r .16 0; o .14 -90 .62; d -90 .62; r .16 0','2'),
+    N('IN','IN','Nasales','in, ain','r .16 0; t -90 .5; d -90 .78; r .16 0','3'),
+    N('UN','UN','Nasales','un','r .16 0; t 65 .5; t 115 .5; r .16 0','4'),
+  ];
+  const ALPHABETS = {nara:{nom:'Narakéen', signs:NARA_SIGNS}, duploye:{nom:'Duployé', signs:DEF_SIGNS}};
+  let SIGNS = NARA_SIGNS.map(s => ({...s}));
+  let SG = {};
+  const reindex = () => { SG = {}; SIGNS.forEach(s => SG[s.id] = s); };
+  reindex();
+  const VOWELS = new Set(['A','O','OU','I','E','EU','U','AN','ON','IN','UN']);
+
+  /* ---------- Phonétique française → codes ---------- */
+  const VW = 'aeiouyàâäéèêëîïôöûùüœæ';
+  const isV = ch => !!ch && VW.includes(ch);
+  const S_ = str => new Set(str.split(' '));
+  const EXC = {
+    'est':'E','et':'E','es':'E','les':'L E','des':'D E','mes':'M E','tes':'T E','ses':'S E','ces':'S E','ai':'E',
+    'eu':'U','eus':'U','eut':'U','eût':'U','femme':'F A M','femmes':'F A M','monsieur':'M EU S I EU','messieurs':'M E S I EU',
+    'oignon':'O GN ON','pays':'P E I','fils':'F I S','tous':'T OU','ville':'V I L','villes':'V I L','mille':'M I L',
+    'tranquille':'T R AN K I L','village':'V I L A JH','villages':'V I L A JH','hier':'I E R','million':'M I L I ON','millions':'M I L I ON','milliard':'M I L I A R','milliards':'M I L I A R','narakéen':'N A R A K E IN','narakéens':'N A R A K E IN','narakéenne':'N A R A K E E N','narakéennes':'N A R A K E E N','août':'OU T',
+    'examen':'E G Z A M IN','sept':'S E T','huit':'U I T','dix':'D I S','six':'S I S','cinq':'S IN K','neuf':'N EU F',
+    'vingt':'V IN','vingts':'V IN','cent':'S AN','cents':'S AN','second':'S EU G ON','seconde':'S EU G ON D',
+    'secondes':'S EU G ON D','temps':'T AN','corps':'K O R','sens':'S AN S','fait':'F E','faits':'F E',
+    'faisons':'F EU Z ON','faisait':'F EU Z E','faisaient':'F EU Z E','faisant':'F EU Z AN','oui':'OU I',
+    'ennui':'AN N U I','ennemi':'E N M I','ennemis':'E N M I','automne':'O T O N','clef':'K L E','nez':'N E',
+    'chez':'CH E','christ':'K R I S T','écho':'E K O','orchestre':'O R K E S T R','chœur':'K EU R','chorale':'K O R A L',
+    "aujourd'hui":'O JH OU R D U I','sud':'S U D','ouest':'OU E S T','net':'N E T','but':'B U T','bus':'B U S',
+    'os':'O S','ours':'OU R S','mars':'M A R S','plus':'P L U','œil':'EU I','oeil':'EU I','yeux':'I EU',
+    'solennel':'S O L A N E L','emmener':'AN M EU N E','eh':'E','ah':'A','oh':'O','un':'UN','une':'U N','qu':'K',
+    'fusil':'F U Z I','gentil':'JH AN T I','outil':'OU T I','persil':'P E R S I','sourcil':'S OU R S I',
+    'tabac':'T A B A','estomac':'E S T O M A','porc':'P O R','donc':'D ON K','doigt':'D OU A','doigts':'D OU A',
+    'respect':'R E S P E','aspect':'A S P E','instinct':'IN S T IN','album':'A L B O M','maximum':'M A K S I M O M',
+    'minimum':'M I N I M O M','parfum':'P A R F UN','femme':'F A M','sixième':'S I Z I E M','deuxième':'D EU Z I E M',
+    'second':'S EU G ON','monsieur':'M EU S I EU','pied':'P I E','pieds':'P I E',
+  };
+  const KEEP_SX = S_('bus os ours mars tennis bonus virus cactus sens hélas as jadis oasis maïs atlas iris express fils lys index lynx thorax box fax ibis lotus campus autobus rhinocéros albatros vis métis tournevis gratis biceps bis ananas plexus terminus');
+  const KEEP_T = S_('net but brut chut dot mat rapt transit zut scout internet déficit granit test contact direct correct exact intact compact strict district tact toast compost ouest est huit sept');
+  const KEEP_D = S_('sud david bled raid stand');
+  const KEEP_P = S_('cap cep stop top slip hip hop rap ketchup handicap gap scalp');
+  const KEEP_ER = S_('mer fer hier cher fier amer hiver enfer cancer super laser poster revolver éther master leader hamburger bitter cuiller ver');
+  const ENT_KEEP = S_('content parent président différent souvent présent accident argent comment client lent vent dent cent talent absent urgent évident excellent intelligent prudent récent violent patient agent serpent gent moment sergent incident adolescent innocent décent ardent résident équivalent permanent précédent accent continent couvent torrent régent compétent fréquent apparent transparent conscient coefficient orient occident dissident confident indifférent impatient insolent opulent succulent turbulent fervent adjacent latent pertinent éminent imminent parlement gouvernement événement élément segment ciment sent ment');
+  let LEXSET = new Set();
+  let USER = {}; // mot → "CODES ESPACÉS"
+
+  function endings(w) {
+    if (w.length > 2 && /[sx]$/.test(w) && !KEEP_SX.has(w)) w = w.slice(0, -1);
+    if (/aient$/.test(w)) return w.slice(0, -5) + 'è';
+    if (/[vt]ient$/.test(w) && !ENT_KEEP.has(w)) return w.slice(0, -1);
+    if (/ient$/.test(w) && ENT_KEEP.has(w)) return w.slice(0, -4) + 'ian';
+    if (/ent$/.test(w) && w.length >= 5 && !ENT_KEEP.has(w) && LEXSET.has(w.slice(0, -2))) return w.slice(0, -2);
+    if (/ez$/.test(w) && w.length > 2) return w.slice(0, -2) + 'é';
+    if (/er$/.test(w) && w.length >= 4 && !KEEP_ER.has(w)) return w.slice(0, -2) + 'é';
+    if (/ed$/.test(w) && w.length >= 3) return w.slice(0, -2) + 'é';
+    if (/et$/.test(w) && w.length >= 3 && !KEEP_T.has(w)) return w.slice(0, -2) + 'è';
+    if (/t$/.test(w) && !KEEP_T.has(w)) return w.slice(0, -1);
+    if (/d$/.test(w) && !KEEP_D.has(w)) return w.slice(0, -1);
+    if (/p$/.test(w) && !KEEP_P.has(w)) return w.slice(0, -1);
+    if (/[nur]g$/.test(w)) return w.slice(0, -1);
+    if (/nc$/.test(w)) return w.slice(0, -1);
+    if (/z$/.test(w)) return w.slice(0, -1);
+    return w;
+  }
+
+  function core(s) {
+    const out = [], n = s.length; let i = 0;
+    const P = (...c) => out.push(...c);
+    const nasal = j => { const c = s[j]; if (c !== 'n' && c !== 'm') return false; const d = s[j + 1];
+      if (d === undefined) return true; return !(isV(d) || d === 'n' || d === 'm' || d === 'h'); };
+    const soft = ch => !!ch && 'eiyéèêëîï'.includes(ch);
+    const CM = {p:'P',b:'B',t:'T',d:'D',f:'F',v:'V',l:'L',r:'R',m:'M',n:'N'};
+    while (i < n) {
+      const c = s[i], c1 = s[i + 1] || '', c2 = s[i + 2] || '', prev = s[i - 1] || '';
+      const at = x => s.startsWith(x, i);
+      if (at('eau')) { P('O'); i += 3; continue; }
+      if (at('aill')) { P('A','I'); i += 4; continue; }
+      if (at('ail') && i + 3 === n) { P('A','I'); i += 3; continue; }
+      if (at('eill')) { P('E','I'); i += 4; continue; }
+      if (at('eil') && i + 3 === n) { P('E','I'); i += 3; continue; }
+      if (at('ueill') || at('euill')) { P('EU','I'); i += 5; continue; }
+      if ((at('ueil') || at('euil')) && i + 4 === n) { P('EU','I'); i += 4; continue; }
+      if (at('ouill')) { P('OU','I'); i += 5; continue; }
+      if ((at('ain') || at('aim') || at('ein') || at('eim')) && nasal(i + 2)) { P('IN'); i += 3; continue; }
+      if (at('ay') && isV(c2)) { P('E','I'); i += 2; continue; }
+      if (at('ai') || at('aî') || at('ei') || at('eî') || at('ay') || at('ey')) { P('E'); i += 2; continue; }
+      if (at('au')) { P('O'); i += 2; continue; }
+      if (at('oin') && nasal(i + 2)) { P('OU','IN'); i += 3; continue; }
+      if (at('oy') && isV(c2)) { P('OU','A','I'); i += 2; continue; }
+      if (at('oi') || at('oî')) { P('OU','A'); i += 2; continue; }
+      if (at('ou') || at('où') || at('oû')) { P('OU'); i += 2; continue; }
+      if (at('œu') || at('eu') || at('eû')) { P('EU'); i += 2; continue; }
+      if (c === 'œ') { P('EU'); i++; continue; }
+      if (at('ienc')) { P('I','AN'); i += 3; continue; }
+      if (at('ien') && nasal(i + 2)) { P('I','IN'); i += 3; continue; }
+      if ((at('an') || at('am') || at('en') || at('em')) && nasal(i + 1)) { P('AN'); i += 2; continue; }
+      if ((at('on') || at('om')) && nasal(i + 1)) { P('ON'); i += 2; continue; }
+      if ((at('in') || at('im') || at('yn') || at('ym') || at('în')) && nasal(i + 1)) { P('IN'); i += 2; continue; }
+      if ((at('un') || at('um')) && nasal(i + 1)) { P('UN'); i += 2; continue; }
+      if (at('ill')) { if (i === 0) P('I','L'); else if (isV(prev)) P('I'); else P('I','I'); i += 3; continue; }
+      if (at('il') && i + 2 === n && isV(prev)) { P('I'); i += 2; continue; }
+      if (at('ch')) { P(c2 === 'r' || c2 === 'l' ? 'K' : 'CH'); i += 2; continue; }
+      if (at('ph')) { P('F'); i += 2; continue; }
+      if (at('th')) { P('T'); i += 2; continue; }
+      if (at('gn')) { P('GN'); i += 2; continue; }
+      if (at('qu')) { P('K'); i += 2; continue; }
+      if (at('gu') && soft(c2)) { P('G'); i += 2; continue; }
+      if (at('ge') && 'aoâôu'.includes(c2) && c2) { P('JH'); i += 2; continue; }
+      if (c === 'g') { P(soft(c1) ? 'JH' : 'G'); i += c1 === 'g' ? 2 : 1; continue; }
+      if (at('sc') && soft(c2)) { P('S'); i += 2; continue; }
+      if (at('ss')) { P('S'); i += 2; continue; }
+      if (c === 's') { P(isV(prev) && isV(c1) ? 'Z' : 'S'); i++; continue; }
+      if (at('cc') && soft(c2)) { P('K','S'); i += 2; continue; }
+      if (at('ck') || at('cc')) { P('K'); i += 2; continue; }
+      if (c === 'c') { P(soft(c1) ? 'S' : 'K'); i++; continue; }
+      if (c === 'ç') { P('S'); i++; continue; }
+      if (c === 'x') { if (i === 1 && prev === 'e' && isV(c1)) P('G','Z'); else P('K','S'); i++; continue; }
+      if (at('tion') && i > 0 && prev !== 's' && prev !== 'x') { P('S','I','ON'); i += 4; continue; }
+      if (c === 'h') { i++; continue; }
+      if (c === 'w') { P('OU'); i++; continue; }
+      if (c === 'j') { P('JH'); i++; continue; }
+      if (c === 'z') { P('Z'); i++; continue; }
+      if (c === 'k' || c === 'q') { P('K'); i++; continue; }
+      if (CM[c]) { P(CM[c]); i += c1 === c ? 2 : 1; continue; }
+      if ('éèêë'.includes(c)) { P('E'); i++; continue; }
+      if (c === 'e') {
+        if (i === n - 1) { P('@'); i++; continue; }
+        const a = s[i + 1], b = s[i + 2], cons = ch => !!ch && !isV(ch);
+        if (a === 'x') { P('E'); i++; continue; }
+        if (cons(a) && i + 2 === n) { P('E'); i++; continue; }
+        if (cons(a) && cons(b)) {
+          const pr = a + b;
+          if (['ch','ph','th','gn'].includes(pr) || ((b === 'r' || b === 'l') && a !== b && 'pbtdfvgkc'.includes(a))) P('@'); else P('E');
+          i++; continue;
+        }
+        P('@'); i++; continue;
+      }
+      if ('aàâä'.includes(c)) { P('A'); i++; continue; }
+      if ('oôö'.includes(c)) { P('O'); i++; continue; }
+      if ('iîïy'.includes(c)) { P('I'); i++; continue; }
+      if ('uûùü'.includes(c)) { P('U'); i++; continue; }
+      i++;
+    }
+    return out;
+  }
+
+  const PREF = {l:['L'], d:['D'], j:['JH'], m:['M'], t:['T'], s:['S'], c:['S'], n:['N'], qu:['K'],
+    jusqu:['JH','U','S','K'], lorsqu:['L','O','R','S','K'], puisqu:['P','U','I','S','K'], quelqu:['K','E','L','K']};
+  const cache = new Map();
+
+  function phon(word) {
+    let w = word.toLowerCase().replace(/’/g, "'");
+    if (USER[w]) return USER[w].split(/\s+/).filter(Boolean);
+    if (cache.has(w)) return cache.get(w).slice();
+    let res;
+    if (EXC[w]) res = EXC[w].split(' ');
+    else if (w.includes('-')) res = w.split('-').filter(Boolean).flatMap(p => phon(p));
+    else {
+      const m = w.match(/^(l|d|j|m|t|s|c|n|qu|jusqu|lorsqu|puisqu|quelqu)'(.+)$/);
+      if (m) res = [...PREF[m[1]], ...phon(m[2])];
+      else {
+        const raw = core(endings(w.replace(/'/g, '')));
+        const hasV = raw.some(c => VOWELS.has(c));
+        res = [];
+        let used = false;
+        raw.forEach(c => { if (c === '@') { if (!hasV && !used) { res.push('EU'); used = true; } } else res.push(c); });
+      }
+    }
+    cache.set(w, res);
+    return res.slice();
+  }
+
+  /* ---------- Lexique inversé ---------- */
+  let ENTRIES = [], IDX = new Map();
+  const EXTRA = {"c'est":5.5,"j'ai":19.5,"qu'il":29.5,"n'est":39.5,"d'un":59.5,"d'une":69.5,"qu'elle":89.5,"s'il":119.5,
+    "c'était":159.5,"s'est":139.5,"l'un":149.5,"qu'on":179.5,"l'on":199.5,"n'a":219.5,"aujourd'hui":249.5,"l'a":259.5,
+    "j'en":299.5,"m'a":329.5,"jusqu'à":349.5,"d'autres":399.5,"lorsqu'il":799.5};
+  function buildLexicon(words) {
+    LEXSET = new Set(words); cache.clear();
+    const all = words.map((w, i) => [w, i]).concat(Object.entries(EXTRA)).concat(Object.keys(USER).map(w => [w, -1]));
+    all.sort((a, b) => a[1] - b[1]);
+    ENTRIES = []; IDX = new Map(); const seen = new Set();
+    for (const [w, r] of all) {
+      if (seen.has(w)) continue; seen.add(w);
+      const k = phon(w).join(' '); if (!k) continue;
+      ENTRIES.push({w, k, r});
+      if (!IDX.has(k)) IDX.set(k, []); IDX.get(k).push(w);
+    }
+  }
+  const SPELL = {P:'p',B:'b',T:'t',D:'d',F:'f',V:'v',K:'k',G:'g',L:'l',R:'r',M:'m',N:'n',GN:'gn',CH:'ch',JH:'j',S:'s',Z:'z',
+    A:'a',O:'o',OU:'ou',I:'i',E:'é',EU:'eu',U:'u',AN:'an',ON:'on',IN:'in',UN:'un'};
+  const spell = codes => codes.map(c => SPELL[c] || '').join('');
+  function candidates(codes, max = 8) {
+    const k = codes.join(' ');
+    const exact = (IDX.get(k) || []).slice(0, max);
+    const res = exact.map(w => ({w, exact: true}));
+    if (res.length < max && k) {
+      const pre = k + ' ';
+      for (const e of ENTRIES) { if (res.length >= max) break; if (e.k.startsWith(pre) && !res.some(x => x.w === e.w)) res.push({w: e.w, exact: false}); }
+    }
+    return {exact: exact.length > 0, list: res, fallback: spell(codes)};
+  }
+
+  /* ---------- Géométrie ---------- */
+  const parseCmds = c => String(c || '').split(/[;\n]/).map(p => p.trim().split(/\s+/)).filter(p => p[0]).map(p => [p[0].toLowerCase(), +p[1], +p[2], +p[3], +p[4]]);
+  const rad = d => d * Math.PI / 180, dir = d => [Math.cos(rad(d)), Math.sin(rad(d))];
+  const f = v => Math.round(v * 100) / 100;
+  function geom(codes, U) {
+    let x = 0, y = 0, d = 'M0 0';
+    const items = [], pts = [[0, 0]], circles = [], dots = [];
+    for (const c of codes) {
+      const s = SG[c]; if (!s) continue;
+      if (s.t === 'o') { items.push({s, circle: true}); continue; }
+      if (s.t === 'p') {
+        const x0 = x, y0 = y; let ta = null, tb = null;
+        for (const cm of parseCmds(s.c)) {
+          const [op, A, B, C] = cm;
+          if (op === 'l') { const [dx, dy] = dir(A), L = B * U; x += dx * L; y += dy * L; d += ` L${f(x)} ${f(y)}`; pts.push([x, y]); if (ta === null) ta = A; tb = A; }
+          else if (op === 'a') {
+            const r = C * U, cw = B > 0, [px, py] = dir(A + (cw ? 90 : -90)), cx = x + px * r, cy = y + py * r;
+            const a0 = A + (cw ? -90 : 90), steps = Math.max(1, Math.ceil(Math.abs(B) / 90 - 1e-9));
+            for (let k = 1; k <= steps; k++) { const ang = a0 + B * k / steps; x = cx + r * Math.cos(rad(ang)); y = cy + r * Math.sin(rad(ang)); d += ` A${f(r)} ${f(r)} 0 0 ${cw ? 1 : 0} ${f(x)} ${f(y)}`; }
+            for (let k = 0; k <= 12; k++) { const ang = a0 + B * k / 12; pts.push([cx + r * Math.cos(rad(ang)), cy + r * Math.sin(rad(ang))]); }
+            if (ta === null) ta = A; tb = A + B;
+          }
+          else if (op === 'r') { x += A * U; y += B * U; d += ` L${f(x)} ${f(y)}`; pts.push([x, y]); const an = Math.atan2(B, A) * 180 / Math.PI; if (ta === null) ta = an; tb = an; }
+          else if (op === 'c') {
+            const qx = x + A * U, qy = y + B * U, ex = x + C * U, ey = y + cm[4] * U;
+            for (let k = 1; k <= 10; k++) { const t = k / 10, u = 1 - t; pts.push([u*u*x + 2*u*t*qx + t*t*ex, u*u*y + 2*u*t*qy + t*t*ey]); }
+            d += ` Q${f(qx)} ${f(qy)} ${f(ex)} ${f(ey)}`;
+            const a1 = Math.atan2(qy - y, qx - x) * 180 / Math.PI, a2 = Math.atan2(ey - qy, ex - qx) * 180 / Math.PI;
+            if (ta === null) ta = a1; tb = a2; x = ex; y = ey;
+          }
+          else if (op === 't') { const [dx, dy] = dir(A), L = B * U, ex = x + dx * L, ey = y + dy * L; d += ` L${f(ex)} ${f(ey)} L${f(x)} ${f(y)}`; pts.push([ex, ey]); }
+          else if (op === 'o') { const r = A * U, an = isNaN(B) ? -90 : B, ds = isNaN(C) ? A : C, [dx, dy] = dir(an), c = [x + dx * ds * U, y + dy * ds * U]; circles.push([c[0], c[1], r]); pts.push([c[0] - r, c[1] - r], [c[0] + r, c[1] + r]); }
+          else if (op === 'd') { const [dx, dy] = dir(A), c = [x + dx * B * U, y + dy * B * U]; dots.push(c); pts.push(c); }
+        }
+        if (ta !== null) items.push({s, x0, y0, x1: x, y1: y, ta, tb});
+        continue;
+      }
+      if (s.t === 'l') {
+        const [dx, dy] = dir(s.a), L = s.l * U, nx = x + dx * L, ny = y + dy * L;
+        d += ` L${f(nx)} ${f(ny)}`; pts.push([nx, ny]);
+        items.push({s, x0: x, y0: y, x1: nx, y1: ny, ta: s.a, tb: s.a}); x = nx; y = ny;
+      } else {
+        const r = s.r * U, cw = s.s > 0, [px, py] = dir(s.a + (cw ? 90 : -90)), cx = x + px * r, cy = y + py * r;
+        const a0 = s.a + (cw ? -90 : 90), steps = Math.max(1, Math.ceil(Math.abs(s.s) / 90 - 1e-9));
+        let ex = x, ey = y;
+        for (let k = 1; k <= steps; k++) {
+          const ang = a0 + s.s * k / steps; ex = cx + r * Math.cos(rad(ang)); ey = cy + r * Math.sin(rad(ang));
+          d += ` A${f(r)} ${f(r)} 0 0 ${cw ? 1 : 0} ${f(ex)} ${f(ey)}`;
+        }
+        for (let k = 0; k <= 12; k++) { const ang = a0 + s.s * k / 12; pts.push([cx + r * Math.cos(rad(ang)), cy + r * Math.sin(rad(ang))]); }
+        if (s.d) dots.push([cx, cy]);
+        items.push({s, x0: x, y0: y, x1: ex, y1: ey, ta: s.a, tb: s.a + s.s}); x = ex; y = ey;
+      }
+    }
+    const strokes = items.filter(it => !it.circle);
+    items.forEach((it, i) => {
+      if (!it.circle) return;
+      let pv = null, nx = null, stack = 0;
+      for (let j = i - 1; j >= 0; j--) { if (!items[j].circle) { pv = items[j]; break; } stack++; }
+      for (let j = i + 1; j < items.length; j++) if (!items[j].circle) { nx = items[j]; break; }
+      const r = it.s.r * U; let P, o;
+      if (pv && nx) {
+        P = [pv.x1, pv.y1]; const a = dir(pv.tb), b = dir(nx.ta);
+        o = [a[0] - b[0], a[1] - b[1]];
+        if (Math.hypot(...o) < 0.15) o = [a[1], -a[0]];
+      } else if (nx) { P = [nx.x0, nx.y0]; const b = dir(nx.ta); o = [-b[0], -b[1]]; }
+      else if (pv) { P = [pv.x1, pv.y1]; const a = dir(pv.tb); o = [a[0], a[1]]; }
+      else { P = [0, 0]; o = [0, -1]; }
+      const m = Math.hypot(...o) || 1; o = [o[0] / m, o[1] / m];
+      let off = r;
+      for (let j = i - stack; j < i; j++) off += 2 * items[j].s.r * U;
+      const c = [P[0] + o[0] * off, P[1] + o[1] * off];
+      circles.push([c[0], c[1], r]); if (it.s.d) dots.push(c);
+      pts.push([c[0] - r, c[1] - r], [c[0] + r, c[1] + r]);
+    });
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    pts.forEach(([a, b]) => { x0 = Math.min(x0, a); y0 = Math.min(y0, b); x1 = Math.max(x1, a); y1 = Math.max(y1, b); });
+    return {d: d.length > 4 ? d : '', circles, dots, box: {x0, y0, x1, y1}};
+  }
+  function svgWord(codes, U, sw, color, pad = 4) {
+    const g = geom(codes, U), b = g.box, w = b.x1 - b.x0 + pad * 2, h = b.y1 - b.y0 + pad * 2;
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${f(b.x0 - pad)} ${f(b.y0 - pad)} ${f(w)} ${f(h)}" width="${f(w)}" height="${f(h)}">` + inner(g, sw, color) + '</svg>';
+  }
+  function inner(g, sw, color) {
+    let s = '';
+    if (g.d) s += `<path d="${g.d}" fill="none" stroke="${color}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round"/>`;
+    g.circles.forEach(([x, y, r]) => s += `<circle cx="${f(x)}" cy="${f(y)}" r="${f(r)}" fill="none" stroke="${color}" stroke-width="${sw}"/>`);
+    g.dots.forEach(([x, y]) => s += `<circle cx="${f(x)}" cy="${f(y)}" r="${f(Math.max(sw * .9, 1.4))}" fill="${color}"/>`);
+    return s;
+  }
+  const unicode = codes => codes.map(c => SG[c] && SG[c].u ? String.fromCodePoint(SG[c].u) : '').join('');
+
+  return {
+    DEF_SIGNS, NARA_SIGNS, ALPHABETS, VOWELS, phon, geom, inner, svgWord, unicode, candidates, spell, buildLexicon,
+    get signs() { return SIGNS; }, get SG() { return SG; },
+    setSigns(arr) { SIGNS = arr.map(s => ({...s})); reindex(); },
+    setUser(u) { USER = {...u}; cache.clear(); },
+    get user() { return USER; },
+    entriesCount: () => ENTRIES.length,
+  };
+})();
+if (typeof module !== 'undefined') module.exports = Duploye;
+
+
+let NM_K='';
+function nmNk(){ const el=$('nm-nk'); if(!el||typeof Duploye==='undefined') return; const n=(C.name||'').trim(); if(n===NM_K) return; NM_K=n;
+  try{ el.innerHTML=n.split(/[^A-Za-zÀ-ÖØ-öø-ÿŒœÆæ'’\-]+/).filter(Boolean).map(w=>{ const c=Duploye.phon(w); return c.length?Duploye.svgWord(c,22,2,'currentColor',3):''; }).join(''); }catch(e){ el.innerHTML=''; } }
+setInterval(()=>{ const w=document.querySelector('.nm-wrap'); if(!w) return; const on=!w.classList.contains('nk')&&document.activeElement!==$('f-name')&&!!$('nm-nk').innerHTML; w.classList.toggle('nk',on); },4000);
+document.addEventListener('focusin',e=>{ if(e.target.id==='f-name') document.querySelector('.nm-wrap')?.classList.remove('nk'); });
 function renderIdentity(){
   const pc=C.photoCrop; $('portrait').innerHTML=C.photo?`<img src="${C.photo}" alt="Portrait"${pc?` class="cropped" style="left:${-pc.l*100}%;top:${-pc.t*100}%;width:${pc.w*100}%;height:${pc.h*100}%"`:''}>`:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="9" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>`;
   if(document.activeElement!==$('f-name')) $('f-name').value=C.name||'';
+  nmNk();
   $('f-race').value=C.race; sexPaint();
 }
 function handName(h){ const it=C.inventory.find(i=>handsOf(i).includes(h)); return it?(it.name||'Arme'):''; }
@@ -1704,7 +2081,7 @@ document.addEventListener('click',e=>{
 });
 document.addEventListener('input',e=>{
   const t=e.target;
-  if(t.id==='f-name'){ C.name=t.value; markDirty(); return; }
+  if(t.id==='f-name'){ C.name=t.value; markDirty(); nmNk(); return; }
   if(t.id&&t.id.startsWith('sc-')){ const v=t.value.replace(/\D/g,''); if(v!==t.value) t.value=v; C.stats[t.id.slice(3)]=Math.min(99,parseInt(v)||0); clampPv(); renderDerived(); markDirty(); return; }
   if(t.tagName!=='SELECT'&&t.dataset.f){ const {it}=findCard(t); if(!it) return; const f=t.dataset.f;
     it[f]=['diceBonus','successThreshold','weight','armorPoints'].includes(f)?(parseInt(String(t.value).replace(/[−–]/,'-'))||0):t.value;
@@ -4642,7 +5019,7 @@ const dgEdgeSeg=k=>{ const [i,j,o]=k.split(','), X=+i*CELL, Y=+j*CELL; return o=
 function dgPub(){ if(!S.dg) return null; const d={}; for(const k in (S.dg.d||{})){ const o=S.dg.d[k]; dgNormDoor(o); d[k]=dgHid(o)?{w:1}:{open:!!o.open,lk:o.lk?1:0,gr:o.gr?1:0,tpTo:o.tpTo||''}; } return {on:!!S.dg.on,hub:!!S.dg.hub,th:S.dg.th,c:S.dg.c,m:S.dg.m||null,veg:S.dg.veg||null,lum:S.dg.lum||null,ob:S.dg.ob||null,w:S.dg.w||null,ew:S.dg.ew||null,v2:!!S.dg.v2,cl:S.dg.cl||null,d}; }
 function dgDoorClick(wx,wy){ const e=dgEdgeAt(wx,wy); if(!dgOpen(...e.a)&&!dgOpen(...e.b)){ toast('Une porte se place au bord d\'une case de sol',true); return; }   /* contre un mur, même sans rien derrière : elle ne s'ouvrira pas */
   const D=dgEnsure(); D.d=D.d||{}; const o=D.d[e.k];
-  if(DG.tool==='door'){ if(!o){ D.d[e.k]={open:false}; if(DG.grl){ D.d[e.k].gr=1; D.d[e.k].st='crypte'; } else if(DG.ds) D.d[e.k].st=DG.ds; } else if(o.s){ delete o.s; delete o.f; } else { dgDoorEdit(e.k); return; } }
+  if(DG.tool==='door'){ if(!o){ D.d[e.k]={open:false}; dgDoorSet(D.d[e.k],DG.ds||dgDefDoor()); } else { dgDoorEdit(e.k); return; } }
   else { if(!o) D.d[e.k]={s:1,open:false}; else if(!o.s){ o.s=1; o.f=0; o.open=false; } else if(!o.f){ o.f=1; toast('Porte cachée découverte'); } else delete D.d[e.k]; }
   drawDgLater(); fpsLater(); markDirty(); sync(); }
 function dgHover(wx,wy){ DG.hw=[wx,wy]; if(DG.poly) drawDgLater(); if(['door','secret','tpdoor','wall','unwall','win','iwall'].includes(DG.tool)){ const e=dgEdgeAt(wx,wy); if(DG.hover!==e.k){ DG.hover=e.k; drawDgLater(); } return; }
@@ -4653,12 +5030,14 @@ function dgDoorEdit(k){ const o=S.dg&&S.dg.d&&S.dg.d[k]; if(!o) return;
   const opt=(v,ico,l)=>`<button type="button" class="wxb${st===v?' on':''}" data-dp="${v}">${ico}<span>${l}</span></button>`;
   openDialog(`<div class="dphead"><h3>Porte</h3><button class="ib" type="button" id="dp-del" title="Supprimer la porte">${IB('bin')}</button></div>
     <div class="wxrow dpseg">${opt('open',dgI('iwall',1.7),'Ouverte')}${opt('shut',dgI('door',1.7),'Fermée')}${opt('lk','<i class="dplk">🔒</i>','Verrouillée')}</div>
-    ${o.gr?'':`<span class="cap" style="display:block;margin-top:10px">Style</span><div class="vegpick dg-styl"><button type="button" class="vegb auto${!o.st?' on':''}" data-dst=""><b>Auto</b><small>selon le décor</small></button>${dgDoorStyles().map(([k2,l])=>`<button type="button" class="vegb${o.st===k2?' on':''}" data-dst="${k2}" title="${esc(l)}"><img src="${dgThumb(k2,'door')}" alt=""><small>${esc(l)}</small></button>`).join('')}</div>`}
+    ${o.s?`<div class="wxrow dpseg" style="margin-top:8px"><button type="button" class="wxb${!o.f?' on':''}" data-dsf="0"><span>Cachée</span></button><button type="button" class="wxb${o.f?' on':''}" data-dsf="1"><span>Découverte</span></button></div>`:''}
+    <span class="cap" style="display:block;margin-top:10px">Style</span>${dgDoorPick(dgDoorCur(o),'dst')}
     <span class="cap" style="display:block;margin-top:12px">En la franchissant</span>
     <div class="wxrow dpseg"><button type="button" class="wxb${o.tpTo==null?' on':''}" data-dtp="0"><span>On passe</span></button><button type="button" class="wxb${o.tpTo!=null?' on':''}" data-dtp="1"><span>Téléportation</span></button></div>
     ${o.tpTo!=null?`<div class="field" style="margin-top:8px"><label class="cap" for="dp-to">Mène à</label><select class="line-in" id="dp-to"><option value="">— nulle part —</option>${dgCodes().map(c=>`<option value="${esc(c.code)}" ${c.code===o.tpTo?'selected':''}>${esc(c.code)} · ${esc(MK_LBL[c.kind]||'')} · ${esc(c.title)}</option>`).join('')}</select></div>`:''}`);
   document.querySelectorAll('[data-dtp]').forEach(b=>b.onclick=()=>{ if(b.dataset.dtp==='1'){ if(o.tpTo==null) o.tpTo=''; } else delete o.tpTo; drawDgLater(); fpsLater(); markDirty(); sync(); dgDoorEdit(k); });
-  document.querySelectorAll('[data-dst]').forEach(b=>b.onclick=()=>{ if(b.dataset.dst) o.st=b.dataset.dst; else delete o.st; FPS.sprites.clear(); drawDgLater(); fpsLater(); markDirty(); sync(); document.querySelectorAll('[data-dst]').forEach(x=>x.classList.toggle('on',x===b)); });
+  document.querySelectorAll('[data-dst]').forEach(b=>b.onclick=()=>{ const was=!!o.s; dgDoorSet(o,b.dataset.dst); FPS.sprites.clear(); drawDgLater(); fpsLater(); markDirty(); sync(); if(was!==!!o.s) dgDoorEdit(k); else document.querySelectorAll('[data-dst]').forEach(x=>x.classList.toggle('on',x===b)); });
+  document.querySelectorAll('[data-dsf]').forEach(b=>b.onclick=()=>{ o.f=+b.dataset.dsf; drawDgLater(); fpsLater(); markDirty(); sync(); dgDoorEdit(k); });
   if($('dp-to')) $('dp-to').onchange=e=>{ o.tpTo=e.target.value; drawDgLater(); markDirty(); sync(); };
   document.querySelectorAll('[data-dp]').forEach(b=>b.onclick=()=>{ const v=b.dataset.dp; o.open=v==='open'; o.lk=v==='lk'; if(!o.lk) delete o.lk; dlg.close(); drawDgLater(); fpsLater(); markDirty(); sync(); });
   $('dp-del').onclick=()=>{ delete S.dg.d[k]; dlg.close(); drawDgLater(); fpsLater(); markDirty(); sync(); }; }
@@ -4727,21 +5106,31 @@ const PATHIMG={src:'res/themes/sentier/terre.png'}, PATH_R=16, PATH_K=.8;
 function pathImg(){ const o=PATHIMG; if(!o.im){ o.im=new Image(); o.im.onload=()=>{ const c=document.createElement('canvas'); c.width=o.im.naturalWidth; c.height=o.im.naturalHeight; const x=c.getContext('2d'); x.drawImage(o.im,0,0); o.px=new Uint32Array(x.getImageData(0,0,c.width,c.height).data.buffer); o.w=c.width; o.h=c.height; FPS.pm=null; drawDgLater(); fpsLater(); }; o.im.src=o.src; } return o.px?o:null; }
 const pathSmooth=P=>{ let p=P; for(let k=0;k<2;k++){ if(p.length<3) break; const q=[p[0]]; for(let i=0;i<p.length-1;i++){ const a=p[i], b=p[i+1]; q.push([a[0]*.75+b[0]*.25,a[1]*.75+b[1]*.25],[a[0]*.25+b[0]*.75,a[1]*.25+b[1]*.75]); } q.push(p[p.length-1]); p=q; } return p; };
 const pathHash=(x,y)=>{ let h=(x*374761393+y*668265263)|0; h=(h^(h>>>13))*1274126177|0; return ((h^(h>>>16))>>>0)/4294967296; };
-function pathMask(){ const L=(S.dg&&S.dg.paths)||[], key=JSON.stringify(L).length+':'+L.length+':'+(L[L.length-1]?L[L.length-1].p.length:0)+':'+(S.dg&&S.dg.pv||0); if(FPS.pm&&FPS.pm.key===key) return FPS.pm.has?FPS.pm:null;
+function pathMask(){ const L=(S.dg&&S.dg.paths)||[], key=JSON.stringify(L).length+':'+L.length+':'+(L[L.length-1]?L[L.length-1].p.length:0)+':'+(S.dg&&S.dg.pv||0)+':'+Object.keys(S.dg&&S.dg.ew||{}).length+':'+Object.keys(S.dg&&S.dg.d||{}).length; if(FPS.pm&&FPS.pm.key===key) return FPS.pm.has?FPS.pm:null;
   const I=pathImg(); if(!L.length||!I){ FPS.pm={key,has:false}; return null; } let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9; L.forEach(P=>{ const sp=P.w*PATH_K+.2; P.p.forEach(([a,b])=>{ x0=Math.min(x0,a-sp); y0=Math.min(y0,b-sp); x1=Math.max(x1,a+sp); y1=Math.max(y1,b+sp); }); });
   x0=Math.floor(x0); y0=Math.floor(y0); const W=Math.ceil((x1-x0)*PATH_R)+1, H=Math.ceil((y1-y0)*PATH_R)+1; if(W*H>9e6){ FPS.pm={key,has:false}; return null; }
   const A=new Float32Array(W*H);   /* opacité de terre par pixel (0 → 1) */
-  L.forEach(P=>{ const p=pathSmooth(P.p), half=P.w*PATH_K;
+  L.forEach(P=>{ const p=pathSmooth(P.p), half=P.w*PATH_K, RG=pathRegion(P.p[0]), inR=(x,y)=>RG.has(Math.floor(x)+','+Math.floor(y));
     for(let i=0;i<Math.max(1,p.length-1);i++){ const [ax,ay]=p[i], [bx,by]=p[Math.min(i+1,p.length-1)], dx=bx-ax, dy=by-ay, sl2=dx*dx+dy*dy||1e-9;
       const gx0=Math.max(0,Math.floor((Math.min(ax,bx)-half-x0)*PATH_R)), gx1=Math.min(W-1,Math.ceil((Math.max(ax,bx)+half-x0)*PATH_R)), gy0=Math.max(0,Math.floor((Math.min(ay,by)-half-y0)*PATH_R)), gy1=Math.min(H-1,Math.ceil((Math.max(ay,by)+half-y0)*PATH_R));
       for(let gy=gy0;gy<=gy1;gy++) for(let gx=gx0;gx<=gx1;gx++){ const wx=x0+(gx+.5)/PATH_R, wy=y0+(gy+.5)/PATH_R, t=Math.max(0,Math.min(1,((wx-ax)*dx+(wy-ay)*dy)/sl2)), e=Math.hypot(ax+dx*t-wx,ay+dy*t-wy)/half; if(e>=1) continue;
-        const a=e<.45?1:1-(e-.45)/.55, k=gy*W+gx; if(a>A[k]) A[k]=a; } } });
+        const a=e<.45?1:1-(e-.45)/.55, k=gy*W+gx; if(a>A[k]&&inR(wx,wy)&&inR(ax+dx*t,ay+dy*t)&&pathClear(ax+dx*t,ay+dy*t,wx,wy)) A[k]=a; } } });
   const C=new Uint32Array(W*H);
   for(let gy=0;gy<H;gy++) for(let gx=0;gx<W;gx++){ const k=gy*W+gx; let a=A[k]; if(a<=0) continue; const X=gx+Math.round(x0*PATH_R), Y=gy+Math.round(y0*PATH_R);
     if(!dgAt(Math.floor(X/PATH_R),Math.floor(Y/PATH_R))) continue;
     a=a*a*(3-2*a); a=a+(pathHash(X>>1,Y>>1)-.5)*.35*(a<1?1:0); if(a<=.04) continue; if(a>1) a=1;   /* fondu doux, un peu grenu */
     const c=I.px[(((Y%I.h)+I.h)%I.h)*I.w+(((X%I.w)+I.w)%I.w)]; C[k]=(c&0xffffff)|(Math.round(a*255)<<24)>>>0; }
   return (FPS.pm={key,has:true,x0,y0,W,H,C,cv:null}); }
+/* le sentier ne passe pas un mur ni une porte : du point du tracé jusqu'au pixel, aucun bord bâti traversé */
+/* le sentier reste dans la pièce où il commence : cases reliées sans franchir de mur ni de porte */
+const dgEdgeShut=(i,j,ni,nj)=>{ const w=dgEW(i,j,ni,nj); return w&&!w.inv||!!dgDoor(i,j,ni,nj); };
+function pathRegion(p0){ const R=new Set(); if(!p0) return R; const s=[[Math.floor(p0[0]),Math.floor(p0[1])]]; if(!dgAt(...s[0])) return R; R.add(s[0].join(','));
+  while(s.length&&R.size<40000){ const [i,j]=s.pop(); for(const [u,v] of [[1,0],[-1,0],[0,1],[0,-1]]){ const ni=i+u, nj=j+v, k=ni+','+nj; if(R.has(k)||!dgAt(ni,nj)||dgEdgeShut(i,j,ni,nj)) continue; R.add(k); s.push([ni,nj]); } }
+  return R; }
+function pathClear(x0,y0,x1,y1){ let i=Math.floor(x0), j=Math.floor(y0); const ti=Math.floor(x1), tj=Math.floor(y1); if(i===ti&&j===tj) return true;
+  const dx=x1-x0, dy=y1-y0, si=Math.sign(dx), sj=Math.sign(dy); let tx=si?((si>0?i+1:i)-x0)/dx:1e9, ty=sj?((sj>0?j+1:j)-y0)/dy:1e9; const ddx=si?si/dx:1e9, ddy=sj?sj/dy:1e9;
+  for(let n=0;n<8&&(i!==ti||j!==tj);n++){ let ni=i, nj=j; if(tx<ty){ ni+=si; tx+=ddx; } else { nj+=sj; ty+=ddy; } if(dgEdgeShut(i,j,ni,nj)) return false; i=ni; j=nj; }
+  return true; }
 const pmix=(f,c)=>{ const a=(c>>>24)/255, b=1-a; return (0xff000000|((((f>>16)&255)*b+((c>>16)&255)*a)<<16)|((((f>>8)&255)*b+((c>>8)&255)*a)<<8)|(((f&255)*b+(c&255)*a)|0))>>>0; };
 function pathCanvas(pm){ if(pm.cv) return pm.cv; const c=document.createElement('canvas'); c.width=pm.W; c.height=pm.H; const x=c.getContext('2d'), id=x.createImageData(pm.W,pm.H); new Uint32Array(id.data.buffer).set(pm.C); x.putImageData(id,0,0); return pm.cv=c; }
 function drawDgLater(){ if(!DG.raf) DG.raf=requestAnimationFrame(()=>{ DG.raf=0; drawDg(); }); }
@@ -4984,7 +5373,7 @@ function dgPaintEnd(g){ if(g&&g.path){ if(g.path.p.length<2){ const D=dgEnsure()
   else for(let j=Math.min(L.a[1],L.b[1]);j<Math.max(L.a[1],L.b[1]);j++) ks.push(`${L.a[0]},${j},v`);
   const win=DG.tool==='win', one=ks.length===1&&L.a[0]===L.b[0]&&L.a[1]===L.b[1];
   const rem=!add||DG.shiftDown, eCells=k=>{ const [x,y,o]=k.split(','), i=+x, j=+y; return o==='h'?[dgK(i,j-1),dgK(i,j)]:[dgK(i-1,j),dgK(i,j)]; };   /* Mur : un clic sur un mur l'enlève ; Maj (ou « Retirer ») enlève tout le tronçon */
-  ks.forEach(k=>{ if(DG.tool==='iwall'){ E[k]={inv:1}; return; } if(win){ if(one&&E[k]&&E[k].win) delete E[k].win; else E[k]=Object.assign(E[k]&&!E[k].inv?E[k]:{t:DG.wt||dgPM()||'blanc',h:DG.wh||2},{win:1},DG.ws?{ws:DG.ws}:{}); return; }
+  ks.forEach(k=>{ if(DG.tool==='iwall'){ E[k]={inv:1}; return; } if(win){ if(one&&E[k]&&E[k].win) delete E[k].win; else E[k]=Object.assign(E[k]&&!E[k].inv?E[k]:{t:DG.wt||dgPM()||'blanc',h:DG.wh||2},{win:1},{ws:DG.ws||'crypte'}); return; }
     if(rem){ delete E[k]; return; } if(one&&E[k]&&!E[k].inv&&!E[k].win){ delete E[k]; return; } const [ca,cb]=eCells(k); if(!dgHasC(ca)&&!dgHasC(cb)) return; E[k]={t:DG.wt||dgPM()||'blanc',h:DG.wh||2}; });
   FPS.sprites.clear(); drawDgLater(); fpsLater(); markDirty(); sync(); }
 function dgPaint(wx,wy,g){ DG._g=g; if(DG.tool==='deco'||DG.tool==='x') return;
@@ -5002,7 +5391,6 @@ function dgPaint(wx,wy,g){ DG._g=g; if(DG.tool==='deco'||DG.tool==='x') return;
   if(DG.tool==='path'){ const D=dgEnsure(), P=[wx/CELL,wy/CELL]; D.paths=D.paths||[];
     if(!g.last){ g.last=1; g.path={w:DG.pw||1.4,p:[P]}; D.paths.push(g.path); }
     else { const q=g.path.p[g.path.p.length-1]; if(Math.hypot(P[0]-q[0],P[1]-q[1])<.35) return; g.path.p.push(P); }
-    { const r=(g.path.w||1.4)*PATH_K+.5; let add=0; for(let i=Math.floor(P[0]-r);i<=Math.floor(P[0]+r);i++) for(let j=Math.floor(P[1]-r);j<=Math.floor(P[1]+r);j++){ const k=dgK(i,j); if(!D.c[k]&&Math.hypot(i+.5-P[0],j+.5-P[1])<=r){ D.c[k]=dgDefTex('floor'); add=1; } } if(add){ FPS.sprites.clear(); fpsLater(); } }   /* hors pièce : le sentier pose son sol (à ciel ouvert) */
     D.pv=(D.pv||0)+1; drawDgLater(); return; }
   if(DG.tool==='brush'||DG.tool==='carve'||DG.tool==='ceilp'){ const [ci,cj]=dgCell(wx,wy), P=DG.tool==='carve'?{sol:DG.sX||'blanc'}:DG.tool==='ceilp'?{cl:DG.cX||'blanc'}:DG.bT==='mur'?{mur:DG.bX||'blanc'}:DG.bT==='plafond'?{cl:DG.bX||'blanc'}:{sol:DG.bX||'blanc'}, st=(i,j)=>{ const [a,b]=dgBrush(i,j); for(let x=a;x<a+DG.n;x++) for(let y=b;y<b+DG.n;y++) dgPaintCell(x,y,P); };
     if(g.last){ let [x0,y0]=g.last; const dx=Math.abs(ci-x0), dy=Math.abs(cj-y0), sx=x0<ci?1:-1, sy=y0<cj?1:-1; let er=dx-dy; while(x0!==ci||y0!==cj){ const e2=2*er; if(e2>-dy){ er-=dy; x0+=sx; } if(e2<dx){ er+=dx; y0+=sy; } st(x0,y0); } } else st(ci,cj);
@@ -5194,8 +5582,8 @@ function renderDgPanel(){ const box=$('dg-body'); if(!box) return;
   const size=`<div class="crange"><span class="cap">Taille</span><input type="range" min="1" max="15" step="1" value="${DG.n}" id="dg-n" aria-label="Taille du pinceau"><b id="dg-nv">${DG.n} × ${DG.n}</b></div>`;
   const NONE=['','Aucun','<i>—</i>'], SKY=['-','Ciel ouvert',dgI('sky',1.6)];
   const SV=d=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
-  const doorStyles=(cur,attr)=>`<div class="vegpick dg-styl"><button type="button" class="vegb auto${!cur?' on':''}" data-${attr}="" title="Selon le décor"><b>Auto</b><small>selon le décor</small></button>${dgDoorStyles().map(([k,l])=>`<button type="button" class="vegb${cur===k?' on':''}" data-${attr}="${k}" title="${esc(l)}"><img src="${dgThumb(k,'door')}" alt=""><small>${esc(l)}</small></button>`).join('')}</div>`;
-  const winStyles=(cur,attr)=>`<div class="vegpick dg-styl"><button type="button" class="vegb auto${!cur?' on':''}" data-${attr}="" title="Selon le mur"><b>Auto</b><small>selon le mur</small></button>${dgWinStyles().map(([k,l])=>`<button type="button" class="vegb${cur===k?' on':''}" data-${attr}="${k}" title="${esc(l)}"><img src="${winThumb(k)}" alt=""><small>${esc(l)}</small></button>`).join('')}</div>`;
+  const doorStyles=(cur,attr)=>dgDoorPick(cur,attr), doorStyles0=(cur,attr)=>`<div class="vegpick dg-styl">${dgDoorStyles().map(([k,l])=>`<button type="button" class="vegb${cur===k?' on':''}" data-${attr}="${k}" title="${esc(l)}"><img src="${dgThumb(k,'door')}" alt=""><small>${esc(l)}</small></button>`).join('')}</div>`;
+  const winStyles=(cur,attr)=>`<div class="vegpick dg-styl">${dgWinStyles().map(([k,l])=>`<button type="button" class="vegb${cur===k?' on':''}" data-${attr}="${k}" title="${esc(l)}"><img src="${winThumb(k)}" alt=""><small>${esc(l)}</small></button>`).join('')}</div>`;
   const bT=DG.bT||'sol', isB=T==='brush', murT=['wall','iwall','unwall'].includes(T)||(isB&&bT==='mur'), solT=isB&&bT==='sol', plaT=isB&&bT==='plafond', doorT=T==='door'||T==='secret', decoT=['veg','lum','ob','deco'].includes(T);
   let sub='', ttl='';
   if(T==='sel'){ const E=(S.dg&&S.dg.ew)||{}, w=DG.edgeSel&&E[DG.edgeSel];
@@ -5217,8 +5605,8 @@ function renderDgPanel(){ const box=$('dg-body'); if(!box) return;
   else if(plaT){ const bX=DG.bX||dgDefTex('ceil'); sub=size+(bX!=='-'?hr('dg-ch',DG.ch||2,'Hauteur du plafond'):'')+pal('ceil',bX,[SKY]); }
   else if(murT){ const m=isB?'paint':T; sub=seg('mm',[['wall','Tracer',dgI('wall',1.6)],['iwall','Invisible',dgI('iwall',1.6)],['unwall','Retirer',dgI('nowall',1.6)],['paint','Peindre',dgI('paint',1.6)]],m)
       +(m==='paint'?size+pal('wall',DG.bX||dgDefTex('wall')):m==='wall'?hr('dg-h',DG.wh||2,'Hauteur')+pal('wall',DG.wt||dgPM()):''); }
-  else if(doorT) sub=seg('dk',[['door','Porte',dgI('door',1.6)],['grl','Grille',dgI('grille',1.6)],['secret','Cachée',dgI('sdoor',1.6)]],T==='secret'?'secret':DG.grl?'grl':'door')+(T==='door'&&!DG.grl?doorStyles(DG.ds||'','dsv'):'');
-  else if(T==='win') sub=winStyles(DG.ws||'','wsv');
+  else if(doorT) sub=doorStyles(DG.ds||dgDefDoor(),'dsv');
+  else if(T==='win') sub=winStyles(DG.ws||'crypte','wsv');
   else if(decoT){ const cat=DG.dcat||'veg';
     sub=seg('dcat',[['veg','Végétation'],['mob','Mobilier']],cat)+(cat==='veg'?`<div class="vegpick">${Object.keys(VEG_BIO).map(b=>Object.keys(VEG_K).map(k=>{ const key=b+'-'+k; return `<button type="button" class="vegb${T==='veg'&&DG.vk===key?' on':''}" data-veg="${key}" title="${VEG_K[k]} · ${VEG_BIO[b]}"><img src="res/vege/${key}.png" alt=""></button>`; }).join('')).join('')}</div>`
       :`<div class="vegpick">${Object.entries(LUM).map(([k,d])=>`<button type="button" class="vegb${T==='lum'&&DG.lk===k?' on':''}" data-lum="${k}" title="${d.l}"><img src="res/lum/${k}.png" alt=""></button>`).join('')}${Object.entries(OBJ).map(([k,d])=>`<button type="button" class="vegb${T==='ob'&&DG.ok===k?' on':''}" data-ob="${k}" title="${d.l}"><img src="res/sprites/${k}.png" alt=""></button>`).join('')}</div>`); }
@@ -5260,8 +5648,8 @@ function renderDgPanel(){ const box=$('dg-body'); if(!box) return;
   if($('dg-pch')) $('dg-pch').oninput=e=>{ DG.pch=+e.target.value; $('dg-pchv').textContent=String(DG.pch).replace('.',','); };
   if($('dg-ch')) $('dg-ch').oninput=e=>{ DG.ch=+e.target.value; $('dg-chv').textContent=String(DG.ch).replace('.',','); };
   on('dg-sup',()=>pick('sup')); on('dg-sdown',()=>pick('sdown')); on('dg-tp',()=>pick('tp')); on('dg-sign',()=>pick('sign'));
-  box.querySelectorAll('[data-dsv]').forEach(b=>b.onclick=()=>{ DG.ds=b.dataset.dsv||''; DG.grl=0; DG.tool='door'; renderDgPanel(); });
-  box.querySelectorAll('[data-wsv]').forEach(b=>b.onclick=()=>{ DG.ws=b.dataset.wsv||''; DG.tool='win'; renderDgPanel(); });
+  box.querySelectorAll('[data-dsv]').forEach(b=>b.onclick=()=>{ DG.ds=b.dataset.dsv; DG.grl=0; DG.tool='door'; renderDgPanel(); });
+  box.querySelectorAll('[data-wsv]').forEach(b=>b.onclick=()=>{ DG.ws=b.dataset.wsv; DG.tool='win'; renderDgPanel(); });
   on('dz-copy',()=>dgZoneCopy()); on('dz-cut',()=>dgZoneCopy(true)); on('dz-paste',()=>dgZonePaste()); on('dz-rot',dgZoneRotate); on('dz-del',dgZoneDel);
   /* mur ou fenêtre sélectionnés */
   const ew=DG.edgeSel&&S.dg&&S.dg.ew&&S.dg.ew[DG.edgeSel];
@@ -5337,6 +5725,12 @@ const DGTHUMB={};
 /* styles de portes et de fenêtres proposés au dessin ('' = selon le décor) */
 /* seules les textures dessinées (images) sont proposées ; « blanc » (le construct) et la mer restent */
 function dgImgSet(k,part){ if(k==='blanc') return true; if(part==='floor') return !!FLIMG[k]; if(part==='wall') return !!WLIMG[k]||k==='trottoir'; if(part==='ceil') return !!CLIMG[k]; return true; }
+/* un seul type de porte : styles du décor, grille et porte cachée (le mur lui-même, qui s'ouvre) */
+const dgDefDoor=()=>{ const t=S.dg&&S.dg.th; return t&&DOORIMG[t]&&dgDoorStyles().some(x=>x[0]===t)?t:'crypte'; };
+const dgDoorCur=o=>o.s?'cachee':o.gr?'grille':(o.st||'');
+function dgDoorSet(o,v){ if(v==='grille'){ o.gr=1; o.st='crypte'; delete o.s; delete o.f; } else if(v==='cachee'){ delete o.gr; o.s=1; o.f=0; o.open=false; delete o.lk; } else { delete o.gr; delete o.s; delete o.f; o.st=v; } }
+function dgDoorPick(cur,attr){ const wt=dgPM&&dgPM()||(S.dg&&S.dg.th)||'crypte';
+  return `<div class="vegpick dg-styl">${dgDoorStyles().map(([k,l])=>`<button type="button" class="vegb${cur===k?' on':''}" data-${attr}="${k}" title="${esc(l)}"><img src="${dgThumb(k,'door')}" alt=""><small>${esc(l)}</small></button>`).join('')}<button type="button" class="vegb${cur==='grille'?' on':''}" data-${attr}="grille" title="Grille"><img src="${DOORG.crypte.src}" alt=""><small>Grille</small></button><button type="button" class="vegb${cur==='cachee'?' on':''}" data-${attr}="cachee" title="Cachée : le mur s'ouvre"><img src="${dgThumb(wt,'wall')}" alt=""><small>Cachée</small></button></div>`; }
 function dgDoorStyles(){ const seen=new Set(), L=[]; Object.entries(DG_TH).forEach(([k,t])=>{ if(['mer','mermut','mermag','bitume','ruelle','hub'].includes(k)||!DOORIMG[k]) return; const src=DOORIMG[k]||''; if(src&&seen.has(src)) return; if(src) seen.add(src); L.push([k,DOORIMG[k]?({flamingo:'Flamingo',crypte:'Crypte',trottoir:'Sas cyber',interieur:'Sas cyber'}[k]||t.lbl):t.lbl]); }); return L; }
 function dgWinStyles(){ return [['flamingo','Flamingo'],['cyber','Néon cyber'],['crypte','Crypte']]; }
 const winThumb=k=>WINPOM[k]?WINPOM[k].src:WINIMG[k]?WINIMG[k].src:dgThumb(k,'wall');
@@ -5789,7 +6183,7 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
       const flip=side===0&&rdx>0||side===1&&rdy<0, nrm=side===0?Math.abs(rdx):Math.abs(rdy), tg=Math.max(-3,Math.min(3,(side===0?rdy:rdx)*(flip?-1:1)/nrm)); let u0=side===0?cam.y+d*rdy:cam.x+d*rdx; u0-=Math.floor(u0); if(flip) u0=1-u0;
       const hx=cam.x+d*rdx, hy=cam.y+d*rdy, f=lit(d)*(side?.82:1)*vis(hx,hy), wa=LON?la(hx,hy):null, PX=WO.px, RL=WO.rl;
       const at=(u,z)=>{ u=(u-M)/(1-2*M); if(u<0||u>=1||z<Z0||z>=Z1) return -1; return (((1-(z-Z0)/(Z1-Z0))*WO.h|0)*WO.w)+((u*WO.w)|0); };
-      for(let y=yT;y<=yB;y++){ const i=y*W+xx, z=eye-(y+.5-h2)*d/PS, dz1=(z-eye)/d/nrm; let hit=false;
+      for(let y=yT;y<=yB;y++){ const i=y*W+xx, z=eye-(y+.5-h2)*d/PS, dz1=(z-eye)/d/nrm; let hit=false; if(DZ[i]<d-HM-.05) continue;   /* déjà caché par plus proche (mur interposé) */
         for(let h=HM;h>=.02;h-=.008){ const j=at(u0-h*tg,z-dz1*h); if(j>=0&&RL[j]>=h&&(PX[j]>>>24)>200){ B[i]=shL(PX[j],f*(.92+h*.6),wa); DZ[i]=d-h/nrm*.5; hit=true; break; } }   /* chaque élément à sa profondeur */
         if(hit) continue; const j0=at(u0,z), a0=j0<0?0:PX[j0]>>>24;
         if(a0>200){ B[i]=shL(PX[j0],f*.45,wa); continue; }                                   /* flancs des reliefs, dans l'ombre */
@@ -5798,7 +6192,7 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
       const flip=side===0&&rdx>0||side===1&&rdy<0, nrm=side===0?Math.abs(rdx):Math.abs(rdy), tg=Math.max(-2,Math.min(2,(side===0?rdy:rdx)*(flip?-1:1)/nrm)); let u0=side===0?cam.y+d*rdy:cam.x+d*rdx; u0-=Math.floor(u0); if(flip) u0=1-u0;
       const hx=cam.x+d*rdx, hy=cam.y+d*rdy, f=lit(d)*(side?.82:1)*vis(hx,hy), wa=LON?la(hx,hy):null, P=.045;
       const at=(u,z)=>{ u=(u-M)/(1-2*M); if(u<0||u>=1||z<Z0||z>=Z1) return -1; return (((1-(z-Z0)/(Z1-Z0))*WO.h|0)*WO.w)+((u*WO.w)|0); };   /* marge : le cadre en saillie reste dans la case, même de biais */
-      for(let y=yT;y<=yB;y++){ const i=y*W+xx, z=eye-(y+.5-h2)*d/PS, dz=(z-eye)/d*P/nrm;
+      for(let y=yT;y<=yB;y++){ const i=y*W+xx, z=eye-(y+.5-h2)*d/PS, dz=(z-eye)/d*P/nrm; if(DZ[i]<d-P-.05) continue;
         const jf=at(u0-P*tg,z-dz), af=jf<0?0:WO.px[jf]>>>24;   /* le cadre avance de P : on le cherche décalé */
         if(af>200){ const c=WO.px[jf], l=Math.max(c&255,(c>>8)&255,(c>>16)&255); B[i]=shL(c,l>150?Math.max(f,.9*vis(hx,hy)):f*1.05,wa); DZ[i]=d-P/nrm*.5; continue; }
         const j0=at(u0,z), a0=j0<0?0:WO.px[j0]>>>24;
@@ -5857,7 +6251,7 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
       if(eye>fh){ const yA=Math.max(0,Math.ceil(h2+(eye-fh)*PS/d1)), yB=Math.min(H-1,Math.floor(h2+(eye-fh)*PS/d0)), mm=!virt&&dgMk(mx,my), FT=mm&&(mm.k==='down'||mm.k==='tp')?mkTex()[mm.k]:TT.floor, SNW=COLD&&!dgCeil(mx,my);
         for(let y=yA;y<=yB;y++){ const rd=(eye-fh)*PS/(y+.5-h2); let wx=cam.x+rd*rdx, wy=cam.y+rd*rdy; const fx=wx-Math.floor(wx), fy=wy-Math.floor(wy), tx=(fx*N)&(N-1), ty=(fy*N)&(N-1);
           if(REACH&&!virt){ const a=inR(mx,my); if((fx<RE&&a!==inR(mx-1,my))||(fx>1-RE&&a!==inR(mx+1,my))||(fy<RE&&a!==inR(mx,my-1))||(fy>1-RE&&a!==inR(mx,my+1))){ put(y,RC,rd); continue; } }
-          const FI=TT.img&&!mm?FLIMG[TT.img]:null;
+          const FI=TT.img&&!(mm&&(mm.k==='down'||mm.k==='tp'))?FLIMG[TT.img]:null;   /* panneau : le sol reste celui de la case */
           const pc=PMK&&(()=>{ const gx=((wx-PMK.x0)*PATH_R)|0, gy=((wy-PMK.y0)*PATH_R)|0; return gx>=0&&gy>=0&&gx<PMK.W&&gy<PMK.H?PMK.C[gy*PMK.W+gx]:0; })(); let fc=(FI&&FI.px?(FI.anim?FI.px[(((((wy+now*.13)/FI.ch)%1+1)%1*FI.h)|0)*FI.w+(((((wx+Math.sin(wy*2+now)*.06)/FI.cw)%1+1)%1*FI.w)|0)]:FI.px[((((wy/FI.ch)%1+1)%1*FI.h)|0)*FI.w+((((wx/FI.cw)%1+1)%1*FI.w)|0)]):WAT&&cur.th==='mer'&&!mm?FT[(((((wy+now*.13)*N)|0)&(N-1))*N)+((((wx+Math.sin(wy*2+now)*.06)*N)|0)&(N-1))]:FT[ty*N+tx]); if(pc) fc=(pc>>>24)===255?pc:pmix(fc,pc); if(SNW){ const sn=snowAt(wx,wy); if(sn>0){ const ia=1-sn; fc=0xff000000|((((fc>>16)&255)*ia+250*sn)<<16)|((((fc>>8)&255)*ia+246*sn)<<8)|(((fc&255)*ia+242*sn)|0); } } if(bs){ const b=bs(wx,wy); if(b) fc=bmix(fc,b); }
           put(y,shL(fc,(HUB?hubLit(wx,wy):mm&&mm.k==='tp'?1:lit(rd))*vis(wx,wy),LON?la(wx,wy):null),rd); } }
       /* plafond de la case (ou ciel) */
@@ -6908,6 +7302,7 @@ function boardDown(e){
     if(e.pointerType==='mouse'){ gesture={k:'rsel',sx:e.clientX,sy:e.clientY,x1:wx,y1:wy,moved:false,add:e.shiftKey||e.ctrlKey||e.metaKey}; board.setPointerCapture(e.pointerId); } return; }
   if(e.button===0&&typeof FPS!=='undefined'&&FPS.mode==='prev'&&FPS.el&&FPS.cam&&Math.hypot(wx/CELL-FPS.cam.x,wy/CELL-FPS.cam.y)<.55){ e.preventDefault(); gesture={k:'cam'}; board.setPointerCapture(e.pointerId); return; }   /* caméra de l'aperçu : on la déplace sur la carte */
   if(e.button===0&&!tool&&typeof dgDecoAt==='function'&&dgOn()&&dgDecoAt(wx,wy)){ e.preventDefault(); closeCard(); gesture={k:'dgn',last:null,fs:1}; board.setPointerCapture(e.pointerId); dgPaint(wx,wy,gesture); return; }   /* décor (luminaire, objet, végétation) : sélectionnable même volet fermé */
+  if(e.button===0&&!tool&&typeof dgEdgeAt==='function'&&dgOn()&&S.dg.d){ const fx=wx/CELL, fy=wy/CELL, k=dgEdgeAt(wx,wy).k; if(Math.min(Math.abs(fy-Math.round(fy)),Math.abs(fx-Math.round(fx)))<.2&&S.dg.d[k]){ e.preventDefault(); closeCard(); dgDoorEdit(k); return; } }   /* porte : ses réglages au clic, même volet fermé */
   closeCard(); if(e.button===0&&!tool) selClear();
   /* vue : clic molette (ou Alt + clic) à la souris ; au doigt, glisser dans le vide */
   if(e.button===1||(e.button===0&&e.altKey)||(e.button===0&&!tool&&e.pointerType!=='mouse')){ e.preventDefault(); gesture={k:'pan',sx:e.clientX,sy:e.clientY,vx:V.x,vy:V.y}; board.classList.add('panning'); board.setPointerCapture(e.pointerId); return; }
