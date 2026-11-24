@@ -5880,7 +5880,7 @@ function scrCanvas(k,o,now){ const B=scrBase(o.s); if(!B) return null; const R=(
   if(c.width!==W||c.height!==H){ c.width=W; c.height=H; } const x=c.getContext('2d'); x.clearRect(0,0,W,H); x.imageSmoothingEnabled=false; x.drawImage(B,0,0);
   const X=Math.round(R[0]*W), Y=Math.round(R[1]*H), w=Math.round((R[2]-R[0])*W), h=Math.round((R[3]-R[1])*H);
   if(!o.on){ x.fillStyle='#07080b'; x.fillRect(X,Y,w,h); x.fillStyle='rgba(255,255,255,.06)'; x.fillRect(X+2,Y+2,Math.max(1,w*.35|0),2); }
-  else if(G){ x.drawImage(G,fr*o.gif.w,0,o.gif.w,o.gif.h,X,Y,w,h); }
+  else if(G){ x.fillStyle='#07080b'; x.fillRect(X,Y,w,h); x.drawImage(G,fr*o.gif.w,0,o.gif.w,o.gif.h,X,Y,w,h); }
   else { const n=x.createImageData(w,h), d=n.data; for(let i=0;i<d.length;i+=4){ const v=Math.random()*235|0; d[i]=d[i+1]=d[i+2]=v; d[i+3]=255; } x.putImageData(n,X,Y); }   /* neige */
   c._k='scr_'+o.s; c._hf=.45; return c; }
 function scrEdit(k){ const D=S.dg||{}, o=D.scr&&D.scr[k]; if(!o) return; DG.glow=k.split(',').map(Number); DG.glowE=null; drawDgLater();
