@@ -4991,6 +4991,7 @@ const DG_TH={
   bitume:{lbl:'Route',sw:'#2c333c',rock:'#0b0710',floor2d:'#353c46',wall2d:'#1a1426',seed:15,sky:1},
   ferraille:{lbl:'Tartaros',sw:'#8a5a34',rock:'#140d08',floor2d:'#6a5040',wall2d:'#4a3020',seed:26},
   tartint:{lbl:'Tartaros intérieur',sw:'#7a6a5a',rock:'#140d08',floor2d:'#5a4a3c',wall2d:'#3a2a20',seed:27},
+  naraka:{lbl:'Naraka',sw:'#3a2a4a',rock:'#08060c',floor2d:'#2a2236',wall2d:'#1a1424',seed:28},
   pise:{lbl:'Pisé',sw:'#c0703c',rock:'#1e120a',floor2d:'#c89060',wall2d:'#8a4a24',seed:24},
   solarint:{lbl:'Flamingo intérieur',sw:'#7a5a3a',rock:'#120d08',floor2d:'#6a5038',wall2d:'#3a2a1a',seed:23},
   interieur:{lbl:'Cité 17 intérieur',sw:'#3c5260',rock:'#0b0710',floor2d:'#3f5560',wall2d:'#1a2430',seed:16},
@@ -5966,7 +5967,7 @@ function doorImg(k,T){ const P=DOORPOM[k]; if(P){ const pd=T.pd={N:P.N,hm:P.hm,w
 const CLIMG={trottoir:{src:'res/themes/ruelle/plafond.webp',cw:4,ch:2.23},crypte:{src:'res/themes/crypte/plafond.webp',cw:4,ch:2.23},solarint:{src:'res/themes/solarint/plafond.webp',cw:3,ch:1.636},planches:{src:'res/themes/planches/plafond.webp',cw:3,ch:1.636}};   /* planches : bois sombre, sans lianes */ CLIMG.bitume=CLIMG.ruelle=CLIMG.interieur=CLIMG.trottoir;
 /* murs en image : continus le long du mur (cw cases de large, ch de haut) */
 /* Flamingo : maisons victoriennes (3 façades, 8 m × 6,4 m) ; escaliers au rez-de-chaussée, étages répétés au-dessus ; relief + parallaxe */
-const WLIMG={flamingo:{src:'res/themes/flamingo/mur.webp',mask:'res/themes/flamingo/mur-masque.png',cw:8,ch:6.4,dep:0,top:[3.83,6.4]},crypte:{src:'res/themes/crypte/mur.webp',rel:'res/themes/crypte/mur-relief.png',cw:3.6,ch:1.96,dep:.07,fit:1},interieur:{src:'res/themes/ruelle/mur-interieur.webp',rel:'res/themes/ruelle/mur-interieur-relief.png',cw:2.67,ch:2,dep:.035,fit:1},pise:{src:'res/themes/pise/mur.webp',cw:30.705,ch:2,fit:1},ferraille:{src:'res/themes/ferraille/mur.webp',cw:3.582,ch:2,fit:1},tartint:{src:'res/themes/tartint/mur.webp',cw:3.582,ch:2,fit:1},   /* pisé : uni, avec un fossile de temps en temps */
+const WLIMG={flamingo:{src:'res/themes/flamingo/mur.webp',mask:'res/themes/flamingo/mur-masque.png',cw:8,ch:6.4,dep:0,top:[3.83,6.4]},crypte:{src:'res/themes/crypte/mur.webp',rel:'res/themes/crypte/mur-relief.png',cw:3.6,ch:1.96,dep:.07,fit:1},interieur:{src:'res/themes/ruelle/mur-interieur.webp',rel:'res/themes/ruelle/mur-interieur-relief.png',cw:2.67,ch:2,dep:.035,fit:1},pise:{src:'res/themes/pise/mur.webp',cw:30.705,ch:2,fit:1},ferraille:{src:'res/themes/ferraille/mur.webp',cw:3.582,ch:2,fit:1},tartint:{src:'res/themes/tartint/mur.webp',cw:3.582,ch:2,fit:1},naraka:{src:'res/themes/naraka/mur.webp',cw:3.582,ch:2,fit:1},   /* pisé : uni, avec un fossile de temps en temps */
   solarint:{src:'res/themes/solarint/mur.webp',cw:32.243,ch:2,fit:1}   /* jardinières et fresques en alternance irrégulière */};
 /* fit : l'image prend toute la hauteur du mur (sa largeur suit, proportions gardées) */
 function wlFit(WI,H){ if(!WI.fit||!(H>0)||Math.abs(H-WI.ch)<.01) return WI; const c=WI._f||(WI._f={}), k=Math.round(H*100); let o=c[k]; if(!o){ o=c[k]=Object.create(WI); o.ch=H; o.cw=WI.cw*H/WI.ch; } else if(o.px!==WI.px){ o.px=WI.px; o.rl=WI.rl; o.w=WI.w; o.h=WI.h; } return o; }
