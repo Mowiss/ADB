@@ -145,7 +145,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 /* Fiche imprimable */
 #printsheet{display:none}
 @media print{
-  @page{size:A4;margin:12mm}
+  @page{size:A4 portrait;margin:12mm}
   html,body{background:#fff!important;overflow:visible!important}
   body > *:not(#printsheet){display:none!important}
   #printsheet{display:block!important;color:#20222c;font-size:10pt}
@@ -1333,7 +1333,7 @@ function printSheet(){
   const stats=STATS.map(s=>{ const I=STAT_INFO[s], base=C.stats[s]||0, v=D.r[s]; return `<div class="ps-stat"><span>${I.name}</span><b>${v}</b>${v!==base?`<small>base ${base}</small>`:''}</div>`; }).join('');
   const ctr=[['Points de Vie',`${C.pv} / ${D.pvMax}`],['Points de Charge',`${D.pc} / ${D.pcMax}`],['Points d\'Action',D.pa],['Points d\'Armure',D.pp],['Points de Tourment',C.pt],['Points d\'Éveil',C.pe]]
     .map(([k,v])=>`<div class="ps-stat"><span>${k}</span><b>${v}</b></div>`).join('');
-  const nI=C.inventory.length, nC=C.cybernetics.length, rI=Math.max(nI,19), rC=Math.max(nC,4,29-rI);   /* inventaire + améliorations sur un recto */
+  const nI=C.inventory.length, nC=C.cybernetics.length, rI=Math.max(nI,19), rC=Math.max(nC,4,31-rI);   /* inventaire + améliorations sur un recto */
   const blank=(n,c)=>Array.from({length:Math.max(0,n)},()=>`<tr class="ps-blank">${'<td></td>'.repeat(c)}</tr>`).join('');   /* lignes vides à remplir au crayon */
   const cg=a=>'<colgroup>'+a.map(w=>`<col style="width:${w}%">`).join('')+'</colgroup>', COLI=cg([27,11,12,7,6,6,8,23]), COLC=cg([27,14,13,8,7,31]);
   const BK=C.bankInventory||[], bankRows=BK.map(it=>`<tr><td><b>${e(it.name||'Objet')}</b></td><td>${+it.qty>1?+it.qty:''}</td><td>${e(it.description||'')}</td></tr>`).join('')+blank(26-BK.length,3);
