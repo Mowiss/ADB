@@ -5923,7 +5923,7 @@ function dgDoorSet(o,v){ if(v==='grille'){ o.gr=1; o.st='crypte'; delete o.s; de
 function dgDoorPick(cur,attr){ const wt=dgPM&&dgPM()||(S.dg&&S.dg.th)||'crypte';
   return `<div class="vegpick dg-styl">${dgDoorStyles().map(([k,l])=>`<button type="button" class="vegb${cur===k?' on':''}" data-${attr}="${k}" title="${esc(l)}"><img src="${dgThumb(k,'door')}" alt=""><small>${esc(l)}</small></button>`).join('')}<button type="button" class="vegb${cur==='grille'?' on':''}" data-${attr}="grille" title="Grille"><img src="${DOORG.crypte.src}" alt=""><small>Grille</small></button><button type="button" class="vegb${cur==='cachee'?' on':''}" data-${attr}="cachee" title="Cachée : le mur s'ouvre"><img src="${dgThumb(wt,'wall')}" alt=""><small>Cachée</small></button></div>`; }
 function dgDoorStyles(){ const seen=new Set(), L=[]; Object.entries(DG_TH).forEach(([k,t])=>{ if(['mer','mermut','mermag','bitume','ruelle','hub'].includes(k)||!DOORIMG[k]) return; const src=DOORIMG[k]||''; if(src&&seen.has(src)) return; if(src) seen.add(src); L.push([k,DOORIMG[k]?({flamingo:'Flamingo',crypte:'Crypte',trottoir:'Sas cyber',interieur:'Sas cyber'}[k]||t.lbl):t.lbl]); }); return L; }
-function dgWinStyles(){ return [['flamingo','Flamingo'],['cyber','Néon cyber'],['crypte','Crypte']]; }
+function dgWinStyles(){ return [['simple','Simple'],['cyber','Néon cyber'],['crypte','Crypte']]; }
 const winThumb=k=>WINPOM[k]?WINPOM[k].src:WINIMG[k]?WINIMG[k].src:dgThumb(k,'wall');
 function dgThumb(k,part){ const id=k+'|'+part; if(DGTHUMB[id]) return DGTHUMB[id]; if(part==='floor'&&FLIMG[k]) return FLIMG[k].src; if(part==='door'&&DOORIMG[k]) return DOORIMG[k]; if(part==='wall'&&(k==='trottoir'||k==='bitume'||k==='ruelle')) return 'res/themes/ruelle/facade.webp'; if(part==='ceil'&&CLIMG[k]) return CLIMG[k].src; if(part==='wall'&&WLIMG[k]) return WLIMG[k].src; const T=fpsTextures(k), N=T.N, a=T[part]||T.floor, c=document.createElement('canvas'); c.width=c.height=N;
   const im=c.getContext('2d').createImageData(N,N); new Uint32Array(im.data.buffer).set(a.subarray(0,N*N)); c.getContext('2d').putImageData(im,0,0);
@@ -5935,18 +5935,18 @@ function leafCeil(x,N,rnd,h0,h1,l0,l1){ for(let i=0;i<55;i++){ const cx=rnd()*N,
 /* sols en image (trottoir, route cyberpunk) : grandes dalles qui couvrent plusieurs cases, sans répétition à chaque mètre */
 const FLIMG={herbe:{src:'res/themes/herbe/herbe.webp',cw:2.5,ch:2.8},herbnoc:{src:'res/themes/herbe/herbe-noctile.webp',cw:2.5,ch:2.8},mer:{src:'res/themes/mer/mer.webp',cw:4,ch:2.23,anim:1},mermut:{src:'res/themes/mer/mer-mutant.webp',cw:4,ch:2.23,anim:1},mermag:{src:'res/themes/mer/mer-magique.webp',cw:4,ch:2.23,anim:1},flamingo:{src:'res/themes/flamingo/sol.webp',cw:5,ch:5},trottoir:{src:'res/themes/ruelle/trottoir.webp',cw:3,ch:2.234},bitume:{src:'res/themes/ruelle/route.webp',cw:4,ch:4},crypte:{src:'res/themes/crypte/sol.webp',cw:4,ch:2.23},interieur:{src:'res/themes/ruelle/sol-interieur.webp',cw:4,ch:3}};
 /* fenêtre en image (cyberpunk) : cadre en relief, vitre transparente (alpha 128 dans l'image) */
-const WINIMG={cyber:{src:'res/themes/ruelle/fenetre.png'},crypte:{src:'res/themes/crypte/fenetre.png'}}, WIN_OF={crypte:'crypte',trottoir:'cyber',bitume:'cyber',ruelle:'cyber',interieur:'cyber'};
+const WINIMG={simple:{src:'res/themes/simple/fenetre.png'},cyber:{src:'res/themes/ruelle/fenetre.png'},crypte:{src:'res/themes/crypte/fenetre.png'}}, WIN_OF={flamingo:'simple',crypte:'crypte',trottoir:'cyber',bitume:'cyber',ruelle:'cyber',interieur:'cyber'};
 /* fenêtres « en relief » : image + carte de hauteur (fronton, pilastres, jardinière, touffes très en avant), vitres transparentes (alpha 60-200) */
-const WINPOM={flamingo:{src:'res/themes/flamingo/fenetre.png',rel:'res/themes/flamingo/fenetre-relief.png',hm:.25}};
+const WINPOM={};
 function winPomLoad(k){ const o=WINPOM[k]; if(o.im) return o.px&&o.rl?o:null; const ld=(src,f)=>{ const im=new Image(); im.onload=()=>{ const c=document.createElement('canvas'); c.width=im.naturalWidth; c.height=im.naturalHeight; const x=c.getContext('2d'); x.drawImage(im,0,0); f(x.getImageData(0,0,c.width,c.height).data,c.width,c.height); fpsLater(); }; im.src=src; return im; };
   o.im=ld(o.src,(d,w,h)=>{ o.px=new Uint32Array(d.buffer.slice(0)); o.w=w; o.h=h; }); ld(o.rel,d=>{ const r=new Float32Array(d.length/4); for(let i=0;i<r.length;i++) r[i]=d[i*4]/255*o.hm; o.rl=r; }); return null; }
 function winImgLoad(k){ const o=WINIMG[k]; if(o.im) return o.px?o:null; o.im=new Image(); o.im.onload=()=>{ const c=document.createElement('canvas'); c.width=o.im.naturalWidth; c.height=o.im.naturalHeight; c.getContext('2d').drawImage(o.im,0,0);
   o.px=new Uint32Array(c.getContext('2d').getImageData(0,0,c.width,c.height).data.buffer.slice(0)); o.w=c.width; o.h=c.height; fpsLater(); }; o.im.src=o.src; return null; }
 /* portes en image : remplacent la texture de porte du set (le battant coulisse comme les autres) */
-const DOORIMG={flamingo:'res/themes/flamingo/porte.png',crypte:'res/themes/crypte/porte.png',trottoir:'res/themes/ruelle/porte.webp',bitume:'res/themes/ruelle/porte.webp',interieur:'res/themes/ruelle/porte.webp',ruelle:'res/themes/ruelle/porte.webp'};
+const DOORIMG={crypte:'res/themes/crypte/porte.png',trottoir:'res/themes/ruelle/porte.webp',bitume:'res/themes/ruelle/porte.webp',interieur:'res/themes/ruelle/porte.webp',ruelle:'res/themes/ruelle/porte.webp'};
 const DOORREL={trottoir:'res/themes/ruelle/porte-relief.png'}; DOORREL.bitume=DOORREL.ruelle=DOORREL.interieur=DOORREL.trottoir; DOORREL.crypte='res/themes/crypte/porte-relief.png';
 /* portes « en relief » : carte de hauteur jusqu'à 25 cm (fronton, chambranle, imposte en retrait, végétation très en avant) — rendu en parallaxe, le fond prend la texture du mur */
-const DOORPOM={flamingo:{src:'res/themes/flamingo/porte.png',rel:'res/themes/flamingo/porte-relief.png',hm:.25,N:256}};
+const DOORPOM={};
 const DOORG={crypte:{src:'res/themes/crypte/grille.png',rel:'res/themes/crypte/grille-relief.png'}};   /* porte à grille (évidée) */
 const wlX=(WI,u)=>((((u/WI.cw)%1)+1)%1*WI.w)|0, wlY=(WI,z)=>{ const TP=WI.top; if(TP&&z>=WI.ch) z=TP[0]+((z-WI.ch)%(TP[1]-TP[0])); return ((1-(((z/WI.ch)%1)+1)%1)*WI.h|0)%WI.h; };
 function doorImg(k,T){ const P=DOORPOM[k]; if(P){ const pd=T.pd={N:P.N,hm:P.hm,wk:k}, ldP=(src,f)=>{ const im=new Image(); im.onload=()=>{ const c=document.createElement('canvas'); c.width=c.height=P.N; const x=c.getContext('2d'); x.drawImage(im,0,0,P.N,P.N); f(x.getImageData(0,0,P.N,P.N).data); fpsLater(); }; im.src=src; };
@@ -6612,7 +6612,7 @@ function fpsRender(cv,cam,selfId){ const ci=Math.floor(cam.x), cj=Math.floor(cam
       if(!nf){ if(V2||cur.iw||virt||dgWNo(mx,my)){ nf=cur; virt=true; } else wt=TT.wall; } else virt=false;
       let doff=0;
       if(door) dgNormDoor(door);
-      const DT=door&&door.st&&DG_TH[door.st]?fpsTextures(door.st):TT;   /* style de porte choisi, sinon celui du décor */
+      const DST=door&&door.st!=='flamingo'&&door.st, DT=DST&&DG_TH[DST]?fpsTextures(DST):(door&&door.st==='flamingo'||cur.th==='flamingo')?fpsTextures('crypte'):TT;   /* porte Flamingo retirée : la Crypte la remplace */   /* style de porte choisi, sinon celui du décor */
       if(door&&!dgHid(door)){ const p=doorP(dgEK(pmx,pmy,mx,my),door); const DWK=EWT||dgFlank(pmx,pmy,mx,my).t||cur.th; if(DT.pd&&DT.pd.door&&DT.pd.drel) faceDoorP(fh,d0,p,DT.pd,DWK); else if(DT.drel&&DT.door){ const GX=door.gr&&DT.grille&&DT.grille.door&&DT.grille.drel?DT.grille:DT; faceDoor(fh,d0,p,GX,DWK); } else if(p<1){ let u=side===0?cam.y+d0*rdy:cam.x+d0*rdx; u-=Math.floor(u); if(u>=p){ wt=DT.door; doff=p; } }
         if(door.tpTo!=null&&p>0&&!wt){ const yT=Math.max(0,Math.ceil(h2+(eye-fh-1)*PS/d0)), yB=Math.min(H-1,Math.floor(h2+(eye-fh)*PS/d0)); let u=side===0?cam.y+d0*rdy:cam.x+d0*rdx; u-=Math.floor(u);   /* téléportation : l'embrasure ouverte est pleine de lumière jaune-blanc */
           for(let y=yT;y<=yB;y++){ const z=eye-(y+.5-h2)*d0/PS-fh, c2=Math.min(1,Math.min(u,1-u,z,1-z)*5), sh=.72+.28*Math.sin(now*3+z*9+u*7); const w=c2*sh; put(y,0xff000000|((110+120*w|0)<<16)|((205+48*w|0)<<8)|255,d0); } } }
