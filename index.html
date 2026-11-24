@@ -5136,19 +5136,23 @@ function dgHover(wx,wy){ DG.hw=[wx,wy]; if(DG.poly) drawDgLater(); if(['door','s
   const c=dgCell(wx,wy); if(!Array.isArray(DG.hover)||DG.hover[0]!==c[0]||DG.hover[1]!==c[1]){ DG.hover=c; drawDgLater(); } }
 /* réglages d'une porte : ouverte / fermée, verrouillée ou non */
 function dgDoorEdit(k){ const o=S.dg&&S.dg.d&&S.dg.d[k]; if(!o) return; DG.glowE=k; DG.glow=null; drawDgLater();
-  dgNormDoor(o); const st=o.lk?'lk':o.open?'open':'shut';
+  dgNormDoor(o); if(!o.code){ o.code=dgNewCode(); markDirty(); } const st=o.lk?'lk':o.open?'open':'shut';
   const opt=(v,ico,l)=>`<button type="button" class="wxb${st===v?' on':''}" data-dp="${v}">${ico}<span>${l}</span></button>`;
   openDialog(`<div class="dphead"><h3>Porte</h3><button class="ib" type="button" id="dp-del" title="Supprimer la porte">${IB('bin')}</button></div>
     <div class="wxrow dpseg">${opt('open',dgI('iwall',1.7),'Ouverte')}${opt('shut',dgI('door',1.7),'Fermée')}${opt('lk','<i class="dplk">🔒</i>','Verrouillée')}</div>
     ${o.s?`<div class="wxrow dpseg" style="margin-top:8px"><button type="button" class="wxb${!o.f?' on':''}" data-dsf="0"><span>Cachée</span></button><button type="button" class="wxb${o.f?' on':''}" data-dsf="1"><span>Découverte</span></button></div>`:''}
     <span class="cap" style="display:block;margin-top:10px">Style</span>${dgDoorPick(dgDoorCur(o),'dst')}
+    <div class="field" style="margin-top:12px"><label class="cap" for="dp-code">Nom de la porte (pour y arriver par TP)</label><input class="line-in" id="dp-code" value="${esc(o.code)}" maxlength="12" autocomplete="off"></div>
     <span class="cap" style="display:block;margin-top:12px">En la franchissant</span>
     <div class="wxrow dpseg"><button type="button" class="wxb${o.tpTo==null?' on':''}" data-dtp="0"><span>On passe</span></button><button type="button" class="wxb${o.tpTo!=null?' on':''}" data-dtp="1"><span>Téléportation</span></button></div>
-    ${o.tpTo!=null?`<div class="field" style="margin-top:8px"><label class="cap" for="dp-to">Mène à</label><select class="line-in" id="dp-to"><option value="">— nulle part —</option>${dgCodes().map(c=>`<option value="${esc(c.code)}" ${c.code===o.tpTo?'selected':''}>${esc(c.code)} · ${esc(MK_LBL[c.kind]||'')} · ${esc(c.title)}</option>`).join('')}</select></div>`:''}`);
+    ${o.tpTo!=null?`<div class="field" style="margin-top:8px"><label class="cap" for="dp-to">Mène à</label><select class="line-in" id="dp-to"><option value="">— nulle part —</option>${dgCodes().filter(c=>!(c.dk===k&&c.si===S.scene)).map(c=>`<option value="${esc(c.code)}" ${c.code===o.tpTo?'selected':''}>${esc(c.code)} · ${esc(MK_LBL[c.kind]||'')} · ${esc(c.title)}</option>`).join('')}</select></div>`:''}`);
   document.querySelectorAll('[data-dtp]').forEach(b=>b.onclick=()=>{ if(b.dataset.dtp==='1'){ if(o.tpTo==null) o.tpTo=''; } else delete o.tpTo; drawDgLater(); fpsLater(); markDirty(); sync(); dgDoorEdit(k); });
   document.querySelectorAll('[data-dst]').forEach(b=>b.onclick=()=>{ const was=!!o.s; dgDoorSet(o,b.dataset.dst); FPS.sprites.clear(); drawDgLater(); fpsLater(); markDirty(); sync(); if(was!==!!o.s) dgDoorEdit(k); else document.querySelectorAll('[data-dst]').forEach(x=>x.classList.toggle('on',x===b)); });
   document.querySelectorAll('[data-dsf]').forEach(b=>b.onclick=()=>{ o.f=+b.dataset.dsf; drawDgLater(); fpsLater(); markDirty(); sync(); dgDoorEdit(k); });
   if($('dp-to')) $('dp-to').onchange=e=>{ o.tpTo=e.target.value; drawDgLater(); markDirty(); sync(); };
+  $('dp-code').onchange=e=>{ const v=e.target.value.trim().toUpperCase().replace(/[^A-Z0-9_-]/g,''); if(!v||v===o.code){ e.target.value=o.code; return; } if(dgCodes().some(c=>c.code===v)){ toast('Ce nom existe déjà',true); e.target.value=o.code; return; }
+    const old=o.code; o.code=v; const fix=dg=>{ if(!dg) return; for(const kk in (dg.d||{})) if(dg.d[kk]&&dg.d[kk].tpTo===old) dg.d[kk].tpTo=v; for(const kk in (dg.m||{})) if(dg.m[kk].to===old) dg.m[kk].to=v; }; fix(S.dg); (S.scenes||[]).forEach(sc=>fix(sc.dg));   /* les passages qui y mènent suivent le nouveau nom */
+    e.target.value=v; drawDgLater(); markDirty(); sync(); };
   document.querySelectorAll('[data-dp]').forEach(b=>b.onclick=()=>{ const v=b.dataset.dp; o.open=v==='open'; o.lk=v==='lk'; if(!o.lk) delete o.lk; dlg.close(); drawDgLater(); fpsLater(); markDirty(); sync(); });
   $('dp-del').onclick=()=>{ delete S.dg.d[k]; dlg.close(); drawDgLater(); fpsLater(); markDirty(); sync(); }; }
 /* une porte ouverte au clic se referme seule au bout de 3 s (pas si quelqu'un est dans l'encadrement) */
@@ -5330,10 +5334,11 @@ function drawDg(){ const cv=$('dgn'); if(!cv) return; const r=board.getBoundingC
     if(m.a!=null){ x.save(); x.translate(CELL/2,CELL/2); x.rotate(m.a*Math.PI/4); x.fillStyle='#ff5a3c'; x.strokeStyle='#fff'; x.lineWidth=2; x.beginPath(); x.moveTo(0,-CELL*.46); x.lineTo(-7,-CELL*.3); x.lineTo(7,-CELL*.3); x.closePath(); x.stroke(); x.fill(); x.restore(); }
     x.font='800 11px Quicksand,sans-serif'; x.textAlign='center'; x.textBaseline='middle'; x.fillStyle='rgba(20,22,30,.85)'; x.fillText(m.code||'',CELL/2,CELL/2-(m.to?7:0)); if(m.to){ x.font='700 10px Quicksand,sans-serif'; x.fillText('→ '+m.to,CELL/2,CELL/2+8); }
     x.restore(); }
-  const DD=S.dg.d||{}; for(const k in DD){ const o=DD[k], [ax,ay,bx,by]=dgEdgeSeg(k); if(Math.max(ax,bx)<i0*CELL||Math.min(ax,bx)>i1*CELL||Math.max(ay,by)<j0*CELL||Math.min(ay,by)>j1*CELL) continue;
+  const DD=S.dg.d||{}, TGT=new Set(); { const tg=dg=>{ for(const kk in (dg&&dg.d||{})) if(dg.d[kk]&&dg.d[kk].tpTo) TGT.add(dg.d[kk].tpTo); for(const kk in (dg&&dg.m||{})) if(dg.m[kk].to) TGT.add(dg.m[kk].to); }; tg(S.dg); (S.scenes||[]).forEach(sc=>tg(sc.dg)); }   /* portes visées par un TP : leur nom s'affiche */
+  for(const k in DD){ const o=DD[k], [ax,ay,bx,by]=dgEdgeSeg(k); if(Math.max(ax,bx)<i0*CELL||Math.min(ax,bx)>i1*CELL||Math.max(ay,by)<j0*CELL||Math.min(ay,by)>j1*CELL) continue;
     const hz=ay===by, L=CELL*.78, m=(CELL-L)/2, sec=o.s, hid=sec&&!o.f, ink=sec?'#8e5bd6':'#2b1a0e';
     x.lineCap='butt';
-    dgNormDoor(o); if(o.tpTo!=null&&!hid){ x.save(); x.fillStyle='#c79600'; x.font='800 10px Quicksand,sans-serif'; x.textAlign='center'; x.textBaseline='middle'; x.fillText(o.tpTo?'TP → '+o.tpTo:'TP',(ax+bx)/2+(hz?0:18),(ay+by)/2+(hz?-14:0)); x.restore(); }
+    dgNormDoor(o); const isT=o.code&&TGT.has(o.code); if((o.tpTo!=null||isT)&&!hid){ x.save(); x.fillStyle='#c79600'; x.font='800 10px Quicksand,sans-serif'; x.textAlign='center'; x.textBaseline='middle'; x.fillText(o.tpTo!=null?(isT?o.code+' · ':'')+(o.tpTo?'TP → '+o.tpTo:'TP'):o.code,(ax+bx)/2+(hz?0:18),(ay+by)/2+(hz?-14:0)); x.restore(); }
     if(hid){ x.strokeStyle=T.wall2d; x.lineWidth=Math.max(5,3/V.z); x.beginPath(); x.moveTo(ax,ay); x.lineTo(bx,by); x.stroke();
       x.setLineDash([6,5]); x.strokeStyle=ink; x.lineWidth=3; x.beginPath(); x.moveTo(ax+(hz?m:0),ay+(hz?0:m)); x.lineTo(bx-(hz?m:0),by-(hz?0:m)); x.stroke(); x.setLineDash([]);
       x.fillStyle=ink; x.font='700 15px sans-serif'; x.textAlign='center'; x.textBaseline='middle'; x.fillText('S',(ax+bx)/2+(hz?0:13),(ay+by)/2+(hz?-13:0)); continue; }
@@ -5562,7 +5567,7 @@ function dgDirEl(t){ if(!dgOn()||t.type!=='player'||t.dir==null) return ''; cons
 function fpsKeepMine(t){ if(typeof FPS==='undefined'||!FPS.cam||FPS.mode!=='play'||!t||t.id!==FPS.self) return false; if(!FPS.mvT||performance.now()-FPS.mvT>1200) return false; const x=FPS.cam.x*CELL, y=FPS.cam.y*CELL; if(Math.hypot(t.x-x,t.y-y)>CELL*1.6) return false; t.x=x; t.y=y; if(FPS.vang!=null) t.ang=FPS.vang; return true; }
 
 /* ---------- passages : escaliers et zones TP, reliés par code (destination possible sur une autre scène) ---------- */
-const MK_LBL={up:'Escalier qui monte',down:'Escalier qui descend',tp:'Zone TP',sign:'Panneau'};
+const MK_LBL={up:'Escalier qui monte',down:'Escalier qui descend',tp:'Zone TP',sign:'Panneau',door:'Porte'};
 const mkIco=k=>dgI(k==='tp'?'tp':k==='sign'?'sign':k==='up'?'sup':'sdown',1.7);
 /* ---------- sélection : ce qui est posé sur une case (végétation, lumière, passage, portes) et sa suppression ---------- */
 const dgDecoAt=(wx,wy)=>{ const D=S.dg||{}, k=dgK(...dgCell(wx,wy)); return !!((D.veg&&D.veg[k])||(D.ob&&D.ob[k])||(D.lum&&D.lum[k])||(D.sup&&D.sup[k])||(D.scr&&D.scr[k])); };
@@ -5600,7 +5605,10 @@ function dgSelClick(wx,wy){
     if($('sel-all')) $('sel-all').onclick=()=>{ dgSelItems(i,j).forEach(x=>x.del()); done(); dlg.close(); }; };
   draw(); }
 const dgMk=(i,j)=>S.dg&&S.dg.m?S.dg.m[i+','+j]:null;
-function dgCodes(){ const L=[], add=(dg,si,title)=>{ const M=dg&&dg.m||{}; for(const k in M){ const m=M[k]; if(m.code) L.push({code:m.code,k,si,title,kind:m.k}); } };
+/* arrivée par une porte : on sort du côté creusé, dos à la porte */
+function dgDoorArr(dg,k){ const p=k.split(','), i=+p[0], j=+p[1], h=p[2]==='h', A=h?[i,j-1]:[i-1,j], B=[i,j], op=c=>!!(dg&&dg.c&&dg.c[c[0]+','+c[1]]), b=op(B)||!op(A); const c=b?B:A; return {k:c[0]+','+c[1],a:b?(h?4:2):(h?0:6)}; }
+function dgCodes(){ const L=[], add=(dg,si,title)=>{ const M=dg&&dg.m||{}; for(const k in M){ const m=M[k]; if(m.code) L.push({code:m.code,k,si,title,kind:m.k}); }
+    const D=dg&&dg.d||{}; for(const k in D){ const o=D[k]; if(o&&o.code){ const r=dgDoorArr(dg,k); L.push({code:o.code,k:r.k,a:r.a,dk:k,si,title,kind:'door'}); } } };
   add(S.dg,S.scene,'cette scène'); (S.scenes||[]).forEach((sc,i)=>{ if(i!==S.scene) add(sc.dg,i,sc.title||`Scène ${i+1}`); }); return L; }
 function dgNewCode(){ const used=new Set(dgCodes().map(c=>c.code)); for(let n=0;n<17576;n++){ const c='TP'+String.fromCharCode(65+(n/676|0)%26,65+(n/26|0)%26,65+n%26); if(!used.has(c)) return c; } return 'TP'+Date.now(); }
 function dgMarkClick(wx,wy){ const [i,j]=dgCell(wx,wy); if(!dgOpen(i,j)){ toast('Un passage se pose sur une case creusée',true); return; } const D=dgEnsure(); D.m=D.m||{}; const k=dgK(i,j);
@@ -5624,7 +5632,7 @@ function dgFree(di,dj,toks,self){ const busy=(i,j)=>toks.some(o=>o!==self&&o.id!
     [[1,0],[-1,0],[0,1],[0,-1]].forEach(([u,v])=>{ const k=(i+u)+','+(j+v); if(!seen.has(k)){ seen.add(k); Q.push([i+u,j+v]); } }); } return [di,dj]; }
 /* MJ : un aventurier vient de poser le pied sur un passage */
 function dgArrive(t,ci,cj,pi,pj){ const [i,j]=ci!=null?[ci,cj]:dgCell(t.x,t.y), m=dgPassAt(pi,pj,i,j); if(!m||!m.to) return false; const dest=dgCodes().find(c=>c.code===m.to); if(!dest){ toast(`${t.name} : destination ${m.to} introuvable`,true); return false; }
-  const [di,dj]=dest.k.split(',').map(Number), dm=((dest.si===S.scene?S.dg:(S.scenes[dest.si]||{}).dg)||{}).m||{}, da=dm[dest.k]&&dm[dest.k].a;
+  const [di,dj]=dest.k.split(',').map(Number), dm=((dest.si===S.scene?S.dg:(S.scenes[dest.si]||{}).dg)||{}).m||{}, da=dest.a!=null?dest.a:dm[dest.k]&&dm[dest.k].a;
   if(da!=null){ t.ang=da*Math.PI/4; t.dir=((Math.round(da/2)%4)+4)%4; }
   if(dest.si===S.scene){ const [fi,fj]=dgFree(di,dj,S.tokens,t); t.x=(fi+.5)*CELL; t.y=(fj+.5)*CELL; dexAnchor(t); setTimeout(sync,0); moveTokenEl(t); tokenEl(t); send({t:'mv',id:t.id,x:t.x,y:t.y,s:t.s,dir:t.dir||0,ang:t.ang}); fowLater(); markDirty(); return true; }
   const sc=S.scenes[dest.si]; if(!sc) return false; sc.tokens=(sc.tokens||[]).filter(o=>o.id!==t.id);
@@ -5689,9 +5697,9 @@ function dgTestScene(si,cell){ const sc=DGT.sc&&DGT.sc[si]; if(!sc) return; DGT.
   DGT.cell=fi+','+fj; S.order=[]; S.turn=-1; FPS.cam=null; FPS.dp=null; FPS.sprites&&FPS.sprites.clear(); renderTokens(); followMe(); if(si) toast(`🔷 ${sc.title||'Scène '+(si+1)}`); }
 /* mode test : en entrant sur un passage (escalier, TP, panneau), on part vers sa destination, même dans une autre scène */
 function dgTestArrive(){ if(!DGT.sc) return; const me=S.tokens.find(t=>t.id==='me'); if(!me) return; const i=Math.floor(me.x/CELL), j=Math.floor(me.y/CELL), k=i+','+j; if(k===DGT.cell) return; const pc=String(DGT.cell||'').split(',').map(Number); DGT.cell=k;
-  const m=dgPassAt(pc.length===2?pc[0]:null,pc[1],i,j); if(!m||!m.to) return; let dest=null; DGT.sc.forEach((sc,si)=>{ for(const kk in ((sc.dg&&sc.dg.m)||{})) if(sc.dg.m[kk].code===m.to&&!dest) dest={si,c:kk.split(',').map(Number)}; });
+  const m=dgPassAt(pc.length===2?pc[0]:null,pc[1],i,j); if(!m||!m.to) return; let dest=null; DGT.sc.forEach((sc,si)=>{ for(const kk in ((sc.dg&&sc.dg.m)||{})) if(sc.dg.m[kk].code===m.to&&!dest) dest={si,c:kk.split(',').map(Number)}; for(const kk in ((sc.dg&&sc.dg.d)||{})) if(sc.dg.d[kk]&&sc.dg.d[kk].code===m.to&&!dest){ const r=dgDoorArr(sc.dg,kk); dest={si,c:r.k.split(',').map(Number),a:r.a}; } });
   if(!dest){ toast(`Destination ${m.to} introuvable`,true); return; }
-  const dmk=DGT.sc[dest.si].dg.m[dest.c.join(',')], da=dmk&&dmk.a!=null?dmk.a*Math.PI/4:null;
+  const dmk=(DGT.sc[dest.si].dg.m||{})[dest.c.join(',')], da=dest.a!=null?dest.a*Math.PI/4:dmk&&dmk.a!=null?dmk.a*Math.PI/4:null;
   fpsFade(m.k); setTimeout(()=>{ FPS.mv=0; const keep=FPS.cam?FPS.cam.a:0; if(dest.si!==DGT.si) dgTestScene(dest.si,dest.c); else { me.x=(dest.c[0]+.5)*CELL; me.y=(dest.c[1]+.5)*CELL; DGT.cell=dest.c.join(','); FPS.cam=null; followMe(); }
     const a=da!=null?da:keep; if(FPS.cam) FPS.cam.a=a; const me2=S.tokens.find(t=>t.id==='me'); if(me2) me2.ang=a; fpsLater(); fpsUnfade(); },340); }
 function dgTestLoadOld(){ window.DGTEST=true; DGT.sc=null; if(!ME) ME='test'; const c={}, d={}, m={}, box=(x0,y0,w,h,st)=>{ for(let i=x0;i<x0+w;i++) for(let j=y0;j<y0+h;j++) c[i+','+j]=st; };
@@ -6853,7 +6861,7 @@ function fpsSync(){ if(!isPlayer||!NETVIEW) return; const me=ME&&S.tokens.find(t
 function fpsPrevArrive(to,pi,pj){ const i=Math.floor(to.x), j=Math.floor(to.y), m=dgPassAt(pi,pj,i,j); if(!m) return;
   if(!m.to){ toast(`${MK_LBL[m.k]} ${m.code||''} : aucune destination (« Mène à »)`); return; }
   const dest=dgCodes().find(c=>c.code===m.to); if(!dest){ toast(`Destination ${m.to} introuvable`,true); return; }
-  const [di,dj]=dest.k.split(',').map(Number), dmk=(((dest.si===S.scene?S.dg:(S.scenes[dest.si]||{}).dg)||{}).m||{})[dest.k], a=dmk&&dmk.a!=null?dmk.a*Math.PI/4:(FPS.cam?FPS.cam.a:0); fpsFade(m.k); setTimeout(()=>{
+  const [di,dj]=dest.k.split(',').map(Number), dmk=(((dest.si===S.scene?S.dg:(S.scenes[dest.si]||{}).dg)||{}).m||{})[dest.k], a=dest.a!=null?dest.a*Math.PI/4:dmk&&dmk.a!=null?dmk.a*Math.PI/4:(FPS.cam?FPS.cam.a:0); fpsFade(m.k); setTimeout(()=>{
   if(dest.si!==S.scene){ const sc=S.scenes[dest.si]; loadScene(dest.si); toast(`${MK_LBL[m.k]} → « ${(sc&&sc.title)||'Scène '+(dest.si+1)} »`); }
   FPS.sprites.clear(); FPS.anim=null; FPS.cam={x:di+.5,y:dj+.5,a,z:dgH(di,dj)}; const el=$('fpsprev'); if(el) el.hidden=false; fpsLater(); fpsUnfade(); },340); }
 function fpsPreview(){ if(!dgOn()||!Object.keys(S.dg.c||{}).length){ toast('Creusez d\'abord une zone jouable',true); return; }
