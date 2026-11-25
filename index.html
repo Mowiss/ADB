@@ -703,6 +703,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}input[type=num
 .drawer header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .drawer h3{margin:0;font-family:var(--f-title);font-weight:300;letter-spacing:.24em;font-size:24px;text-transform:uppercase;color:var(--ink-strong)}
 .roller{flex:1;overflow:auto;display:flex;flex-direction:column;gap:12px}
+.fr-note{border:1.5px solid var(--rule);border-left:4px solid var(--gold);border-radius:10px;padding:8px 10px;font-size:12.5px;line-height:1.35}.fr-note b{display:block;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin:2px 0}.fr-note ul{margin:0 0 4px;padding-left:16px}
 .rl-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .rl-f{display:flex;flex-direction:column;gap:4px;min-width:0}
 .stepper{display:flex;align-items:center;border-bottom:1px solid var(--rule)}
@@ -920,6 +921,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}input[type=num
       <div class="rl-f"><span class="cap">Dés (D10)</span><div class="stepper"><button type="button" data-step="fr-n" data-d="-1">−</button><input id="fr-n" inputmode="numeric" value="3" aria-label="Nombre de dés"><button type="button" data-step="fr-n" data-d="1">+</button></div></div>
       <div class="rl-f"><span class="cap">Seuil</span><div class="stepper"><button type="button" data-step="fr-t" data-d="-1">−</button><input id="fr-t" inputmode="numeric" value="8" aria-label="Seuil de réussite"><button type="button" data-step="fr-t" data-d="1">+</button></div></div>
     </div>
+    <div id="fr-note" class="fr-note" hidden></div>
     <button class="btn" type="button" id="fr-go">Lancer</button>
     <div id="fr-out"></div>
     <div class="cap" style="margin-top:6px">Derniers jets</div>
@@ -959,7 +961,12 @@ const STATUS={
   frenzy:{name:'Frénésie',desc:'Ne différencie plus alliés et ennemis.',col:'#c22d5a',kind:'etat'},
   pompette1:{name:'Pompette',desc:'Vous pouvez relancer un dé échoué. Votre état vous permet d\'absorber 1 PT.',col:'#b04a7a',kind:'etat'},
   pompette2:{name:'Pinté',desc:'Vous devez relancer un dé réussi. Votre état vous permet d\'absorber 2 PT.',col:'#9a3a6a',kind:'etat'},
-  pompette3:{name:'Éclaté',desc:'Échecs critiques sur les 1 ET 2. Votre état vous permet d\'absorber 3 PT.',col:'#7d2a55',kind:'etat'}
+  pompette3:{name:'Éclaté',desc:'Échecs critiques sur les 1 ET 2. Votre état vous permet d\'absorber 3 PT.',col:'#7d2a55',kind:'etat'},
+  crado:{name:'Crado',desc:'Odeur pestilentielle : le MJ fixe votre malus (ou bonus) de CHA selon la situation. Une bonne douche en vient à bout.',col:'#6b5a2a',kind:'malus',sit:'CHA : malus (ou bonus) fixé par le MJ selon votre interlocuteur'},
+  terrified:{name:'Terrifié',desc:'Tous les PT que vous subissez sont doublés. Prend fin au repos dans un endroit sécurisé.',col:'#d08a1c',kind:'malus',sit:'PT subis doublés'},
+  piteux:{name:'Piteux',desc:'Chaque jet sans au moins une réussite compte comme un échec critique. Seul le temps efface la honte.',col:'#7a3fa8',kind:'malus'},
+  encumbered:{name:'Encombré',desc:'−1 DEX par PC au-delà de votre limite (au moins −1) ; touche aussi vos PA et votre initiative.',col:'#8a6a3a',kind:'malus'},
+  soaked:{name:'Trempé',desc:'DEX −1 🎲 ; RES −2 🎲 contre le froid. Un bon feu en vient à bout.',col:'#2f7fc4',kind:'malus',sit:'RES −2 🎲 contre le froid'}
 };
 const RACES={
   humain:{name:'Dividendes',desc:'50 ₿ par dé de CHA toutes les 4 h.'},
@@ -1013,6 +1020,8 @@ function derive(c){
   c.inventory.forEach(it=>{const w=+it.weight||0; if(it.itemType==='backpack') pcItems+=w; else pcItems-=w; if(it.itemType==='armor') ppItems+=+it.armorPoints||0;});
   (c.cybernetics||[]).forEach(x=>{ if(x.type==='cybernetic'&&!x.bodyPart) pcItems-=+x.weight||0; });   // cybernétique non implantée : elle se porte
   const pcMax=(r.FOR+3)+(c.race==='elfe'?2:0);
+  if(hasFx(c,'soaked')) r.DEX=Math.max(0,r.DEX-1);   /* trempé : DEX −1 */
+  if(hasFx(c,'encumbered')) r.DEX=Math.max(0,r.DEX-Math.max(1,-(pcMax+pcItems)));   /* encombré : −1 DEX par PC en trop (au moins −1) */
   return {r,halved,ptRed,pc:pcMax+pcItems,pcMax,pvMax:Math.max(1,r.RES+5-(+c.pvMaxLoss||0)),pa:Math.max(1,Math.ceil(r.DEX/3)),pp:(c.race==='droide'?1:0)+ppItems};
 }
 
@@ -1782,6 +1791,11 @@ const FX_ICO={
   frenzy:'<path d="M9 3.5v3a2.5 2.5 0 0 1-2.5 2.5h-3M15 3.5v3a2.5 2.5 0 0 0 2.5 2.5h3M9 20.5v-3A2.5 2.5 0 0 0 6.5 15h-3M15 20.5v-3a2.5 2.5 0 0 1 2.5-2.5h3"/>',
   pompette1:'<path d="M8 3h8l-.6 5.5a3.4 3.4 0 0 1-6.8 0z"/><path d="M12 12v8M8.5 20.5h7M8.4 6.5h7.2"/>',
   pompette2:'<path d="M5 7h10v12a1.5 1.5 0 0 1-1.5 1.5h-7A1.5 1.5 0 0 1 5 19z"/><path d="M15 10h2.5a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H15M8.5 11v6M11.5 11v6M5 7a2.5 2.5 0 0 1 5-1.5A2.5 2.5 0 0 1 15 7"/>',
+  crado:'<path d="M5 7h14M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13M10 10.5v6.5M14 10.5v6.5"/>',
+  terrified:'<path d="M6.5 12.5c0 3.5 2.5 6 5.5 6s6-2.4 6-5.6c0-1.6-.8-2.7-2-3.2"/><path d="M6.5 12.5c0-2 .7-3.4 1.5-4.3a2.4 2.4 0 1 1 4.2-2.1"/><path d="M8.4 4.6l.7-1.4.8 1.2.8-1.2.7 1.4"/><path d="M12.2 6l2.1.8-2.1.7"/><circle cx="10" cy="6.5" r=".6" fill="currentColor"/><path d="M9.5 12.8c1.6 1.7 4.2 1.7 5.6 0M10 18.5v2.6M14 18.5v2.6M9 21.1h2M13 21.1h2"/>',
+  piteux:'<path d="M4 8.5l5-1.3M20 8.5l-5-1.3"/><ellipse cx="8" cy="12.5" rx="2.6" ry="2.2"/><ellipse cx="16" cy="12.5" rx="2.6" ry="2.2"/><circle cx="8" cy="13.8" r="1" fill="currentColor"/><circle cx="16" cy="13.8" r="1" fill="currentColor"/><path d="M9 19.5c1.8-1 4.2-1 6 0"/>',
+  encumbered:'<path d="M4 7.5l8-4 8 4v9l-8 4-8-4z"/><path d="M4 7.5l8 4 8-4M12 11.5v9M8 5.5l8 4"/>',
+  soaked:'<path d="M7 14a3.5 3.5 0 0 1-.4-7A5 5 0 0 1 16 5.7a3.6 3.6 0 0 1 1 7.1z"/><path d="M8.5 17l-1 2.6M12.5 17l-1 2.6M16.5 17l-1 2.6"/>',
   pompette3:'<circle cx="12" cy="12" r="8.5"/><path d="M8 8.5l2.2 2.2M10.2 8.5L8 10.7M13.8 8.5l2.2 2.2M16 8.5l-2.2 2.2M8.5 15.8c1-1 2-1 3 0s2 1 3 0"/>',
   fracture:'<g transform="rotate(-45 12 12)" style="fill:var(--c,currentColor);stroke:none"><rect x="6" y="10.5" width="12" height="3" rx="1"/><circle cx="5.8" cy="10" r="2.4"/><circle cx="5.8" cy="14" r="2.4"/><circle cx="18.2" cy="10" r="2.4"/><circle cx="18.2" cy="14" r="2.4"/></g>',
   race:'<path d="M7 3c0 6 10 6 10 12s-10 6-10 6M17 3c0 6-10 6-10 12"/><path d="M8.5 7h7M8.5 17h7M10 12h4"/>',
@@ -2239,7 +2253,7 @@ function useItem(it,fire){
    🏆 seules des réussites sur 10 (on compte les 10) · 👍 réussites classiques (on compte toutes les réussites)
    👎 aucune réussite, aucun 1 (on compte les échecs) · ♟️ aucune réussite mais des 1 (on compte les 1) */
 const drunkLvl=()=>hasFx(C,'pompette3')?3:hasFx(C,'pompette2')?2:hasFx(C,'pompette1')?1:0;
-function rollRes(rolls,th,crit2){ const ok=rolls.filter(r=>r>=th), cls=ok.filter(r=>r<10).length, ones=rolls.filter(r=>r===1||(crit2&&r===2)).length, s=(n,a,b)=>n+' '+(n>1?b:a);
+function rollRes(rolls,th,crit2){ const ok=rolls.filter(r=>r>=th), cls=ok.filter(r=>r<10).length, s=(n,a,b)=>n+' '+(n>1?b:a); let ones=rolls.filter(r=>r===1||(crit2&&r===2)).length; if(!ok.length&&!ones&&typeof C!=='undefined'&&hasFx(C,'piteux')) ones=rolls.length;   /* piteux : sans réussite, c'est un échec critique */
   if(ok.length&&!cls) return {e:'🏆',n:ok.length,win:1,t:s(ok.length,'réussite critique','réussites critiques')};
   if(cls) return {e:'👍',n:ok.length,win:1,t:s(ok.length,'succès','succès')};
   if(!ones) return {e:'👎',n:rolls.length,win:0,t:s(rolls.length,'échec','échecs')};
@@ -2516,7 +2530,12 @@ document.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>{ const i=$(b.
 let rollHist=[];
 function logRoll(label,rolls,th,R){ rollHist.unshift({label,rolls,th,R,t:new Date()}); rollHist=rollHist.slice(0,12);
   $('fr-hist').innerHTML=rollHist.map(h=>`<div class="h"><b>${esc(h.label)}</b><span class="s ${h.R.win?'win':'lose'}">${h.R.e} ${h.R.t}</span><span class="r">${h.t.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})} · seuil ${h.th}+ · ${h.rolls.join(' ')}</span></div>`).join(''); }
-$('fr-go').onclick=()=>{ const n=Math.min(30,Math.max(1,parseInt($('fr-n').value)||1)), th=Math.min(10,Math.max(2,parseInt($('fr-t').value)||8));
+/* états du personnage qui jouent sur les jets : appliqués d'office, ou « selon la situation » (à ajuster à la main) */
+function frNote(){ const el=$('fr-note'); if(!el) return; const L=(C.effects||[]).map(e=>STATUS[e.key]?[e.key,STATUS[e.key]]:null).filter(Boolean), A=[], S2=[];
+  L.forEach(([k,X])=>{ if(k==='soaked'){ A.push('Trempé : DEX −1 déjà compté'); S2.push('Trempé : '+X.sit); } else if(k==='encumbered') A.push('Encombré : DEX réduite déjà comptée'); else if(k==='piteux') A.push('Piteux : sans réussite = échec critique'); else if(k==='pasTop') A.push('Pas top top : seuil +1'); else if(X.sit) S2.push(X.name+' : '+X.sit); });
+  el.hidden=!(A.length||S2.length); el.innerHTML=(A.length?`<b>Appliqué</b><ul>${A.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:'')+(S2.length?`<b>Selon la situation — ajustez dés et seuil</b><ul>${S2.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''); }
+setInterval(frNote,1500); setTimeout(frNote,500);
+$('fr-go').onclick=()=>{ frNote(); const n=Math.min(30,Math.max(1,parseInt($('fr-n').value)||1)), th=Math.min(10,Math.max(2,parseInt($('fr-t').value)||8));
   const rolls=Array.from({length:n},()=>1+Math.floor(Math.random()*10)), succ=rolls.filter(r=>r>=th).length, tens=rolls.filter(r=>r===10).length, ones=rolls.filter(r=>r===1).length, RR=rollRes(rolls,th);
   $('fr-out').innerHTML=`<div class="dice">${rolls.map((r,i)=>dieHTML(r,r===10?'crit':r>=th?'ok':r===1?'fail':'',i*50)).join('')}</div>
     ${verdictHTML(RR)}<p class="meta">${tens?`${tens} × 10 · `:''}${ones?`${ones} × 1 · `:''}seuil ${th}+</p>`;
@@ -4267,13 +4286,19 @@ select.line-in{appearance:none;cursor:pointer;font-weight:600;background-image:l
 @keyframes fxWob{0%,100%{transform:rotate(-3deg) scale(1,1)}50%{transform:rotate(3deg) scale(1.04,.97)}}
 @keyframes fxWob2{0%,100%{transform:rotate(-7deg) skewX(4deg) scale(1.06,.94)}50%{transform:rotate(7deg) skewX(-4deg) scale(.94,1.07)}}
 @keyframes fxWob3{0%{transform:rotate(-12deg) skewX(9deg) scale(1.12,.88)}33%{transform:rotate(9deg) skewY(-8deg) scale(.86,1.14)}66%{transform:rotate(-4deg) skewX(-10deg) scale(1.1,.92)}100%{transform:rotate(-12deg) skewX(9deg) scale(1.12,.88)}}
+/* crado : mouches et taches brunes ; terrifié : tremble ; piteux : le haut violet ; encombré : courbé sous la charge */
+.fx-crado .tach{position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 30% 62%,rgba(84,56,20,.72) 0 9%,transparent 11%),radial-gradient(circle at 66% 38%,rgba(90,60,22,.65) 0 7%,transparent 9%),radial-gradient(circle at 58% 76%,rgba(70,46,16,.7) 0 6%,transparent 8%),radial-gradient(circle at 40% 30%,rgba(96,64,24,.55) 0 5%,transparent 7%);z-index:1}
+.fx3 .fx-piteux,.fx3 .fx-crado .tach{display:none}
+.tk.st-terrifie .face{animation:fxTrem .11s linear infinite}@keyframes fxTrem{0%{translate:-2px 1px}25%{translate:2px -1px}50%{translate:-1px -2px}75%{translate:2px 2px}100%{translate:-2px 1px}}
+.tk .fx.fx-piteux{inset:0;border-radius:50%;background:linear-gradient(to bottom,rgba(108,40,170,.82),rgba(108,40,170,.35) 38%,rgba(108,40,170,0) 62%);z-index:1}
+.tk.st-encombre .face{transform:perspective(90px) rotateX(16deg) scale(1.04,.86) translateY(5%);border-radius:50% 50% 46% 46%/56% 56% 44% 44%}
 /* fracture : la pastille se brise */
 .tk .fx.fx-fract{inset:0;z-index:1}
 .fx-fract svg{inset:0;width:100%;height:100%;overflow:visible}
 .fx-fract path{fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:140;stroke-dashoffset:140;animation:fxCrack .5s ease-out forwards}
 @keyframes fxCrack{to{stroke-dashoffset:0}}
 .tk.st-fracture .face{clip-path:polygon(0 0,46% 0,50% 20%,42% 33%,56% 50%,47% 66%,55% 83%,50% 100%,0 100%,0 0,100% 0,100% 100%,52% 100%,57% 83%,49% 66%,58% 50%,44% 33%,52% 20%,48% 0)}
-@media (prefers-reduced-motion:reduce){.tk .fx,.tk .fx *,.tk.st-frenesie .face,.tk.st-pompette .face,.tk.st-pinte .face,.tk.st-eclate .face{animation:none!important}}
+@media (prefers-reduced-motion:reduce){.tk .fx,.tk .fx *,.tk.st-terrifie .face,.tk.st-frenesie .face,.tk.st-pompette .face,.tk.st-pinte .face,.tk.st-eclate .face{animation:none!important}}
 
 /* feu : grosses flammes et flammèches qui montent */
 .tk .fx-feu i{position:absolute;line-height:1;transform:translate(-50%,-85%);font-style:normal}
@@ -4759,6 +4784,11 @@ const STATUS=[
   ['pompette','Pompette','#c2307e','<path d="M7 3h10l-1.6 7a3.4 3.4 0 0 1-6.8 0zM12 13.4V20M8.5 20h7M7.6 6.5h8.8"/>'],
   ['pinte','Pinté','#a0268f','<path d="M5.5 6h9.5v13.5H5.5zM15 9h2.4a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H15M5.5 9.5H15M8.5 6V4.5M12 6V4"/>'],
   ['eclate','Éclaté','#6d1f7a','<path d="M10 3h4v4l2 3v10.5H8V10l2-3zM8 14h8"/><path d="M4 6l2 1M3.5 10.5l2-.2M20 6l-2 1M20.5 10.5l-2-.2"/>'],
+  ['crado','Crado','#6b5a2a','<path d="M5 7h14M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13M10 10.5v6.5M14 10.5v6.5"/>'],
+  ['terrifie','Terrifié','#d08a1c','<path d="M6.5 12.5c0 3.5 2.5 6 5.5 6s6-2.4 6-5.6c0-1.6-.8-2.7-2-3.2"/><path d="M6.5 12.5c0-2 .7-3.4 1.5-4.3a2.4 2.4 0 1 1 4.2-2.1"/><path d="M8.4 4.6l.7-1.4.8 1.2.8-1.2.7 1.4"/><path d="M12.2 6l2.1.8-2.1.7"/><circle cx="10" cy="6.5" r=".6" fill="currentColor"/><path d="M9.5 12.8c1.6 1.7 4.2 1.7 5.6 0M10 18.5v2.6M14 18.5v2.6M9 21.1h2M13 21.1h2"/>'],
+  ['piteux','Piteux','#7a3fa8','<path d="M4 8.5l5-1.3M20 8.5l-5-1.3"/><ellipse cx="8" cy="12.5" rx="2.6" ry="2.2"/><ellipse cx="16" cy="12.5" rx="2.6" ry="2.2"/><circle cx="8" cy="13.8" r="1" fill="currentColor"/><circle cx="16" cy="13.8" r="1" fill="currentColor"/><path d="M9 19.5c1.8-1 4.2-1 6 0"/>'],
+  ['encombre','Encombré','#8a6a3a','<path d="M4 7.5l8-4 8 4v9l-8 4-8-4z"/><path d="M4 7.5l8 4 8-4M12 11.5v9M8 5.5l8 4"/>'],
+  ['trempe','Trempé','#2f7fc4','<path d="M7 14a3.5 3.5 0 0 1-.4-7A5 5 0 0 1 16 5.7a3.6 3.6 0 0 1 1 7.1z"/><path d="M8.5 17l-1 2.6M12.5 17l-1 2.6M16.5 17l-1 2.6"/>'],
   ['fracture','Fracture','#5a4636','<path d="M17 10c.7-.7 1.69 0 2.5 0a2.5 2.5 0 1 0 0-5 .5.5 0 0 1-.5-.5 2.5 2.5 0 1 0-5 0c0 .81.7 1.8 0 2.5l-7 7c-.7.7-1.69 0-2.5 0a2.5 2.5 0 0 0 0 5c.28 0 .5.22.5.5a2.5 2.5 0 1 0 5 0c0-.81-.7-1.8 0-2.5z"/>']
 ];
 const ST_DRUNK=['pompette','pinte','eclate'];
@@ -4783,6 +4813,8 @@ function stHTML(t){ const L=effSt(t); if(!L.length) return ''; const r=rnd(hashS
     const F=()=>((r()<.5?-1:1)*(34+r()*22)).toFixed(0)+'px'; h+='<span class="flies">'; for(let i=0;i<6;i++) h+=`<b style="--x1:${F()};--y1:${F()};--x2:${F()};--y2:${F()};--x3:${F()};--y3:${F()};--x4:${F()};--y4:${F()};--d:${(.9+r()*1.2).toFixed(2)}s;--t:-${(r()*2).toFixed(2)}s"></b>`; h+='</span></div>'; }
   if(on('frenesie')){ h+='<div class="fx fx-colere">'; [[18,16,22,0],[56,32,26,.3],[50,60,20,.55],[14,52,14,.15]].forEach(([x,y,z,t])=>{ h+=`<i style="left:${x}px;top:${y}px;font-size:${z}px;--t:-${t}s">💢</i>`; });
     h+=`<i class="out puff" style="--a:${(r()*360).toFixed(0)}deg;--o:0deg;--dist:64px;font-size:21px">💨</i>`; h+='</div>'; }
+  if(on('crado')){ h+='<div class="fx fx-malad fx-crado"><i class="tach"></i>'; const F=()=>((r()<.5?-1:1)*(30+r()*20)).toFixed(0)+'px'; h+='<span class="flies">'; for(let i=0;i<5;i++) h+=`<b style="--x1:${F()};--y1:${F()};--x2:${F()};--y2:${F()};--x3:${F()};--y3:${F()};--x4:${F()};--y4:${F()};--d:${(.9+r()*1.2).toFixed(2)}s;--t:-${(r()*2).toFixed(2)}s"></b>`; h+='</span></div>'; }
+  if(on('piteux')) h+='<div class="fx fx-piteux"></div>';
   if(on('fracture')) h+='<div class="fx fx-fract"><svg viewBox="0 0 72 72"><path d="M34 -2L36 14 30 24 40 36 34 48 40 60 36 74" stroke="#14151a" stroke-width="2.6"/><path d="M35 -2L37 14 31 24 41 36 35 48 41 60 37 74" stroke="rgba(255,255,255,.8)" stroke-width=".9"/><path d="M40 36l14-6 8 3M34 48l-14 6-7-2M30 24l-12-4" stroke="#14151a" stroke-width="1.5"/></svg></div>';
   return h; }
 /* fractures par zone (cumulables : deux bras = DEX ÷ 2 ÷ 2) */
@@ -4790,13 +4822,13 @@ const FRAC_STAT={'Tête':'PER','Bras G':'DEX','Bras D':'DEX','Corps':'RES','Jamb
 let FRACFLY=null;
 function fracPos(){ const f=document.querySelector('#card .fracfly'); if(!f) return; const r=$('card').getBoundingClientRect(); f.classList.toggle('lft',r.right+200>innerWidth); }
 const fracOf=t=>t.type==='player'?((t.frac)||[]):(t.frac||[]);
-function effStat(t,s){ const b=(t.stats&&t.stats[s])||0; if(t.type==='player') return b; const n=(t.frac||[]).filter(z=>FRAC_STAT[z]===s).length; return n?Math.ceil(b/2**n):b; }
+function effStat(t,s){ const b=(t.stats&&t.stats[s])||0; if(t.type==='player') return b; const n=(t.frac||[]).filter(z=>FRAC_STAT[z]===s).length; let v=n?Math.ceil(b/2**n):b; if(s==='DEX'){ const E=t.st||[]; if(E.includes('trempe')) v--; if(E.includes('encombre')) v--; } return Math.max(0,v); }   /* trempé : DEX −1 ; encombré : DEX −1 (le MJ ajuste) */
 function fracHTML(t){ const F=fracOf(t); return `<div class="fracfly"><span class="cap">Fractures</span><div class="fz">${FRAC_Z.map(z=>`<button type="button" data-frac="${z}" class="${F.includes(z)?'on':''}" title="${z} : ${FRAC_STAT[z]} ÷ 2">${z.replace(' ','<br>')}</button>`).join('')}</div></div>`; }
 function toggleFrac(t,z){ const on=!fracOf(t).includes(z);
   if(t.type==='player'&&t.owner){ if(PL.get(t.owner)&&PL.get(t.owner).online){ netTo(t.owner,{t:'frac',zone:z,on}); t.frac=on?[...fracOf(t),z]:fracOf(t).filter(x=>x!==z); renderCard(); toast(on?`Fracture ${z} envoyée sur sa fiche`:`Fracture ${z} soignée sur sa fiche`); } else toast('Joueur hors ligne : la fiche ne peut pas être modifiée',true); return; }
   t.frac=on?[...(t.frac||[]),z]:(t.frac||[]).filter(x=>x!==z); t.st=(t.st||[]).filter(k=>k!=='fracture'); if(t.frac.length) t.st.push('fracture');
   tokenEl(t); renderCard(); markDirty(); sync(); }
-const ST_PLY={brulure:'burn',saignement:'bleed',etourdi:'stun',hypostasie:'hypoesthesia',pastop:'pasTop',entrave:'snare',maladie:'sick',frenesie:'frenzy',pompette:'pompette1',pinte:'pompette2',eclate:'pompette3'};
+const ST_PLY={brulure:'burn',saignement:'bleed',etourdi:'stun',hypostasie:'hypoesthesia',pastop:'pasTop',entrave:'snare',maladie:'sick',frenesie:'frenzy',pompette:'pompette1',pinte:'pompette2',eclate:'pompette3',crado:'crado',terrifie:'terrified',piteux:'piteux',encombre:'encumbered',trempe:'soaked'};
 function toggleSt(t,k){ if(t.type==='player'&&t.owner&&ST_PLY[k]&&typeof netTo==='function'&&PL.get(t.owner)&&PL.get(t.owner).online){ const on=!effSt(t).includes(k); netTo(t.owner,{t:'fx',key:ST_PLY[k],on}); toast(on?'État envoyé sur sa fiche':'État retiré de sa fiche'); return; }
   const L=new Set(t.st||[]); if(L.has(k)) L.delete(k); else { if(ST_DRUNK.includes(k)) ST_DRUNK.forEach(d=>L.delete(d)); L.add(k); }
   t.st=[...L]; if(!t.st.length) delete t.st; tokenEl(t); renderCard(); markDirty(); sync(); }
@@ -4823,15 +4855,15 @@ function hpFx(t,d){ if(!d) return;
       addBlood({k:rob?'n':'d',x:Math.round(t.x+Math.cos(a)*r),y:Math.round(t.y+Math.sin(a)*r),r:rob?4+Math.round(Math.random()*3):2+Math.round(Math.random()*4),n:(Math.random()*1e5)|0}); } } }
 function splat(t){ if(isRobot(t)){ splatBurst(t,'#1a1a1c'); if(!isPlayer){ addBlood({k:'b',x:Math.round(t.x),y:Math.round(t.y),r:Math.round(30*(t.s||1)),n:hashStr(t.id+Date.now())%100000}); for(let i=0;i<6;i++){ const a=Math.random()*6.28, r=(20+Math.random()*50)*(t.s||1); addBlood({k:'n',x:Math.round(t.x+Math.cos(a)*r),y:Math.round(t.y+Math.sin(a)*r),r:4+Math.round(Math.random()*3),n:(Math.random()*1e5)|0}); } } return; }
   splatBurst(t); if(!isPlayer) addBlood({k:'s',x:Math.round(t.x),y:Math.round(t.y),r:Math.round(34*(t.s||1)),n:hashStr(t.id+Date.now())%100000}); }
-function bleedTrail(t){ if(isPlayer) return; const E=effSt(t); if(E.includes('maladie')) trail(t,'m'); if(!E.includes('saignement')) return; trail(t,'d'); }
+function bleedTrail(t){ if(isPlayer) return; const E=effSt(t); if(E.includes('maladie')) trail(t,'m'); if(E.includes('trempe')) trail(t,'w'); if(!E.includes('saignement')) return; trail(t,'d'); }
 function trail(t,k){ const id=t.id+k, p=BLEED.get(id);
   if(!p){ BLEED.set(id,[t.x,t.y]); return; } const dd=Math.hypot(t.x-p[0],t.y-p[1]); if(dd<38) return; BLEED.set(id,[t.x,t.y]);
   /* gouttes semées le long du chemin parcouru */
   const n=Math.min(8,2+Math.round(dd/30)); for(let i=0;i<n;i++){ const u=(i+Math.random())/n; addBlood({k,x:Math.round(p[0]+(t.x-p[0])*u+(Math.random()-.5)*18),y:Math.round(p[1]+(t.y-p[1])*u+(Math.random()-.5)*18),r:3+Math.round(Math.random()*4),n:(Math.random()*1e5)|0}); } }
 function bloodShape(b){ if(b.k==='n'){ const r=rnd(b.n||1), a0=r()*1.05, R=b.r, pts=[]; for(let i=0;i<6;i++){ const a=a0+i*Math.PI/3; pts.push((b.x+Math.cos(a)*R).toFixed(1)+' '+(b.y+Math.sin(a)*R).toFixed(1)); }
     return `<path d="M${pts.join('L')}Z" fill="#8d959e" stroke="#3b4048" stroke-width="${(R*.28).toFixed(1)}"/><circle cx="${b.x}" cy="${b.y}" r="${(R*.42).toFixed(1)}" fill="#2a2e34"/>`; }
-  const r=rnd(b.n||1), col=b.k==='s'?'#7c0b0e':b.k==='b'?'#141210':b.k==='m'?'#5a3a17':'#8a0f12';
-  if(b.k==='d'||b.k==='m'){ let h=`<circle cx="${b.x}" cy="${b.y}" r="${b.r}" fill="${col}" opacity=".85"/>`; for(let i=0;i<2;i++){ const a=r()*6.28, d=b.r*(1.4+r()); h+=`<circle cx="${(b.x+Math.cos(a)*d).toFixed(1)}" cy="${(b.y+Math.sin(a)*d).toFixed(1)}" r="${(b.r*(.25+r()*.3)).toFixed(1)}" fill="${col}" opacity=".8"/>`; } return h; }
+  const r=rnd(b.n||1), col=b.k==='s'?'#7c0b0e':b.k==='b'?'#141210':b.k==='m'?'#5a3a17':b.k==='w'?'#3d8fd8':'#8a0f12';
+  if(b.k==='d'||b.k==='m'||b.k==='w'){ let h=`<circle cx="${b.x}" cy="${b.y}" r="${b.r}" fill="${col}" opacity=".85"/>`; for(let i=0;i<2;i++){ const a=r()*6.28, d=b.r*(1.4+r()); h+=`<circle cx="${(b.x+Math.cos(a)*d).toFixed(1)}" cy="${(b.y+Math.sin(a)*d).toFixed(1)}" r="${(b.r*(.25+r()*.3)).toFixed(1)}" fill="${col}" opacity=".8"/>`; } return h; }
   const R=b.r, pts=[]; const n=14; for(let i=0;i<n;i++){ const a=i/n*Math.PI*2, rr=R*(.55+r()*.5); pts.push([b.x+Math.cos(a)*rr,b.y+Math.sin(a)*rr]); }
   let d='M'+pts.map(p=>p[0].toFixed(1)+' '+p[1].toFixed(1)).join('L')+'Z', h=`<path d="${d}" fill="${col}" opacity=".88" stroke="${col}" stroke-width="${(R*.25).toFixed(1)}" stroke-linejoin="round"/>`;
   for(let i=0;i<16;i++){ const a=r()*Math.PI*2, dd=R*(1+r()*1.6), rr=R*(.05+r()*.16), x=b.x+Math.cos(a)*dd, y=b.y+Math.sin(a)*dd;
@@ -6676,6 +6708,9 @@ function fpsRender(cv,cam,selfId){ const EWM=S.dg&&S.dg.ew||null, DRM=S.dg&&S.dg
           if(eye>th){ const yA=Math.max(0,Math.ceil(h2+(eye-th)*PS/d1)), yB=Math.min(H-1,Math.floor(h2+(eye-th)*PS/d0)), SN=ST.N;
             for(let y=yA;y<=yB;y++){ const rd=(eye-th)*PS/(y+.5-h2), wx=cam.x+rd*rdx, wy=cam.y+rd*rdy; put(y,shL(ST.floor[((((wy-Math.floor(wy))*SN)|0)&(SN-1))*SN+((((wx-Math.floor(wx))*SN)|0)&(SN-1))],lit(rd)*vis(wx,wy),LON?la(wx,wy):null),rd); } }
           const s0=side; side=sdx<sdy?0:1; faceSup(fh,th,d1,tb,mx,my); side=s0; } }
+      /* toit vu d'au-dessus (caméra plus haute que le plafond) : dessiné avant le sol, qu'il cache */
+      { const RC=cur.blk&&!cur.sup?null:virt?VC:dgCeil(mx,my,cur); if(RC&&!RC.no&&(+RC.h||1)<eye){ const ch=+RC.h||1, RT=RC.t&&RC.t!==cur.th?fpsTextures(RC.t):TT, RN=RT.N, RI0=CLIMG[RC.t||cur.th], RI=RI0&&RI0.px?RI0:null, yA=Math.max(0,Math.ceil(h2+(eye-ch)*PS/d1)), yB=Math.min(H-1,Math.floor(h2+(eye-ch)*PS/d0));
+        for(let y=yA;y<=yB;y++){ const rd=(eye-ch)*PS/(y+.5-h2), wx=cam.x+rd*rdx, wy=cam.y+rd*rdy; put(y,sh(RI?RI.px[((((wy/RI.ch)%1+1)%1*RI.h)|0)*RI.w+((((wx/RI.cw)%1+1)%1*RI.w)|0)]:RT.ceil[(((wy-Math.floor(wy))*RN)&(RN-1))*RN+(((wx-Math.floor(wx))*RN)&(RN-1))],lit(rd)*.7*vis(wx,wy)),rd); } } }
       /* sol de la case */
       if(eye>fh){ const yA=Math.max(0,Math.ceil(h2+(eye-fh)*PS/d1)), yB=Math.min(H-1,Math.floor(h2+(eye-fh)*PS/d0)), mm=!virt&&dgMk(mx,my), FT=mm&&(mm.k==='down'||mm.k==='tp')?mkTex()[mm.k]:TT.floor, SNW=COLD&&!dgCeil(mx,my);
         const FI=TT.img&&!(mm&&(mm.k==='down'||mm.k==='tp'))?FLIMG[TT.img]:null, FIP=FI&&FI.px?FI:null;   /* hors de la boucle des pixels */
@@ -6699,9 +6734,9 @@ function fpsRender(cv,cam,selfId){ const EWM=S.dg&&S.dg.ew||null, DRM=S.dg&&S.dg
         const WS=EW.ws||EWT;   /* style de fenêtre choisi, sinon celui du mur */
         if(EW.win&&WINPOM[WS]&&top>fh){ const WP=winPomLoad(WS), WI=WLIMG[EWT]; if(WI&&WI.px) faceImg(fh,top,dd,WI); else face(fh,top,dd,ET.wall,ET.N); if(WP) winOverP(cur.blk&&cur.pb?cur.pb.h:fh,dd,WP,EW.view?wvZ(EW):null,+EW.wz||0); }
         else if(EW.win){ const WK=WINIMG[WS]?WS:WIN_OF[WS], WO=WK&&winImgLoad(WK); if(WO&&top>fh){ const WI=WLIMG[EWT]; if(WI&&WI.px) faceImg(fh,top,dd,WI); else if(EWT==='ruelle'||EWT==='trottoir'||EWT==='bitume'){ facLoad(); if(FAC.ready) faceFac(fh,top,dd); else face(fh,top,dd,ET.wall,ET.N); } else face(fh,top,dd,ET.wall,ET.N); winOver(cur.blk&&cur.pb?cur.pb.h:fh,dd,WO,EW.view?wvZ(EW):null,+EW.wz||0,EW.wg||null); } else if(top>fh) faceWin(fh,top,dd,ET.wall,ET.N,winStyle(WS),WLIMG[EWT]); }   /* fenêtre : cadre au style du mur, on voit à travers */
-        else { if(top>fh){ const WI=WLIMG[EWT]; if(WI&&WI.px) faceImg(fh,top,dd,WI); else if(EWT==='ruelle'||EWT==='trottoir'||EWT==='bitume'){ facLoad(); if(FAC.ready) faceFac(fh,top,dd); else face(fh,top,dd,ET.wall,ET.N); } else face(fh,top,dd,ET.wall,ET.N); } if(top>=cap) break; } }   /* MUR tracé sur l'arête */
+        else { if(top>fh){ const WI=WLIMG[EWT]; if(WI&&WI.px) faceImg(fh,top,dd,WI); else if(EWT==='ruelle'||EWT==='trottoir'||EWT==='bitume'){ facLoad(); if(FAC.ready) faceFac(fh,top,dd); else face(fh,top,dd,ET.wall,ET.N); } else face(fh,top,dd,ET.wall,ET.N); } if(top>=cap&&eye<=top) break; } }   /* MUR tracé sur l'arête */
       let WB=dgWB(mx,my); if(WB&&WB.sup&&WB.sup.k==='table'){ const th=Math.min(SUPH.table,(CC?+CC.h||1:MAXW)); if(!virt) faceSup(fh,fh+th,d0,WB.sup,mx,my); WB=null; }   /* table évidée : façade ajourée, le sol continue dessous */
-      if(WB){ const WT=WB.sup?supTex(WB.sup,WB.t):fpsTextures(WB.t), cap=CC?+CC.h||1:MAXW, top=Math.min(+WB.h||1,cap); if(top>fh){ const BI=!WB.sup&&WLIMG[WB.t]; if(WB.sup) faceSup(fh,top,d0,WB.sup,mx,my); else if(BI&&BI.px) faceImg(fh,top,d0,BI); else face(fh,top,d0,WT.wall,WT.N); }   /* bloc de mur : la texture image, pas la brique de repli */ if(top>=cap) break;   /* bloc de MUR (ou support : bar, table) */
+      if(WB){ const WT=WB.sup?supTex(WB.sup,WB.t):fpsTextures(WB.t), cap=CC?+CC.h||1:MAXW, top=Math.min(+WB.h||1,cap); if(top>fh){ const BI=!WB.sup&&WLIMG[WB.t]; if(WB.sup) faceSup(fh,top,d0,WB.sup,mx,my); else if(BI&&BI.px) faceImg(fh,top,d0,BI); else face(fh,top,d0,WT.wall,WT.N); }   /* bloc de mur : la texture image, pas la brique de repli */ if(top>=cap&&eye<=top) break;   /* bloc de MUR (ou support : bar, table) */
         cur={th:WB.t,sky:true,blk:1,sup:WB.sup?1:0,pb:cur.blk?cur.pb:{c:cur,T:TT,h:fh,v:virt}}; fh=+WB.h||1; TT=WT; virt=false; if(d0>60) break; continue; }
       let nf=dgAt(mx,my), wt=null; const door=!virt&&DRM?DRM[EK]||null:null;   /* aussi une porte plaquée contre un mur (rien derrière) */
       if(!nf&&cur.blk){ if(V2&&cur.pb){ nf=cur.pb.c; TT=cur.pb.T; fh=cur.pb.h; cur=nf; }   /* derrière un bâtiment (blocs de mur) : le décor continue, comme avant le bâtiment */ else break; }
@@ -6773,10 +6808,14 @@ function fpsRender(cv,cam,selfId){ const EWM=S.dg&&S.dg.ew||null, DRM=S.dg&&S.dg
     const cxp=Math.max(0,Math.min(W-1,Math.round(scrX))), cyp=Math.max(0,Math.min(H-1,Math.round(top+hh*.5)));
     if(o.t.mk==='lum'&&o.t.lst==='on'&&DZ[cyp*W+cxp]>tY) FPS.lumh.push({x:scrX/W,y:(top+hh*.2)/H,r:o.r}); if(o.t.type!=='mk'&&DZ[cyp*W+cxp]>tY) FPS.hits.push({x0:x0/W,x1:x1/W,y0:top/H,y1:bot/H,t:o.t,r:o.r});
     const yA=Math.max(0,Math.ceil(top)), yB=Math.min(H-1,Math.floor(bot));
-    const STt=o.t.st||[], DK=STt.includes('eclate')?3:STt.includes('pinte')?2:STt.includes('pompette')?1:0, tN=performance.now()/1000; if(DK) FPS.fkRun=1;   /* ivre : le sprite ondule, comme la pastille sur la carte */
-    const xA=Math.max(0,x0-(DK?Math.ceil(ww*.12):0)), xB=Math.min(W,x1+(DK?Math.ceil(ww*.12):0));
+    const STt=o.t.st||[], DK=STt.includes('eclate')?3:STt.includes('pinte')?2:STt.includes('pompette')?1:0, tN=performance.now()/1000, TRF=STt.includes('terrifie'), ENC=STt.includes('encombre'), PIT=STt.includes('piteux'), CRD=STt.includes('crado'); if(DK||TRF) FPS.fkRun=1;   /* ivre : ondule ; terrifié : tremble ; encombré : courbé ; piteux : haut violet ; crado : taches brunes */
+    const JT=TRF?Math.round((Math.sin(tN*71)+Math.sin(tN*53.3))*ww*.025):0, EXT=(DK?Math.ceil(ww*.12):0)+(ENC?Math.ceil(ww*.22):0)+Math.abs(JT);
+    const xA=Math.max(0,x0-EXT), xB=Math.min(W,x1+EXT);
     for(let sx=xA;sx<xB;sx++){
-      for(let y=yA;y<=yB;y++){ const i=y*W+sx; if(DZ[i]<=tY) continue; if(fade<1&&((sx*7+y*13)%10)/10>=fade) continue; const vy=(y-top)/hh, wob=DK?Math.sin(vy*6.5+tN*(1.6+DK*.9))*.035*DK*(1-vy*.6)+Math.sin(tN*(1+DK*.4))*.02*DK*(1-vy):0, uf=(sx-x0)/(x1-x0)-wob; if(uf<0||uf>=1) continue; const c=PX[Math.min(IH-1,(vy*IH)|0)*IW+Math.min(IW-1,(uf*IW)|0)]; if((c>>>24)<128) continue; B[i]=shL(c,f,pa); DZ[i]=tY; } } });
+      for(let y=yA;y<=yB;y++){ const i=y*W+sx; if(DZ[i]<=tY) continue; if(fade<1&&((sx*7+y*13)%10)/10>=fade) continue; let vy=(y-top)/hh; if(ENC){ vy=(vy-.1)/.9; if(vy<0) continue; } const wob=(DK?Math.sin(vy*6.5+tN*(1.6+DK*.9))*.035*DK*(1-vy*.6)+Math.sin(tN*(1+DK*.4))*.02*DK*(1-vy):0)+(ENC?.2*(1-vy)*(1-vy):0), uf=(sx-JT-x0)/(x1-x0)-wob; if(uf<0||uf>=1) continue; let c=PX[Math.min(IH-1,(vy*IH)|0)*IW+Math.min(IW-1,(uf*IW)|0)]; if((c>>>24)<128) continue;
+        if(PIT&&vy<.6){ const a=(1-vy/.6)*.75; c=(c&0xff000000)|(((((c>>16)&255)*(1-a)+170*a)|0)<<16)|(((((c>>8)&255)*(1-a)+40*a)|0)<<8)|((((c&255)*(1-a)+110*a)|0)); }
+        if(CRD){ const n=Math.sin(uf*17.3+vy*3.1)*Math.sin(vy*23.7-uf*5.3)+Math.sin(uf*41+vy*29)*.35; if(n>.55){ c=(c&0xff000000)|(((((c>>16)&255)*.3+22*.7)|0)<<16)|(((((c>>8)&255)*.3+54*.7)|0)<<8)|((((c&255)*.3+86*.7)|0)); } }
+        B[i]=shL(c,f,pa); DZ[i]=tY; } } });
   /* vitres : teinte bleutée et reflets sur ce qui est derrière */
   if(GLASS){ FPS.glassOn=1; for(let i=0;i<W*H;i++){ const g=GS[i]; if(!g||DZ[i]<GD[i]) continue; const c=B[i], a=g===2?.42:.2, ia=1-a, rr=g===2?235:175, gg=g===2?245:212, bb=g===2?255:235;
       B[i]=0xff000000|((((c>>16)&255)*ia+bb*a)<<16)|((((c>>8)&255)*ia+gg*a)<<8)|(((c&255)*ia+rr*a)|0); } }
@@ -11386,7 +11425,7 @@ function tokenData(sh){ sh=sh||{}; const st={}; STATS.forEach(s=>st[s]=Math.max(
   data.hp=Number.isFinite(+sh.pv)?clamp(+sh.pv,-1,data.hpMax):data.hpMax;
   if(typeof sh.img==='string'&&sh.img.startsWith('data:image/')&&sh.img.length<120000) data.img=sh.img;
   const F=sh.full||{}, ast=[]; data.race=F.race||'humain'; data.sexe=F.sexe==='f'?'f':'h'; data.frac=(F.fractures||[]).slice(); if((F.fractures||[]).length) ast.push('fracture'); if(data.hp<5&&data.hp>0) ast.push('pastop');
-  const PK={burn:'brulure',bleed:'saignement',stun:'etourdi',hypoesthesia:'hypostasie',pasTop:'pastop',snare:'entrave',sick:'maladie',frenzy:'frenesie',pompette1:'pompette',pompette2:'pinte',pompette3:'eclate'};
+  const PK={burn:'brulure',bleed:'saignement',stun:'etourdi',hypoesthesia:'hypostasie',pasTop:'pastop',snare:'entrave',sick:'maladie',frenzy:'frenesie',pompette1:'pompette',pompette2:'pinte',pompette3:'eclate',crado:'crado',terrified:'terrifie',piteux:'piteux',encumbered:'encombre',soaked:'trempe'};
   (F.effects||[]).forEach(e=>{ const k=PK[e&&e.key]; if(k&&!ast.includes(k)) ast.push(k); }); data.ast=ast;
   return data; }
 const spFull=P=>{ const f=Object.assign({},(P.sheet&&P.sheet.full)||{}); if(!f.photo&&P.sheet&&P.sheet.img){ f.photo=P.sheet.img; delete f.photoCrop; } return f; };
